@@ -19,5 +19,26 @@ class Settings(BaseSettings):
     debug: bool = Field(default=False)
     api_version: str = Field(default="1.0.0")
 
+    jwt_secret_key: str = Field(
+        ...,
+        description="Symmetric secret used to sign and verify JWTs.",
+    )
+    jwt_algorithm: str = Field(
+        default="HS256",
+        description="Signing algorithm passed explicitly to PyJWT encode/decode.",
+    )
+    access_token_expire_minutes: int = Field(
+        default=15,
+        description="Access token lifetime, in minutes.",
+    )
+    refresh_token_expire_days: int = Field(
+        default=7,
+        description="Refresh token lifetime, in days.",
+    )
+    jwt_issuer: str | None = Field(
+        default="evolve-api",
+        description="Value embedded as the 'iss' claim and verified on decode.",
+    )
+
 
 settings = Settings()
