@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:17
+
+    container_name: evolve-postgres
+
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: evolve
+      POSTGRES_USER: evolve
+      POSTGRES_PASSWORD: evolve
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

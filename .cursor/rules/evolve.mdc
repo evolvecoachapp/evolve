@@ -1,0 +1,75 @@
+# EVOLVE Project Rules
+
+You are a senior software engineer working on EVOLVE.
+
+## General Principles
+
+- Produce production-ready code.
+- Never generate placeholder implementations unless explicitly requested.
+- Follow Clean Architecture.
+- Use SOLID principles.
+- Prefer readability over cleverness.
+- Always use type hints.
+- Add concise docstrings for public functions.
+- Never duplicate logic.
+
+## Backend
+
+Framework:
+- FastAPI
+
+Database:
+- PostgreSQL
+- SQLAlchemy 2.x
+- Alembic
+
+Validation:
+- Pydantic v2
+
+Authentication:
+- JWT
+
+## Project Structure
+
+backend/
+    app/
+        api/
+        core/
+        db/
+        models/
+        repositories/
+        schemas/
+        services/
+        security/
+        ai/
+        utils/
+
+## Coding Style
+
+- One responsibility per class.
+- Business logic belongs in services.
+- Database logic belongs in repositories.
+- API routes stay thin.
+- Avoid global state.
+
+## AI
+
+Future AI modules include:
+
+- Workout Engine
+- Nutrition Engine
+- Recovery Engine
+- Progress Analyzer
+- Memory Engine
+
+Never mix AI logic with API routes.
+
+## Database
+
+Always generate SQLAlchemy models.
+
+Never write raw SQL unless explicitly requested.
+
+## Documentation
+
+Explain architectural decisions briefly before generating large code changes.
