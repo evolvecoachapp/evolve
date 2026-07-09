@@ -7,15 +7,17 @@ a future API layer that will translate this service's return values and
 exceptions into request/response schemas and HTTP status codes.
 """
 
+import uuid
 from dataclasses import dataclass
 
+import jwt
 from sqlalchemy.exc import IntegrityError
 
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import UserCreate
 from app.security.hashing import hash_password, verify_password
-from app.security.jwt import create_access_token, create_refresh_token
+from app.security.jwt import create_access_token, create_refresh_token, decode_token
 
 
 class AuthServiceError(Exception):
@@ -146,3 +148,65 @@ class AuthService:
         refresh_token = create_refresh_token(subject=user.id)
 
         return AuthResult(user=user, access_token=access_token, refresh_token=refresh_token)
+
+    def resolve_current_user(self, user_id: uuid.UUID) -> User:
+        """Resolve and validate the active user identified by a JWT ``sub`` claim.
+
+        This is the single account-state gate ("does this user id still
+        resolve to a live, active account") shared by both the
+        ``get_current_user`` dependency and :meth:`refresh_access_token` —
+        it intentionally mirrors the post-lookup checks in
+        :meth:`authenticate_user` so that definition of an unusable account
+        exists in one place.
+
+        Args:
+            user_id: The user id extracted from a validated JWT's ``sub``
+                claim.
+
+        Returns:
+            The resolved, active :class:`User`.
+
+        Raises:
+            InvalidCredentialsError: If no matching, non-deleted account
+                exists for ``user_id``.
+            InactiveAccountError: If the account exists but is deactivated.
+        """
+        user = self.user_repository.get_by_id(user_id)
+        if user is None or user.deleted_at is not None:
+            raise InvalidCredentialsError("Invalid credentials.")
+
+        if not user.is_active:
+            raise InactiveAccountError("This account is inactive.")
+
+        return user
+
+    def refresh_access_token(self, refresh_token: str) -> AuthResult:
+        """Validate a refresh token and issue a new access/refresh token pair.
+
+        Args:
+            refresh_token: The previously issued refresh token to redeem.
+
+        Returns:
+            An :class:`AuthResult` containing the resolved user and a newly
+            issued access/refresh token pair.
+
+        Raises:
+            InvalidCredentialsError: If the token is malformed, expired,
+                incorrectly signed, not of type ``"refresh"``, or its
+                subject no longer resolves to a live account.
+            InactiveAccountError: If the token is otherwise valid but the
+                account is deactivated.
+        """
+        try:
+            payload = decode_token(refresh_token, expected_type="refresh")
+            user_id = uuid.UUID(payload["sub"])
+        except (jwt.PyJWTError, KeyError, ValueError) as exc:
+            raise InvalidCredentialsError("Invalid or expired refresh token.") from exc
+
+        user = self.resolve_current_user(user_id)
+
+        return AuthResult(
+            user=user,
+            access_token=create_access_token(subject=user.id),
+            refresh_token=create_refresh_token(subject=user.id),
+        )

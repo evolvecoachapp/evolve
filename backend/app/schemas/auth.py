@@ -23,6 +23,16 @@ class LoginRequest(BaseModel):
     password: PasswordField
 
 
+class RefreshRequest(BaseModel):
+    """Input schema for ``POST /api/v1/auth/refresh``.
+
+    Carries only the opaque refresh token; it is a bearer credential, not
+    new user input, so no strength-style validation is applied here.
+    """
+
+    refresh_token: str
+
+
 class TokenResponse(BaseModel):
     """Output schema for a successful login: an access/refresh token pair.
 

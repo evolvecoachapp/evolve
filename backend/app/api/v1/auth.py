@@ -7,12 +7,10 @@ password/JWT handling happens in this module.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
 
-from app.db.database import get_db
-from app.repositories.user_repository import UserRepository
-from app.schemas.auth import LoginRequest, TokenResponse
+from app.schemas.auth import LoginRequest, RefreshRequest, TokenResponse
 from app.schemas.user import UserCreate, UserPublic
+from app.security.dependencies import get_auth_service
 from app.services.auth_service import (
     AuthService,
     InactiveAccountError,
@@ -23,11 +21,6 @@ from app.services.auth_service import (
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-def _get_auth_service(db: Session = Depends(get_db)) -> AuthService:
-    """Resolve an :class:`AuthService` bound to a request-scoped session."""
-    return AuthService(UserRepository(db))
-
-
 @router.post(
     "/register",
     response_model=UserPublic,
@@ -35,7 +28,7 @@ def _get_auth_service(db: Session = Depends(get_db)) -> AuthService:
 )
 def register(
     data: UserCreate,
-    auth_service: AuthService = Depends(_get_auth_service),
+    auth_service: AuthService = Depends(get_auth_service),
 ) -> UserPublic:
     """Create a new user account.
 
@@ -56,7 +49,7 @@ def register(
 @router.post("/login", response_model=TokenResponse)
 def login(
     data: LoginRequest,
-    auth_service: AuthService = Depends(_get_auth_service),
+    auth_service: AuthService = Depends(get_auth_service),
 ) -> TokenResponse:
     """Authenticate a user and issue a new access/refresh token pair.
 
@@ -70,6 +63,37 @@ def login(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password.",
+        ) from exc
+    except InactiveAccountError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This account is inactive.",
+        ) from exc
+
+    return TokenResponse(
+        access_token=result.access_token,
+        refresh_token=result.refresh_token,
+    )
+
+
+@router.post("/refresh", response_model=TokenResponse)
+def refresh(
+    data: RefreshRequest,
+    auth_service: AuthService = Depends(get_auth_service),
+) -> TokenResponse:
+    """Redeem a refresh token for a new access/refresh token pair.
+
+    Raises:
+        HTTPException: 401 if the refresh token is missing, malformed,
+            expired, of the wrong type, or does not resolve to a live
+            account; 403 if the account is deactivated.
+    """
+    try:
+        result = auth_service.refresh_access_token(data.refresh_token)
+    except InvalidCredentialsError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token.",
         ) from exc
     except InactiveAccountError as exc:
         raise HTTPException(
