@@ -29,3 +29,6 @@ Thumbs.db
 
 # Mypy
 .mypy_cache/
+
+# AI reports
+REPORT.md
