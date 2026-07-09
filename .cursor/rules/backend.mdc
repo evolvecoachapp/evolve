@@ -1,0 +1,44 @@
+---
+description: Backend coding conventions for FastAPI, SQLAlchemy 2.x, Alembic, and the repository/service layers
+globs: backend/**/*.py
+alwaysApply: false
+---
+
+# Backend Coding Conventions
+
+## FastAPI
+
+- Routes stay thin: parse/validate input, call a service, return the response. No business logic, database queries, or AI calls inside `api/`.
+- Version all routes under `/api/v1/`.
+- Use `Depends(get_db)` and `Depends(get_current_user)` for session/auth injection — never instantiate a session manually inside a route.
+
+## SQLAlchemy 2.x
+
+- Models use declarative `Mapped[]` / `mapped_column()` syntax only — no legacy `Column()` style.
+- Every model lives in `models/`, inherits `Base` from `app.db.database`, and is registered in `app.db.base` for Alembic discovery.
+- Never write raw SQL unless explicitly requested; use the query builder or repository methods.
+- Enums use `sqlalchemy.Enum` with `values_callable` so PostgreSQL stores lowercase values, not Python member names.
+
+## Alembic
+
+- Every model change ships with exactly one corresponding migration in the same change set.
+- Migrations must be reviewed manually before applying — never trust autogenerate output blindly (check constraint names, enum labels, indexes).
+- Never call `Base.metadata.create_all()` in application code — Alembic is the only schema authority.
+
+## Repository Pattern
+
+- All database queries live in `repositories/`, one repository per aggregate/entity group.
+- Repositories accept a `Session` and return model instances or simple DTOs — no HTTP concepts, no business rules.
+- Services depend on repositories; repositories never depend on services.
+
+## Service Layer
+
+- Business logic and cross-entity orchestration live in `services/`, never in routes or repositories.
+- One responsibility per service class; compose multiple repositories/AI modules only inside services.
+- Services are the only layer that talks to AI modules — AI logic never touches API routes directly.
+
+## General
+
+- Always use type hints; add concise docstrings for public functions and classes.
+- Never duplicate logic — extract shared behavior into `utils/` or a shared base.
+- **Never modify unrelated files.** Keep every change scoped to the requested layer or feature; do not touch `database.py`, `config.py`, `docker-compose.yml`, or `requirements.txt` unless the task explicitly calls for it.

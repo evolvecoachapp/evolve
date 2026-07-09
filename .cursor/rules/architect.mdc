@@ -1,0 +1,41 @@
+---
+description: Project architecture guidance for EVOLVE — layer separation, folder organization, ADR compliance, documentation rules, and long-term scalability
+alwaysApply: false
+---
+
+# Project Architecture
+
+Reference: `.cursor/rules/EVOLVE_ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/ROADMAP.md`.
+
+## Layer Separation
+
+- Dependencies flow inward only: `api` → `services` → `repositories` → `models`. Never reverse this direction.
+- `schemas/` (Pydantic) defines the API contract independently of `models/` (SQLAlchemy) — never expose ORM objects directly in responses.
+- `security/` holds JWT and hashing primitives only; it contains no business logic.
+- `ai/` engines are invoked exclusively through the AI Orchestrator or a service — never directly from `api/`.
+
+## Folder Organization
+
+- Backend structure is fixed: `api/`, `core/`, `db/`, `models/`, `repositories/`, `schemas/`, `services/`, `security/`, `ai/`, `utils/`.
+- New domains (e.g. workouts, nutrition) get one file per layer, following the existing `user.py` / `user_repository.py` / `user_service.py` naming pattern.
+- Do not introduce new top-level folders without recording the decision in `docs/DECISIONS.md` and updating `EVOLVE_ARCHITECTURE.md`.
+
+## ADR Compliance
+
+- Any new framework, library, or infrastructure choice is recorded as a new sequential entry in `docs/DECISIONS.md` before or alongside implementation.
+- Never delete or renumber existing decisions — mark superseded decisions explicitly instead.
+- Implementation must not contradict an accepted decision without first recording a superseding decision.
+
+## Documentation Rules
+
+- Architectural decisions are explained briefly before generating large code changes, per `evolve.mdc`.
+- `EVOLVE_ARCHITECTURE.md` is updated whenever a structural or technology decision changes.
+- `docs/ROADMAP.md` and `docs/TASKS.md` are updated when a phase or sprint's scope changes.
+- `docs/CHANGELOG.md` gets an entry for every completed phase/sprint, following Semantic Versioning.
+
+## Long-Term Scalability
+
+- Keep the API stateless — all auth state lives in JWTs, not server-side sessions, so instances scale horizontally.
+- Schema evolves only through Alembic migrations, ensuring environment parity from local development through production.
+- AI engines stay decoupled from HTTP routes so they can later move to dedicated worker processes without touching the API layer.
+- Favor one coherent Coach interface over feature-specific tools, even as more AI engines are added behind the Orchestrator.
