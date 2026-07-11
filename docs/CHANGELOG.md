@@ -21,7 +21,12 @@ Each release section groups changes under: `Added`, `Changed`, `Deprecated`, `Re
 ## [Unreleased]
 
 ### Added
-- Nothing yet.
+- `Program`, `ProgramDay`, and `ProgramAssignment` models with migration (Sprint 3.2 — Roadmap Phase 3). `ProgramDay` schedules an optional `Workout` template onto a `(week_number, day_number)` slot, with `day_number` intentionally open-ended (not capped to a 7-day week) so any training-day cadence is representable.
+- `Workout` and `WorkoutExercise` models with migration — a reusable, standalone workout template (ordered target exercises), independent of any program. `WorkoutLog` model added as a session-level schema shell only (per-exercise/per-set logging arrives in Sprint 3.3 alongside the logging API).
+- `ProgramRepository` and `WorkoutRepository`.
+- `WorkoutService` covering program authoring (create/update/publish/archive), workout-template authoring (create/update/deactivate), and the program-assignment flow (`assign_program` with auto-abandon of any existing active assignment, `complete_assignment`, `abandon_assignment`).
+- Pydantic schemas: `app/schemas/program.py`, `app/schemas/workout.py`.
+- `get_workout_service` FastAPI dependency wiring.
 
 ### Changed
 - Nothing yet.

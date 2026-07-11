@@ -20,7 +20,25 @@ from app.schemas.exercise import (
     ExerciseUpdate,
     MuscleGroupWithRole,
 )
+from app.schemas.program import (
+    ProgramAssignmentRead,
+    ProgramCreate,
+    ProgramDayInput,
+    ProgramDayRead,
+    ProgramPage,
+    ProgramPublic,
+    ProgramUpdate,
+)
 from app.schemas.user import UserCreate, UserPublic, UserRead, UserUpdate
+from app.schemas.workout import (
+    WorkoutCreate,
+    WorkoutExerciseInput,
+    WorkoutExerciseRead,
+    WorkoutLogRead,
+    WorkoutPage,
+    WorkoutPublic,
+    WorkoutUpdate,
+)
 
 __all__ = [
     "EquipmentCreate",
@@ -39,10 +57,24 @@ __all__ = [
     "MuscleGroupCreate",
     "MuscleGroupRead",
     "MuscleGroupWithRole",
+    "ProgramAssignmentRead",
+    "ProgramCreate",
+    "ProgramDayInput",
+    "ProgramDayRead",
+    "ProgramPage",
+    "ProgramPublic",
+    "ProgramUpdate",
     "RefreshRequest",
     "TokenResponse",
     "UserCreate",
     "UserPublic",
     "UserRead",
     "UserUpdate",
+    "WorkoutCreate",
+    "WorkoutExerciseInput",
+    "WorkoutExerciseRead",
+    "WorkoutLogRead",
+    "WorkoutPage",
+    "WorkoutPublic",
+    "WorkoutUpdate",
 ]

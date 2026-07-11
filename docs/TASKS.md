@@ -74,10 +74,10 @@
 
 ### Sprint 3.2 — Programs & Workouts
 
-- [ ] Create `Program` model and migration
-- [ ] Create `Workout` model (template + logged session) and migration
-- [ ] Implement `ProgramRepository`, `WorkoutRepository`
-- [ ] Implement program assignment flow (`WorkoutService`)
+- [x] Create `Program` model and migration
+- [x] Create `Workout` model (template + logged session) and migration
+- [x] Implement `ProgramRepository`, `WorkoutRepository`
+- [x] Implement program assignment flow (`WorkoutService`)
 
 ### Sprint 3.3 — Logging & Rule-Based Engine
 

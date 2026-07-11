@@ -10,3 +10,13 @@ from app.models.exercise import (  # noqa: F401
     ExerciseMuscleGroup,
     ExerciseSubstitution,
 )
+from app.models.program import (  # noqa: F401
+    Program,
+    ProgramAssignment,
+    ProgramDay,
+)
+from app.models.workout import (  # noqa: F401
+    Workout,
+    WorkoutExercise,
+    WorkoutLog,
+)
