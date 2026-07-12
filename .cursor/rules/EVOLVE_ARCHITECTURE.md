@@ -612,24 +612,48 @@ Represents structured training plans spanning days or weeks.
 
 ## Workouts
 
-Represents both **planned workout templates** and **logged workout sessions**.
+Represents both **planned workout templates** and **logged workout sessions**
+— modeled as two distinct aggregates, each with its own model module,
+repository, and service, rather than one polymorphic table:
+
+- `Workout`/`WorkoutExercise` (`app/models/workout.py`,
+  `WorkoutRepository`, `WorkoutService`) — the reusable *template*.
+- `WorkoutLog`/`WorkoutLogExercise`/`WorkoutSetLog`
+  (`app/models/workout_log.py`, `WorkoutLogRepository`,
+  `WorkoutLogService`) — a single *execution* of a session.
 
 **Template attributes:**
-- Day label (e.g., "Day 3 — Upper Body")
-- Estimated duration
+- Name, description, estimated duration
 - Ordered list of exercises with target sets, reps, and rest
 
-**Logged session attributes:**
-- Date and time completed
-- Duration actual
-- Per-exercise logged sets (weight, reps, RPE)
-- User notes and subjective difficulty
-- Completion status (full, partial, skipped)
+**Logged session attributes** (`WorkoutLog`):
+- `status`: `planned` (reserved for future scheduling) → `in_progress` →
+  `completed` | `skipped`. At most one `in_progress` session per user
+  (partial unique index).
+- `started_at` / `completed_at`, `duration_actual_minutes` (derived from
+  the two if not explicitly given), user notes.
+
+**Logged exercise attributes** (`WorkoutLogExercise`):
+- An optional best-effort link back to the template line item
+  (`workout_exercise_id`, `SET NULL` on template edit), plus a *snapshot*
+  of what was actually prescribed at start time —
+  `exercise_name_snapshot`, `target_sets`, `target_reps_min/max`,
+  `rest_seconds` — so history stays accurate and readable even after the
+  catalog entry is renamed or the template is edited. This "planned vs.
+  actual" snapshot is exactly what the Progress Analyzer (Phase 4) will
+  need.
+
+**Logged set attributes** (`WorkoutSetLog`):
+- `weight_kg`, `reps`, `rpe`, `duration_seconds` (at least one required),
+  `is_warmup` (excluded from future volume/PR calculations), server-assigned
+  `set_number`.
 
 **Relationships:**
-- Belongs to a program (optional for ad-hoc workouts)
-- Belongs to a user
-- References exercises from the catalog
+- A `WorkoutLog` optionally belongs to a `Program` assignment and/or
+  references a `Workout` template (either, both, or neither — fully
+  ad-hoc sessions are supported); always belongs to a user.
+- `WorkoutLogExercise` references an `Exercise` from the catalog and
+  contains an ordered list of `WorkoutSetLog` rows.
 
 ---
 

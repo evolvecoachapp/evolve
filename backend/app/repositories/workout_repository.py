@@ -1,15 +1,16 @@
 """Repository for persistence and retrieval of the ``Workout`` aggregate.
 
-Owns :class:`~app.models.workout.Workout` plus its two sub-resources,
-``WorkoutExercise`` (the template's ordered exercise line items) and
-``WorkoutLog`` (a logged session shell) — mirrors how
-:class:`~app.repositories.exercise_repository.ExerciseRepository` owns
+Owns :class:`~app.models.workout.Workout` plus its one sub-resource,
+``WorkoutExercise`` (the template's ordered exercise line items) — mirrors
+how :class:`~app.repositories.exercise_repository.ExerciseRepository` owns
 ``Exercise``'s association tables. Contains no business logic; it only
 translates calls into SQLAlchemy queries against an injected
 :class:`~sqlalchemy.orm.Session` and returns ORM model instances.
 
-``WorkoutLog`` support is intentionally minimal this sprint (create/get
-only) — the create/update logging workflow itself is Sprint 3.3 scope.
+Logged-session persistence (``WorkoutLog``/``WorkoutLogExercise``/
+``WorkoutSetLog``) is owned by
+:class:`~app.repositories.workout_log_repository.WorkoutLogRepository` — a
+separate aggregate, per the Sprint 3.3 design.
 """
 
 import uuid
@@ -18,7 +19,7 @@ from datetime import datetime, timezone
 from sqlalchemy import Select, delete, func, select
 from sqlalchemy.orm import Session
 
-from app.models.workout import Workout, WorkoutExercise, WorkoutLog
+from app.models.workout import Workout, WorkoutExercise
 
 
 class WorkoutRepository:
@@ -149,18 +150,3 @@ class WorkoutRepository:
                 .order_by(WorkoutExercise.order_index)
             ).scalars()
         )
-
-    # -- WorkoutLog (shell only — see module docstring) -----------------------
-
-    def create_log(self, workout_log: WorkoutLog) -> WorkoutLog:
-        """Persist a fully constructed :class:`WorkoutLog` instance and return it."""
-        self.db.add(workout_log)
-        self.db.flush()
-        self.db.refresh(workout_log)
-        return workout_log
-
-    def get_log_by_id(self, workout_log_id: uuid.UUID) -> WorkoutLog | None:
-        """Return the logged session with the given id, or ``None`` if not found."""
-        return self.db.execute(
-            select(WorkoutLog).where(WorkoutLog.id == workout_log_id)
-        ).scalar_one_or_none()

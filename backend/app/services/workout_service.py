@@ -12,9 +12,11 @@ Sprint 3.2 scope in ``docs/TASKS.md``. It covers three areas:
 - **Program assignment flow** — assign a published program to a user,
   track their progress, and complete/abandon it.
 
-Logging behavior (populating ``WorkoutLog`` rows) is explicitly out of
-scope this sprint — see ``app.models.workout`` module docstring — and will
-be added here in Sprint 3.3 alongside its API.
+Logging behavior (populating ``WorkoutLog``/``WorkoutLogExercise``/
+``WorkoutSetLog`` rows) lives in the separate
+:class:`~app.services.workout_log_service.WorkoutLogService`, per the
+Sprint 3.3 design — a distinct aggregate with its own repository/service,
+not an extension of this one.
 
 Contains no HTTP concepts and no raw SQL — a future API layer translates
 this service's return values and documented exceptions into

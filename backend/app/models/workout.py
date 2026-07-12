@@ -1,29 +1,26 @@
-"""SQLAlchemy models for the Workout domain entity and its associations.
+"""SQLAlchemy models for the Workout *template* domain entity and its
+ordered exercise line items.
 
-Per the Sprint 3.2 design, "template" and "logged session" are two
-distinct models rather than one polymorphic table:
+``Workout``/``WorkoutExercise`` are a standalone, reusable workout
+*template* (an ordered list of target exercises/sets/reps), analogous to
+:class:`~app.models.exercise.Exercise`. A template can be scheduled into a
+:class:`~app.models.program.Program` via
+:class:`~app.models.program.ProgramDay`, or referenced directly by an
+ad-hoc logged session outside any program.
 
-- :class:`Workout` — a standalone, reusable workout *template* (an ordered
-  list of target exercises/sets/reps), analogous to
-  :class:`~app.models.exercise.Exercise`. It can be scheduled into a
-  :class:`~app.models.program.Program` via
-  :class:`~app.models.program.ProgramDay`, or referenced directly by an
-  ad-hoc logged session outside any program.
-- :class:`WorkoutLog` — a single completed/planned/skipped session. This
-  sprint only builds the session-level shell (who/what/when/status);
-  per-exercise and per-set logged data (weight, reps, RPE) are deferred to
-  Sprint 3.3, which is explicitly scoped to the logging API and business
-  logic that will populate them.
+The *execution* side — a single logged session and its per-exercise/
+per-set data — is a separate aggregate living in
+:mod:`app.models.workout_log` (``WorkoutLog``/``WorkoutLogExercise``/
+``WorkoutSetLog``), with its own repository and service, per the
+Sprint 3.3 design.
 """
 
 import uuid
-from datetime import date, datetime
-from enum import Enum
+from datetime import datetime
 
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
-    Date,
     DateTime,
     ForeignKey,
     Index,
@@ -32,19 +29,10 @@ from sqlalchemy import (
     Uuid,
     func,
 )
-from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
 from app.models.exercise import Exercise
-
-
-class WorkoutLogStatus(str, Enum):
-    """Lifecycle state of a single logged workout session."""
-
-    PLANNED = "planned"
-    COMPLETED = "completed"
-    SKIPPED = "skipped"
 
 
 class Workout(Base):
@@ -197,98 +185,3 @@ class WorkoutExercise(Base):
             f"<WorkoutExercise workout_id={self.workout_id} "
             f"exercise_id={self.exercise_id} order_index={self.order_index}>"
         )
-
-
-class WorkoutLog(Base):
-    """A single planned, completed, or skipped workout session (shell only).
-
-    Sprint 3.2 scope: session-level header fields only. Per-exercise and
-    per-set logged data (weight, reps, RPE) are deferred to Sprint 3.3
-    (``WorkoutLogExercise``/``WorkoutSetLog``, not yet defined) — no
-    service method populates these rows yet; the schema exists ahead of
-    that behavior so the migration chain does not need to alter this table
-    again when 3.3 adds the surrounding business logic.
-
-    ``program_assignment_id`` and ``workout_id`` are both nullable: a
-    session may be ad-hoc (neither set), based on a template but done
-    outside any program (``workout_id`` set, ``program_assignment_id``
-    ``NULL``), or fully tied to an active program assignment (both set).
-    """
-
-    __tablename__ = "workout_logs"
-    __table_args__ = (
-        CheckConstraint(
-            "duration_actual_minutes IS NULL OR duration_actual_minutes > 0",
-            name="ck_workout_logs_duration_actual_minutes_positive",
-        ),
-        Index("ix_workout_logs_user_id", "user_id"),
-        Index("ix_workout_logs_program_assignment_id", "program_assignment_id"),
-        Index("ix_workout_logs_workout_id", "workout_id"),
-        Index("ix_workout_logs_status", "status"),
-        Index("ix_workout_logs_scheduled_date", "scheduled_date"),
-    )
-
-    id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-    )
-
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE", name="fk_workout_logs_user_id"),
-        nullable=False,
-    )
-    program_assignment_id: Mapped[uuid.UUID | None] = mapped_column(
-        Uuid(as_uuid=True),
-        ForeignKey(
-            "program_assignments.id",
-            ondelete="SET NULL",
-            name="fk_workout_logs_program_assignment_id",
-        ),
-        nullable=True,
-    )
-    workout_id: Mapped[uuid.UUID | None] = mapped_column(
-        Uuid(as_uuid=True),
-        ForeignKey("workouts.id", ondelete="SET NULL", name="fk_workout_logs_workout_id"),
-        nullable=True,
-    )
-
-    status: Mapped[WorkoutLogStatus] = mapped_column(
-        SAEnum(
-            WorkoutLogStatus,
-            name="workout_log_status_enum",
-            native_enum=True,
-            validate_strings=True,
-            values_callable=lambda enum_cls: [member.value for member in enum_cls],
-        ),
-        default=WorkoutLogStatus.PLANNED,
-        nullable=False,
-    )
-    scheduled_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    performed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-    )
-    duration_actual_minutes: Mapped[int | None] = mapped_column(nullable=True)
-    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        nullable=False,
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-        nullable=False,
-    )
-    deleted_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-    )
-
-    def __repr__(self) -> str:
-        """Return an unambiguous representation useful for logs and debugging."""
-        return f"<WorkoutLog id={self.id} user_id={self.user_id} status={self.status.value}>"

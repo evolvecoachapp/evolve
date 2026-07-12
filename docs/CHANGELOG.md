@@ -27,9 +27,16 @@ Each release section groups changes under: `Added`, `Changed`, `Deprecated`, `Re
 - `WorkoutService` covering program authoring (create/update/publish/archive), workout-template authoring (create/update/deactivate), and the program-assignment flow (`assign_program` with auto-abandon of any existing active assignment, `complete_assignment`, `abandon_assignment`).
 - Pydantic schemas: `app/schemas/program.py`, `app/schemas/workout.py`.
 - `get_workout_service` FastAPI dependency wiring.
+- `WorkoutLogExercise` and `WorkoutSetLog` models with migration (Sprint 3.3 — Roadmap Phase 3, Workout Execution). `WorkoutLogExercise` snapshots the prescribed target (`exercise_name_snapshot`, `target_sets`, `target_reps_min/max`, `rest_seconds`) at add-time so history stays accurate even if the source `Exercise`/`Workout` template is later renamed or edited; `WorkoutSetLog` carries per-set performance (`weight_kg`, `reps`, `rpe`, `duration_seconds`, `is_warmup`). `WorkoutLog` gains `started_at`, an `IN_PROGRESS` status, and a partial unique index (`uq_workout_logs_one_in_progress_per_user`) enforcing at most one active session per user; `performed_at` is renamed to `completed_at`.
+- `WorkoutLogRepository` — owns the `workout_logs`/`workout_log_exercises`/`workout_set_logs` tables, moved out of `WorkoutRepository` (which keeps `Workout`/`WorkoutExercise` templates only).
+- `WorkoutLogService` covering the full execution lifecycle: `start_workout` (always directly `IN_PROGRESS`; auto-seeds exercises from a template when `workout_id` is given), `finish_workout`, `skip_workout`, `add_exercise`, `log_set`/`update_set`/`delete_set` (server-assigned `order_index`/`set_number`; edits gated by a configurable post-completion edit window, default 24h via `Settings.workout_log_edit_window_hours`), and `list_history`.
+- `app/schemas/workout_log.py` — request/response contracts for the execution API (`WorkoutLogStart`, `WorkoutLogFinish`, `WorkoutLogExerciseCreate`, `WorkoutSetLogCreate`/`Update`, `WorkoutLogDetail`, `WorkoutLogSummary`, `WorkoutLogPage`).
+- `app/api/v1/workout_logs.py` — `/api/v1/workout-logs` routes for start/active/history/detail/finish/skip/add-exercise/log-set/update-set/delete-set, all ownership-checked via `get_current_user`. `get_workout_log_service` FastAPI dependency wiring.
+- Test infrastructure: `pytest`, `pytest-mock`, `httpx` added to `backend/requirements.txt`; `backend/pytest.ini`; `backend/tests/conftest.py` (transaction-rollback-isolated DB session, test-user, and auth-header fixtures); unit tests for `WorkoutLogService` (`backend/tests/unit/test_workout_log_service.py`) and an integration test covering the full start → log → edit → finish → history lifecycle against a real PostgreSQL instance (`backend/tests/integration/test_workout_logs_api.py`).
 
 ### Changed
-- Nothing yet.
+- `app/models/workout.py` no longer defines `WorkoutLog`/`WorkoutLogStatus` — moved to the new `app/models/workout_log.py`, alongside `WorkoutLogExercise`/`WorkoutSetLog`, to separate the workout *template* aggregate from the *execution* aggregate.
+- `schemas/workout.py`'s shell-only `WorkoutLogRead` is removed, superseded by `app/schemas/workout_log.py`.
 
 ### Fixed
 - Nothing yet.

@@ -40,5 +40,14 @@ class Settings(BaseSettings):
         description="Value embedded as the 'iss' claim and verified on decode.",
     )
 
+    workout_log_edit_window_hours: int = Field(
+        default=24,
+        description=(
+            "Hours after a WorkoutLog's completed_at during which its logged "
+            "sets remain editable/deletable. After this window, the log is "
+            "immutable."
+        ),
+    )
+
 
 settings = Settings()

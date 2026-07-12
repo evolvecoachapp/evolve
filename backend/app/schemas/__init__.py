@@ -34,10 +34,21 @@ from app.schemas.workout import (
     WorkoutCreate,
     WorkoutExerciseInput,
     WorkoutExerciseRead,
-    WorkoutLogRead,
     WorkoutPage,
     WorkoutPublic,
     WorkoutUpdate,
+)
+from app.schemas.workout_log import (
+    WorkoutLogDetail,
+    WorkoutLogExerciseCreate,
+    WorkoutLogExerciseRead,
+    WorkoutLogFinish,
+    WorkoutLogPage,
+    WorkoutLogStart,
+    WorkoutLogSummary,
+    WorkoutSetLogCreate,
+    WorkoutSetLogRead,
+    WorkoutSetLogUpdate,
 )
 
 __all__ = [
@@ -73,8 +84,17 @@ __all__ = [
     "WorkoutCreate",
     "WorkoutExerciseInput",
     "WorkoutExerciseRead",
-    "WorkoutLogRead",
+    "WorkoutLogDetail",
+    "WorkoutLogExerciseCreate",
+    "WorkoutLogExerciseRead",
+    "WorkoutLogFinish",
+    "WorkoutLogPage",
+    "WorkoutLogStart",
+    "WorkoutLogSummary",
     "WorkoutPage",
     "WorkoutPublic",
+    "WorkoutSetLogCreate",
+    "WorkoutSetLogRead",
+    "WorkoutSetLogUpdate",
     "WorkoutUpdate",
 ]

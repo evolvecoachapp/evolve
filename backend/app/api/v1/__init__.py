@@ -6,11 +6,13 @@ from app.api.v1.auth import router as auth_router
 from app.api.v1.catalog import router as catalog_router
 from app.api.v1.exercises import router as exercises_router
 from app.api.v1.users import router as users_router
+from app.api.v1.workout_logs import router as workout_logs_router
 
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(auth_router)
 api_router.include_router(users_router)
 api_router.include_router(exercises_router)
 api_router.include_router(catalog_router)
+api_router.include_router(workout_logs_router)
 
 __all__ = ["api_router"]

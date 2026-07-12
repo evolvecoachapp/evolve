@@ -18,5 +18,9 @@ from app.models.program import (  # noqa: F401
 from app.models.workout import (  # noqa: F401
     Workout,
     WorkoutExercise,
+)
+from app.models.workout_log import (  # noqa: F401
     WorkoutLog,
+    WorkoutLogExercise,
+    WorkoutSetLog,
 )
