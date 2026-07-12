@@ -346,4 +346,153 @@ Introduce a `BMRStrategy` abstraction (`app/ai/bmr_strategies.py`) — an abstra
 
 ---
 
-*New decisions are appended as Decision 014, 015, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 014 — Recovery Engine Training Load Is Derived From `WorkoutLog` History, Not Self-Reported
+
+**Status:** Accepted
+
+**Context:**
+Sprint 4.4 (Recovery Engine) needs a "training load" signal alongside a
+user's subjective sleep/soreness/fatigue check-in to compute a readiness
+score. `EVOLVE_ARCHITECTURE.md` lists "training volume and intensity
+trends" as a Recovery Engine input. Two designs were viable: (a) add a
+manually self-reported "perceived training load" field to the check-in
+(simplest, no new query), or (b) derive session count, duration, and
+average RPE directly from the user's existing `WorkoutLog`/`WorkoutSetLog`
+history over a trailing window.
+
+**Decision:**
+`RecoveryService.get_daily_readiness` derives training load by querying a
+new `WorkoutLogRepository.get_training_load_summary` aggregation
+(`COMPLETED` sessions only, windowed on `completed_at`, RPE averaged
+across non-warmup sets) over `settings.recovery_training_load_window_days`
+(default 7 days). `RecoveryCheckIn` carries no training-load column at all.
+
+**Why:**
+- **The data already exists and is more reliable than a self-report.** By
+  the time a check-in happens, `WorkoutLogService` has already recorded
+  exactly what was trained, when, for how long, and (optionally) at what
+  RPE — asking the user to also estimate their own recent training load
+  would be redundant and strictly less accurate.
+- **Matches Decision 006's precedent** of deriving real signals from
+  logged data rather than inferring/self-reporting when the system already
+  has the ground truth.
+- **Keeps `RecoveryCheckIn` a pure subjective-input record** (sleep,
+  soreness, fatigue) — cleanly separating "what the user reports about
+  themselves" from "what the system already knows they did," rather than
+  mixing both into one row.
+
+**Alternatives considered:**
+- **Manually self-reported training load on the check-in** — no new
+  repository query needed, but duplicates data the system already has,
+  risks disagreeing with the logged history, and adds a field most users
+  would find tedious or ambiguous to estimate (e.g. "rate your training
+  load 1-10" has no calibration reference).
+- **Both a self-reported field and the derived signal** — rejected as
+  needless complexity for this sprint; nothing yet needs to reconcile two
+  disagreeing training-load signals, and it can be added later if a real
+  need for a subjective override emerges.
+
+**Consequences:**
+- `WorkoutLogRepository.get_training_load_summary` is a new read-only
+  aggregation method; it introduces no schema change.
+- `RecoveryEngine.handle` never queries the database itself — it receives
+  a pre-aggregated `TrainingLoadSummary` from `RecoveryService`, matching
+  `NutritionEngine`'s "engine never touches the database" shape.
+- If a user has trained inconsistently or not used `WorkoutLogService` at
+  all, the training-load component naturally trends toward "low recent
+  load," which the engine treats as a neutral-to-positive readiness
+  signal — this is intentional; a Recovery Engine that requires workout
+  logging to function would create a hard dependency the architecture does
+  not otherwise impose.
+
+---
+
+## Decision 015 — One `RecoveryCheckIn` Per User Per Calendar Date
+
+**Status:** Accepted
+
+**Context:**
+`RecoveryCheckIn` (Sprint 4.4) needs a cadence: either exactly one check-in
+per user per calendar date, or an unrestricted number of timestamped
+check-ins per day.
+
+**Decision:**
+`RecoveryCheckIn` carries a `NOT NULL user_id` (unlike `Meal`'s nullable,
+catalog-vs-authored shape — a check-in is never shared) and a unique index
+on `(user_id, checkin_date)`. `RecoveryService.create_check_in` raises
+`CheckInAlreadyExistsError` if a check-in for that date already exists,
+rather than upserting.
+
+**Why:**
+- **Matches the "daily journal" cadence already established** by
+  `NutritionService.get_daily_nutrition`'s per-date aggregation over
+  `MealLog` rows — one readiness reading per day is the natural unit for
+  "how ready am I today," consistent with how the rest of the platform
+  already treats a calendar date as the unit of daily coaching state.
+- **Keeps `RecoveryService.get_daily_readiness`'s lookup trivial** — an
+  indexed point lookup on `(user_id, checkin_date)` rather than needing to
+  pick "the most recent check-in that day" among several candidates.
+- **A conflict (409) on a duplicate is more honest than a silent upsert**
+  — the client explicitly decides whether to update the existing entry
+  (`PATCH`) or accept the rejection, rather than the service guessing intent.
+
+**Alternatives considered:**
+- **Multiple check-ins per day, no uniqueness constraint** — would suit a
+  future "morning and evening check-in" feature, but nothing in this
+  sprint's scope calls for that, and it would force
+  `get_daily_readiness` to pick one among several candidate check-ins
+  with no natural tie-breaking rule.
+
+**Consequences:**
+- `recovery_check_ins` has a unique index
+  `uq_recovery_check_ins_user_checkin_date`.
+- A future "multiple check-ins per day" feature would require a schema
+  change (dropping the unique constraint, likely adding a
+  time-of-day/sequence concept) — deferred until an actual feature needs it.
+
+---
+
+## Decision 016 — Recovery Engine Ships Decoupled From `AIOrchestrator`/`AIEngine` This Sprint
+
+**Status:** Accepted
+
+**Context:**
+Same situation as Decision 011 (Nutrition Engine, Sprint 4.3): the generic
+`AIEngine` protocol exists, but no `CoachService`/`/api/v1/coach` endpoint
+exists yet to route chat messages to a registered engine (still Sprint 4.5).
+
+**Decision:**
+`RecoveryEngine` lives in `app/ai/recovery_engine.py` (its planned location
+per `EVOLVE_ARCHITECTURE.md`'s folder structure) but defines and consumes
+its own typed `RecoveryInput`/`RecoveryOutput` contracts rather than
+implementing the generic `AIEngine` protocol, and is not added to
+`AIOrchestrator.engines` this sprint. `RecoveryService` calls it directly.
+
+**Why:**
+- **Identical rationale to Decision 011** — there is no real chat
+  integration to design the `EngineInput`/`EngineOutput` binding against
+  yet, and `RecoveryOutput`'s structured score/level/protocols shape is
+  materially richer than the generic `EngineOutput.artifacts: dict | None`.
+- **Keeps `RecoveryEngine` trivially unit-testable** — pure functions over
+  typed Pydantic models, no dependency on `MemoryContext`/`Intent`/the
+  Orchestrator at all.
+
+**Alternatives considered:**
+- **Implement `AIEngine` now and register it in
+  `AIOrchestrator.engines[Intent.RECOVERY]`** — same objections as
+  Decision 011: premature given no consumer exists yet to validate the
+  binding against.
+
+**Consequences:**
+- Reaching the Recovery Engine's logic requires `/api/v1/recovery/readiness`
+  (or direct service/engine calls in tests) — it is not reachable through
+  `/api/v1/coach` because that endpoint does not exist yet.
+- Whichever sprint builds `CoachService`/the Coach endpoint must decide how
+  (or whether) to adapt both `NutritionInput`/`NutritionOutput` and
+  `RecoveryInput`/`RecoveryOutput` onto `EngineInput`/`EngineOutput`, or
+  introduce a richer per-engine binding mechanism — still explicitly
+  deferred, not made here.
+
+---
+
+*New decisions are appended as Decision 017, 018, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

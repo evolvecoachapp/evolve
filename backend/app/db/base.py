@@ -32,3 +32,4 @@ from app.models.meal import (  # noqa: F401
     Meal,
     MealLog,
 )
+from app.models.recovery import RecoveryCheckIn  # noqa: F401

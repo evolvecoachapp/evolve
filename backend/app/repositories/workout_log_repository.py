@@ -226,3 +226,73 @@ class WorkoutLogRepository:
             )
         ).scalar_one()
         return 1 if current_max is None else current_max + 1
+
+    # -- Training load aggregation (Recovery Engine) -----------------------
+
+    def _completed_logs_in_window(
+        self, user_id: uuid.UUID, *, date_from: date, date_to: date
+    ) -> Select:
+        """Return the shared filter for training-load aggregation over a date window.
+
+        Only ``COMPLETED`` sessions count toward training load — ``PLANNED``,
+        ``IN_PROGRESS``, and ``SKIPPED`` sessions carry no actual load.
+        Windowed on ``completed_at`` (the date training actually happened),
+        not ``scheduled_date`` (nullable, and meaningless for ad-hoc
+        sessions).
+        """
+        return select(WorkoutLog).where(
+            WorkoutLog.user_id == user_id,
+            WorkoutLog.deleted_at.is_(None),
+            WorkoutLog.status == WorkoutLogStatus.COMPLETED,
+            WorkoutLog.completed_at.is_not(None),
+            func.date(WorkoutLog.completed_at) >= date_from,
+            func.date(WorkoutLog.completed_at) <= date_to,
+        )
+
+    def get_training_load_summary(
+        self, user_id: uuid.UUID, *, date_from: date, date_to: date
+    ) -> dict[str, object]:
+        """Aggregate a user's completed training load over a trailing date window.
+
+        Backs :meth:`~app.services.recovery_service.RecoveryService.get_daily_readiness`
+        — the Recovery Engine never queries the database itself (see
+        Decision 014 in ``docs/DECISIONS.md``). Two separate queries are
+        used deliberately (session/duration, then average RPE) rather than
+        one join, since joining to ``WorkoutSetLog`` would fan out and
+        double-count ``duration_actual_minutes`` per set. Warm-up sets are
+        excluded from the RPE average, matching ``WorkoutSetLog.is_warmup``'s
+        existing "excluded from volume/PR calculations" convention. Returns
+        zeroed/``None`` fields (never a missing key) when no logs exist for
+        the window, so callers don't need a separate "no logs" branch.
+        """
+        completed_logs = self._completed_logs_in_window(
+            user_id, date_from=date_from, date_to=date_to
+        ).subquery()
+
+        session_row = self.db.execute(
+            select(
+                func.count(completed_logs.c.id).label("session_count"),
+                func.coalesce(
+                    func.sum(completed_logs.c.duration_actual_minutes), 0
+                ).label("total_duration_minutes"),
+            )
+        ).one()
+
+        avg_rpe = self.db.execute(
+            select(func.avg(WorkoutSetLog.rpe))
+            .join(
+                WorkoutLogExercise,
+                WorkoutSetLog.workout_log_exercise_id == WorkoutLogExercise.id,
+            )
+            .where(
+                WorkoutLogExercise.workout_log_id.in_(select(completed_logs.c.id)),
+                WorkoutSetLog.is_warmup.is_(False),
+                WorkoutSetLog.rpe.is_not(None),
+            )
+        ).scalar_one()
+
+        return {
+            "session_count": session_row.session_count,
+            "total_duration_minutes": session_row.total_duration_minutes,
+            "avg_rpe": avg_rpe,
+        }

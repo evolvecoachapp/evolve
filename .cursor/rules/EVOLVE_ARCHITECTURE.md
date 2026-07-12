@@ -167,6 +167,7 @@ Services implement domain rules and coordinate workflows. Examples:
 - `UserService` — profile management, preferences
 - `WorkoutService` — program assignment, session logging
 - `NutritionService` — meal plan management
+- `RecoveryService` — readiness check-ins and daily readiness scoring
 - `CoachService` — conversational coaching via the AI Orchestrator
 - `ProgressService` — metric aggregation and trend detection
 
@@ -185,6 +186,7 @@ Repositories encapsulate all database operations for a single aggregate or entit
 - `ProgramRepository` — program and assignment persistence
 - `WorkoutRepository` — session logs
 - `MealRepository` — meal and plan storage
+- `RecoveryCheckInRepository` — daily readiness check-ins
 - `ProgressRepository` — metric snapshots
 - `ChatRepository` — message history
 
@@ -318,7 +320,12 @@ EVOLVE/
 │       │   │                           # and nutrition_constants.py alongside it
 │       │   ├── bmr_strategies.py       # BMRStrategy ABC + MifflinStJeorBMRStrategy (Decision 013)
 │       │   ├── nutrition_constants.py  # activity/protein/BMR-offset lookup tables (Sprint 4.3)
-│       │   ├── recovery_engine.py      # planned — Sprint 4.4
+│       │   ├── recovery_engine.py      # Recovery Engine (Sprint 4.4) — rule-based, decoupled
+│       │   │                           # from the Orchestrator (Decision 016); training load is
+│       │   │                           # derived from WorkoutLog history, not self-reported
+│       │   │                           # (Decision 014); see recovery_constants.py alongside it
+│       │   ├── recovery_constants.py   # training-load reference values + readiness-level
+│       │   │                           # guidance/protocol text (Sprint 4.4)
 │       │   └── progress_analyzer.py    # planned — later sprint
 │       │
 │       └── utils/                      # Shared utilities
@@ -518,6 +525,27 @@ planned for a later sprint once an LLM or richer content source exists.
 - "Should I train legs today? I slept five hours."
 - "I've trained six days in a row — am I overreaching?"
 - "Suggest a recovery session for tight hips."
+
+**Current state (Sprint 4.4):** a rule-based, deterministic `RecoveryEngine`
+(`app/ai/recovery_engine.py`) exists — no LLM call, no wearable/device
+integration. `RecoveryCheckIn` (`app/models/recovery.py`) is a strictly
+personal daily journal entry (sleep hours/quality, soreness, fatigue,
+optional manually-entered resting heart rate/HRV) with exactly one check-in
+allowed per user per calendar date (see Decision 015 in
+`docs/DECISIONS.md`). Training load is **not** captured on the check-in at
+all — `RecoveryService` derives it at read time from the user's existing
+`WorkoutLog`/`WorkoutSetLog` history over a trailing window (session count,
+duration, average RPE — see Decision 014), so the Recovery Engine itself
+never queries the database. The engine blends normalized sleep,
+soreness/fatigue, and training-load scores (weights configurable via
+`Settings.recovery_score_weight_*`) into a composite 0-100 readiness score,
+buckets it into `low`/`moderate`/`high` (`app/ai/recovery_constants.py`),
+and returns templated recommendation text and recovery protocols. Like the
+Nutrition Engine, it defines its own typed `RecoveryInput`/`RecoveryOutput`
+contracts rather than the generic `AIEngine` protocol, and is **not**
+registered into `AIOrchestrator.engines` yet — see Decision 016. It is
+reachable today only via the standalone `/api/v1/recovery` REST API
+(`RecoveryService`), not through the Coach/chat endpoint (Sprint 4.5).
 
 ---
 
@@ -728,6 +756,35 @@ template-vs-execution split:
 
 ---
 
+## Recovery
+
+Represents daily readiness journaling, implemented Sprint 4.4:
+
+- `RecoveryCheckIn` (`app/models/recovery.py`) — a single, strictly
+  personal daily readiness entry. Unlike `Meal`'s catalog-vs-authored
+  shape, `user_id` is `NOT NULL`/`CASCADE` — a check-in is never shared.
+  Exactly one check-in is allowed per `(user_id, checkin_date)` (see
+  Decision 015 in `docs/DECISIONS.md`).
+
+**Key attributes:**
+- Sleep hours (numeric) and subjective sleep quality (1-5)
+- Subjective soreness and fatigue ratings (1-5 each)
+- Optional manually-entered resting heart rate and HRV (no wearable
+  integration exists yet)
+- Free-text notes
+
+Deliberately carries **no training-load column** — training load is
+derived at read time from the user's existing `WorkoutLog`/`WorkoutSetLog`
+history over a trailing window, not self-reported (see Decision 014).
+
+**Relationships:**
+- Belongs to a user; never shared or public.
+- `RecoveryService.get_daily_readiness` combines a `RecoveryCheckIn` with a
+  training-load summary aggregated from `WorkoutLogRepository` and passes
+  both to the Recovery Engine — see the Recovery Engine section above.
+
+---
+
 ## Progress
 
 Represents measurable snapshots of user advancement.
@@ -802,6 +859,7 @@ erDiagram
     User ||--o{ Meal : creates
     User ||--o{ MealLog : logs
     Meal ||--o{ MealLog : "logged as"
+    User ||--o{ RecoveryCheckIn : "checks in"
     User ||--o{ Progress : records
     User ||--o{ Conversation : has
     Conversation ||--o{ Chat : contains

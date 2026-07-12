@@ -107,5 +107,35 @@ class Settings(BaseSettings):
         ),
     )
 
+    recovery_training_load_window_days: int = Field(
+        default=7,
+        description=(
+            "Trailing window (in days, inclusive of the target date) the "
+            "Recovery Engine looks back over WorkoutLog history to derive "
+            "training load. See Decision 014 in docs/DECISIONS.md."
+        ),
+    )
+    recovery_sleep_target_hours: float = Field(
+        default=8.0,
+        description="Nightly sleep hours a check-in's sleep_hours is compared against.",
+    )
+    recovery_score_weight_sleep: float = Field(
+        default=0.4,
+        description=(
+            "Weight applied to the sleep component of the composite "
+            "readiness score. Together with "
+            "recovery_score_weight_soreness_fatigue and "
+            "recovery_score_weight_training_load, these should sum to 1.0."
+        ),
+    )
+    recovery_score_weight_soreness_fatigue: float = Field(
+        default=0.35,
+        description="Weight applied to the soreness/fatigue component of the readiness score.",
+    )
+    recovery_score_weight_training_load: float = Field(
+        default=0.25,
+        description="Weight applied to the derived training-load component of the readiness score.",
+    )
+
 
 settings = Settings()

@@ -121,9 +121,9 @@
 
 > Split out of the original Sprint 4.3 ("Nutrition & Recovery") scope.
 
-- [ ] Create readiness/check-in model and migration (sleep, soreness/fatigue, training load inputs)
-- [ ] Implement the corresponding repository and service
-- [ ] Implement Recovery Engine (readiness scoring)
+- [x] Create readiness/check-in model and migration (sleep, soreness/fatigue, training load inputs) — training load is derived from `WorkoutLog` history rather than a column on the check-in itself (see Decision 014 in `docs/DECISIONS.md`)
+- [x] Implement the corresponding repository and service
+- [x] Implement Recovery Engine (readiness scoring) — rule-based, decoupled from the Orchestrator (see Decision 016); reachable via `/api/v1/recovery`
 
 ### Sprint 4.5 — Progress & Coach Endpoint
 
