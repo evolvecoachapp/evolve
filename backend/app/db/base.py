@@ -28,3 +28,7 @@ from app.models.chat import (  # noqa: F401
     ChatMessage,
     Conversation,
 )
+from app.models.meal import (  # noqa: F401
+    Meal,
+    MealLog,
+)

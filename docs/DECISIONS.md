@@ -245,4 +245,105 @@ Introduce `async def` only for `AIOrchestrator.process_message` and `LLMProvider
 
 ---
 
-*New decisions are appended as Decision 010, 011, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 010 — Rule-Based, Configurable Nutrition Targets (No LLM, No Food Database)
+
+**Status:** Accepted
+
+**Context:**
+Sprint 4.3 (Nutrition Engine) needs to turn a user's profile into calorie/macro targets and compare them against logged intake. No real LLM vendor exists yet (Decision 008 — mock provider only), and the sprint's explicit constraints rule out any food/ingredient database, barcode scanning, or external nutrition API.
+
+**Decision:**
+Compute calorie/macro targets with a standard, deterministic formula — a swappable BMR calculation (see Decision 013) × an activity-level multiplier × a goal-based adjustment — driven entirely by fields already on `User` (`current_weight_kg`, `height_cm`, `birth_date`, `gender`, `activity_level`, `goal`). No LLM call is involved in computing targets or adherence. Every tunable coefficient (calorie deficit/surplus, fat percentage, minimum calorie floor, adherence tolerance, the BMR formula selector) lives in `Settings` (environment-configurable) or a dedicated `app/ai/nutrition_constants.py` module (structured lookup tables) — never as an inline magic number in `NutritionEngine`.
+
+**Why:**
+- **Matches Decision 006/008's precedent** — until a real LLM vendor is integrated, domain "engines" that need to produce reliable, testable output are plain deterministic logic, not LLM calls.
+- **No food database means macros are only ever known if a human enters them** (per meal template or ad-hoc log) — the *targets* side of the equation has to come from a formula, not a lookup, since there is no nutrition dataset to lean on.
+- **Configurability without a redeploy** — coefficients that operators are likely to want to tune (deficit/surplus size, fat %, safety floor) are environment variables; larger structured tables (per-activity-level multipliers, per-goal protein targets) are named Python constants, not env vars, since they are not simple scalars.
+- **A minimum-calorie safety floor keeps this "sports nutrition," not a crash diet** — consistent with the requirement that the Nutrition Engine stay focused on fitness/performance goals and avoid anything resembling unsupervised medical guidance.
+
+**Alternatives considered:**
+- **LLM-generated targets** — rejected for this sprint: no real provider exists, and it would make targets non-reproducible and untestable without mocking, unlike the existing `MockLLMProvider` precedent which is explicitly *not* meant to drive real numeric outputs.
+- **A persisted, admin-configured targets table** — rejected as over-engineered for this sprint; targets are cheap to recompute from the live profile on every request, and nothing yet needs to override them per-user.
+
+**Consequences:**
+- `Settings` gains `nutrition_bmr_formula`, `nutrition_calorie_deficit_kcal`, `nutrition_calorie_surplus_kcal`, `nutrition_fat_pct_of_calories`, `nutrition_min_calories_floor`, `nutrition_adherence_tolerance_pct`.
+- If a user's profile is missing a required field (weight, height, birth date, gender, activity level, or goal), `NutritionService.get_daily_nutrition` raises `IncompleteNutritionProfileError` rather than guessing.
+
+---
+
+## Decision 011 — Nutrition Engine Ships Decoupled From `AIOrchestrator`/`AIEngine` This Sprint
+
+**Status:** Accepted
+
+**Context:**
+Sprint 4.2 introduced the generic `AIEngine` protocol (`handle(EngineInput) -> EngineOutput`) so future domain engines could register into `AIOrchestrator.engines`. No engine has used this yet. The Nutrition Engine is the first concrete engine built since then, but the Coach endpoint that would actually route chat messages to it (`CoachService`, `/api/v1/coach`) does not exist until Sprint 4.5 — and today's `AIOrchestrator.process_message` uses a registered engine's `reply_text` directly as the final reply, with no step that blends engine output with an LLM call.
+
+**Decision:**
+`NutritionEngine` lives in `app/ai/nutrition_engine.py` (its planned location per `EVOLVE_ARCHITECTURE.md`'s folder structure) but defines and consumes its own typed `NutritionInput`/`NutritionOutput` contracts rather than implementing the generic `AIEngine` protocol, and is not added to `AIOrchestrator.engines` this sprint. `NutritionService` calls it directly.
+
+**Why:**
+- **There is no consumer to design the chat-integration contract against yet.** Building the `EngineInput`/`EngineOutput` binding now, before `CoachService` exists, would mean guessing how a future chat turn maps onto "get today's nutrition targets" (e.g. what triggers it, what conversational context it needs) rather than deriving it from a real integration.
+- **The domain-specific contract is materially richer than the generic one.** `NutritionOutput` carries structured targets, actuals, and per-macro adherence — collapsing that into `EngineOutput.artifacts: dict | None` today would either lose type safety or force a shape decision that the eventual Coach integration might need to revisit anyway.
+- **Keeps `NutritionEngine` trivially unit-testable** — pure functions over typed Pydantic models, no dependency on `MemoryContext`/`Intent`/the Orchestrator at all.
+
+**Alternatives considered:**
+- **Implement `AIEngine` now and register it in `AIOrchestrator.engines[Intent.NUTRITION]`** — would make the Nutrition Engine reachable via chat immediately, but forces a premature decision about how structured nutrition data becomes a chat reply, and the Orchestrator would need to be extended (it currently never blends engine output with an LLM call) — a larger change than this sprint's scope.
+
+**Consequences:**
+- Reaching the Nutrition Engine's logic requires `/api/v1/nutrition/targets` (or direct service/engine calls in tests) — it is not reachable through `/api/v1/coach` because that endpoint does not exist yet.
+- Whichever sprint builds `CoachService`/the Coach endpoint must decide how (or whether) to adapt `NutritionInput`/`NutritionOutput` onto `EngineInput`/`EngineOutput`, or introduce a richer per-engine binding mechanism — that decision is explicitly deferred, not made here.
+
+---
+
+## Decision 012 — `Meal` Templates Use a Nullable `created_by_id` + `is_public` Flag From Day One
+
+**Status:** Accepted
+
+**Context:**
+Sprint 4.3 introduces the `Meal` template aggregate. The minimal design — a `NOT NULL` `user_id` FK, strictly personal, matching `WorkoutLog`'s "id-only, user-owned" shape — would be the simplest fit for this sprint's actual deliverable (personal meal templates, no catalog, no admin authoring). But EVOLVE's broader direction (per `EVOLVE_ARCHITECTURE.md` and the `Exercise`/`Workout` catalog precedent) anticipates EVOLVE-provided and/or shared meal libraries eventually existing alongside personal ones.
+
+**Decision:**
+`Meal.created_by_id` is a nullable FK to `users.id` (`ondelete="SET NULL"`), and `Meal` gains a `NOT NULL` `is_public` boolean (default `False`), mirroring `Exercise.created_by_id`/`Workout.created_by_id`'s catalog-vs-authored shape rather than `WorkoutLog.user_id`'s strictly-personal shape. This sprint's API and service layer only ever create `is_public=False` meals owned by the requesting user — no admin/catalog-authoring flow or seed data ships yet.
+
+**Why:**
+- **Matches Decision 007's core reasoning**: the column/relationship shape is the expensive part to retrofit once real per-user meal data exists (would require a backfill plus a nullability change on a live table); an unconsumed boolean flag or a nullable FK costs nothing extra to carry now, before any data exists.
+- **`Exercise`/`Workout` already established this exact pattern** for "some rows are system-authored, some are user-authored" — reusing it for `Meal` is consistent rather than inventing a third ownership shape in the same codebase.
+- **No permission system needs to be built this sprint** — because the API never exposes a way to set `is_public=True`, the future capability is purely a schema affordance today, with zero authorization-logic risk introduced now.
+
+**Alternatives considered:**
+- **Strictly personal `Meal.user_id` (`NOT NULL`, `CASCADE`)**, matching `WorkoutLog` — simpler for this sprint alone, but would require a disruptive migration (nullable conversion + backfill) the moment a shared/public meal library is ever wanted, unlike the near-zero cost of carrying the nullable column now.
+- **A separate `MealCatalogEntry` table for public meals, distinct from personal `Meal` rows** — rejected as needless duplication; `Exercise`/`Workout` demonstrate one table with an ownership/visibility flag is sufficient.
+
+**Consequences:**
+- `meals.created_by_id` is nullable and indexed; `meals.is_public` is `NOT NULL`, default `False`, indexed.
+- `NutritionService.list_meals`/`get_meal` filter on `created_by_id = :user_id OR is_public = true`; `update_meal`/`deactivate_meal` require `created_by_id == user_id`.
+- A future sprint that wants EVOLVE-provided or premium shared meals can seed/author `is_public=True` rows (with `created_by_id` either `NULL` or a coach/admin user) without any migration.
+
+---
+
+## Decision 013 — BMR Calculation Is a Swappable Strategy, Not Inlined in `NutritionEngine`
+
+**Status:** Accepted
+
+**Context:**
+Nutrition target calculation (Decision 010) starts from a Basal Metabolic Rate (BMR) estimate. Multiple standard BMR formulas exist (Mifflin-St Jeor, Harris-Benedict, Katch-McArdle, Cunningham); only Mifflin-St Jeor is implementable this sprint, since the others need profile data (e.g. body-fat percentage for Katch-McArdle/Cunningham) that `User`/`NutritionProfile` does not carry yet.
+
+**Decision:**
+Introduce a `BMRStrategy` abstraction (`app/ai/bmr_strategies.py`) — an abstract base class with a single `calculate(profile: NutritionProfile) -> Decimal` method — resolved via `get_bmr_strategy(settings.nutrition_bmr_formula)`, mirroring `LLMProvider`/`get_llm_provider()`'s shape (Decision 008). `NutritionEngine` receives a `BMRStrategy` instance through its constructor and never contains formula-specific arithmetic itself; only `MifflinStJeorBMRStrategy` ships this sprint.
+
+**Why:**
+- **Isolates the one part of this calculation most likely to need a second implementation soon** — adding Katch-McArdle later should mean adding one new class plus a config value, not touching `NutritionEngine`'s TDEE/goal-adjustment/adherence logic, exactly as swapping `LLMProvider` implementations doesn't touch `AIOrchestrator`.
+- **Keeps today's single formula fully unit-testable in isolation** from the rest of the engine's logic.
+- **Avoids stubbing formulas EVOLVE cannot correctly compute yet** — rather than shipping a Katch-McArdle implementation with a fabricated default body-fat percentage, that formula is simply not implemented until `NutritionProfile` (and the underlying `User` profile) actually carries the data it needs.
+
+**Alternatives considered:**
+- **A single hardcoded Mifflin-St Jeor calculation inside `NutritionEngine`** — simplest for this sprint alone, but would require editing `NutritionEngine` itself (and re-testing its unrelated TDEE/adherence logic) the moment a second formula is wanted.
+- **Implement all four formulas now, defaulting missing inputs (e.g. assuming a body-fat %)** — rejected: fabricating inputs the user never provided would produce silently misleading targets, which conflicts with keeping the engine's fitness/sports-nutrition guidance trustworthy.
+
+**Consequences:**
+- `Settings.nutrition_bmr_formula` (default `"mifflin_st_jeor"`) selects the strategy; an unsupported value raises `ValueError` from `get_bmr_strategy`, matching `get_llm_provider`'s behavior.
+- Adding Katch-McArdle/Cunningham/Harris-Benedict later requires extending `NutritionProfile` with whatever new fields they need (e.g. body-fat %) before their `BMRStrategy` subclasses can be added.
+
+---
+
+*New decisions are appended as Decision 014, 015, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

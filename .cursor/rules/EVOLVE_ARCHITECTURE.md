@@ -313,8 +313,12 @@ EVOLVE/
 │       │   ├── memory_engine.py        # Memory Engine v1 (Sprint 4.2)
 │       │   ├── workout_engine.py       # not yet implemented — Workout Engine deliverable was
 │       │   │                           # satisfied by the non-AI WorkoutResolutionService (Decision 006)
-│       │   ├── nutrition_engine.py     # planned — Sprint 4.3+
-│       │   ├── recovery_engine.py      # planned — Sprint 4.3+
+│       │   ├── nutrition_engine.py     # Nutrition Engine (Sprint 4.3) — rule-based, decoupled
+│       │   │                           # from the Orchestrator (Decision 011); see bmr_strategies.py
+│       │   │                           # and nutrition_constants.py alongside it
+│       │   ├── bmr_strategies.py       # BMRStrategy ABC + MifflinStJeorBMRStrategy (Decision 013)
+│       │   ├── nutrition_constants.py  # activity/protein/BMR-offset lookup tables (Sprint 4.3)
+│       │   ├── recovery_engine.py      # planned — Sprint 4.4
 │       │   └── progress_analyzer.py    # planned — later sprint
 │       │
 │       └── utils/                      # Shared utilities
@@ -477,6 +481,21 @@ The Orchestrator does not contain domain algorithms. It coordinates; engines com
 - "What should I eat on heavy training days?"
 - "Give me a high-protein vegetarian lunch."
 - "I'm consistently under my protein target — help me fix it."
+
+**Current state (Sprint 4.3):** a rule-based, deterministic `NutritionEngine`
+(`app/ai/nutrition_engine.py`) exists — no LLM call, no food/ingredient
+database. It computes daily calorie/macro targets from a standard BMR ×
+activity-multiplier × goal-adjustment formula against the user's existing
+profile fields, using a swappable `BMRStrategy` (only `MifflinStJeorBMRStrategy`
+ships this sprint — see Decision 013 in `docs/DECISIONS.md`), and classifies
+logged intake as under/on-track/over per macro. It defines and consumes its
+own typed `NutritionInput`/`NutritionOutput` contracts rather than the
+generic `AIEngine` protocol, and is **not** registered into
+`AIOrchestrator.engines` yet — see Decision 011. It is reachable today only
+via the standalone `/api/v1/nutrition` REST API (`NutritionService`), not
+through the Coach/chat endpoint (Sprint 4.5). The meal-suggestion/plan-generation
+capabilities described above (weekly meal plans, substitutions) remain
+planned for a later sprint once an LLM or richer content source exists.
 
 ---
 
@@ -666,24 +685,46 @@ repository, and service, rather than one polymorphic table:
 
 ## Meals
 
-Represents meal templates, daily meal plans, and logged food intake.
+Represents meal templates and logged food intake, modeled as two related
+aggregates (implemented Sprint 4.3), mirroring the `Workout`/`WorkoutLog`
+template-vs-execution split:
 
-**Key attributes:**
-- Name, description, meal type (breakfast, lunch, dinner, snack)
-- Macro breakdown (calories, protein, carbs, fat)
-- Ingredients list
-- Preparation instructions
-- Dietary tags (vegetarian, gluten-free, etc.)
+- `Meal` (`app/models/meal.py`) — a reusable meal template. Deliberately
+  given the same catalog-vs-authored shape as `Exercise`/`Program` — a
+  nullable `created_by_id` plus an `is_public` flag — rather than a
+  strictly personal owner column, so an EVOLVE-provided or shared meal
+  library can be added later without a disruptive migration (see Decision
+  012 in `docs/DECISIONS.md`). This sprint's API only ever creates private
+  meals (`is_public=False`, owned by the creating user); no admin/catalog
+  authoring flow or seed data ships yet.
+- `MealLog` (`app/models/meal.py`) — a single logged diary entry. Always
+  strictly personal (never shared), and *snapshotted* at log time — copied
+  from the template if `meal_id` is given, or supplied directly for an
+  ad-hoc entry — so later template edits never rewrite history, the same
+  rationale as `WorkoutLogExercise.exercise_name_snapshot`.
 
-**Logged meal attributes:**
-- Date consumed
-- Adherence (planned vs. actual)
-- User notes
+**Template attributes** (`Meal`):
+- Name, description, meal type (breakfast, lunch, dinner, snack,
+  pre_workout, post_workout, other)
+- Macro breakdown (calories, protein, carbs, fat) — entered directly, never
+  derived from an ingredients list; no food/ingredient database exists
+- Dietary tags (simple string list — e.g. vegetarian, high_protein)
+- `is_active` (deactivate without deleting, matches `Exercise`/`Workout`)
+
+**Logged meal attributes** (`MealLog`):
+- Optional best-effort link back to the template (`meal_id`, `SET NULL` on
+  template deletion), plus the snapshotted name/type/macros described above
+- `consumed_at` (client-supplied, not defaulted to "now"), user notes
 
 **Relationships:**
-- Meals belong to a user
-- Meals may be grouped into daily or weekly nutrition plans
-- Linked to goals for macro targeting
+- A `Meal` is readable by a user if `is_public` is true or they created it;
+  writable only if they created it (enforced in `NutritionService`, not the
+  database).
+- A `MealLog` optionally references a `Meal` template; always belongs to a
+  user.
+- `NutritionService.get_daily_nutrition` aggregates a user's `MealLog` rows
+  for a given date and passes the totals to `NutritionEngine` alongside
+  their profile — see the Nutrition Engine section above.
 
 ---
 
@@ -758,7 +799,9 @@ conversation-listing/title/archiving feature — see Decision 007 in
 erDiagram
     User ||--o{ Goal : sets
     User ||--o{ Workout : logs
-    User ||--o{ Meal : logs
+    User ||--o{ Meal : creates
+    User ||--o{ MealLog : logs
+    Meal ||--o{ MealLog : "logged as"
     User ||--o{ Progress : records
     User ||--o{ Conversation : has
     Conversation ||--o{ Chat : contains

@@ -107,14 +107,25 @@
 - [x] Implement Memory Engine v1 (read/write conversation context)
 - [x] Write unit tests (Memory Engine, mock provider, Orchestrator) and an integration test for chat persistence
 
-### Sprint 4.3 — Nutrition & Recovery
+### Sprint 4.3 — Nutrition Engine
 
-- [ ] Create `Meal` model and migration
+> Originally scoped as "Nutrition & Recovery"; Recovery Engine split out into Sprint 4.4 below.
+
+- [ ] Create `Meal`/`MealLog` models and migration (`Meal` uses a nullable `created_by_id` + `is_public` flag, future-proofed for shared/public meals — see Decision 012)
 - [ ] Implement `MealRepository`, `NutritionService`
-- [ ] Implement Nutrition Engine
+- [ ] Implement Nutrition Engine (rule-based BMR/TDEE/macro-target calculation via a swappable `BMRStrategy` — see Decision 013; decoupled from `AIOrchestrator`/`AIEngine` — see Decision 011)
+- [ ] Implement `/api/v1/nutrition` API (meal template CRUD, meal logging, daily targets/adherence)
+- [ ] Write unit tests (`BMRStrategy`/`NutritionEngine`, `NutritionService`) and an integration test for the nutrition API
+
+### Sprint 4.4 — Recovery Engine
+
+> Split out of the original Sprint 4.3 ("Nutrition & Recovery") scope.
+
+- [ ] Create readiness/check-in model and migration (sleep, soreness/fatigue, training load inputs)
+- [ ] Implement the corresponding repository and service
 - [ ] Implement Recovery Engine (readiness scoring)
 
-### Sprint 4.4 — Progress & Coach Endpoint
+### Sprint 4.5 — Progress & Coach Endpoint
 
 - [ ] Create `Goal` and `Progress` models and migrations
 - [ ] Implement `GoalRepository`, `ProgressRepository`

@@ -143,8 +143,9 @@ Each phase is broken into 1–3 sprints. Sprint length is indicative (assume 1�
 |--------|-------|
 | 4.1 | ~~AI Orchestrator skeleton, `Chat` model, Memory Engine v1~~ — actually delivered the (non-AI) Workout Resolution Engine, closing out Phase 3 Sprint 3.3's outstanding rule-based Workout Engine deliverable instead. Its originally planned scope moved to 4.2. |
 | 4.2 | AI Orchestrator, `Conversation`/`ChatMessage` models, Memory Engine v1 (provider-agnostic `LLMProvider` abstraction, mock-only; async boundary scoped to the Orchestrator/LLM call path — see Decisions 007–009) |
-| 4.3 | Nutrition Engine, `Meal` domain, Recovery Engine |
-| 4.4 | Progress Analyzer, `Goal`/`Progress` domains, `CoachService`, `/api/v1/coach` endpoint |
+| 4.3 | Nutrition Engine, `Meal`/`MealLog` domain — rule-based, decoupled from the Orchestrator (see Decisions 010–013). Originally scoped together with Recovery Engine; split into its own sprint, moving Recovery Engine to 4.4 below. |
+| 4.4 | Recovery Engine (readiness inputs and recommendations) — split out of the original combined 4.3 scope |
+| 4.5 | Progress Analyzer, `Goal`/`Progress` domains, `CoachService`, `/api/v1/coach` endpoint (renumbered from 4.4) |
 
 ### Phase 5 — Mobile App
 

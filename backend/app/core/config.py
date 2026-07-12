@@ -65,5 +65,47 @@ class Settings(BaseSettings):
         ),
     )
 
+    nutrition_bmr_formula: str = Field(
+        default="mifflin_st_jeor",
+        description=(
+            "BMRStrategy implementation selector for the Nutrition Engine. "
+            "Only 'mifflin_st_jeor' is supported until a later sprint adds "
+            "a formula needing profile data (e.g. body-fat %) that "
+            "NutritionProfile doesn't carry yet."
+        ),
+    )
+    nutrition_calorie_deficit_kcal: int = Field(
+        default=500,
+        description=(
+            "Daily calorie deficit subtracted from TDEE for users with a "
+            "'lose_weight' goal."
+        ),
+    )
+    nutrition_calorie_surplus_kcal: int = Field(
+        default=300,
+        description=(
+            "Daily calorie surplus added to TDEE for users with a "
+            "'gain_muscle' goal."
+        ),
+    )
+    nutrition_fat_pct_of_calories: float = Field(
+        default=0.25,
+        description="Fraction of target daily calories allocated to fat.",
+    )
+    nutrition_min_calories_floor: int = Field(
+        default=1200,
+        description=(
+            "Safety floor: computed calorie targets are never clamped below "
+            "this value, regardless of goal adjustment."
+        ),
+    )
+    nutrition_adherence_tolerance_pct: int = Field(
+        default=10,
+        description=(
+            "Percentage tolerance band around each macro target used to "
+            "classify logged intake as 'under'/'on_track'/'over'."
+        ),
+    )
+
 
 settings = Settings()
