@@ -18,6 +18,7 @@ from app.repositories.workout_repository import WorkoutRepository
 from app.services.catalog_service import CatalogService
 from app.services.exercise_service import ExerciseService
 from app.services.workout_log_service import WorkoutLogService
+from app.services.workout_resolution_service import WorkoutResolutionService
 from app.services.workout_service import WorkoutService
 
 
@@ -43,11 +44,24 @@ def get_workout_service(db: Session = Depends(get_db)) -> WorkoutService:
     return WorkoutService(ProgramRepository(db), WorkoutRepository(db))
 
 
-def get_workout_log_service(db: Session = Depends(get_db)) -> WorkoutLogService:
+def get_workout_resolution_service(db: Session = Depends(get_db)) -> WorkoutResolutionService:
+    """Resolve a :class:`WorkoutResolutionService` bound to a request-scoped session."""
+    return WorkoutResolutionService(
+        ProgramRepository(db),
+        WorkoutRepository(db),
+        WorkoutLogRepository(db),
+    )
+
+
+def get_workout_log_service(
+    db: Session = Depends(get_db),
+    workout_resolution_service: WorkoutResolutionService = Depends(get_workout_resolution_service),
+) -> WorkoutLogService:
     """Resolve a :class:`WorkoutLogService` bound to a request-scoped session."""
     return WorkoutLogService(
         WorkoutLogRepository(db),
         WorkoutRepository(db),
         ExerciseRepository(db),
         ProgramRepository(db),
+        workout_resolution_service,
     )

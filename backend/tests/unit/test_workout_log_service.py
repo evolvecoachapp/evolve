@@ -61,9 +61,24 @@ def program_repository(mocker):
 
 
 @pytest.fixture()
-def service(workout_log_repository, workout_repository, exercise_repository, program_repository):
+def workout_resolution_service(mocker):
+    return mocker.Mock()
+
+
+@pytest.fixture()
+def service(
+    workout_log_repository,
+    workout_repository,
+    exercise_repository,
+    program_repository,
+    workout_resolution_service,
+):
     return WorkoutLogService(
-        workout_log_repository, workout_repository, exercise_repository, program_repository
+        workout_log_repository,
+        workout_repository,
+        exercise_repository,
+        program_repository,
+        workout_resolution_service,
     )
 
 
@@ -74,6 +89,7 @@ def _make_log(
     started_at: datetime | None = None,
     completed_at: datetime | None = None,
     log_exercises: list[WorkoutLogExercise] | None = None,
+    program_assignment_id: uuid.UUID | None = None,
 ) -> WorkoutLog:
     log = WorkoutLog(
         id=uuid.uuid4(),
@@ -81,6 +97,7 @@ def _make_log(
         status=status,
         started_at=started_at,
         completed_at=completed_at,
+        program_assignment_id=program_assignment_id,
     )
     log.log_exercises = log_exercises if log_exercises is not None else []
     return log
@@ -248,6 +265,33 @@ def test_finish_workout_raises_when_not_in_progress(service, workout_log_reposit
         service.finish_workout(USER_ID, log.id, WorkoutLogFinish())
 
 
+def test_finish_workout_advances_resolution_cursor_when_tied_to_assignment(
+    service, workout_log_repository, workout_resolution_service
+):
+    assignment_id = uuid.uuid4()
+    log = _make_log(program_assignment_id=assignment_id)
+    workout_log_repository.get_by_id.return_value = log
+    workout_log_repository.update.side_effect = lambda x: x
+
+    service.finish_workout(USER_ID, log.id, WorkoutLogFinish())
+
+    workout_resolution_service.advance_after_action.assert_called_once_with(
+        USER_ID, assignment_id
+    )
+
+
+def test_finish_workout_does_not_advance_cursor_for_ad_hoc_session(
+    service, workout_log_repository, workout_resolution_service
+):
+    log = _make_log(program_assignment_id=None)
+    workout_log_repository.get_by_id.return_value = log
+    workout_log_repository.update.side_effect = lambda x: x
+
+    service.finish_workout(USER_ID, log.id, WorkoutLogFinish())
+
+    workout_resolution_service.advance_after_action.assert_not_called()
+
+
 # -- skip_workout ---------------------------------------------------------------
 
 
@@ -268,6 +312,21 @@ def test_skip_workout_raises_when_not_in_progress(service, workout_log_repositor
 
     with pytest.raises(InvalidWorkoutLogStateError):
         service.skip_workout(USER_ID, log.id)
+
+
+def test_skip_workout_advances_resolution_cursor_when_tied_to_assignment(
+    service, workout_log_repository, workout_resolution_service
+):
+    assignment_id = uuid.uuid4()
+    log = _make_log(program_assignment_id=assignment_id)
+    workout_log_repository.get_by_id.return_value = log
+    workout_log_repository.update.side_effect = lambda x: x
+
+    service.skip_workout(USER_ID, log.id)
+
+    workout_resolution_service.advance_after_action.assert_called_once_with(
+        USER_ID, assignment_id
+    )
 
 
 # -- ownership -------------------------------------------------------------------

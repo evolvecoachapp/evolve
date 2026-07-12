@@ -83,7 +83,7 @@
 
 - [x] Implement workout logging API (create/update logged sessions)
 - [x] Implement session history API
-- [ ] Implement rule-based Workout Engine (pre-AI, template-driven)
+- [x] Implement rule-based Workout Engine (pre-AI, template-driven) — delivered as the Workout Resolution Engine (`WorkoutResolutionService`)
 - [x] Write unit tests for `WorkoutService` (established via `WorkoutLogService`, the sibling service covering the same domain)
 
 ---

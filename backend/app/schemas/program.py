@@ -110,7 +110,14 @@ class ProgramPage(BaseModel):
 
 
 class ProgramAssignmentRead(BaseModel):
-    """Public-facing representation of a user's assignment to a program."""
+    """Public-facing representation of a user's assignment to a program.
+
+    ``current_week_number``/``current_day_number``/``cursor_exhausted``
+    expose the Workout Resolution Engine's progress cursor (see
+    ``app.models.program.ProgramAssignment``) — read-only here; they are
+    only ever mutated by
+    :class:`~app.services.workout_resolution_service.WorkoutResolutionService`.
+    """
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -120,5 +127,8 @@ class ProgramAssignmentRead(BaseModel):
     status: AssignmentStatus
     started_at: datetime
     ended_at: datetime | None
+    current_week_number: int
+    current_day_number: int
+    cursor_exhausted: bool
     created_at: datetime
     updated_at: datetime

@@ -54,6 +54,7 @@ from app.schemas.workout_log import (
     WorkoutSetLogCreate,
     WorkoutSetLogUpdate,
 )
+from app.services.workout_resolution_service import WorkoutResolutionService
 from app.utils.datetime import utcnow
 from app.utils.pagination import Page, clamp_pagination
 
@@ -125,7 +126,13 @@ class WorkoutLogService:
     Depends on repositories directly rather than on
     :class:`~app.services.workout_service.WorkoutService`, keeping
     composition flat and each service unit-testable with mocked
-    repositories.
+    repositories. The one exception is
+    :class:`~app.services.workout_resolution_service.WorkoutResolutionService`:
+    :meth:`finish_workout`/:meth:`skip_workout` call its
+    ``advance_after_action`` side effect so a program assignment's Workout
+    Resolution Engine progress cursor moves forward automatically whenever
+    a scheduled session concludes, without requiring the client to make a
+    separate call.
     """
 
     def __init__(
@@ -134,11 +141,13 @@ class WorkoutLogService:
         workout_repository: WorkoutRepository,
         exercise_repository: ExerciseRepository,
         program_repository: ProgramRepository,
+        workout_resolution_service: WorkoutResolutionService,
     ) -> None:
         self.workout_log_repository = workout_log_repository
         self.workout_repository = workout_repository
         self.exercise_repository = exercise_repository
         self.program_repository = program_repository
+        self.workout_resolution_service = workout_resolution_service
 
     # -- Session lifecycle ---------------------------------------------------
 
@@ -262,6 +271,7 @@ class WorkoutLogService:
 
         updated = self.workout_log_repository.update(workout_log)
         self.workout_log_repository.db.commit()
+        self._advance_resolution_cursor(user_id, updated)
         return updated
 
     def skip_workout(self, user_id: uuid.UUID, workout_log_id: uuid.UUID) -> WorkoutLog:
@@ -292,6 +302,7 @@ class WorkoutLogService:
 
         updated = self.workout_log_repository.update(workout_log)
         self.workout_log_repository.db.commit()
+        self._advance_resolution_cursor(user_id, updated)
         return updated
 
     # -- Logging: exercises and sets -----------------------------------------
@@ -571,6 +582,21 @@ class WorkoutLogService:
         if exercise is None or exercise.deleted_at is not None:
             raise InvalidExerciseReferenceError("Exercise not found.")
         return exercise
+
+    def _advance_resolution_cursor(self, user_id: uuid.UUID, workout_log: WorkoutLog) -> None:
+        """Advance the Workout Resolution Engine cursor after a session concludes.
+
+        A no-op when the session wasn't tied to a program assignment
+        (``program_assignment_id is None``) — ad-hoc sessions have no
+        cursor to move. Delegates the actual ownership/state guards to
+        :meth:`~app.services.workout_resolution_service.WorkoutResolutionService.advance_after_action`,
+        which is itself a silent no-op for a stale/inactive assignment.
+        """
+        if workout_log.program_assignment_id is None:
+            return
+        self.workout_resolution_service.advance_after_action(
+            user_id, workout_log.program_assignment_id
+        )
 
     def _get_owned_active_assignment_or_raise(
         self, user_id: uuid.UUID, program_assignment_id: uuid.UUID

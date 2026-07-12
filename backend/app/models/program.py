@@ -22,6 +22,7 @@ from datetime import datetime
 from enum import Enum
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     DateTime,
     ForeignKey,
@@ -250,12 +251,40 @@ class ProgramAssignment(Base):
     active assignment ``ABANDONED`` before creating a new one. The partial
     unique index below is a database-level backstop for that invariant, not
     the primary enforcement mechanism.
+
+    ``current_week_number``/``current_day_number`` are the Workout
+    Resolution Engine's progress cursor (Sprint 4.1 — closing Phase 3's
+    rule-based Workout Engine deliverable): the ``(week, day)`` slot that
+    will be resolved as "next up" for this user. ``current_program_day_id``
+    is a best-effort, nullable convenience pointer to the same slot's
+    :class:`ProgramDay` row — kept alongside the numeric pair (rather than
+    replacing it) since ``ProgramDay`` rows can be hard-deleted
+    (``WorkoutService.remove_program_day``), which would otherwise leave the
+    cursor referencing nothing; the numeric pair remains the source of
+    truth that :class:`~app.services.workout_resolution_service.WorkoutResolutionService`
+    resolves against, while the FK is reserved for future direct-join
+    convenience. The cursor only ever advances via
+    ``WorkoutResolutionService``; it is initialized on assignment creation
+    to the program's first defined day. ``cursor_exhausted`` is set once
+    there is no further ``ProgramDay`` to advance to — it marks "nothing
+    left to resolve" without requiring a sentinel ``(week, day)`` value, and
+    is independent of ``status`` (an assignment stays ``ACTIVE`` until the
+    user/coach explicitly calls ``complete_assignment``).
     """
 
     __tablename__ = "program_assignments"
     __table_args__ = (
+        CheckConstraint(
+            "current_week_number > 0",
+            name="ck_program_assignments_current_week_number_positive",
+        ),
+        CheckConstraint(
+            "current_day_number > 0",
+            name="ck_program_assignments_current_day_number_positive",
+        ),
         Index("ix_program_assignments_program_id", "program_id"),
         Index("ix_program_assignments_user_id", "user_id"),
+        Index("ix_program_assignments_current_program_day_id", "current_program_day_id"),
         Index(
             "uq_program_assignments_one_active_per_user",
             "user_id",
@@ -305,6 +334,19 @@ class ProgramAssignment(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+
+    current_week_number: Mapped[int] = mapped_column(default=1, nullable=False)
+    current_day_number: Mapped[int] = mapped_column(default=1, nullable=False)
+    current_program_day_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey(
+            "program_days.id",
+            ondelete="SET NULL",
+            name="fk_program_assignments_current_program_day_id",
+        ),
+        nullable=True,
+    )
+    cursor_exhausted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

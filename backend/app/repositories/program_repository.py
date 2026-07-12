@@ -12,7 +12,7 @@ translates calls into SQLAlchemy queries against an injected
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Select, delete, func, select
+from sqlalchemy import Select, delete, func, select, tuple_
 from sqlalchemy.orm import Session
 
 from app.models.program import (
@@ -173,6 +173,67 @@ class ProgramRepository:
             ).first()
             is not None
         )
+
+    def get_day_at(
+        self, program_id: uuid.UUID, week_number: int, day_number: int
+    ) -> ProgramDay | None:
+        """Return the exact ``ProgramDay`` at a ``(week_number, day_number)`` slot, or ``None``.
+
+        Used by :class:`~app.services.workout_resolution_service.WorkoutResolutionService`
+        to resolve a :class:`~app.models.program.ProgramAssignment`'s current
+        cursor position.
+        """
+        return self.db.execute(
+            select(ProgramDay).where(
+                ProgramDay.program_id == program_id,
+                ProgramDay.week_number == week_number,
+                ProgramDay.day_number == day_number,
+            )
+        ).scalar_one_or_none()
+
+    def get_first_day(self, program_id: uuid.UUID) -> ProgramDay | None:
+        """Return the program's earliest scheduled day, ordered by ``(week_number, day_number)``.
+
+        Used to initialize a new :class:`~app.models.program.ProgramAssignment`'s
+        progress cursor in :meth:`~app.services.workout_service.WorkoutService.assign_program` —
+        deliberately not hardcoded to ``(1, 1)``, since a program's first
+        defined slot is not guaranteed to be numbered that way.
+        """
+        return self.db.execute(
+            select(ProgramDay)
+            .where(ProgramDay.program_id == program_id)
+            .order_by(ProgramDay.week_number, ProgramDay.day_number)
+            .limit(1)
+        ).scalar_one_or_none()
+
+    def get_next_day_after(
+        self,
+        program_id: uuid.UUID,
+        week_number: int,
+        day_number: int,
+        *,
+        max_week: int,
+    ) -> ProgramDay | None:
+        """Return the next scheduled day strictly after ``(week_number, day_number)``.
+
+        Ordered by ``(week_number, day_number)`` and capped at ``max_week``
+        (a program's ``duration_weeks``), so the search never wraps into a
+        hypothetical week beyond the program's actual length. Returns
+        ``None`` when there is nothing left to advance to, which
+        :class:`~app.services.workout_resolution_service.WorkoutResolutionService`
+        treats as "the program is exhausted".
+        """
+        return self.db.execute(
+            select(ProgramDay)
+            .where(
+                ProgramDay.program_id == program_id,
+                ProgramDay.week_number <= max_week,
+                tuple_(ProgramDay.week_number, ProgramDay.day_number)
+                > (week_number, day_number),
+            )
+            .order_by(ProgramDay.week_number, ProgramDay.day_number)
+            .limit(1)
+        ).scalar_one_or_none()
 
     def remove_day(self, program_day_id: uuid.UUID) -> bool:
         """Hard-delete a single program day.

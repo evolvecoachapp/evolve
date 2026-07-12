@@ -450,7 +450,11 @@ class WorkoutService:
 
         Only one ``ACTIVE`` assignment per user is allowed: if the user
         already has one (for this or any other program), it is marked
-        ``ABANDONED`` before the new assignment is created.
+        ``ABANDONED`` before the new assignment is created. The new
+        assignment's Workout Resolution Engine progress cursor
+        (``current_week_number``/``current_day_number``/
+        ``current_program_day_id``) is initialized to the program's
+        earliest scheduled day, not hardcoded to ``(1, 1)``.
 
         Args:
             user_id: The user being assigned the program.
@@ -461,7 +465,8 @@ class WorkoutService:
 
         Raises:
             ProgramNotFoundError: If ``program_id`` does not resolve.
-            ProgramNotAssignableError: If the program is not ``PUBLISHED``.
+            ProgramNotAssignableError: If the program is not ``PUBLISHED``,
+                or has no scheduled ``ProgramDay`` to resolve against.
             ConcurrentAssignmentError: If a race condition slips a second
                 active assignment past the abandon-then-create sequence
                 (guarded by ``uq_program_assignments_one_active_per_user``).
@@ -470,6 +475,12 @@ class WorkoutService:
         if program.status != ProgramStatus.PUBLISHED:
             raise ProgramNotAssignableError(
                 f"Program must be PUBLISHED to assign (current status: {program.status.value})."
+            )
+
+        first_day = self.program_repository.get_first_day(program_id)
+        if first_day is None:
+            raise ProgramNotAssignableError(
+                "Program must have at least one scheduled day to be assigned."
             )
 
         existing_active = self.program_repository.get_active_assignment_for_user(user_id)
@@ -482,6 +493,9 @@ class WorkoutService:
             program_id=program_id,
             user_id=user_id,
             status=AssignmentStatus.ACTIVE,
+            current_week_number=first_day.week_number,
+            current_day_number=first_day.day_number,
+            current_program_day_id=first_day.id,
         )
         try:
             created = self.program_repository.create_assignment(assignment)
