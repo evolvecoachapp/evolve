@@ -12,7 +12,7 @@ ORM model instances.
 
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.chat import ChatMessage, Conversation
@@ -103,3 +103,32 @@ class ChatRepository:
             .limit(limit)
         ).scalars()
         return list(reversed(list(recent)))
+
+    def list_messages_page(
+        self, conversation_id: uuid.UUID, *, limit: int, offset: int
+    ) -> list[ChatMessage]:
+        """Return a standard chronological, offset-paginated page of a conversation's messages.
+
+        Distinct from :meth:`list_messages` (which always anchors to the
+        *most recent* ``limit`` messages for prompt-context windowing) —
+        this method supports paging forward from the start of the
+        conversation, for a history-browsing API consumer such as
+        :class:`~app.services.coach_service.CoachService`.
+        """
+        return list(
+            self.db.execute(
+                select(ChatMessage)
+                .where(ChatMessage.conversation_id == conversation_id)
+                .order_by(ChatMessage.created_at)
+                .limit(limit)
+                .offset(offset)
+            ).scalars()
+        )
+
+    def count_messages(self, conversation_id: uuid.UUID) -> int:
+        """Return the total number of messages in a conversation, for pagination metadata."""
+        return self.db.execute(
+            select(func.count())
+            .select_from(ChatMessage)
+            .where(ChatMessage.conversation_id == conversation_id)
+        ).scalar_one()

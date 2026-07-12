@@ -307,14 +307,21 @@ EVOLVE/
 │       │   └── dependencies.py         # get_current_user, role checks
 │       │
 │       ├── ai/                         # AI engines (backend-local)
-│       │   ├── orchestrator.py         # AI Orchestrator
+│       │   ├── orchestrator.py         # AI Orchestrator — engines dict populated (Sprint 4.5)
 │       │   ├── contracts.py            # Shared Pydantic types (Intent, MemoryContext, EngineInput/Output)
-│       │   ├── engine.py               # AIEngine protocol future engines implement
-│       │   ├── intent.py               # classify_intent() — keyword stub (Sprint 4.2)
-│       │   ├── llm_provider.py         # LLMProvider abstraction + MockLLMProvider (Sprint 4.2)
+│       │   ├── engine.py               # AIEngine protocol — implemented by coach_engines.py (Sprint 4.5)
+│       │   ├── intent.py               # classify_intent() — keyword stub (Sprint 4.2); still the stub
+│       │   │                           # as of Sprint 4.5 (Decision 018) — a real classifier is
+│       │   │                           # deferred to Sprint 4.6's LLM vendor decision
+│       │   ├── llm_provider.py         # LLMProvider abstraction + MockLLMProvider (Sprint 4.2);
+│       │   │                           # still mock-only as of Sprint 4.5 — real vendor is Sprint 4.6
 │       │   ├── memory_engine.py        # Memory Engine v1 (Sprint 4.2)
-│       │   ├── workout_engine.py       # not yet implemented — Workout Engine deliverable was
-│       │   │                           # satisfied by the non-AI WorkoutResolutionService (Decision 006)
+│       │   ├── coach_engines.py        # WorkoutCoachEngine/NutritionCoachEngine/RecoveryCoachEngine
+│       │   │                           # (Sprint 4.5) — thin AIEngine adapters over the Services
+│       │   │                           # below, registered into AIOrchestrator.engines (Decision 017);
+│       │   │                           # closes out the Workout Engine deliverable conceptually
+│       │   │                           # (Decision 006 satisfied the rule-based half via
+│       │   │                           # WorkoutResolutionService; this adapter is its Coach binding)
 │       │   ├── nutrition_engine.py     # Nutrition Engine (Sprint 4.3) — rule-based, decoupled
 │       │   │                           # from the Orchestrator (Decision 011); see bmr_strategies.py
 │       │   │                           # and nutrition_constants.py alongside it
@@ -326,7 +333,7 @@ EVOLVE/
 │       │   │                           # (Decision 014); see recovery_constants.py alongside it
 │       │   ├── recovery_constants.py   # training-load reference values + readiness-level
 │       │   │                           # guidance/protocol text (Sprint 4.4)
-│       │   └── progress_analyzer.py    # planned — later sprint
+│       │   └── progress_analyzer.py    # planned — Sprint 4.6
 │       │
 │       └── utils/                      # Shared utilities
 │           ├── datetime.py
@@ -443,7 +450,7 @@ flowchart LR
 
 The Orchestrator does not contain domain algorithms. It coordinates; engines compute.
 
-**Current state (Sprint 4.2):** the Orchestrator, Memory Engine v1, and `Conversation`/`ChatMessage` persistence exist and are exercised end to end, but no concrete engine is registered yet — the Workout, Nutrition, Recovery, and Progress Analyzer engines below are still planned (Sprint 4.3+). Every message currently falls through to a direct LLM completion via a provider-agnostic `LLMProvider` interface, backed for now by a deterministic `MockLLMProvider` (see Decision 008 in `docs/DECISIONS.md`); intent classification is a keyword-matching stub (`app/ai/intent.py`) pending a real classifier once engines exist to route to. `process_message` is the only `async def` in the backend — see Decision 009.
+**Current state (Sprint 4.5):** the Orchestrator, Memory Engine v1, and `Conversation`/`ChatMessage` persistence exist and are exercised end to end, and `AIOrchestrator.engines` now has all three existing engines registered — `Intent.WORKOUT`/`Intent.NUTRITION`/`Intent.RECOVERY` route to `WorkoutCoachEngine`/`NutritionCoachEngine`/`RecoveryCoachEngine` (`app/ai/coach_engines.py`), thin `AIEngine` adapters over `WorkoutResolutionService`/`NutritionService`/`RecoveryService` — see Decision 017 in `docs/DECISIONS.md`. `Intent.GENERAL` and `Intent.PROGRESS` (no Progress Analyzer exists yet — Sprint 4.6) still fall through to a direct LLM completion via the provider-agnostic `LLMProvider` interface, backed for now by a deterministic `MockLLMProvider` (Decision 008); intent classification remains the keyword-matching stub (`app/ai/intent.py`) — a real classifier stays deferred to Sprint 4.6's LLM vendor decision (Decision 018). `EngineOutput.artifacts` is now persisted onto the assistant turn's metadata alongside `intent`/`engines_invoked`. `process_message` is the only `async def` in the backend — see Decision 009. The Coach is reachable via `CoachService`/`/api/v1/coach` (Decision 019) — `CoachService` is a thin application-layer wrapper (ownership check, then delegate to `process_message`); it contains no orchestration logic of its own.
 
 ---
 
@@ -466,6 +473,18 @@ The Orchestrator does not contain domain algorithms. It coordinates; engines com
 - "Adjust my leg day — my knee is sore."
 - "I only have 30 minutes and dumbbells today."
 - "Progress my bench press; I've hit all reps for two weeks."
+
+**Current state (Sprint 4.5):** the adaptive programming described above
+(exercise substitution, deload/progression logic) is not implemented —
+that remains a later-sprint AI capability. What exists today is
+`WorkoutCoachEngine` (`app/ai/coach_engines.py`), a thin `AIEngine` adapter
+that calls the existing (non-AI) `WorkoutResolutionService.resolve_current`
+(Decision 006) and turns its `ResolutionResult` into a templated
+natural-language reply (today's training day and workout, a rest day, an
+exhausted program, or no active program), reachable through
+`CoachService`/`/api/v1/coach` alongside its pre-existing standalone
+`/api/v1/workout-resolution` REST API. See Decision 017 in
+`docs/DECISIONS.md`.
 
 ---
 
@@ -497,12 +516,15 @@ profile fields, using a swappable `BMRStrategy` (only `MifflinStJeorBMRStrategy`
 ships this sprint — see Decision 013 in `docs/DECISIONS.md`), and classifies
 logged intake as under/on-track/over per macro. It defines and consumes its
 own typed `NutritionInput`/`NutritionOutput` contracts rather than the
-generic `AIEngine` protocol, and is **not** registered into
-`AIOrchestrator.engines` yet — see Decision 011. It is reachable today only
-via the standalone `/api/v1/nutrition` REST API (`NutritionService`), not
-through the Coach/chat endpoint (Sprint 4.5). The meal-suggestion/plan-generation
-capabilities described above (weekly meal plans, substitutions) remain
-planned for a later sprint once an LLM or richer content source exists.
+generic `AIEngine` protocol (Decision 011) — that has not changed. As of
+Sprint 4.5, it is now also reachable through `CoachService`/`/api/v1/coach`
+via `NutritionCoachEngine` (`app/ai/coach_engines.py`), a thin `AIEngine`
+adapter that calls `NutritionService.get_daily_nutrition` and projects its
+`NutritionOutput` into a Coach reply — see Decision 017 in
+`docs/DECISIONS.md`. `NutritionEngine` itself is unmodified. The
+meal-suggestion/plan-generation capabilities described above (weekly meal
+plans, substitutions) remain planned for a later sprint once an LLM or
+richer content source exists.
 
 ---
 
@@ -542,10 +564,13 @@ soreness/fatigue, and training-load scores (weights configurable via
 buckets it into `low`/`moderate`/`high` (`app/ai/recovery_constants.py`),
 and returns templated recommendation text and recovery protocols. Like the
 Nutrition Engine, it defines its own typed `RecoveryInput`/`RecoveryOutput`
-contracts rather than the generic `AIEngine` protocol, and is **not**
-registered into `AIOrchestrator.engines` yet — see Decision 016. It is
-reachable today only via the standalone `/api/v1/recovery` REST API
-(`RecoveryService`), not through the Coach/chat endpoint (Sprint 4.5).
+contracts rather than the generic `AIEngine` protocol (Decision 016) — that
+has not changed. As of Sprint 4.5, it is now also reachable through
+`CoachService`/`/api/v1/coach` via `RecoveryCoachEngine`
+(`app/ai/coach_engines.py`), a thin `AIEngine` adapter that calls
+`RecoveryService.get_daily_readiness` and projects its `RecoveryOutput` into
+a Coach reply — see Decision 017 in `docs/DECISIONS.md`. `RecoveryEngine`
+itself is unmodified.
 
 ---
 

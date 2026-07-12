@@ -85,6 +85,7 @@ async def test_process_message_persists_both_user_and_assistant_turns(
     assert assistant_call.kwargs["metadata"] == {
         "intent": Intent.WORKOUT.value,
         "engines_invoked": [],
+        "artifacts": None,
     }
 
 

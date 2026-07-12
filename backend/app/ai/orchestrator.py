@@ -5,10 +5,13 @@ are: intent classification, context assembly, engine routing, response
 synthesis, and persistence. It contains no domain algorithms of its own —
 engines compute, the Orchestrator coordinates.
 
-No engine is registered yet (Sprint 4.3+ ships the first ones), so every
-message currently falls through to a direct LLM completion built from
-the assembled memory context — still a fully real, testable, persisted
-round trip, just without any domain-specific intelligence layered on top.
+As of Sprint 4.5, ``Intent.WORKOUT``/``Intent.NUTRITION``/``Intent.RECOVERY``
+have adapters registered (``app/ai/coach_engines.py`` — see Decision 017 in
+``docs/DECISIONS.md``); ``Intent.GENERAL`` and ``Intent.PROGRESS`` (no
+Progress Analyzer exists yet) still fall through to a direct LLM completion
+built from the assembled memory context — still a fully real, testable,
+persisted round trip, just without any domain-specific intelligence layered
+on top.
 
 ``process_message`` is the only ``async def`` in the backend (Decision
 009 in ``docs/DECISIONS.md``): it is the one call in the request path
@@ -37,14 +40,17 @@ class CoachResponse(BaseModel):
     message: str
     intent: Intent
     engines_invoked: list[str]
+    artifacts: dict | None = None
 
 
 class AIOrchestrator:
     """Coordinates intent classification, context assembly, engine routing,
     response synthesis, and persistence for a single incoming Coach message.
 
-    ``engines`` defaults to an empty registry — until a later sprint adds
-    concrete engines, every intent falls back to a direct LLM completion.
+    ``engines`` defaults to an empty registry; any intent with no
+    registered engine falls back to a direct LLM completion.
+    :func:`~app.core.dependencies.get_coach_service` wires this with the
+    three Sprint 4.5 adapters (``app/ai/coach_engines.py``) registered.
     """
 
     def __init__(
@@ -84,12 +90,14 @@ class AIOrchestrator:
             )
             reply_text = output.reply_text
             engines_invoked = [output.engine_name]
+            artifacts = output.artifacts
         else:
             completion = await self.llm_provider.complete(
                 self._build_prompt(context, message)
             )
             reply_text = completion.content
             engines_invoked = []
+            artifacts = None
 
         self.memory_engine.record_turn(user_id, conversation.id, ChatRole.USER, message)
         self.memory_engine.record_turn(
@@ -97,7 +105,11 @@ class AIOrchestrator:
             conversation.id,
             ChatRole.ASSISTANT,
             reply_text,
-            metadata={"intent": intent.value, "engines_invoked": engines_invoked},
+            metadata={
+                "intent": intent.value,
+                "engines_invoked": engines_invoked,
+                "artifacts": artifacts,
+            },
         )
 
         return CoachResponse(
@@ -105,6 +117,7 @@ class AIOrchestrator:
             message=reply_text,
             intent=intent,
             engines_invoked=engines_invoked,
+            artifacts=artifacts,
         )
 
     @staticmethod

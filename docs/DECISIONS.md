@@ -495,4 +495,207 @@ implementing the generic `AIEngine` protocol, and is not added to
 
 ---
 
-*New decisions are appended as Decision 017, 018, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 017 — Coach-Facing Engine Adapters Resolve the Decision 011/016 Binding Question
+
+**Status:** Accepted
+
+**Context:**
+Decisions 011 (Nutrition Engine) and 016 (Recovery Engine) both shipped their
+engine decoupled from `AIOrchestrator`/`AIEngine`, explicitly deferring "how
+(or whether) to adapt `NutritionInput`/`NutritionOutput` and
+`RecoveryInput`/`RecoveryOutput` onto `EngineInput`/`EngineOutput`, or
+introduce a richer per-engine binding mechanism" to whichever sprint builds
+`CoachService` — this one. The Workout side has no AI engine at all yet: the
+"Workout Engine" deliverable was satisfied by the non-AI
+`WorkoutResolutionService` (Decision 006), which returns a `ResolutionResult`
+dataclass with no natural-language summary.
+
+**Decision:**
+Introduce `app/ai/coach_engines.py` containing three new classes —
+`WorkoutCoachEngine`, `NutritionCoachEngine`, `RecoveryCoachEngine` — that
+implement the existing generic `AIEngine` protocol (`app/ai/engine.py`) and
+are registered into `AIOrchestrator.engines`. Each adapter is constructed
+with the corresponding domain **Service** (`WorkoutResolutionService`,
+`NutritionService`, `RecoveryService`) as a dependency, calls that service's
+existing public method (`resolve_current`, `get_daily_nutrition`,
+`get_daily_readiness`, defaulting to today), and translates the result into
+`EngineOutput` — a templated `reply_text` plus a JSON-safe `artifacts` dict.
+`NutritionEngine`, `RecoveryEngine`, and `WorkoutResolutionService` themselves
+are not modified.
+
+**Why:**
+- **Matches the "Engines → Services" arrow already drawn in
+  `EVOLVE_ARCHITECTURE.md` §2's layer diagram** — engines depending on
+  services was anticipated by the architecture, just never instantiated
+  until a real consumer (the Coach) existed to validate the shape against,
+  exactly as Decisions 011/016 predicted.
+- **Keeps the pure engines pure.** `NutritionEngine`/`RecoveryEngine` remain
+  side-effect-free, DB-free, stateless calculators, fully unit-testable in
+  isolation — the adapter is where "fetch the data, call the calculator,
+  format a reply" composition happens, mirroring what `NutritionService`/
+  `RecoveryService` already do for their own standalone REST APIs. The Coach
+  path and the standalone `/api/v1/nutrition`/`/api/v1/recovery` paths now
+  share the exact same service-layer logic, differing only in presentation.
+- **No change to `EngineInput`/`EngineOutput`/`AIOrchestrator.process_message`
+  is required** — the generic contract (Decision 007's sibling infra from
+  Sprint 4.2) already supports this; extending it per-engine (the rejected
+  alternative below) would have made `AIOrchestrator` aware of domain
+  specifics, which it deliberately is not ("the Orchestrator coordinates;
+  engines compute" — `EVOLVE_ARCHITECTURE.md` §4).
+- **Graceful degradation stays inside the adapter.** Each adapter catches its
+  service's documented "missing data" exception
+  (`IncompleteNutritionProfileError`, `CheckInNotFoundError`) and returns a
+  templated, guiding `reply_text` instead of letting it propagate — a Coach
+  message must never surface as an unhandled 500 just because the user
+  hasn't completed their profile or logged a check-in yet.
+
+**Alternatives considered:**
+- **Extend `EngineInput`/`EngineOutput` with richer typed fields and have
+  `AIOrchestrator` special-case each intent directly** — rejected: pulls
+  domain-specific knowledge into the Orchestrator, the one thing §4
+  explicitly says it must not contain.
+- **Bypass `AIOrchestrator.engines` entirely; have `CoachService` branch on
+  intent and call the domain services directly, using the Orchestrator only
+  for memory/persistence** — rejected: duplicates intent-routing logic that
+  already exists in the Orchestrator, and would make `CoachService` (meant to
+  stay a thin application-layer wrapper) responsible for orchestration.
+
+**Consequences:**
+- `app/ai/coach_engines.py` is a new module; `NutritionEngine`,
+  `RecoveryEngine`, `WorkoutResolutionService` are unchanged.
+- `AIOrchestrator.engines` now has `Intent.WORKOUT`, `Intent.NUTRITION`, and
+  `Intent.RECOVERY` populated; `Intent.GENERAL` and `Intent.PROGRESS` still
+  fall through to the `MockLLMProvider` completion (no Progress Analyzer
+  exists yet — see Decision 018).
+- `EngineOutput.artifacts` is populated for the first time; `AIOrchestrator`
+  now persists it onto the assistant `ChatMessage.metadata_` alongside
+  `intent`/`engines_invoked` (see the code change in
+  `app/ai/orchestrator.py`), so chat history carries structured coaching data
+  as well as text.
+
+---
+
+## Decision 018 — Sprint 4.5 Split Into "Coach Service" and a New Sprint 4.6
+
+**Status:** Accepted
+
+**Context:**
+`docs/ROADMAP.md`/`docs/TASKS.md` defined Sprint 4.5 as bundling four
+largely independent deliverables: `Goal`/`Progress` models and the Progress
+Analyzer, `CoachService`/`/api/v1/coach`, wiring the existing engines into
+the Orchestrator, and integrating a real LLM vendor (deferred from Decision
+008). This sprint's actual goal — a first working conversational Coach over
+the three engines that already exist (Workout, Nutrition, Recovery) — does
+not require any of the first, third-adjacent, or fourth items: the Progress
+Analyzer has no engine to route to yet, and a real LLM vendor is orthogonal
+to whether existing engines can be reached through chat.
+
+**Decision:**
+Split the original Sprint 4.5 into a narrower **Sprint 4.5 — Coach Service**
+(this sprint: `CoachService`, `/api/v1/coach`, the three engine adapters from
+Decision 017, still on `MockLLMProvider`) and a new **Sprint 4.6 — Progress &
+Real LLM** carrying forward `Goal`/`Progress` models, the Progress Analyzer,
+and real LLM vendor integration.
+
+**Why:**
+- **Mirrors the precedent already set by the 4.3/4.4 split** (Nutrition
+  Engine vs. Recovery Engine) — bundled sprints in this roadmap get split
+  once their sub-parts turn out to be independently shippable, rather than
+  forcing unrelated deliverables to land in the same change set.
+- **The Progress Analyzer has no data to analyze yet without `Goal`/
+  `Progress` models, and nothing in this sprint's Coach integration depends
+  on it** — building it now would be speculative scope creep against this
+  sprint's actual goal.
+- **Real LLM vendor selection is an infrastructure/cost/vendor decision
+  orthogonal to engine routing** — Decision 008 already deferred it once;
+  bundling it into "make the Coach route to real engines" would couple two
+  unrelated decisions and block this sprint on a vendor choice that isn't
+  otherwise needed to prove the Coach → engines flow works.
+
+**Alternatives considered:**
+- **Keep Sprint 4.5 bundled as originally scoped** — rejected per explicit
+  scoping direction for this sprint; would also repeat the same "unrelated
+  deliverables in one change set" problem the 4.3/4.4 split already
+  established as undesirable in this codebase.
+
+**Consequences:**
+- `docs/ROADMAP.md` and `docs/TASKS.md` are updated: the Sprint 4.5 row/
+  section is narrowed to Coach Service scope; a new Sprint 4.6 row/section
+  carries `Goal`/`Progress`/Progress Analyzer/real LLM integration forward.
+- `classify_intent()` remains the keyword-based stub from Sprint 4.2 — not
+  upgraded this sprint, since doing so credibly would mean an LLM-based
+  classifier, which is out of scope until Sprint 4.6's vendor decision lands.
+
+---
+
+## Decision 019 — `CoachService` Enforces Conversation Ownership; Stays a Thin Application-Layer Wrapper
+
+**Status:** Accepted
+
+**Context:**
+`MemoryEngine.start_or_resume_conversation`/`get_context` (Sprint 4.2)
+explicitly documented that they perform no ownership check on a caller-given
+`conversation_id` — "applying that rule is a caller responsibility." Until
+this sprint, no caller existed (no `CoachService`, no `/api/v1/coach`), so
+the gap was inert. `CoachService` is now that caller, and is the first place
+in the Coach's call path where enforcing "does this conversation belong to
+this user" actually matters for security (a user must never resume or read
+another user's conversation, per the standard ownership pattern already
+enforced by `RecoveryService`/`NutritionService`/`WorkoutLogService`).
+
+**Decision:**
+`CoachService` is constructed with an `AIOrchestrator` and a
+`ChatRepository`. Its `send_message` method performs exactly one ownership
+check — when a `conversation_id` is given, look it up via
+`ChatRepository.get_conversation` and raise `ConversationAccessDeniedError`
+if it does not belong to the calling user — and then does nothing else
+besides `return await self.orchestrator.process_message(...)`. Its
+`get_conversation_history` method performs the same ownership check before a
+direct, read-only `ChatRepository.list_messages` call. `CoachService` never
+calls `MemoryEngine`, a coach engine adapter, or a domain service directly;
+conversation creation/resumption, intent routing, and turn/artifact
+persistence all remain exclusively inside `AIOrchestrator`/`MemoryEngine`.
+
+**Why:**
+- **Closes a real, previously-inert security gap** now that a real caller
+  exists, without touching `MemoryEngine`'s documented contract — the
+  ownership check belongs to the caller, as that module always said it
+  would.
+- **Keeps `CoachService` a thin application/API-layer seam**, matching the
+  Clean Architecture layering already used everywhere else in the codebase:
+  it validates, delegates, and returns — it does not orchestrate. This
+  avoids duplicating any control flow that already lives correctly inside
+  `AIOrchestrator.process_message`.
+- **A 404 (not a 200 with someone else's data, and not a 500) is the correct
+  response** for an unowned `conversation_id` — consistent with how every
+  other owned-resource lookup in this codebase (check-ins, meals, workout
+  logs) already responds.
+
+**Alternatives considered:**
+- **Push the ownership check into `MemoryEngine` itself** — rejected: would
+  require `MemoryEngine` to take on an authorization concern it was
+  deliberately scoped away from in Sprint 4.2, and would need a `user_id`
+  comparison to thread through `AIOrchestrator.process_message` regardless.
+- **No ownership check this sprint (ship the gap as-is)** — rejected: this is
+  the first sprint where the gap is reachable via a real, authenticated HTTP
+  endpoint, so leaving it unresolved would ship a genuine cross-user data
+  leak.
+
+**Consequences:**
+- `app/services/coach_service.py` introduces `ConversationAccessDeniedError`;
+  `app/api/v1/coach.py` translates it to `404 Not Found` (not `403`), so a
+  caller cannot distinguish "doesn't exist" from "not yours," matching every
+  other ownership-checked resource in this API.
+- A caller-supplied `conversation_id` that does not resolve to any
+  conversation is now rejected the same way — this differs from calling
+  `AIOrchestrator.process_message` directly (still exercised by
+  `test_chat_persistence.py`), which starts a fresh, separate conversation
+  under a *new* id when given an unknown one. That distinction is
+  intentional: `MemoryEngine`/`ChatRepository.create_conversation` never
+  actually reuses a client-supplied id for the new conversation, so there
+  is no legitimate reason for an `/api/v1/coach` caller to reference an id
+  it hasn't already received back from this API.
+
+---
+
+*New decisions are appended as Decision 020, 021, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

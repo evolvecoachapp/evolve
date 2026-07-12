@@ -125,14 +125,26 @@
 - [x] Implement the corresponding repository and service
 - [x] Implement Recovery Engine (readiness scoring) — rule-based, decoupled from the Orchestrator (see Decision 016); reachable via `/api/v1/recovery`
 
-### Sprint 4.5 — Progress & Coach Endpoint
+### Sprint 4.5 — Coach Service
+
+> Originally scoped as "Progress & Coach Endpoint"; split per Decision 018 — Progress Analyzer/`Goal`/`Progress`/real LLM integration moved to Sprint 4.6 below.
+
+- [ ] Implement `WorkoutCoachEngine`, `NutritionCoachEngine`, `RecoveryCoachEngine` (`app/ai/coach_engines.py`) — thin `AIEngine`-conformant adapters over the existing `WorkoutResolutionService`/`NutritionService`/`RecoveryService`, resolving the binding question deferred by Decisions 011/016 (see Decision 017)
+- [ ] Register the three adapters into `AIOrchestrator.engines`
+- [ ] Extend `AIOrchestrator`/`CoachResponse` to persist and surface engine `artifacts`
+- [ ] Implement `CoachService` — thin application-layer wrapper: conversation-ownership check, then delegates straight to `AIOrchestrator.process_message` (see Decision 019); no orchestration logic of its own
+- [ ] Implement `/api/v1/coach` conversational endpoint (send message; fetch one conversation's message history)
+- [ ] Write unit tests (coach engine adapters, `CoachService`) and an integration test for the Coach API end to end
+
+### Sprint 4.6 — Progress & Real LLM
+
+> Split out of the original combined Sprint 4.5 scope (see Decision 018).
 
 - [ ] Create `Goal` and `Progress` models and migrations
 - [ ] Implement `GoalRepository`, `ProgressRepository`
 - [ ] Implement Progress Analyzer
-- [ ] Implement `CoachService` (context assembly + response synthesis)
-- [ ] Implement `/api/v1/coach` conversational endpoint
 - [ ] Integrate a real LLM provider (deferred from Sprint 4.2 — see Decision 008)
+- [ ] Upgrade `classify_intent()` beyond the keyword stub if warranted by the chosen LLM integration
 - [ ] Write AI engine integration tests
 
 ---
