@@ -24,3 +24,7 @@ from app.models.workout_log import (  # noqa: F401
     WorkoutLogExercise,
     WorkoutSetLog,
 )
+from app.models.chat import (  # noqa: F401
+    ChatMessage,
+    Conversation,
+)

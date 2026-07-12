@@ -73,7 +73,7 @@ The long-term vision is a platform where a user opens one app, talks to one Coac
 **Objective:** The unified Coach experience and the remaining AI engines.
 
 - AI Orchestrator
-- Memory Engine and `Chat` persistence
+- Memory Engine and `Conversation`/`ChatMessage` persistence
 - Nutrition Engine and `Meal` domain
 - Recovery Engine (readiness inputs and recommendations)
 - Progress Analyzer and `Progress` / `Goal` domains
@@ -141,9 +141,10 @@ Each phase is broken into 1–3 sprints. Sprint length is indicative (assume 1�
 
 | Sprint | Focus |
 |--------|-------|
-| 4.1 | AI Orchestrator skeleton, `Chat` model, Memory Engine v1 |
-| 4.2 | Nutrition Engine, `Meal` domain, Recovery Engine |
-| 4.3 | Progress Analyzer, `Goal`/`Progress` domains, `/api/v1/coach` endpoint |
+| 4.1 | ~~AI Orchestrator skeleton, `Chat` model, Memory Engine v1~~ — actually delivered the (non-AI) Workout Resolution Engine, closing out Phase 3 Sprint 3.3's outstanding rule-based Workout Engine deliverable instead. Its originally planned scope moved to 4.2. |
+| 4.2 | AI Orchestrator, `Conversation`/`ChatMessage` models, Memory Engine v1 (provider-agnostic `LLMProvider` abstraction, mock-only; async boundary scoped to the Orchestrator/LLM call path — see Decisions 007–009) |
+| 4.3 | Nutrition Engine, `Meal` domain, Recovery Engine |
+| 4.4 | Progress Analyzer, `Goal`/`Progress` domains, `CoachService`, `/api/v1/coach` endpoint |
 
 ### Phase 5 — Mobile App
 

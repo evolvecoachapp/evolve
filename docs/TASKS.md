@@ -90,27 +90,38 @@
 
 ## Phase 4 — AI Coach
 
-### Sprint 4.1 — Orchestrator & Memory
+### Sprint 4.1 — Orchestrator & Memory (superseded — see Sprint 4.2)
 
-- [ ] Create `Chat` model and migration
-- [ ] Implement `ChatRepository`
-- [ ] Implement AI Orchestrator skeleton (intent routing stub)
-- [ ] Implement Memory Engine v1 (read/write conversation context)
+- [x] ~~Create `Chat` model and migration~~ — delivered the Workout Resolution Engine instead (closing out Phase 3 Sprint 3.3's rule-based Workout Engine deliverable); this sprint's originally planned scope moved to Sprint 4.2 below.
+- [ ] ~~Implement `ChatRepository`~~ — moved to Sprint 4.2
+- [ ] ~~Implement AI Orchestrator skeleton (intent routing stub)~~ — moved to Sprint 4.2
+- [ ] ~~Implement Memory Engine v1 (read/write conversation context)~~ — moved to Sprint 4.2
 
-### Sprint 4.2 — Nutrition & Recovery
+### Sprint 4.2 — AI Orchestrator Infrastructure
+
+- [x] Create `Conversation` and `ChatMessage` models and migration (a dedicated `Conversation` aggregate, not a bare `conversation_id` column — see Decision 007)
+- [x] Implement `ChatRepository`
+- [x] Implement provider-agnostic `LLMProvider` abstraction with a deterministic `MockLLMProvider` (Decision 008; real vendor integration deferred)
+- [x] Implement `AIEngine` protocol contract (no concrete engines yet)
+- [x] Implement AI Orchestrator (intent routing stub, memory-backed context assembly, LLM-fallback response synthesis, persistence) — async boundary scoped to the Orchestrator/LLM call path only (Decision 009)
+- [x] Implement Memory Engine v1 (read/write conversation context)
+- [x] Write unit tests (Memory Engine, mock provider, Orchestrator) and an integration test for chat persistence
+
+### Sprint 4.3 — Nutrition & Recovery
 
 - [ ] Create `Meal` model and migration
 - [ ] Implement `MealRepository`, `NutritionService`
 - [ ] Implement Nutrition Engine
 - [ ] Implement Recovery Engine (readiness scoring)
 
-### Sprint 4.3 — Progress & Coach Endpoint
+### Sprint 4.4 — Progress & Coach Endpoint
 
 - [ ] Create `Goal` and `Progress` models and migrations
 - [ ] Implement `GoalRepository`, `ProgressRepository`
 - [ ] Implement Progress Analyzer
 - [ ] Implement `CoachService` (context assembly + response synthesis)
 - [ ] Implement `/api/v1/coach` conversational endpoint
+- [ ] Integrate a real LLM provider (deferred from Sprint 4.2 — see Decision 008)
 - [ ] Write AI engine integration tests
 
 ---

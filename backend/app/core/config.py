@@ -49,5 +49,21 @@ class Settings(BaseSettings):
         ),
     )
 
+    ai_provider: str = Field(
+        default="mock",
+        description=(
+            "LLM provider implementation selector for the AI Orchestrator. "
+            "Only 'mock' is supported until a real provider is integrated "
+            "in a later sprint."
+        ),
+    )
+    ai_memory_max_turns: int = Field(
+        default=20,
+        description=(
+            "Maximum number of recent chat turns loaded as context by the "
+            "Memory Engine for a single Orchestrator request."
+        ),
+    )
+
 
 settings = Settings()

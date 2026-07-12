@@ -306,11 +306,16 @@ EVOLVE/
 │       │
 │       ├── ai/                         # AI engines (backend-local)
 │       │   ├── orchestrator.py         # AI Orchestrator
-│       │   ├── workout_engine.py
-│       │   ├── nutrition_engine.py
-│       │   ├── recovery_engine.py
-│       │   ├── memory_engine.py
-│       │   └── progress_analyzer.py
+│       │   ├── contracts.py            # Shared Pydantic types (Intent, MemoryContext, EngineInput/Output)
+│       │   ├── engine.py               # AIEngine protocol future engines implement
+│       │   ├── intent.py               # classify_intent() — keyword stub (Sprint 4.2)
+│       │   ├── llm_provider.py         # LLMProvider abstraction + MockLLMProvider (Sprint 4.2)
+│       │   ├── memory_engine.py        # Memory Engine v1 (Sprint 4.2)
+│       │   ├── workout_engine.py       # not yet implemented — Workout Engine deliverable was
+│       │   │                           # satisfied by the non-AI WorkoutResolutionService (Decision 006)
+│       │   ├── nutrition_engine.py     # planned — Sprint 4.3+
+│       │   ├── recovery_engine.py      # planned — Sprint 4.3+
+│       │   └── progress_analyzer.py    # planned — later sprint
 │       │
 │       └── utils/                      # Shared utilities
 │           ├── datetime.py
@@ -426,6 +431,8 @@ flowchart LR
 5. **Persistence** — Store conversation turns and any generated artifacts (plans, adjustments) via repositories.
 
 The Orchestrator does not contain domain algorithms. It coordinates; engines compute.
+
+**Current state (Sprint 4.2):** the Orchestrator, Memory Engine v1, and `Conversation`/`ChatMessage` persistence exist and are exercised end to end, but no concrete engine is registered yet — the Workout, Nutrition, Recovery, and Progress Analyzer engines below are still planned (Sprint 4.3+). Every message currently falls through to a direct LLM completion via a provider-agnostic `LLMProvider` interface, backed for now by a deterministic `MockLLMProvider` (see Decision 008 in `docs/DECISIONS.md`); intent classification is a keyword-matching stub (`app/ai/intent.py`) pending a real classifier once engines exist to route to. `process_message` is the only `async def` in the backend — see Decision 009.
 
 ---
 
@@ -717,19 +724,31 @@ Represents user-defined targets the Coach works toward.
 
 ## Chats
 
-Represents conversational history between the user and the Coach.
+Represents conversational history between the user and the Coach, modeled
+as two related aggregates (implemented Sprint 4.2, ahead of any
+conversation-listing/title/archiving feature — see Decision 007 in
+`docs/DECISIONS.md`):
+
+- `Conversation` (`app/models/chat.py`) — the aggregate root grouping a
+  user's turns. Tracks `last_message_at` so "resume my most recent
+  conversation" is an indexed lookup, not a scan over messages. No
+  `title` or archival fields yet; added only when a feature consumes
+  them.
+- `ChatMessage` (`app/models/chat.py`) — one turn within a `Conversation`.
 
 **Key attributes:**
-- Message role (user, coach/assistant)
-- Message content (text)
-- Timestamp
-- Session or conversation ID
-- Metadata (intent detected, engines invoked, artifacts generated)
+- `Conversation`: user, created/updated timestamps, `last_message_at`.
+- `ChatMessage`: message role (user, assistant, system), content (text),
+  timestamp, metadata (intent detected, engines invoked, artifacts
+  generated).
 
 **Relationships:**
-- Belongs to a user
-- Memory Engine reads chat history for context
-- Coach responses may reference or create workouts, meals, or goal updates
+- A user has many conversations; a conversation has many chat messages
+  (`ON DELETE CASCADE` from message to conversation).
+- Memory Engine (`app/ai/memory_engine.py`) reads/writes chat history for
+  context via `ChatRepository`.
+- Coach responses may reference or create workouts, meals, or goal
+  updates.
 
 ---
 
@@ -741,13 +760,13 @@ erDiagram
     User ||--o{ Workout : logs
     User ||--o{ Meal : logs
     User ||--o{ Progress : records
-    User ||--o{ Chat : has
+    User ||--o{ Conversation : has
+    Conversation ||--o{ Chat : contains
     User ||--o{ Program : assigned
     Program ||--o{ Workout : contains
     Workout }o--o{ Exercise : includes
     Meal }o--o| Goal : supports
     Progress }o--o| Goal : tracks
-    Chat }o--o| User : belongs_to
 ```
 
 ---
@@ -816,7 +835,7 @@ Development proceeds in six phases. Each phase delivers a shippable increment an
 
 **Deliverables:**
 - AI Orchestrator
-- Memory Engine and chat persistence (`Chat` model)
+- Memory Engine and chat persistence (`Conversation`/`ChatMessage` models)
 - Nutrition Engine and `Meal` domain
 - Recovery Engine (readiness inputs and recommendations)
 - Progress Analyzer and `Progress` / `Goal` domains
