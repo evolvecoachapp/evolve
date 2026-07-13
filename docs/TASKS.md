@@ -140,12 +140,13 @@
 
 > Split out of the original combined Sprint 4.5 scope (see Decision 018).
 
-- [ ] Create `Goal` and `Progress` models and migrations
-- [ ] Implement `GoalRepository`, `ProgressRepository`
-- [ ] Implement Progress Analyzer
-- [ ] Integrate a real LLM provider (deferred from Sprint 4.2 — see Decision 008)
-- [ ] Upgrade `classify_intent()` beyond the keyword stub if warranted by the chosen LLM integration
-- [ ] Write AI engine integration tests
+- [x] Create `Goal` and `Progress` models and migrations
+- [x] Implement `GoalRepository`, `ProgressRepository`
+- [x] Implement Progress Analyzer (hybrid deterministic stats + LLM narrative, decoupled from `AIOrchestrator.engines` this sprint — see Decision 022/023)
+- [x] Integrate a real LLM provider (deferred from Sprint 4.2 — see Decision 008; generic OpenAI-compatible endpoint, graceful degradation on failure — see Decisions 020/021)
+- [x] Upgrade `classify_intent()` beyond the keyword stub — LLM-primary with a keyword fallback (see Decision 024)
+- [x] Implement `GoalService`/`ProgressService` and `/api/v1/goals`/`/api/v1/progress` (including the AI-driven `GET /api/v1/progress/summary`)
+- [x] Write AI engine integration tests
 
 ---
 

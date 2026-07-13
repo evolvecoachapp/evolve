@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -53,8 +53,10 @@ class Settings(BaseSettings):
         default="mock",
         description=(
             "LLM provider implementation selector for the AI Orchestrator. "
-            "Only 'mock' is supported until a real provider is integrated "
-            "in a later sprint."
+            "'mock' (default) or 'openai_compatible' — a generic "
+            "OpenAI-compatible HTTP endpoint (OpenAI itself, Azure OpenAI, "
+            "OpenRouter, or a local OpenAI-compatible server), selected via "
+            "the ai_llm_* settings below. See Decision 020 in docs/DECISIONS.md."
         ),
     )
     ai_memory_max_turns: int = Field(
@@ -63,6 +65,34 @@ class Settings(BaseSettings):
             "Maximum number of recent chat turns loaded as context by the "
             "Memory Engine for a single Orchestrator request."
         ),
+    )
+    ai_llm_base_url: str | None = Field(
+        default=None,
+        description=(
+            "Base URL for the 'openai_compatible' LLMProvider. Leave unset "
+            "to use the SDK's default (OpenAI's own API); set to point at "
+            "Azure OpenAI, OpenRouter, or a local OpenAI-compatible server."
+        ),
+    )
+    ai_llm_api_key: SecretStr | None = Field(
+        default=None,
+        description=(
+            "API key for the 'openai_compatible' LLMProvider. Required only "
+            "when ai_provider='openai_compatible'; a SecretStr to avoid "
+            "accidental leakage in logs/reprs."
+        ),
+    )
+    ai_llm_model: str = Field(
+        default="gpt-4o-mini",
+        description="Model name passed to the 'openai_compatible' LLMProvider's completion calls.",
+    )
+    ai_llm_timeout_seconds: float = Field(
+        default=30.0,
+        description="Per-request timeout for the 'openai_compatible' LLMProvider.",
+    )
+    ai_llm_max_output_tokens: int = Field(
+        default=500,
+        description="Maximum output tokens requested per completion — a basic cost control.",
     )
 
     nutrition_bmr_formula: str = Field(
@@ -135,6 +165,30 @@ class Settings(BaseSettings):
     recovery_score_weight_training_load: float = Field(
         default=0.25,
         description="Weight applied to the derived training-load component of the readiness score.",
+    )
+
+    progress_min_data_points_for_trend: int = Field(
+        default=3,
+        description=(
+            "Minimum number of Progress entries required within the "
+            "analysis window before the Progress Analyzer will compute a "
+            "trend; fewer raises InsufficientProgressDataError."
+        ),
+    )
+    progress_plateau_window_days: int = Field(
+        default=14,
+        description=(
+            "Length (in days) of each of the two trailing windows compared "
+            "against each other to detect a plateau."
+        ),
+    )
+    progress_plateau_threshold_pct: float = Field(
+        default=2.0,
+        description=(
+            "Maximum relative change (percent) between the two trailing "
+            "plateau-detection windows' averages still classified as a "
+            "plateau rather than a meaningful trend."
+        ),
     )
 
 

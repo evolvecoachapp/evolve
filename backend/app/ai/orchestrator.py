@@ -7,16 +7,21 @@ engines compute, the Orchestrator coordinates.
 
 As of Sprint 4.5, ``Intent.WORKOUT``/``Intent.NUTRITION``/``Intent.RECOVERY``
 have adapters registered (``app/ai/coach_engines.py`` — see Decision 017 in
-``docs/DECISIONS.md``); ``Intent.GENERAL`` and ``Intent.PROGRESS`` (no
-Progress Analyzer exists yet) still fall through to a direct LLM completion
-built from the assembled memory context — still a fully real, testable,
-persisted round trip, just without any domain-specific intelligence layered
-on top.
+``docs/DECISIONS.md``); ``Intent.GENERAL`` and ``Intent.PROGRESS`` (the
+Progress Analyzer ships decoupled from the Orchestrator this sprint — see
+Decision 023) still fall through to a direct LLM completion built from the
+assembled memory context, now with graceful degradation on
+:class:`~app.ai.llm_provider.LLMProviderError` (Decision 021) — a failed
+upstream call returns a fixed apology reply, never an unhandled 500.
 
-``process_message`` is the only ``async def`` in the backend (Decision
-009 in ``docs/DECISIONS.md``): it is the one call in the request path
-that will eventually cross a real network boundary (the LLM call).
-Everything it calls into — :class:`~app.ai.memory_engine.MemoryEngine`,
+``process_message`` was originally the only ``async def`` in the backend
+(Decision 009 in ``docs/DECISIONS.md``): the one call in the request path
+that crosses a real network boundary (the LLM call). Sprint 4.6 extends
+that boundary twice more — :func:`~app.ai.intent.classify_intent` (Decision
+024) and :class:`~app.ai.progress_analyzer.ProgressAnalyzer` (Decision
+022) — both for the same reason: each calls
+:meth:`~app.ai.llm_provider.LLMProvider.complete`. Everything else this
+method calls into — :class:`~app.ai.memory_engine.MemoryEngine`,
 :class:`~app.repositories.chat_repository.ChatRepository` — stays
 synchronous, matching every other service/repository in the codebase.
 """
@@ -28,9 +33,15 @@ from pydantic import BaseModel
 from app.ai.contracts import EngineInput, Intent, MemoryContext
 from app.ai.engine import AIEngine
 from app.ai.intent import classify_intent
-from app.ai.llm_provider import LLMMessage, LLMProvider
+from app.ai.llm_provider import LLMMessage, LLMProvider, LLMProviderError
 from app.ai.memory_engine import MemoryEngine
 from app.models.chat import ChatRole
+
+_LLM_UNAVAILABLE_REPLY = (
+    "I'm having trouble reaching my language model right now. Please try "
+    "again in a moment — I can still help with workout, nutrition, and "
+    "recovery questions directly."
+)
 
 
 class CoachResponse(BaseModel):
@@ -81,7 +92,7 @@ class AIOrchestrator:
             user_id, conversation_id
         )
         context = self.memory_engine.get_context(user_id, conversation.id)
-        intent = classify_intent(message)
+        intent = await classify_intent(message, self.llm_provider)
 
         engine = self.engines.get(intent)
         if engine is not None:
@@ -92,12 +103,16 @@ class AIOrchestrator:
             engines_invoked = [output.engine_name]
             artifacts = output.artifacts
         else:
-            completion = await self.llm_provider.complete(
-                self._build_prompt(context, message)
-            )
-            reply_text = completion.content
+            try:
+                completion = await self.llm_provider.complete(
+                    self._build_prompt(context, message)
+                )
+                reply_text = completion.content
+                artifacts = None
+            except LLMProviderError:
+                reply_text = _LLM_UNAVAILABLE_REPLY
+                artifacts = {"llm_error": True}
             engines_invoked = []
-            artifacts = None
 
         self.memory_engine.record_turn(user_id, conversation.id, ChatRole.USER, message)
         self.memory_engine.record_turn(

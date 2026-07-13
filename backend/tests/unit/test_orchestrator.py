@@ -2,10 +2,20 @@
 
 ``MemoryEngine`` and ``LLMProvider`` are both mocked — these tests
 exercise the Orchestrator's control flow (conversation resolution,
-context assembly, intent-based routing, fallback-to-LLM, and
-persistence calls) in isolation. See
+context assembly, intent-based routing, fallback-to-LLM, graceful
+degradation on an LLM failure, and persistence calls) in isolation. See
 ``tests/integration/test_chat_persistence.py`` for a full end-to-end
 flow against a real PostgreSQL instance.
+
+Since Sprint 4.6 (Decision 024), ``AIOrchestrator.process_message`` calls
+``await classify_intent(message, self.llm_provider)`` — which itself calls
+``llm_provider.complete(...)`` once for classification before any
+routing decision is made. The mocked ``llm_provider`` here always returns
+a fixed reply that never parses as a valid ``Intent`` label, so
+classification deterministically falls through to the keyword matcher —
+exactly the "mock provider always falls back" behavior Decision 024
+documents — meaning every test below still routes on the same keywords as
+before this sprint, just via one extra ``complete()`` call.
 """
 
 import uuid
@@ -13,7 +23,7 @@ import uuid
 import pytest
 
 from app.ai.contracts import EngineOutput, Intent, MemoryContext
-from app.ai.llm_provider import LLMCompletion
+from app.ai.llm_provider import LLMCompletion, LLMProviderError
 from app.ai.orchestrator import AIOrchestrator
 from app.models.chat import ChatRole, Conversation
 
@@ -52,7 +62,10 @@ async def test_process_message_falls_back_to_llm_when_no_engine_registered(
 ):
     response = await orchestrator.process_message(USER_ID, "What workout should I do today?")
 
-    llm_provider.complete.assert_called_once()
+    # One call for intent classification (falls back to the keyword matcher
+    # since "a mock coach reply" isn't a valid Intent label), one for the
+    # actual reply, since no engine is registered for Intent.WORKOUT.
+    assert llm_provider.complete.call_count == 2
     assert response.message == "a mock coach reply"
     assert response.conversation_id == conversation.id
     assert response.intent == Intent.WORKOUT
@@ -107,7 +120,9 @@ async def test_process_message_routes_to_a_registered_engine_when_intent_matches
 
     response = await orchestrator.process_message(USER_ID, "Adjust my leg day workout")
 
-    llm_provider.complete.assert_not_called()
+    # Only the intent-classification call happens; the engine (not the LLM)
+    # produces the reply.
+    llm_provider.complete.assert_called_once()
     assert response.message == "engine-generated reply"
     assert response.engines_invoked == ["workout_engine"]
 
@@ -130,6 +145,28 @@ async def test_process_message_uses_llm_fallback_for_an_unregistered_intent(
 
     response = await orchestrator.process_message(USER_ID, "What should I train today?")
 
-    llm_provider.complete.assert_called_once()
+    assert llm_provider.complete.call_count == 2
     assert response.message == "a mock coach reply"
     assert response.engines_invoked == []
+
+
+async def test_process_message_degrades_gracefully_when_the_llm_call_fails(
+    memory_engine, mocker
+):
+    """Both the intent-classification call and the reply-fallback call fail.
+
+    ``classify_intent`` swallows its own ``LLMProviderError`` internally
+    (falling back to the keyword matcher), but the Orchestrator's own
+    LLM-fallback branch must also catch the error and return a normal
+    ``CoachResponse`` with a fixed apology, never propagate a 500.
+    """
+    llm_provider = mocker.Mock()
+    llm_provider.complete = mocker.AsyncMock(side_effect=LLMProviderError("upstream is down"))
+    orchestrator = AIOrchestrator(memory_engine, llm_provider)
+
+    response = await orchestrator.process_message(USER_ID, "hello there")
+
+    assert response.intent == Intent.GENERAL
+    assert response.engines_invoked == []
+    assert response.artifacts == {"llm_error": True}
+    assert "trouble reaching" in response.message.lower()

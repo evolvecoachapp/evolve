@@ -33,3 +33,5 @@ from app.models.meal import (  # noqa: F401
     MealLog,
 )
 from app.models.recovery import RecoveryCheckIn  # noqa: F401
+from app.models.progress import Progress  # noqa: F401
+from app.models.goal import Goal  # noqa: F401

@@ -307,14 +307,18 @@ EVOLVE/
 │       │   └── dependencies.py         # get_current_user, role checks
 │       │
 │       ├── ai/                         # AI engines (backend-local)
-│       │   ├── orchestrator.py         # AI Orchestrator — engines dict populated (Sprint 4.5)
+│       │   ├── orchestrator.py         # AI Orchestrator — engines dict populated (Sprint 4.5);
+│       │   │                           # LLM-fallback branch degrades gracefully on LLMProviderError
+│       │   │                           # as of Sprint 4.6 (Decision 021)
 │       │   ├── contracts.py            # Shared Pydantic types (Intent, MemoryContext, EngineInput/Output)
 │       │   ├── engine.py               # AIEngine protocol — implemented by coach_engines.py (Sprint 4.5)
-│       │   ├── intent.py               # classify_intent() — keyword stub (Sprint 4.2); still the stub
-│       │   │                           # as of Sprint 4.5 (Decision 018) — a real classifier is
-│       │   │                           # deferred to Sprint 4.6's LLM vendor decision
+│       │   ├── intent.py               # classify_intent() — keyword stub (Sprint 4.2), upgraded in
+│       │   │                           # Sprint 4.6 to LLM-primary with the original keyword matcher
+│       │   │                           # kept as _classify_intent_by_keyword() fallback (Decision 024)
 │       │   ├── llm_provider.py         # LLMProvider abstraction + MockLLMProvider (Sprint 4.2);
-│       │   │                           # still mock-only as of Sprint 4.5 — real vendor is Sprint 4.6
+│       │   │                           # OpenAICompatibleLLMProvider + LLMProviderError added
+│       │   │                           # Sprint 4.6 — real vendor via AI_PROVIDER=openai_compatible
+│       │   │                           # (Decisions 020/021)
 │       │   ├── memory_engine.py        # Memory Engine v1 (Sprint 4.2)
 │       │   ├── coach_engines.py        # WorkoutCoachEngine/NutritionCoachEngine/RecoveryCoachEngine
 │       │   │                           # (Sprint 4.5) — thin AIEngine adapters over the Services
@@ -333,7 +337,11 @@ EVOLVE/
 │       │   │                           # (Decision 014); see recovery_constants.py alongside it
 │       │   ├── recovery_constants.py   # training-load reference values + readiness-level
 │       │   │                           # guidance/protocol text (Sprint 4.4)
-│       │   └── progress_analyzer.py    # planned — Sprint 4.6
+│       │   ├── progress_analyzer.py    # ProgressAnalyzer (Sprint 4.6) — hybrid deterministic stats +
+│       │   │                           # LLM narrative, decoupled from the Orchestrator (Decisions
+│       │   │                           # 022/023); see progress_constants.py alongside it
+│       │   └── progress_constants.py   # fallback-narrative templates + plateau reference values
+│       │                               # (Sprint 4.6)
 │       │
 │       └── utils/                      # Shared utilities
 │           ├── datetime.py
@@ -451,6 +459,8 @@ flowchart LR
 The Orchestrator does not contain domain algorithms. It coordinates; engines compute.
 
 **Current state (Sprint 4.5):** the Orchestrator, Memory Engine v1, and `Conversation`/`ChatMessage` persistence exist and are exercised end to end, and `AIOrchestrator.engines` now has all three existing engines registered — `Intent.WORKOUT`/`Intent.NUTRITION`/`Intent.RECOVERY` route to `WorkoutCoachEngine`/`NutritionCoachEngine`/`RecoveryCoachEngine` (`app/ai/coach_engines.py`), thin `AIEngine` adapters over `WorkoutResolutionService`/`NutritionService`/`RecoveryService` — see Decision 017 in `docs/DECISIONS.md`. `Intent.GENERAL` and `Intent.PROGRESS` (no Progress Analyzer exists yet — Sprint 4.6) still fall through to a direct LLM completion via the provider-agnostic `LLMProvider` interface, backed for now by a deterministic `MockLLMProvider` (Decision 008); intent classification remains the keyword-matching stub (`app/ai/intent.py`) — a real classifier stays deferred to Sprint 4.6's LLM vendor decision (Decision 018). `EngineOutput.artifacts` is now persisted onto the assistant turn's metadata alongside `intent`/`engines_invoked`. `process_message` is the only `async def` in the backend — see Decision 009. The Coach is reachable via `CoachService`/`/api/v1/coach` (Decision 019) — `CoachService` is a thin application-layer wrapper (ownership check, then delegate to `process_message`); it contains no orchestration logic of its own.
+
+**Current state (Sprint 4.6):** the `LLMProvider` abstraction is no longer mock-only — `get_llm_provider()` returns a real `OpenAICompatibleLLMProvider` (`app/ai/llm_provider.py`) when `AI_PROVIDER=openai_compatible`, backed by the official `openai` SDK's `AsyncOpenAI` client against any OpenAI-compatible `base_url` (OpenAI itself, Azure OpenAI, OpenRouter, or a local server); `MockLLMProvider` remains available for `AI_PROVIDER=mock` (tests, offline dev) — see Decision 020. Every SDK-level failure (timeout, auth, rate limit, connection error) is translated into a single `LLMProviderError`, and both `AIOrchestrator.process_message`'s LLM-fallback branch and `classify_intent` catch it to degrade gracefully — the Coach caller always gets a normal `200` response, never a raw 500/502 — see Decision 021. `classify_intent` (`app/ai/intent.py`) is upgraded from a pure keyword stub to LLM-primary: it now calls the real LLM to pick one of the five `Intent` labels first, falling back to the original keyword matcher (renamed `_classify_intent_by_keyword`, still directly unit-tested) on an `LLMProviderError` or an unparseable response; under `AI_PROVIDER=mock` this deterministically falls back to keyword matching every time, so `mock`-provider test behavior is unchanged — see Decision 024. `AIOrchestrator.process_message`'s one call site is now `intent = await classify_intent(message, self.llm_provider)`. `Intent.PROGRESS` still falls through to the (now real, resilient) LLM completion, exactly like `Intent.GENERAL` — the Progress Analyzer that landed this sprint (see below) ships decoupled from `AIOrchestrator.engines`, with its own `ProgressService`/`GoalService` and `/api/v1/progress`/`/api/v1/goals` REST APIs instead — see Decision 023.
 
 ---
 
@@ -612,6 +622,8 @@ The Memory Engine ensures the Coach does not ask the same questions repeatedly a
 - "Your squat has stalled for three weeks — here's why."
 - "You're 80% consistent on workouts but 50% on nutrition."
 - "You're on track to hit your goal by the target date."
+
+**Current state (Sprint 4.6):** the trend-analysis and plateau-detection outputs described above exist today, scoped to a single metric per call rather than the cross-domain (workout + nutrition consistency) view described above — that richer correlation remains a later-sprint capability. `ProgressAnalyzer` (`app/ai/progress_analyzer.py`) is a hybrid engine: it computes `ProgressStats` (linear-regression `slope_per_week`, `trend_direction`, `consistency_pct`, `plateau_detected`, and a goal-relative `projected_target_date` when a `Goal` is linked) deterministically in pure Python from a caller-supplied, pre-aggregated list of `ProgressDataPoint`s, then calls the real `LLMProvider` to narrate 2-3 sentences of coaching insight from those stats — falling back to a deterministic templated narrative (`progress_constants.py`) on `LLMProviderError`, the same graceful-degradation shape used everywhere else this sprint. It defines its own typed `ProgressAnalyzerInput`/`ProgressAnalyzerOutput` contracts rather than the generic `AIEngine` protocol — same reasoning as Decision 011/016 (no Coach consumer yet). It raises `InsufficientProgressDataError` when fewer than `Settings.progress_min_data_points_for_trend` points are supplied. New `Goal`/`Progress` models and their Alembic migration back a `GoalRepository`/`ProgressRepository` → `GoalService`/`ProgressService` → `/api/v1/goals`/`/api/v1/progress` stack; `ProgressService.get_progress_summary` is the first **service**-layer `async def` in the backend, assembling a `ProgressAnalyzerInput` from persisted entries and an optional linked goal before awaiting `ProgressAnalyzer.handle`. `AIOrchestrator.engines` registration (`ProgressCoachEngine`, `Intent.PROGRESS` binding) is deliberately deferred, mirroring how Nutrition/Recovery shipped decoupled in 4.3/4.4 before their Coach binding landed in 4.5 — see Decisions 022/023 in `docs/DECISIONS.md`.
 
 ---
 

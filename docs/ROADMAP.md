@@ -146,7 +146,7 @@ Each phase is broken into 1–3 sprints. Sprint length is indicative (assume 1�
 | 4.3 | Nutrition Engine, `Meal`/`MealLog` domain — rule-based, decoupled from the Orchestrator (see Decisions 010–013). Originally scoped together with Recovery Engine; split into its own sprint, moving Recovery Engine to 4.4 below. |
 | 4.4 | Recovery Engine (readiness inputs and recommendations) — split out of the original combined 4.3 scope |
 | 4.5 | `CoachService`, `/api/v1/coach` endpoint, Workout/Nutrition/Recovery engine adapters wired into `AIOrchestrator` (mock LLM provider only) — split from the originally combined 4.5 scope, moving Progress/Goal and real LLM integration to 4.6 below (see Decisions 017–019) |
-| 4.6 | Progress Analyzer, `Goal`/`Progress` domains, real LLM vendor integration (deferred from Decision 008) — split out of the original combined 4.5 scope |
+| 4.6 | Progress Analyzer (hybrid deterministic stats + LLM narrative), `Goal`/`Progress` domains and REST API, real generic OpenAI-compatible LLM vendor integration (deferred from Decision 008), LLM-primary/keyword-fallback intent classification — split out of the original combined 4.5 scope (see Decisions 020–024) |
 
 ### Phase 5 — Mobile App
 

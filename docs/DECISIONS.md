@@ -698,4 +698,132 @@ persistence all remain exclusively inside `AIOrchestrator`/`MemoryEngine`.
 
 ---
 
-*New decisions are appended as Decision 020, 021, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 020 — Real LLM Vendor Integration Is a Generic OpenAI-Compatible HTTP Endpoint
+
+**Status:** Accepted
+
+**Context:**
+Decision 008 shipped `LLMProvider` as an abstraction with exactly one implementation, `MockLLMProvider`, and explicitly deferred real vendor integration. Sprint 4.6 is the first sprint that needs a real provider — for both the Progress Analyzer's narrative step and (Decision 024) the upgraded intent classifier. No vendor had been chosen anywhere in EVOLVE before now.
+
+**Decision:**
+Add `OpenAICompatibleLLMProvider(LLMProvider)` in `app/ai/llm_provider.py`, built on the official `openai` Python SDK's `AsyncOpenAI` client, configured entirely through `Settings` (`ai_llm_base_url`, `ai_llm_api_key: SecretStr`, `ai_llm_model`, `ai_llm_timeout_seconds`, `ai_llm_max_output_tokens`) rather than hardcoded to OpenAI itself. `get_llm_provider()` returns `MockLLMProvider` for `AI_PROVIDER=mock` (unchanged default) or `OpenAICompatibleLLMProvider` for `AI_PROVIDER=openai_compatible`, raising `ValueError` for any other value or a missing API key.
+
+**Why:**
+- **The `openai` SDK's client already supports an overridable `base_url`**, so one implementation transparently works against OpenAI itself, Azure OpenAI, OpenRouter, or a self-hosted OpenAI-compatible server — a vendor lock-in decision is avoided for the cost of zero extra code.
+- **`ai_llm_api_key` is `SecretStr`**, matching the reviewer checklist's secrets-handling expectations — the key is never accidentally logged via `repr()`/structured logging of `Settings`.
+- **Constructor accepts an optional injected `client`**, mirroring the DI-friendly style used everywhere else in this codebase (`RecoveryService`, `NutritionService`, etc.) — unit tests supply a fake client with only `chat.completions.create` mocked, never making a real network call or needing a second HTTP-mocking dependency.
+- **`AI_PROVIDER` stays a simple string switch** rather than a plugin registry — there are exactly two implementations, and `get_llm_provider()`'s existing `ValueError`-on-unknown-value shape (Decision 008) needed no restructuring.
+
+**Alternatives considered:**
+- **Hardcode the official `openai` vendor's default endpoint only** — rejected: would block self-hosted/alternative-vendor usage for no implementation cost savings, since the SDK already parameterizes `base_url`.
+- **A separate `AnthropicLLMProvider` alongside an OpenAI one** — rejected as unnecessary scope for this sprint; nothing in the codebase requires a second real vendor, and the generic-endpoint approach already covers the practical need (self-hosting, proxying, alternate vendors that expose an OpenAI-compatible API).
+
+**Consequences:**
+- `backend/requirements.txt` gains `openai`; `.env.example` gains the five new `AI_LLM_*` variables (commented out except `AI_LLM_MODEL`/`AI_LLM_TIMEOUT_SECONDS`/`AI_LLM_MAX_OUTPUT_TOKENS`, which have safe defaults).
+- `get_llm_provider()` remains uncached (a fresh instance per call), unchanged from Decision 008 — tests that monkeypatch `settings.ai_provider` between calls (e.g. `test_get_llm_provider_rejects_unsupported_provider_names`) continue to see the change take effect immediately. Caching the real HTTP client across requests was considered but rejected for this sprint to avoid disturbing that existing test contract; revisit if per-request `AsyncOpenAI` construction proves to be a measurable cost.
+
+---
+
+## Decision 021 — Graceful Degradation on Every LLM Call, via One `LLMProviderError` Type
+
+**Status:** Accepted
+
+**Context:**
+Decision 020 introduces a real network call into three places: `AIOrchestrator`'s LLM-fallback branch (existing since Decision 009, previously only ever hitting the infallible mock), the upgraded `classify_intent` (Decision 024), and the new `ProgressAnalyzer` (Decision 022). A real HTTP call can time out, hit a rate limit, fail auth, or drop the connection — none of which existed as a real failure mode before this sprint.
+
+**Decision:**
+`OpenAICompatibleLLMProvider.complete()` catches every `openai`-SDK exception (`APITimeoutError`, `APIConnectionError`, `APIStatusError`, and the base `OpenAIError` as a catch-all) and re-raises a single `LLMProviderError` — the one exception type every caller needs to know about. Each of the three call sites catches `LLMProviderError` and degrades gracefully instead of propagating a 500: the Orchestrator returns a fixed apology `CoachResponse` with `artifacts={"llm_error": True}`; `classify_intent` falls back to the keyword matcher; `ProgressAnalyzer` falls back to a deterministic templated narrative built from the stats it already computed.
+
+**Why:**
+- **A conversational Coach (or a progress summary) that 500s whenever the upstream LLM has a bad moment is a materially worse product experience than one that degrades to "I'm having trouble right now"** — especially since two of the three call sites (intent classification, progress narration) have a fully deterministic fallback readily available and don't need the LLM to produce *a* correct answer, just a *better* one.
+- **One error type at the `LLMProvider` boundary** means no caller needs vendor-specific knowledge (`openai.RateLimitError` vs. some future vendor's own exception hierarchy) — the abstraction Decision 008 introduced now also isolates failure modes, not just the happy path.
+- **Consistent with the existing graceful-degradation precedent** already established for engine adapters in `app/ai/coach_engines.py` (e.g. "no active program" never surfaces as an error) — this sprint applies the same philosophy to the LLM boundary itself.
+
+**Alternatives considered:**
+- **Let `LLMProviderError` propagate to a 502/503 HTTP response** — rejected: every one of the three call sites has a strictly-better fallback already available (keyword matching, templated narrative, fixed apology text), so returning an error to the user throws away information the system already has.
+- **Retry with backoff before giving up** — rejected as out of scope for this sprint's resilience maturity (see the plan's explicit non-goal); a single timeout-bounded attempt matches "basic resilience only," consistent with how the rest of the codebase has no other retry policies.
+
+**Consequences:**
+- `CoachResponse.artifacts == {"llm_error": True}` is a new, documented signal a client can use to distinguish "the LLM was unreachable" from a normal `Intent.GENERAL`/`Intent.PROGRESS` reply, without changing the response's `200` status code.
+- Every LLM-touching code path now has an explicit, tested fallback behavior — see `test_llm_provider.py`, `test_orchestrator.py::test_process_message_degrades_gracefully_when_the_llm_call_fails`, `test_intent.py`, and `test_progress_analyzer.py`'s fallback-narrative tests.
+
+---
+
+## Decision 022 — Hybrid Deterministic + LLM Progress Analyzer; Second Extension of the Async Boundary
+
+**Status:** Accepted
+
+**Context:**
+`docs/ROADMAP.md`/`docs/TASKS.md` call for a Progress Analyzer that surfaces trend/plateau insight over a user's logged `Progress` history. Two shapes were possible: a fully deterministic, rule-based engine (matching `NutritionEngine`/`RecoveryEngine`'s precedent from Decisions 010/014) or one that uses the now-real LLM (Decision 020) to add a natural-language narrative. Decision 009 explicitly scoped the async boundary to only `AIOrchestrator.process_message`/`LLMProvider.complete`, anticipating exactly this kind of future ripple.
+
+**Decision:**
+`ProgressAnalyzer.handle()` is a hybrid: it always computes `ProgressStats` (trend direction, slope-per-week via simple linear regression, logging consistency, plateau detection, projected-target-date extrapolation) deterministically in pure Python first, then calls the real LLM to narrate 2-3 sentences of insight *from those already-computed stats*, explicitly instructed never to invent numbers of its own. `ProgressAnalyzer.handle` is therefore `async def`, and that rippled outward to `ProgressService.get_progress_summary` and the `GET /api/v1/progress/summary` route, exactly as Decision 009's "Consequences" anticipated.
+
+**Why:**
+- **A pure rule-based narrative (string templates keyed off stat thresholds) would read as noticeably more robotic than what an LLM can produce**, and the Progress domain — unlike Nutrition/Recovery's numeric targets — is fundamentally about narrating a trend in plain language, where an LLM adds real value.
+- **Computing stats deterministically first, then only asking the LLM to narrate them, keeps the numbers themselves trustworthy** — the LLM is never the source of truth for the slope/consistency/plateau values a user might act on, only for the prose describing them. This also keeps `ProgressStats` fully unit-testable without touching the LLM at all.
+- **Graceful degradation (Decision 021) makes the LLM call low-risk**: an LLM failure loses only the narrative's polish, never the underlying stats, since `build_fallback_narrative` renders the same stats as a deterministic template.
+- **The async ripple is the smallest one available**: only `ProgressAnalyzer.handle`, `ProgressService.get_progress_summary`, and one route become `async def`; every other repository/service in the Progress/Goal domain (CRUD, listing) stays fully synchronous, matching Decision 009's original "no disruptive migration" reasoning.
+
+**Alternatives considered:**
+- **Fully deterministic Progress Analyzer, no LLM call at all** — rejected per explicit scoping for this sprint; would also under-use the real LLM integration this sprint otherwise delivers.
+- **LLM-only analysis (ask the LLM to compute the trend itself from raw data points)** — rejected: LLMs are unreliable at exact arithmetic over a data series, and Decision 021's graceful-degradation philosophy is much weaker if the *numbers themselves*, not just the prose, disappear whenever the LLM is unavailable.
+
+**Consequences:**
+- New `Settings` fields: `progress_min_data_points_for_trend`, `progress_plateau_window_days`, `progress_plateau_threshold_pct` — tunable coefficients, matching the `nutrition_*`/`recovery_*` scalar-in-`Settings` precedent; `app/ai/progress_constants.py` holds only the one genuinely fixed structured table (fallback-narrative templates), matching `nutrition_constants.py`/`recovery_constants.py`'s split.
+- `InsufficientProgressDataError` is the analyzer's one documented precondition failure (too few data points in the window) — the caller's responsibility to have gathered enough, mirroring `IncompleteNutritionProfileError`'s precedent; `ProgressService`/the API route map it to `422`.
+
+---
+
+## Decision 023 — Goal/Progress Domain Ships With a Service + REST API, Decoupled From `AIOrchestrator.engines` This Sprint
+
+**Status:** Accepted
+
+**Context:**
+Decisions 011 and 016 established a repeatable pattern: the Nutrition and Recovery Engines each shipped with their own service/API layer one sprint, then were wired into `AIOrchestrator.engines` (via a thin Coach-facing adapter, Decision 017) in a later sprint once a `CoachService` existed to route to them. `Goal`/`Progress` are new this sprint, and the Progress Analyzer (Decision 022) is their AI counterpart — the same shape-of-question Decisions 011/016 already answered once each.
+
+**Decision:**
+Ship `GoalService`/`ProgressService` and `/api/v1/goals`/`/api/v1/progress` (including `GET /api/v1/progress/summary`, backed by the Progress Analyzer) this sprint, fully reachable via direct HTTP calls — but do **not** add a `ProgressCoachEngine` or register anything under `AIOrchestrator.engines[Intent.PROGRESS]`. `Intent.PROGRESS` continues falling through to the direct LLM completion branch (now real, per Decision 020, and resilient, per Decision 021), exactly like `Intent.GENERAL` — unchanged from how it already behaved before this sprint.
+
+**Why:**
+- **Directly mirrors the 011/016 → 017 precedent** — Nutrition and Recovery both proved out as independently valuable, independently testable service/API layers before their Coach binding was a separate, later decision. Applying the same split to Progress avoids re-deriving a question this codebase has already answered twice.
+- **A Coach-facing `ProgressCoachEngine` adapter would need to decide *when* the Coach should proactively surface a progress summary inside a chat reply** — a product/UX question (e.g., should every "how am I doing" message trigger a full trend computation?) that is orthogonal to whether the underlying analysis and REST API work correctly, and is better resolved with its own focused decision once a concrete Coach-integration need exists.
+- **Keeps this sprint's scope aligned to what was explicitly asked for**: `Goal`/`Progress` models, a working Progress Analyzer, and a real LLM — not a redesign of `AIOrchestrator`'s engine registry.
+
+**Alternatives considered:**
+- **Register a `ProgressCoachEngine` now, mirroring Decision 017 immediately** — rejected: no product decision yet exists for what a Progress-intent Coach reply should actually contain (a full summary? A one-line teaser? Which metric, if the user has several goals?), and inventing one speculatively risks the wrong shape landing in `AIOrchestrator.engines`, which is more disruptive to change later than an unregistered intent.
+- **Skip the REST API and only expose Progress via a future Coach integration** — rejected: `docs/ROADMAP.md`/`docs/TASKS.md` call for the service/API layer explicitly, and a direct API has independent value (e.g. a future dashboard UI) beyond whatever the Coach eventually does with it.
+
+**Consequences:**
+- `app/core/dependencies.py::get_coach_service` is unchanged by this sprint beyond its docstring — `Intent.PROGRESS` is not present in the `engines` dict it builds.
+- A future sprint that wires `Intent.PROGRESS` into the Coach will follow the same adapter shape `app/ai/coach_engines.py` already established, needing a new ADR only for whatever Coach-specific behavior it decides on (e.g. which window/metric to summarize by default).
+
+---
+
+## Decision 024 — Intent Classification Becomes LLM-Primary, With the Existing Keyword Matcher as Fallback
+
+**Status:** Accepted
+
+**Context:**
+`classify_intent()` has been a keyword-matching stub since Sprint 4.2 (Decision 018 explicitly deferred upgrading it, pending this sprint's LLM vendor decision). With a real `LLMProvider` now available (Decision 020) and every LLM call already required to degrade gracefully (Decision 021), upgrading intent classification to use it became viable without introducing a new, unguarded failure mode.
+
+**Decision:**
+`classify_intent(message, llm_provider)` becomes `async def`: it first asks the LLM to output exactly one of the five `Intent` labels, parses the response case/whitespace-insensitively against the `Intent` enum, and falls back to the original keyword matcher (renamed to the private `_classify_intent_by_keyword`, still directly unit-tested and otherwise unchanged) whenever the LLM call raises `LLMProviderError` or returns something that doesn't parse into a valid label. Under `AI_PROVIDER=mock`, the mock's fixed placeholder reply never parses as a valid `Intent`, so classification deterministically falls back to the keyword matcher every time — existing test behavior written against the mock provider's routing needed no special-casing, just an accounting for the one extra `complete()` call this adds per message.
+
+**Why:**
+- **An LLM is meaningfully better at classifying free-form intent than fixed keyword lists** — the keyword matcher was always an explicitly-labeled placeholder (Decision 018/the original `intent.py` docstring), not a considered-final design.
+- **The keyword matcher is a strictly safe fallback, not dead code** — it still runs, and is still directly tested, for every LLM failure/unparseable-response case, so this upgrade adds capability without removing a safety net.
+- **No special-casing for tests was needed**: because the mock provider's reply is guaranteed not to parse as an `Intent`, every existing keyword-routing test (`test_orchestrator.py`, the Coach API integration tests) continues to exercise the exact same routing decisions as before — the only observable change is `llm_provider.complete()` now being called once more per message, which the affected tests' assertions were updated to reflect.
+- **Parsing defensively (case-insensitive, whitespace/punctuation-stripped) rather than requiring an exact-match response** reduces how often a merely-imperfectly-formatted (but semantically correct) LLM response gets needlessly discarded to the fallback.
+
+**Alternatives considered:**
+- **Keep the keyword stub permanently, since no Coach engine consumes `Intent.PROGRESS` yet regardless** — rejected: `Intent.WORKOUT`/`NUTRITION`/`RECOVERY` already route to real engines since Decision 017/Sprint 4.5, so intent-classification quality already has real, user-visible consequences today, independent of Progress's status.
+- **Structured-output/function-calling for the LLM response instead of parsing a plain-text label** — considered for future robustness, but deferred: the generic OpenAI-compatible endpoint (Decision 020) targets the plain chat-completions API for maximum compatibility across vendors, and a single-word response is simple enough to parse reliably without it.
+
+**Consequences:**
+- `app/ai/intent.py` exports both `classify_intent` (async, LLM-primary) and the still-public-for-tests `_classify_intent_by_keyword`.
+- `AIOrchestrator.process_message`'s one call site becomes `intent = await classify_intent(message, self.llm_provider)` — every message now costs at least one LLM round trip for classification alone, on top of any engine/fallback completion; acceptable given Decision 021's resilience guarantees, but a future cost/latency optimization (e.g. a cheaper/smaller classification model) is left for a later sprint if it proves material.
+
+---
+
+*New decisions are appended as Decision 025, 026, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

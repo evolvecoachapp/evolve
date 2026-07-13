@@ -1,15 +1,20 @@
 """Intent classification for incoming Coach messages.
 
-``classify_intent`` is explicitly a placeholder — simple keyword
-matching, per the roadmap's original "intent routing stub" wording for
-this sprint. It exists so :class:`~app.ai.orchestrator.AIOrchestrator`
-has something to route on now; since no domain engine is registered yet
-(Sprint 4.3+), every intent currently falls through to the same direct-LLM
-fallback regardless of classification. A real classifier (LLM-based or
-otherwise) replaces this once engines exist to route to.
+``classify_intent`` is LLM-primary with a keyword-based fallback (Decision
+024 in ``docs/DECISIONS.md``): it asks the configured
+:class:`~app.ai.llm_provider.LLMProvider` to name one of the five
+:class:`~app.ai.contracts.Intent` labels, and falls back to the original
+keyword matcher (now :func:`_classify_intent_by_keyword`) whenever the LLM
+call fails (:class:`~app.ai.llm_provider.LLMProviderError`) or returns
+something that doesn't parse into a valid label. Under
+``AI_PROVIDER=mock`` this *always* falls back to the keyword matcher — the
+mock's fixed placeholder text never parses as a valid intent label — so
+every existing test written against the mock provider's routing behavior
+stays fully deterministic with no special-casing.
 """
 
 from app.ai.contracts import Intent
+from app.ai.llm_provider import LLMMessage, LLMProvider, LLMProviderError
 
 _KEYWORDS: dict[Intent, tuple[str, ...]] = {
     Intent.WORKOUT: ("workout", "exercise", "training", "reps", "sets", "program", "gym"),
@@ -18,8 +23,45 @@ _KEYWORDS: dict[Intent, tuple[str, ...]] = {
     Intent.PROGRESS: ("progress", "weight loss", "plateau", "trend", "goal"),
 }
 
+_CLASSIFICATION_SYSTEM_PROMPT = (
+    "Classify the user's message into exactly one of these categories: "
+    "general, workout, nutrition, recovery, progress. "
+    "Respond with only the single category word, nothing else."
+)
 
-def classify_intent(message: str) -> Intent:
+
+async def classify_intent(message: str, llm_provider: LLMProvider) -> Intent:
+    """Classify ``message`` into a coaching domain, LLM-first with a keyword fallback.
+
+    Falls back to :func:`_classify_intent_by_keyword` if the LLM call
+    raises :class:`~app.ai.llm_provider.LLMProviderError` or its response
+    doesn't parse into a valid :class:`~app.ai.contracts.Intent` value —
+    intent classification must never block the Coach from replying.
+    """
+    try:
+        completion = await llm_provider.complete(
+            [
+                LLMMessage(role="system", content=_CLASSIFICATION_SYSTEM_PROMPT),
+                LLMMessage(role="user", content=message),
+            ]
+        )
+    except LLMProviderError:
+        return _classify_intent_by_keyword(message)
+
+    parsed = _parse_intent_label(completion.content)
+    return parsed if parsed is not None else _classify_intent_by_keyword(message)
+
+
+def _parse_intent_label(raw: str) -> Intent | None:
+    """Parse a raw LLM completion into an :class:`Intent`, or ``None`` if it doesn't match one."""
+    normalized = raw.strip().lower().strip(".!\"' ")
+    try:
+        return Intent(normalized)
+    except ValueError:
+        return None
+
+
+def _classify_intent_by_keyword(message: str) -> Intent:
     """Classify ``message`` into a coaching domain by keyword matching.
 
     Checks each :class:`~app.ai.contracts.Intent`'s keyword list in a
