@@ -1,7 +1,7 @@
 # EVOLVE Frontend Status
 
 **Project:** EVOLVE  
-**Version:** 0.5.0  
+**Version:** 0.6.0  
 **Status:** Living Document  
 **Last Updated:** 2026-07-14  
 **Purpose:** Mobile client modules, providers, completed work, and backend integration plan.  
@@ -56,7 +56,7 @@ app/
 | **home** | `features/home/` | `useHome` | mock, backend (stub), local | Dashboard aggregation |
 | **dashboard** | `features/dashboard/` | — | presentation components | Hero/summary widgets |
 | **profile** | `features/profile/` | — | — | Settings rows, minimal |
-| **shared** | `features/shared/` | — | FeatureFlagService, CurrentUserService | Architecture scaffolding |
+| **shared** | `features/shared/` | `useCurrentUser` | mock, backend | User profile wired to API (Sprint 6.0) |
 
 ---
 
@@ -105,18 +105,20 @@ Default provider for all domains is **mock**. Mock providers serve static fixtur
 | Coach | `EXPO_PUBLIC_COACH_PROVIDER` | mock | Working |
 | Progress | `EXPO_PUBLIC_PROGRESS_PROVIDER` | mock | Working |
 | Home | `EXPO_PUBLIC_HOME_PROVIDER` | mock | Working |
+| User | `EXPO_PUBLIC_USER_PROVIDER` | backend | Working (Sprint 6.0) |
 
 ---
 
-## Backend Integration (Pending — Sprint 5.3)
+## Backend Integration
 
-| Domain | Backend endpoints to wire | Provider file |
-|--------|---------------------------|---------------|
-| Coach | `POST /coach/messages`, `GET /coach/conversations/{id}/messages` | `BackendCoachService` (stub) |
-| Workout | `GET /workout-resolution/today`, `/workout-logs/*` | `BackendWorkoutService` (stub) |
-| Nutrition | `/nutrition/meals`, `/nutrition/logs`, `/nutrition/targets` | `BackendNutritionService` (stub) |
-| Progress | `/progress`, `/progress/summary`, `/goals` | `BackendProgressService` (stub) |
-| Home | Aggregates above APIs | `BackendHomeService` (stub) |
+| Domain | Backend endpoints wired | Provider file | Status |
+|--------|-------------------------|---------------|--------|
+| User profile | `GET /users/me`, `PATCH /users/me` | `BackendUserService` | **Live** (Sprint 6.0) |
+| Coach | `POST /coach/messages`, `GET /coach/conversations/{id}/messages` | `BackendCoachService` (stub) | Pending |
+| Workout | `GET /workout-resolution/today`, `/workout-logs/*` | `BackendWorkoutService` (stub) | Pending |
+| Nutrition | `/nutrition/meals`, `/nutrition/logs`, `/nutrition/targets` | `BackendNutritionService` (stub) | Pending |
+| Progress | `/progress`, `/progress/summary`, `/goals` | `BackendProgressService` (stub) | Pending |
+| Home | Aggregates above APIs | `BackendHomeService` (stub) | Pending |
 
 **API base URL:** `EXPO_PUBLIC_API_BASE_URL` in `app.config.ts`
 

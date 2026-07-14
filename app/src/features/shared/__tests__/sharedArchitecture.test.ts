@@ -151,6 +151,8 @@ describe("shared domain architecture", () => {
 
   it("defines service contracts without persistence or provider imports", () => {
     const currentUserService: CurrentUserService = {
+      providerId: "mock",
+      refresh: async () => undefined,
       getUser: () => null,
       getProfile: () => null,
       getPreferences: () => null,

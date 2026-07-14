@@ -34,6 +34,7 @@ from app.services.goal_service import GoalService
 from app.services.nutrition_service import NutritionService
 from app.services.progress_service import ProgressService
 from app.services.recovery_service import RecoveryService
+from app.services.user_service import UserService
 from app.services.workout_log_service import WorkoutLogService
 from app.services.workout_resolution_service import WorkoutResolutionService
 from app.services.workout_service import WorkoutService
@@ -92,6 +93,11 @@ def get_nutrition_service(db: Session = Depends(get_db)) -> NutritionService:
 def get_recovery_service(db: Session = Depends(get_db)) -> RecoveryService:
     """Resolve a :class:`RecoveryService` bound to a request-scoped session."""
     return RecoveryService(RecoveryCheckInRepository(db), WorkoutLogRepository(db))
+
+
+def get_user_service(db: Session = Depends(get_db)) -> UserService:
+    """Resolve a :class:`UserService` bound to a request-scoped session."""
+    return UserService(UserRepository(db))
 
 
 def get_goal_repository(db: Session = Depends(get_db)) -> GoalRepository:

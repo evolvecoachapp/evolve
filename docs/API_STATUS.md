@@ -15,10 +15,10 @@
 
 | Status | Count |
 |--------|-------|
-| Complete | 49 |
+| Complete | 50 |
 | Partial | 0 |
 | Stub | 0 |
-| Not implemented | 7 (planned) |
+| Not implemented | 6 (planned) |
 | **Total documented** | **56** |
 
 ---
@@ -46,7 +46,7 @@
 | Endpoint | Method | Auth | Status | Notes |
 |----------|--------|------|--------|-------|
 | `/users/me` | GET | Yes | Complete | Read current user profile |
-| `/users/me` | PATCH | Yes | **Not implemented** | Profile update — also listed in Planned section below |
+| `/users/me` | PATCH | Yes | Complete | Partial profile update |
 
 ---
 
@@ -167,7 +167,6 @@
 | `/programs/{id}/assign` | POST | Yes | **Not implemented** | Assignment — service exists |
 | `/coach/conversations` | GET | Yes | **Not implemented** | List conversations |
 | `/exercises` | POST | Yes | **Not implemented** | Admin exercise create |
-| `/users/me` | PATCH | Yes | **Not implemented** | Profile update |
 
 ---
 

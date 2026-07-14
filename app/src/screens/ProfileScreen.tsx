@@ -9,8 +9,8 @@ import { GradientBackground } from "../components/GradientBackground";
 import { TabScreenContainer } from "../components/TabScreenContainer";
 import { SectionTitle } from "../components/SectionTitle";
 import { useAuth } from "../auth/useAuth";
-import { profileMock } from "../data/mocks/profile";
 import { SettingsRow } from "../features/profile/components";
+import { useCurrentUser } from "../features/shared";
 import { spacing } from "../theme/theme";
 import { useThemedStyles } from "../theme/useThemedStyles";
 
@@ -25,11 +25,8 @@ function getInitials(firstName?: string | null, username?: string): string {
 }
 
 export function ProfileScreen() {
-  const { user, logout } = useAuth();
-  const displayName = user?.first_name
-    ? `${user.first_name}${user.last_name ? ` ${user.last_name}` : ""}`
-    : user?.username ?? "User";
-  const email = user?.email ?? "user@example.com";
+  const { logout } = useAuth();
+  const { profile, user, displayName, email, memberSince, subscriptionTier } = useCurrentUser();
 
   const styles = useThemedStyles(({ colors, typography }) =>
     StyleSheet.create({
@@ -90,10 +87,10 @@ export function ProfileScreen() {
         <AppHeader title="Profile" />
         <TabScreenContainer gradient={false}>
           <View style={styles.avatarSection}>
-            <Avatar initials={getInitials(user?.first_name, user?.username)} />
+            <Avatar initials={getInitials(profile?.firstName, user?.username)} />
             <Text style={styles.displayName}>{displayName}</Text>
             <Text style={styles.email}>{email}</Text>
-            <Chip label={`Member since ${profileMock.memberSince}`} variant="neutral" size="sm" />
+            <Chip label={`Member since ${memberSince}`} variant="neutral" size="sm" />
           </View>
 
           <View>
@@ -111,7 +108,7 @@ export function ProfileScreen() {
               <View style={styles.divider} />
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Member since</Text>
-                <Text style={styles.infoValue}>{profileMock.memberSince}</Text>
+                <Text style={styles.infoValue}>{memberSince}</Text>
               </View>
             </AppCard>
           </View>
@@ -121,7 +118,7 @@ export function ProfileScreen() {
             <AppCard variant="floating" glow>
               <View style={styles.subscriptionRow}>
                 <View>
-                  <Text style={styles.subscriptionTier}>{profileMock.subscriptionTier} Plan</Text>
+                  <Text style={styles.subscriptionTier}>{subscriptionTier} Plan</Text>
                   <Text style={styles.subscriptionDesc}>
                     Upgrade to unlock advanced coaching features
                   </Text>

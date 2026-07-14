@@ -27,12 +27,20 @@ Each release section groups changes under: `Added`, `Changed`, `Deprecated`, `Re
 ## [Unreleased]
 
 ### Added
+- `UserService` with `update_profile()` — partial profile updates with email/username conflict detection
+- `PATCH /api/v1/users/me` route wired through `get_user_service()` dependency
+- Mobile user profile provider stack: `BackendUserService`, `MockCurrentUserService`, `useCurrentUser()` hook
+- `updateCurrentUser()` API client for profile PATCH
+- Unit tests (`test_user_service.py`) and integration tests (`test_users_api.py`)
 - Official project knowledge base under `docs/` (Sprint DOC-1): README index, master report, project state, sprint history, architecture summary, status reports, API inventory, known issues
 - [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md) and [TECH_STACK.md](./TECH_STACK.md) (Sprint DOC-1.1)
 - Standardized document headers across all `docs/` markdown files
 - Documentation Maintenance Policy in [README.md](./README.md)
 
 ### Changed
+- `ProfileScreen` now consumes `useCurrentUser()` instead of `profileMock` + direct `useAuth()` user fields
+- `CurrentUserService` extended with `providerId` and `refresh()` for async backend loading
+- API endpoint counts reconciled: **50 implemented**, **6 planned** ([API_STATUS.md](./API_STATUS.md))
 - `docs/ROADMAP.md` — phase completion status table
 - `docs/DECISIONS.md` — standard document header
 - API endpoint counts reconciled: **49 implemented**, **7 planned** ([API_STATUS.md](./API_STATUS.md))

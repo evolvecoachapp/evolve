@@ -83,7 +83,7 @@
 | Field | Detail |
 |-------|--------|
 | **Description** | `PATCH /api/v1/users/me` not implemented; blocks nutrition target API for incomplete profiles |
-| **Sprint fixed** | — (planned: 2.3 completion or 5.3) |
+| **Sprint fixed** | 6.0 |
 | **Workaround** | Set profile fields via registration or direct DB update in dev |
 
 ### KI-010 — No CI/CD pipeline

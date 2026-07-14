@@ -1,7 +1,7 @@
 # EVOLVE Project State
 
 **Project:** EVOLVE  
-**Version:** 0.5.0  
+**Version:** 0.6.0  
 **Status:** Living Document  
 **Last Updated:** 2026-07-14  
 **Purpose:** Snapshot of the current project state only.  
@@ -19,8 +19,8 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Navigation | 6-tab bottom bar (Home, Workout, Nutrition, Coach, Progress, Profile) |
 | Design system | Token-based theme with light/dark/system preference (`ThemeContext`) |
 | Feature modules | coach, workout, nutrition, progress, home, dashboard, profile, shared |
-| Data layer | Service factory pattern; **defaults to mock providers** |
-| Backend providers | All `Backend*Service` classes throw `notConfigured()` |
+| Data layer | Service factory pattern; user profile wired to backend (Sprint 6.0) |
+| Backend providers | User profile `BackendUserService` live; other `Backend*Service` classes throw `notConfigured()` |
 | Tests | Jest + jest-expo (~15 test files) |
 | Sprint status | UI foundation and polish complete; API wiring pending |
 
@@ -33,7 +33,7 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Stack | FastAPI 0.116, SQLAlchemy 2.0, Pydantic 2.11, Uvicorn |
 | Architecture | Clean Architecture enforced — routes thin, logic in services |
 | Domains live | Auth, users, exercises, catalog, workout logs, workout resolution, nutrition, recovery, coach, goals, progress |
-| API endpoints | **49 implemented**, **7 planned** ([API_STATUS.md](./API_STATUS.md)) |
+| API endpoints | **50 implemented**, **6 planned** ([API_STATUS.md](./API_STATUS.md)) |
 | Missing HTTP APIs | Program/workout authoring & assignment, exercise writes, conversation list |
 | Entry point | `GET /` health stub; no `/health` with DB check |
 | OpenAPI | Auto-generated at `/docs`, `/redoc` |
@@ -72,9 +72,9 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Layer | State |
 |-------|-------|
 | Backend | JWT (HS256), Argon2 passwords, stateless sessions |
-| Endpoints | `POST /auth/register`, `/login`, `/refresh`; `GET /users/me` |
+| Endpoints | `POST /auth/register`, `/login`, `/refresh`; `GET /users/me`; `PATCH /users/me` |
 | Mobile | `expo-secure-store` for tokens; 401 → refresh → retry-once |
-| Gaps | No profile update endpoint; no role enum (uses `is_superuser`) |
+| Gaps | No role enum (uses `is_superuser`) |
 
 ---
 
@@ -82,8 +82,8 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 
 | Layer | State |
 |-------|-------|
-| Backend unit | 18 files — services, engines, orchestrator, intent, LLM provider |
-| Backend integration | 10 files — real PostgreSQL via pytest fixtures |
+| Backend unit | 19 files — services, engines, orchestrator, intent, LLM provider |
+| Backend integration | 11 files — real PostgreSQL via pytest fixtures |
 | Backend runner | pytest 9.1 + pytest-asyncio |
 | Mobile | Jest + Testing Library — auth, API client, screens, feature architecture |
 | CI pipeline | **Not configured** (no `.github/workflows`) |
@@ -108,9 +108,8 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 
 **Highlights (open):**
-- Mobile backend providers not wired (Sprint 5.3)
+- Mobile backend providers not wired for coach/workout/nutrition (Sprint 5.3)
 - No program/workout management HTTP API
-- No `PATCH /users/me`
 - No CI pipeline or backend Docker service
 - `docs/TASKS.md` Phase 1–2 checkboxes out of sync with code
 
@@ -118,12 +117,12 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 
 ## Last Completed Sprint
 
-**DOC-1.1 — Documentation Finalization** (2026-07-14)
+**6.0 — User Profile Backend Integration** (2026-07-14)
 
-- Standardized all `docs/` headers, created PROJECT_CONTEXT and TECH_STACK
-- Reconciled API endpoint counts; added Documentation Maintenance Policy
+- `PATCH /api/v1/users/me` via `UserService`; mobile `BackendUserService` + `useCurrentUser()` on ProfileScreen
+- Mock user provider remains available via `EXPO_PUBLIC_USER_PROVIDER=mock`
 
-Previous: [DOC-1](./SPRINT_HISTORY.md#documentation) — initial knowledge base
+Previous: **DOC-1.1 — Documentation Finalization** (2026-07-14)
 
 ---
 
@@ -134,7 +133,7 @@ Previous: [DOC-1](./SPRINT_HISTORY.md#documentation) — initial knowledge base
 - Wire Coach chat → `/api/v1/coach/*`
 - Wire workout screen → `/api/v1/workout-resolution/today`
 - Wire nutrition screen → `/api/v1/nutrition/*`
-- Implement `Backend*Service` provider classes
+- Implement remaining `Backend*Service` provider classes
 
 ---
 
@@ -146,7 +145,7 @@ Previous: [DOC-1](./SPRINT_HISTORY.md#documentation) — initial knowledge base
 | 2 Authentication | 10% | 90% |
 | 3 Workout Engine | 15% | 95% |
 | 4 AI Coach | 25% | 95% |
-| 5 Mobile App | 30% | 60% |
+| 5 Mobile App | 30% | 65% |
 | 6 Production | 10% | 0% |
 
-**Weighted overall: ~68%**
+**Weighted overall: ~70%**

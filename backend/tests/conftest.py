@@ -66,7 +66,7 @@ def db_session() -> Generator[Session, None, None]:
 def test_user(db_session: Session) -> User:
     """Create and persist a single active user for use by other fixtures/tests."""
     user = User(
-        email=f"{uuid.uuid4().hex}@example.test",
+        email=f"{uuid.uuid4().hex}@example.com",
         username=f"user_{uuid.uuid4().hex[:12]}",
         hashed_password=hash_password("Sprint3.3-Testing!"),
         is_active=True,
@@ -86,7 +86,7 @@ def other_user(db_session: Session) -> User:
     another user's workout log).
     """
     user = User(
-        email=f"{uuid.uuid4().hex}@example.test",
+        email=f"{uuid.uuid4().hex}@example.com",
         username=f"user_{uuid.uuid4().hex[:12]}",
         hashed_password=hash_password("Sprint3.3-Testing!"),
         is_active=True,

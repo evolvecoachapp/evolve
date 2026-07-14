@@ -46,6 +46,21 @@ export interface UserCreate {
   goal?: Goal | null;
 }
 
+/** Mirrors `app.schemas.user.UserUpdate`. */
+export interface UserUpdate {
+  email?: string;
+  username?: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  birth_date?: string | null;
+  gender?: Gender | null;
+  height_cm?: number | null;
+  current_weight_kg?: number | null;
+  target_weight_kg?: number | null;
+  activity_level?: ActivityLevel | null;
+  goal?: Goal | null;
+}
+
 /** Mirrors `app.schemas.user.UserPublic`. */
 export interface UserPublic {
   id: string;

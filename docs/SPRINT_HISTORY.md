@@ -1,7 +1,7 @@
 # EVOLVE Sprint History
 
 **Project:** EVOLVE  
-**Version:** 0.5.0  
+**Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-14  
 **Purpose:** Chronological record of every sprint. Append new entries at the bottom — never rewrite past entries.  
@@ -346,3 +346,16 @@
 ---
 
 *Append new sprint entries below this line.*
+
+### Sprint 6.0 — User Profile Backend Integration
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 6.0 |
+| **Title** | User Profile Backend Integration |
+| **Date** | 2026-07-14 |
+| **Goal** | First real mobile backend integration — user profile via FastAPI |
+| **Files modified** | `backend/app/services/user_service.py`, `backend/app/api/v1/users.py`, `backend/app/core/dependencies.py`, `app/src/features/shared/` (providers, factory, hook, adapters), `app/src/screens/ProfileScreen.tsx`, `app/src/api/users.ts`, docs |
+| **Architecture impact** | `UserService` added; `CurrentUserService` provider/factory pattern completed; ProfileScreen wired through `useCurrentUser()` |
+| **Status** | Complete |
+| **Notes** | `GET /users/me` already existed; `PATCH /users/me` added. Mock provider remains via `EXPO_PUBLIC_USER_PROVIDER=mock`. |

@@ -1,11 +1,11 @@
 # EVOLVE Backend Status
 
 **Project:** EVOLVE  
-**Version:** 0.5.0  
+**Version:** 0.6.0  
 **Status:** Living Document  
 **Last Updated:** 2026-07-14  
 **Purpose:** Backend modules, services, repositories, models, and remaining work.  
-**Source of Truth:** Yes — for backend layer status (endpoints: [API_STATUS.md](./API_STATUS.md) — 49 implemented, 7 planned).
+**Source of Truth:** Yes — for backend layer status (endpoints: [API_STATUS.md](./API_STATUS.md) — 50 implemented, 6 planned).
 ---
 
 ## Stack
@@ -32,7 +32,7 @@
 | Router | Prefix | Endpoints |
 |--------|--------|-----------|
 | auth | `/auth` | register, login, refresh |
-| users | `/users` | me (read) |
+| users | `/users` | me (read, update) |
 | exercises | `/exercises` | list, detail, substitutes |
 | catalog | `/catalog` | muscle-groups, equipment |
 | workout_logs | `/workout-logs` | full session lifecycle |
@@ -48,6 +48,7 @@
 | Service | Responsibility | HTTP exposed |
 |---------|----------------|--------------|
 | `auth_service` | Register, login, refresh | Yes |
+| `user_service` | Profile update | Yes |
 | `workout_service` | Program/workout authoring, assignment | **No** |
 | `workout_log_service` | Session start/finish/skip/log sets | Yes |
 | `workout_resolution_service` | Today's workout resolution | Yes |
