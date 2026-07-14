@@ -22,7 +22,7 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Data layer | Service factory pattern; user profile wired to backend (Sprint 6.0) |
 | Backend providers | User profile `BackendUserService` live; other `Backend*Service` classes throw `notConfigured()` |
 | Tests | Jest + jest-expo (~15 test files) |
-| Sprint status | UI foundation and polish complete; API wiring pending |
+| Sprint status | UI foundation and polish complete; profile editing live; other API wiring pending |
 
 ---
 
@@ -117,12 +117,13 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 
 ## Last Completed Sprint
 
-**6.0 — User Profile Backend Integration** (2026-07-14)
+**6.1 — Editable User Profile (Production Ready)** (2026-07-14)
 
-- `PATCH /api/v1/users/me` via `UserService`; mobile `BackendUserService` + `useCurrentUser()` on ProfileScreen
-- Mock user provider remains available via `EXPO_PUBLIC_USER_PROVIDER=mock`
+- ProfileScreen edit mode with validation, save/cancel, and success/error feedback
+- `useCurrentUser().updateProfile()` + `refresh()` through existing provider stack
+- Avatar "Change photo" placeholder; display name and bio isolated until backend fields exist
 
-Previous: **DOC-1.1 — Documentation Finalization** (2026-07-14)
+Previous: **6.0 — User Profile Backend Integration** (2026-07-14)
 
 ---
 
@@ -145,7 +146,7 @@ Previous: **DOC-1.1 — Documentation Finalization** (2026-07-14)
 | 2 Authentication | 10% | 90% |
 | 3 Workout Engine | 15% | 95% |
 | 4 AI Coach | 25% | 95% |
-| 5 Mobile App | 30% | 65% |
+| 5 Mobile App | 30% | 68% |
 | 6 Production | 10% | 0% |
 
 **Weighted overall: ~70%**

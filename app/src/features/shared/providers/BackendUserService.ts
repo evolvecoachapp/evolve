@@ -29,12 +29,10 @@ const emptyState: CachedUserState = {
   subscription: null,
 };
 
-function createBackendUserService(): CurrentUserService & {
-  updateProfile(data: UserUpdate): Promise<void>;
-} {
+function createBackendUserService(): CurrentUserService {
   let cache: CachedUserState = { ...emptyState };
 
-  const service: CurrentUserService & { updateProfile(data: UserUpdate): Promise<void> } = {
+  const service: CurrentUserService = {
     providerId: "backend",
 
     async refresh(): Promise<void> {

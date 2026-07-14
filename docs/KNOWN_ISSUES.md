@@ -142,6 +142,14 @@
 | **Sprint fixed** | — |
 | **Workaround** | Use `MockCoachService` or wire to backend Coach API in Sprint 5.3 |
 
+### KI-018 — Profile display name, bio, and avatar not persisted
+
+| Field | Detail |
+|-------|--------|
+| **Description** | Mobile profile UI exposes display name, bio, and avatar change placeholder; backend `UserUpdate` has no `display_name`, `bio`, or avatar fields yet |
+| **Sprint fixed** | — |
+| **Workaround** | Display name is derived from first/last name on save; bio and avatar controls are disabled in edit mode |
+
 ### KI-017 — Feature flags defined but not wired
 
 | Field | Detail |

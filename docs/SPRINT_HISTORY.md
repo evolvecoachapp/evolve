@@ -347,6 +347,19 @@
 
 *Append new sprint entries below this line.*
 
+### Sprint 6.1 — Editable User Profile (Production Ready)
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 6.1 |
+| **Title** | Editable User Profile (Production Ready) |
+| **Date** | 2026-07-14 |
+| **Goal** | Production-ready profile editing on mobile using existing backend PATCH |
+| **Files modified** | `app/src/screens/ProfileScreen.tsx`, `app/src/features/profile/`, `app/src/features/shared/` (service, hook, providers), docs |
+| **Architecture impact** | `CurrentUserService.updateProfile()` added; flow `ProfileScreen` → `useProfileEdit` → `useCurrentUser` → `BackendUserService` → `updateCurrentUser()` |
+| **Status** | Complete |
+| **Notes** | Display name, bio, and avatar upload isolated for future backend fields. Mock provider supports `updateProfile` for local testing. |
+
 ### Sprint 6.0 — User Profile Backend Integration
 
 | Field | Detail |

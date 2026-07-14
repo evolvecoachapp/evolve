@@ -125,7 +125,7 @@
 | Dependency | `get_current_user` in `security/dependencies.py` |
 | Session model | Stateless (no server-side sessions) |
 
-**Gaps:** No `PATCH /users/me`, no role enum (uses `is_superuser`)
+**Gaps:** No role enum (uses `is_superuser`); no `display_name`, `bio`, or avatar fields on `UserUpdate`
 
 ---
 
@@ -153,7 +153,7 @@
 | Workout template CRUD | Yes | **Missing** |
 | Program assignment | Yes | **Missing** |
 | Exercise writes (admin) | Yes (`ExerciseService`) | **Missing** (read-only by design) |
-| User profile update | Partial | **Missing** PATCH |
+| User profile update | Yes (`UserService`) | **Live** — `PATCH /users/me` (Sprint 6.0); consumed by mobile edit UI (Sprint 6.1) |
 | Health/readiness probe | — | **Missing** (`GET /health`) |
 | Conversation list/title | Yes (`ChatRepository`) | **Missing** |
 
@@ -164,7 +164,8 @@
 | Item | Phase/Sprint |
 |------|--------------|
 | Program/workout management HTTP API | TBD |
-| `PATCH /users/me` + role field | 2.3 completion |
+| Role field on user model | 2.3 completion |
+| `display_name`, `bio`, avatar upload on user profile | Future sprint |
 | Dedicated auth integration tests | 2.3 |
 | Health endpoint with DB connectivity check | 1.3 |
 | Backend Dockerfile + Compose service | 1.2 / 6.1 |

@@ -55,7 +55,7 @@ app/
 | **progress** | `features/progress/` | via `progressService` | mock, backend (stub) | UI complete; mock data |
 | **home** | `features/home/` | `useHome` | mock, backend (stub), local | Dashboard aggregation |
 | **dashboard** | `features/dashboard/` | — | presentation components | Hero/summary widgets |
-| **profile** | `features/profile/` | — | — | Settings rows, minimal |
+| **profile** | `features/profile/` | `useProfileEdit` | — | Editable profile UI (Sprint 6.1) |
 | **shared** | `features/shared/` | `useCurrentUser` | mock, backend | User profile wired to API (Sprint 6.0) |
 
 ---
@@ -113,7 +113,7 @@ Default provider for all domains is **mock**. Mock providers serve static fixtur
 
 | Domain | Backend endpoints wired | Provider file | Status |
 |--------|-------------------------|---------------|--------|
-| User profile | `GET /users/me`, `PATCH /users/me` | `BackendUserService` | **Live** (Sprint 6.0) |
+| User profile | `GET /users/me`, `PATCH /users/me` | `BackendUserService` | **Live** (Sprint 6.0–6.1) |
 | Coach | `POST /coach/messages`, `GET /coach/conversations/{id}/messages` | `BackendCoachService` (stub) | Pending |
 | Workout | `GET /workout-resolution/today`, `/workout-logs/*` | `BackendWorkoutService` (stub) | Pending |
 | Nutrition | `/nutrition/meals`, `/nutrition/logs`, `/nutrition/targets` | `BackendNutritionService` (stub) | Pending |
@@ -144,7 +144,7 @@ Default provider for all domains is **mock**. Mock providers serve static fixtur
 | Area | Files |
 |------|-------|
 | Auth/API | `api/__tests__/`, `auth/__tests__/` |
-| Screens | `screens/__tests__/LoginScreen`, `RegisterScreen` |
+| Screens | `screens/__tests__/LoginScreen`, `RegisterScreen`, `ProfileScreen` |
 | Features | `features/*/__tests__/` — architecture and service tests |
 | Components | Selected component tests |
 

@@ -1,3 +1,4 @@
+import type { UserUpdate } from "../../../types/api";
 import type {
   Subscription,
   User,
@@ -23,6 +24,9 @@ export interface CurrentUserService {
   getSubscription(): Subscription | null;
 
   isAuthenticated(): boolean;
+
+  /** Persists profile changes for the authenticated user. */
+  updateProfile(data: UserUpdate): Promise<void>;
 }
 
 export class CurrentUserServiceError extends Error {

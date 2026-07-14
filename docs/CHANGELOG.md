@@ -32,12 +32,16 @@ Each release section groups changes under: `Added`, `Changed`, `Deprecated`, `Re
 - Mobile user profile provider stack: `BackendUserService`, `MockCurrentUserService`, `useCurrentUser()` hook
 - `updateCurrentUser()` API client for profile PATCH
 - Unit tests (`test_user_service.py`) and integration tests (`test_users_api.py`)
+- Profile edit mode on `ProfileScreen` — `useProfileEdit`, `ProfileEditForm`, validation, save/cancel (Sprint 6.1)
+- `CurrentUserService.updateProfile()` and `useCurrentUser().updateProfile()` / `saving` state (Sprint 6.1)
+- Profile form utilities (`profileForm`, `profileValidation`, `profileLabels`) and screen/service tests (Sprint 6.1)
 - Official project knowledge base under `docs/` (Sprint DOC-1): README index, master report, project state, sprint history, architecture summary, status reports, API inventory, known issues
 - [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md) and [TECH_STACK.md](./TECH_STACK.md) (Sprint DOC-1.1)
 - Standardized document headers across all `docs/` markdown files
 - Documentation Maintenance Policy in [README.md](./README.md)
 
 ### Changed
+- `ProfileScreen` now supports read/edit modes with backend-backed save via `useCurrentUser()` (Sprint 6.1)
 - `ProfileScreen` now consumes `useCurrentUser()` instead of `profileMock` + direct `useAuth()` user fields
 - `CurrentUserService` extended with `providerId` and `refresh()` for async backend loading
 - API endpoint counts reconciled: **50 implemented**, **6 planned** ([API_STATUS.md](./API_STATUS.md))

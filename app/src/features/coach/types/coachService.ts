@@ -1,6 +1,8 @@
 import type { CoachConversation } from "./coachConversation";
 import type { CoachMessage } from "./coachMessage";
 
+export type { CoachConversation } from "./coachConversation";
+
 export type CoachProviderId = "mock" | "openai" | "anthropic" | "local";
 
 export interface CoachSendMessageRequest {

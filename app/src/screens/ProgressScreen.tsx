@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 import { AppCard } from "../components/AppCard";
 import { AppHeader } from "../components/AppHeader";
@@ -68,7 +69,7 @@ export function ProgressScreen() {
                   value={stat.value}
                   unit={stat.unit}
                   trend={stat.trend}
-                  icon={stat.icon}
+                  icon={stat.icon as keyof typeof Ionicons.glyphMap}
                 />
               </View>
             ))}

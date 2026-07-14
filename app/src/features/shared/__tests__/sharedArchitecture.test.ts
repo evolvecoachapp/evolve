@@ -158,6 +158,7 @@ describe("shared domain architecture", () => {
       getPreferences: () => null,
       getSubscription: () => null,
       isAuthenticated: () => false,
+      updateProfile: async () => undefined,
     };
 
     const featureFlags: FeatureFlags = {

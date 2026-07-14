@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import type { UserUpdate } from "../../../types/api";
 import type { Subscription, User, UserPreferences, UserProfile } from "../models";
 import {
   currentUserService,
@@ -31,6 +32,7 @@ export function useCurrentUser({ service = currentUserService }: UseCurrentUserO
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<CurrentUserServiceError | null>(null);
 
   const syncFromService = useCallback(() => {
@@ -65,6 +67,33 @@ export function useCurrentUser({ service = currentUserService }: UseCurrentUserO
     }
   }, [service, syncFromService]);
 
+  const updateProfile = useCallback(
+    async (data: UserUpdate) => {
+      setSaving(true);
+      setError(null);
+
+      try {
+        await service.updateProfile(data);
+        syncFromService();
+      } catch (nextError) {
+        setError(
+          nextError instanceof CurrentUserServiceError
+            ? nextError
+            : new CurrentUserServiceError(
+                nextError instanceof Error
+                  ? nextError.message
+                  : "Failed to update the current user.",
+                service.providerId,
+              ),
+        );
+        throw nextError;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [service, syncFromService],
+  );
+
   useEffect(() => {
     let cancelled = false;
 
@@ -95,8 +124,10 @@ export function useCurrentUser({ service = currentUserService }: UseCurrentUserO
     memberSince,
     subscriptionTier,
     loading,
+    saving,
     error,
     isAuthenticated: service.isAuthenticated(),
     refresh,
+    updateProfile,
   };
 }
