@@ -1,7 +1,6 @@
 import { Redirect } from "expo-router";
-import { LoadingSpinner } from "../src/components/LoadingSpinner";
+import { BootstrapSkeleton } from "../src/components/Skeleton";
 import { useAuth } from "../src/auth/useAuth";
-import { colors } from "../src/theme/theme";
 
 /**
  * Entry route: shows a splash/loading indicator while `AuthProvider` checks
@@ -12,7 +11,7 @@ export default function Index() {
   const { isBootstrapping, isAuthenticated } = useAuth();
 
   if (isBootstrapping) {
-    return <LoadingSpinner color={colors.primary} />;
+    return <BootstrapSkeleton />;
   }
 
   return <Redirect href={isAuthenticated ? "/(app)/(tabs)" : "/(onboarding)/welcome"} />;

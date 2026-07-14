@@ -15,3 +15,12 @@ export {
   findWeek,
   sessionProgress,
 } from "./programSelectors";
+export {
+  formatDurationMinutes,
+  formatExerciseIntensity,
+  formatMuscleGroupLabel,
+  formatMuscleGroups,
+  formatMuscleGroupsSummary,
+  formatSessionDifficulty,
+  formatWorkingSetsSummary,
+} from "./presentationFormatters";

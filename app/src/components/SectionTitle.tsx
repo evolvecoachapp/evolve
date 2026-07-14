@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { colors, spacing, typography } from "../theme/theme";
+import { Pressable, Text, View } from "react-native";
+import { spacing } from "../theme/theme";
+import { useThemedStyles } from "../theme/useThemedStyles";
 
 interface SectionTitleProps {
   title: string;
@@ -8,6 +9,24 @@ interface SectionTitleProps {
 }
 
 export function SectionTitle({ title, actionLabel, onAction }: SectionTitleProps) {
+  const styles = useThemedStyles(({ colors, typography }) => ({
+    container: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: spacing.md,
+    },
+    title: {
+      ...typography.title3,
+      letterSpacing: -0.2,
+    },
+    action: {
+      ...typography.callout,
+      color: colors.pulse,
+      fontWeight: "600",
+    },
+  }));
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
@@ -19,20 +38,3 @@ export function SectionTitle({ title, actionLabel, onAction }: SectionTitleProps
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: spacing.md,
-  },
-  title: {
-    ...typography.h2,
-  },
-  action: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontWeight: "600",
-  },
-});

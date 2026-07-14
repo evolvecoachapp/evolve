@@ -2,8 +2,13 @@ import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { RegisterScreen } from "../RegisterScreen";
 import { useAuth } from "../../auth/useAuth";
+import { ThemeProvider } from "../../theme/ThemeContext";
 
 jest.mock("../../auth/useAuth");
+jest.mock("../../theme/themeStorage", () => ({
+  getStoredThemePreference: jest.fn().mockResolvedValue(null),
+  setStoredThemePreference: jest.fn().mockResolvedValue(undefined),
+}));
 jest.mock("expo-router", () => ({
   useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
 }));
@@ -18,7 +23,9 @@ const safeAreaMetrics = {
 function renderRegisterScreen() {
   return render(
     <SafeAreaProvider initialMetrics={safeAreaMetrics}>
-      <RegisterScreen />
+      <ThemeProvider>
+        <RegisterScreen />
+      </ThemeProvider>
     </SafeAreaProvider>,
   );
 }

@@ -15,7 +15,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   version: "0.1.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
-  userInterfaceStyle: "light",
+  userInterfaceStyle: "automatic",
   newArchEnabled: true,
   ios: {
     supportsTablet: true,
@@ -43,7 +43,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         image: "./assets/images/splash-icon.png",
         imageWidth: 200,
         resizeMode: "contain",
-        backgroundColor: "#F9FAFB",
+        backgroundColor: "#F5F5F4",
       },
     ],
   ],

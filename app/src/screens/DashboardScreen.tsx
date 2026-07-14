@@ -3,27 +3,18 @@ import { useRouter } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppCard } from "../components/AppCard";
-import { ScreenContainer } from "../components/ScreenContainer";
+import { Chip } from "../components/Chip";
+import { ChartPlaceholder } from "../components/ChartPlaceholder";
+import { GradientBackground } from "../components/GradientBackground";
+import { TabScreenContainer } from "../components/TabScreenContainer";
+import { DashboardHero } from "../features/dashboard/components";
 import { SectionTitle } from "../components/SectionTitle";
 import { StatCard } from "../components/StatCard";
 import { useAuth } from "../auth/useAuth";
 import { dashboardMock } from "../data/mocks/dashboard";
-import { colors, radius, spacing, typography } from "../theme/theme";
-
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
-}
-
-function formatDate(): string {
-  return new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
-}
+import { useTheme } from "../theme/ThemeContext";
+import { spacing } from "../theme/theme";
+import { useThemedStyles } from "../theme/useThemedStyles";
 
 export function DashboardScreen() {
   const { user } = useAuth();
@@ -32,216 +23,241 @@ export function DashboardScreen() {
   const { workout, nutrition, recovery, weeklyProgress, coachSuggestion } = dashboardMock;
   const firstName = user?.first_name ?? user?.username ?? "there";
 
+  const styles = useThemedStyles(({ colors, typography, radius }) =>
+    StyleSheet.create({
+      workoutHeader: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+        gap: spacing.md,
+        marginBottom: spacing.md,
+      },
+      workoutIcon: {
+        width: spacing.avatar.lg,
+        height: spacing.avatar.lg,
+        borderRadius: radius.md,
+        backgroundColor: colors.pulseMuted,
+        alignItems: "center",
+        justifyContent: "center",
+      },
+      workoutMeta: {
+        flex: 1,
+        gap: spacing.xs,
+      },
+      cardTitle: {
+        ...typography.title3,
+      },
+      cardSubtitle: {
+        ...typography.callout,
+        color: colors.inkMuted,
+      },
+      cardMetaRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: spacing.sm,
+      },
+      macroGrid: {
+        flexDirection: "row",
+        gap: spacing.md,
+      },
+      recoveryHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: spacing.md,
+      },
+      recoveryLabel: {
+        ...typography.caption,
+        color: colors.inkMuted,
+        marginBottom: spacing.xs,
+      },
+      recoveryScore: {
+        ...typography.display,
+        color: colors.pulse,
+      },
+      recoveryTip: {
+        ...typography.bodyRelaxed,
+        color: colors.inkSecondary,
+      },
+      chartSpacing: {
+        marginBottom: spacing.lg,
+      },
+      weeklyStats: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-around",
+      },
+      weeklyStat: {
+        alignItems: "center",
+        gap: spacing.xs,
+        flex: 1,
+      },
+      statDivider: {
+        width: 1,
+        height: spacing.statDividerHeight,
+        backgroundColor: colors.border,
+      },
+      weeklyStatValue: {
+        ...typography.title3,
+      },
+      weeklyStatLabel: {
+        ...typography.caption,
+        color: colors.inkMuted,
+      },
+      coachQuote: {
+        flexDirection: "row",
+        gap: spacing.md,
+        marginBottom: spacing.md,
+      },
+      coachIcon: {
+        width: spacing.avatar.md,
+        height: spacing.avatar.md,
+        borderRadius: radius.full,
+        backgroundColor: colors.pulseMuted,
+        alignItems: "center",
+        justifyContent: "center",
+      },
+      coachMessage: {
+        ...typography.bodyRelaxed,
+        flex: 1,
+        color: colors.inkSecondary,
+      },
+      coachLink: {
+        ...typography.caption,
+        color: colors.ink,
+        fontWeight: "600",
+      },
+    }),
+  );
+
+  const { colors } = useTheme();
+
   const macroProgress = (current: number, target: number) =>
     Math.round((current / target) * 100);
 
   return (
-    <ScreenContainer
-      withHeader={false}
-      contentContainerStyle={{ paddingTop: insets.top + spacing.md }}
-    >
-      <View style={styles.greetingBlock}>
-        <Text style={styles.greeting}>
-          {getGreeting()}, {firstName}
-        </Text>
-        <Text style={styles.date}>{formatDate()}</Text>
-      </View>
+    <GradientBackground variant="canvas">
+      <TabScreenContainer
+        gradient={false}
+        withHeader={false}
+        contentContainerStyle={{ paddingTop: insets.top + spacing.lg }}
+      >
+        <DashboardHero
+          firstName={firstName}
+          recoveryScore={recovery.score}
+          streakDays={weeklyProgress.streakDays}
+          workoutsCompleted={weeklyProgress.workoutsCompleted}
+          workoutsTarget={weeklyProgress.workoutsTarget}
+        />
 
-      <View>
-        <SectionTitle title="Today's Workout" actionLabel="View" onAction={() => router.push("/(app)/(tabs)/workout")} />
-        <AppCard onPress={() => router.push("/(app)/(tabs)/workout")}>
-          <Text style={styles.cardTitle}>{workout.name}</Text>
-          <Text style={styles.cardSubtitle}>{workout.muscleGroups}</Text>
-          <View style={styles.cardMeta}>
-            <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
-            <Text style={styles.cardMetaText}>{workout.durationMinutes} min</Text>
-          </View>
-        </AppCard>
-      </View>
-
-      <View>
-        <SectionTitle title="Nutrition" actionLabel="See all" onAction={() => router.push("/(app)/(tabs)/nutrition")} />
-        <AppCard>
-          <View style={styles.macroGrid}>
-            <StatCard
-              label="Calories"
-              value={nutrition.calories.current}
-              unit={`/ ${nutrition.calories.target}`}
-              progress={macroProgress(nutrition.calories.current, nutrition.calories.target)}
-            />
-            <StatCard
-              label="Protein"
-              value={`${nutrition.protein.current}g`}
-              unit={`/ ${nutrition.protein.target}g`}
-              progress={macroProgress(nutrition.protein.current, nutrition.protein.target)}
-            />
-          </View>
-          <View style={[styles.macroGrid, { marginTop: spacing.md }]}>
-            <StatCard
-              label="Carbs"
-              value={`${nutrition.carbs.current}g`}
-              unit={`/ ${nutrition.carbs.target}g`}
-              progress={macroProgress(nutrition.carbs.current, nutrition.carbs.target)}
-            />
-            <StatCard
-              label="Fat"
-              value={`${nutrition.fat.current}g`}
-              unit={`/ ${nutrition.fat.target}g`}
-              progress={macroProgress(nutrition.fat.current, nutrition.fat.target)}
-            />
-          </View>
-        </AppCard>
-      </View>
-
-      <View>
-        <SectionTitle title="Recovery" />
-        <AppCard variant="accent">
-          <View style={styles.recoveryHeader}>
-            <Text style={styles.recoveryScore}>{recovery.score}%</Text>
-            <View style={styles.recoveryBadge}>
-              <Text style={styles.recoveryBadgeText}>{recovery.status}</Text>
+        <View>
+          <SectionTitle title="Today's Workout" actionLabel="View" onAction={() => router.push("/(app)/(tabs)/workout")} />
+          <AppCard variant="floating" glow onPress={() => router.push("/(app)/(tabs)/workout")}>
+            <View style={styles.workoutHeader}>
+              <View style={styles.workoutIcon}>
+                <Ionicons name="barbell-outline" size={spacing.icon.lg} color={colors.pulse} />
+              </View>
+              <View style={styles.workoutMeta}>
+                <Text style={styles.cardTitle}>{workout.name}</Text>
+                <Text style={styles.cardSubtitle}>{workout.muscleGroups}</Text>
+              </View>
             </View>
-          </View>
-          <Text style={styles.recoveryTip}>{recovery.tip}</Text>
-        </AppCard>
-      </View>
+            <View style={styles.cardMetaRow}>
+              <Chip label={`${workout.durationMinutes} min`} icon="time-outline" variant="neutral" size="sm" />
+              <Chip label="Ready" variant="accent" size="sm" />
+            </View>
+          </AppCard>
+        </View>
 
-      <View>
-        <SectionTitle title="Weekly Progress" actionLabel="Details" onAction={() => router.push("/(app)/(tabs)/progress")} />
-        <AppCard>
-          <View style={styles.chartPlaceholder}>
-            <Ionicons name="bar-chart-outline" size={32} color={colors.textMuted} />
-            <Text style={styles.chartPlaceholderText}>Chart coming soon</Text>
-          </View>
-          <View style={styles.weeklyStats}>
-            <View style={styles.weeklyStat}>
-              <Text style={styles.weeklyStatValue}>
-                {weeklyProgress.workoutsCompleted}/{weeklyProgress.workoutsTarget}
-              </Text>
-              <Text style={styles.weeklyStatLabel}>Workouts</Text>
+        <View>
+          <SectionTitle title="Nutrition" actionLabel="See all" onAction={() => router.push("/(app)/(tabs)/nutrition")} />
+          <AppCard variant="elevated">
+            <View style={styles.macroGrid}>
+              <StatCard
+                label="Calories"
+                value={nutrition.calories.current}
+                unit={`/ ${nutrition.calories.target}`}
+                icon="flame-outline"
+                progress={macroProgress(nutrition.calories.current, nutrition.calories.target)}
+              />
+              <StatCard
+                label="Protein"
+                value={`${nutrition.protein.current}g`}
+                unit={`/ ${nutrition.protein.target}g`}
+                icon="nutrition-outline"
+                progress={macroProgress(nutrition.protein.current, nutrition.protein.target)}
+              />
             </View>
-            <View style={styles.weeklyStat}>
-              <Text style={styles.weeklyStatValue}>{weeklyProgress.avgCalories}</Text>
-              <Text style={styles.weeklyStatLabel}>Avg kcal</Text>
+            <View style={[styles.macroGrid, { marginTop: spacing.md }]}>
+              <StatCard
+                label="Carbs"
+                value={`${nutrition.carbs.current}g`}
+                unit={`/ ${nutrition.carbs.target}g`}
+                icon="leaf-outline"
+                progress={macroProgress(nutrition.carbs.current, nutrition.carbs.target)}
+              />
+              <StatCard
+                label="Fat"
+                value={`${nutrition.fat.current}g`}
+                unit={`/ ${nutrition.fat.target}g`}
+                icon="water-outline"
+                progress={macroProgress(nutrition.fat.current, nutrition.fat.target)}
+              />
             </View>
-            <View style={styles.weeklyStat}>
-              <Text style={styles.weeklyStatValue}>{weeklyProgress.streakDays}</Text>
-              <Text style={styles.weeklyStatLabel}>Day streak</Text>
-            </View>
-          </View>
-        </AppCard>
-      </View>
+          </AppCard>
+        </View>
 
-      <View>
-        <SectionTitle title="Coach Suggestion" />
-        <AppCard onPress={() => router.push("/(app)/(tabs)/coach")}>
-          <View style={styles.coachQuote}>
-            <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.accent} />
-            <Text style={styles.coachMessage}>{coachSuggestion.message}</Text>
-          </View>
-          <Text style={styles.coachLink}>Ask Coach →</Text>
-        </AppCard>
-      </View>
-    </ScreenContainer>
+        <View>
+          <SectionTitle title="Recovery" />
+          <AppCard variant="accent" glow>
+            <View style={styles.recoveryHeader}>
+              <View>
+                <Text style={styles.recoveryLabel}>Recovery score</Text>
+                <Text style={styles.recoveryScore}>{recovery.score}%</Text>
+              </View>
+              <Chip label={recovery.status} variant="accent" size="md" />
+            </View>
+            <Text style={styles.recoveryTip}>{recovery.tip}</Text>
+          </AppCard>
+        </View>
+
+        <View>
+          <SectionTitle title="Weekly Progress" actionLabel="Details" onAction={() => router.push("/(app)/(tabs)/progress")} />
+          <AppCard variant="elevated">
+            <ChartPlaceholder icon="bar-chart-outline" height={spacing.chart.sm} style={styles.chartSpacing} />
+            <View style={styles.weeklyStats}>
+              <View style={styles.weeklyStat}>
+                <Text style={styles.weeklyStatValue}>
+                  {weeklyProgress.workoutsCompleted}/{weeklyProgress.workoutsTarget}
+                </Text>
+                <Text style={styles.weeklyStatLabel}>Workouts</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.weeklyStat}>
+                <Text style={styles.weeklyStatValue}>{weeklyProgress.avgCalories}</Text>
+                <Text style={styles.weeklyStatLabel}>Avg kcal</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.weeklyStat}>
+                <Text style={styles.weeklyStatValue}>{weeklyProgress.streakDays}</Text>
+                <Text style={styles.weeklyStatLabel}>Day streak</Text>
+              </View>
+            </View>
+          </AppCard>
+        </View>
+
+        <View>
+          <SectionTitle title="Coach Suggestion" />
+          <AppCard variant="glass" onPress={() => router.push("/(app)/(tabs)/coach")}>
+            <View style={styles.coachQuote}>
+              <View style={styles.coachIcon}>
+                <Ionicons name="chatbubble-ellipses-outline" size={spacing.icon.md} color={colors.pulse} />
+              </View>
+              <Text style={styles.coachMessage}>{coachSuggestion.message}</Text>
+            </View>
+            <Text style={styles.coachLink}>Ask Coach →</Text>
+          </AppCard>
+        </View>
+      </TabScreenContainer>
+    </GradientBackground>
   );
 }
-
-const styles = StyleSheet.create({
-  greetingBlock: {
-    gap: spacing.xs,
-    marginBottom: spacing.sm,
-  },
-  greeting: {
-    ...typography.display,
-  },
-  date: {
-    ...typography.bodySmall,
-  },
-  cardTitle: {
-    ...typography.h3,
-    marginBottom: spacing.xs,
-  },
-  cardSubtitle: {
-    ...typography.bodySmall,
-    marginBottom: spacing.md,
-  },
-  cardMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-  },
-  cardMetaText: {
-    ...typography.caption,
-  },
-  macroGrid: {
-    flexDirection: "row",
-    gap: spacing.md,
-  },
-  recoveryHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: spacing.sm,
-  },
-  recoveryScore: {
-    ...typography.display,
-    fontSize: 36,
-    color: colors.accent,
-  },
-  recoveryBadge: {
-    backgroundColor: colors.overlay,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.full,
-  },
-  recoveryBadgeText: {
-    ...typography.caption,
-    color: colors.accent,
-    fontWeight: "600",
-  },
-  recoveryTip: {
-    ...typography.bodySmall,
-  },
-  chartPlaceholder: {
-    height: 120,
-    backgroundColor: colors.overlay,
-    borderRadius: radius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  chartPlaceholderText: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  weeklyStats: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-  },
-  weeklyStat: {
-    alignItems: "center",
-    gap: spacing.xs,
-  },
-  weeklyStatValue: {
-    ...typography.h3,
-  },
-  weeklyStatLabel: {
-    ...typography.caption,
-  },
-  coachQuote: {
-    flexDirection: "row",
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-  coachMessage: {
-    ...typography.bodySmall,
-    flex: 1,
-    lineHeight: 20,
-  },
-  coachLink: {
-    ...typography.caption,
-    color: colors.primary,
-    fontWeight: "600",
-  },
-});

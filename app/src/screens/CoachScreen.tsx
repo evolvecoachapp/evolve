@@ -1,157 +1,99 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { AppHeader } from "../components/AppHeader";
-import { AppInput } from "../components/AppInput";
-import { coachMock } from "../data/mocks/coach";
-import { colors, radius, shadows, spacing, typography } from "../theme/theme";
+import { GradientBackground } from "../components/GradientBackground";
+import { coachHeroMock, coachMock } from "../data/mocks/coach";
+import {
+  CoachAssistantMessage,
+  CoachHero,
+  CoachInputBar,
+  CoachUserMessage,
+} from "../features/coach/components";
+import { coachLayout, floatingFooterMetrics, spacing } from "../theme/theme";
+import { useTabSceneBottomReserve } from "../theme/useTabLayout";
+import { useThemedStyles } from "../theme/useThemedStyles";
 
 export function CoachScreen() {
   const insets = useSafeAreaInsets();
+  const tabBarReserve = useTabSceneBottomReserve();
   const [message, setMessage] = useState("");
+  const footerReserve = floatingFooterMetrics.scrollReserve(
+    floatingFooterMetrics.coachInputContentHeight,
+  );
+
+  const styles = useThemedStyles(() =>
+    StyleSheet.create({
+      screen: {
+        flex: 1,
+        backgroundColor: "transparent",
+      },
+      scroll: {
+        flex: 1,
+      },
+      scrollContent: {
+        paddingHorizontal: spacing.screenPadding,
+        gap: spacing.section,
+        overflow: "hidden",
+      },
+      conversation: {
+        gap: coachLayout.messageSectionGap,
+      },
+    }),
+  );
 
   return (
-    <View style={styles.screen}>
-      <AppHeader title="Coach" subtitle="Your AI fitness coach" />
-      <ScrollView
-        style={styles.messages}
-        contentContainerStyle={styles.messagesContent}
-        showsVerticalScrollIndicator={false}
+    <GradientBackground variant="canvas">
+      <KeyboardAvoidingView
+        style={styles.screen}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? insets.top + spacing.lg : 0}
       >
-        {coachMock.map((msg) => (
-          <View
-            key={msg.id}
-            style={[styles.bubbleRow, msg.role === "user" && styles.bubbleRowUser]}
-          >
-            <View
-              style={[
-                styles.bubble,
-                msg.role === "user" ? styles.bubbleUser : styles.bubbleCoach,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.bubbleText,
-                  msg.role === "user" && styles.bubbleTextUser,
-                ]}
-              >
-                {msg.content}
-              </Text>
-              <Text
-                style={[
-                  styles.timestamp,
-                  msg.role === "user" && styles.timestampUser,
-                ]}
-              >
-                {msg.timestamp}
-              </Text>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
-
-      <View style={[styles.inputBar, { paddingBottom: insets.bottom + spacing.sm }]}>
-        <View style={styles.inputWrapper}>
-          <AppInput
-            value={message}
-            onChangeText={setMessage}
-            placeholder="Ask Coach..."
-            style={styles.input}
-          />
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          style={[styles.sendButton, !message && styles.sendButtonDisabled]}
-          onPress={() => setMessage("")}
-          disabled={!message}
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingTop: insets.top + spacing.lg,
+              paddingBottom: tabBarReserve + footerReserve,
+            },
+          ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <Ionicons name="send" size={20} color={colors.surface} />
-        </Pressable>
-      </View>
-    </View>
+          <CoachHero
+            aiStatus={coachHeroMock.aiStatus}
+            recoveryScore={coachHeroMock.recoveryScore}
+            readinessDetail={coachHeroMock.readinessDetail}
+            trainingRecommendation={coachHeroMock.trainingRecommendation}
+            trainingDetail={coachHeroMock.trainingDetail}
+          />
+
+          <View style={styles.conversation}>
+            {coachMock.map((msg) =>
+              msg.role === "coach" ? (
+                <CoachAssistantMessage
+                  key={msg.id}
+                  content={msg.content}
+                  timestamp={msg.timestamp}
+                />
+              ) : (
+                <CoachUserMessage
+                  key={msg.id}
+                  content={msg.content}
+                  timestamp={msg.timestamp}
+                />
+              ),
+            )}
+          </View>
+        </ScrollView>
+
+        <CoachInputBar
+          value={message}
+          onChangeText={setMessage}
+          onSendPress={() => setMessage("")}
+          placeholder="Message your Coach…"
+        />
+      </KeyboardAvoidingView>
+    </GradientBackground>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  messages: {
-    flex: 1,
-  },
-  messagesContent: {
-    paddingHorizontal: spacing.screenPadding,
-    paddingVertical: spacing.md,
-    gap: spacing.md,
-  },
-  bubbleRow: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-  },
-  bubbleRowUser: {
-    justifyContent: "flex-end",
-  },
-  bubble: {
-    maxWidth: "80%",
-    padding: spacing.md,
-    borderRadius: radius.lg,
-  },
-  bubbleCoach: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderBottomLeftRadius: spacing.xs,
-    ...shadows.card,
-  },
-  bubbleUser: {
-    backgroundColor: colors.primary,
-    borderBottomRightRadius: spacing.xs,
-  },
-  bubbleText: {
-    ...typography.bodySmall,
-    lineHeight: 20,
-  },
-  bubbleTextUser: {
-    color: colors.surface,
-  },
-  timestamp: {
-    ...typography.caption,
-    fontSize: 10,
-    marginTop: spacing.xs,
-    color: colors.textMuted,
-  },
-  timestampUser: {
-    color: "rgba(255,255,255,0.7)",
-  },
-  inputBar: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    paddingHorizontal: spacing.screenPadding,
-    paddingTop: spacing.md,
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    gap: spacing.sm,
-    ...shadows.elevated,
-  },
-  inputWrapper: {
-    flex: 1,
-  },
-  input: {
-    marginBottom: 0,
-  },
-  sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: spacing.lg,
-  },
-  sendButtonDisabled: {
-    opacity: 0.4,
-  },
-});

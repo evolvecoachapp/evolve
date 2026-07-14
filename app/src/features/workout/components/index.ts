@@ -1,4 +1,4 @@
-/**
- * Workout feature components will be added in Sprint 5.3+ as screens
- * consume the domain types, mocks, and services defined here.
- */
+export { WorkoutExercisePreviewList } from "./WorkoutExercisePreviewList";
+export { WorkoutExercisePreviewRow } from "./WorkoutExercisePreviewRow";
+export { WorkoutPreviewHero } from "./WorkoutPreviewHero";
+export { WorkoutStartFooter } from "./WorkoutStartFooter";
