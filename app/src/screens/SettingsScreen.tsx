@@ -36,7 +36,7 @@ export function SettingsScreen() {
                   description="Theme and visual style"
                   icon="color-palette-outline"
                   showChevron
-                  onPress={() => router.push("/(app)/settings/appearance/index")}
+                  onPress={() => router.push("/(app)/settings/appearance")}
                 />
               </View>
             </AppCard>

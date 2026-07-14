@@ -22,11 +22,11 @@ export const tabBarMetrics = {
  */
 export const floatingFooterMetrics = {
   horizontalInset: tabBarMetrics.horizontalInset,
-  bottomGap: spacing.sm,
+  bottomGap: spacing.md,
   radius: radius.xl,
   /** Approximate workout footer content height (summary + CTA + internal padding). */
   workoutContentHeight:
-    spacing.lg + spacing.md + spacing.xl + spacing["3xl"] + spacing.sm,
+    spacing.lg + spacing.md + spacing.xl + spacing["3xl"],
   /** Approximate coach input bar content height. */
   coachInputContentHeight:
     coachLayout.inputMinHeight + spacing.md * 3,

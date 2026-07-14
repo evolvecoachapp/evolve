@@ -1,4 +1,11 @@
 export {
+  cloneWorkout,
+  cloneWorkoutExercises,
+  toLegacyExerciseSet,
+  toLegacyWorkoutExercise,
+  toPresentationDay,
+} from "./workoutAdapters";
+export {
   buildSet,
   buildSets,
   createSetId,

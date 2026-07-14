@@ -7,22 +7,19 @@ import {
   WorkoutPreviewHero,
   WorkoutStartFooter,
 } from "../features/workout/components";
-import { useWorkoutDay, useWorkoutProgram } from "../features/workout/hooks";
+import { useWorkout } from "../features/workout/hooks";
 import {
   countWorkingSets,
   formatMuscleGroups,
   formatSessionDifficulty,
+  toLegacyWorkoutExercise,
+  toPresentationDay,
 } from "../features/workout/utils";
 import { floatingFooterMetrics } from "../theme/theme";
 import { useThemedStyles } from "../theme/useThemedStyles";
 
-/** Mock cursor — today's scheduled slot until backend resolution is wired. */
-const TODAY_WEEK = 1;
-const TODAY_DAY = 1;
-
 export function WorkoutScreen() {
-  const program = useWorkoutProgram();
-  const day = useWorkoutDay(TODAY_WEEK, TODAY_DAY);
+  const { workout, loading } = useWorkout();
 
   const styles = useThemedStyles(() =>
     StyleSheet.create({
@@ -33,14 +30,15 @@ export function WorkoutScreen() {
     }),
   );
 
-  if (!day) {
+  if (loading || !workout) {
     return null;
   }
 
-  const week = program.weeks.find((entry) => entry.weekNumber === TODAY_WEEK);
-  const workingSetCount = countWorkingSets(day);
-  const muscleGroups = formatMuscleGroups(day.exercises);
-  const sessionDifficulty = formatSessionDifficulty(day);
+  const presentationDay = toPresentationDay(workout);
+  const legacyExercises = workout.exercises.map(toLegacyWorkoutExercise);
+  const workingSetCount = countWorkingSets(presentationDay);
+  const muscleGroups = formatMuscleGroups(legacyExercises);
+  const sessionDifficulty = formatSessionDifficulty(presentationDay);
   const footerReserve = floatingFooterMetrics.scrollReserve(
     floatingFooterMetrics.workoutContentHeight,
   );
@@ -51,22 +49,22 @@ export function WorkoutScreen() {
         <AppHeader title="Workout" subtitle="Your session briefing" />
         <TabScreenContainer gradient={false} footerReserve={footerReserve}>
           <WorkoutPreviewHero
-            programName={program.name}
-            weekLabel={week?.label ?? `Week ${TODAY_WEEK}`}
-            dayLabel={day.label}
-            focus={day.focus}
-            durationMinutes={day.estimatedDurationMinutes}
+            programName={workout.title}
+            weekLabel={workout.scheduleLabels.weekLabel}
+            dayLabel={workout.scheduleLabels.dayLabel}
+            focus={workout.subtitle}
+            durationMinutes={workout.estimatedDuration}
             workingSetCount={workingSetCount}
             sessionDifficulty={sessionDifficulty}
             muscleGroups={muscleGroups}
           />
 
-          <WorkoutExercisePreviewList exercises={day.exercises} />
+          <WorkoutExercisePreviewList exercises={legacyExercises} />
         </TabScreenContainer>
 
         <WorkoutStartFooter
-          exerciseCount={day.exercises.length}
-          durationMinutes={day.estimatedDurationMinutes}
+          exerciseCount={workout.exercises.length}
+          durationMinutes={workout.estimatedDuration}
         />
       </View>
     </GradientBackground>

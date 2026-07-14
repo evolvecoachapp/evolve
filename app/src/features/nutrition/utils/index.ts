@@ -1,9 +1,8 @@
 export {
-  formatCalorieLabel,
-  formatCompletionPercent,
-  formatMacroGrams,
-  formatMacroProgress,
-  formatNutritionDate,
-  formatRemainingCalories,
-  resolveMealIcon,
-} from "./presentationFormatters";
+  cloneFood,
+  cloneMeal,
+  cloneMealEntry,
+  cloneNutritionDashboard,
+  cloneNutritionHistory,
+} from "./nutritionAdapters";
+export * from "./presentationFormatters";

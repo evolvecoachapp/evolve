@@ -11,7 +11,7 @@ import { DashboardHero } from "../features/dashboard/components";
 import { SectionTitle } from "../components/SectionTitle";
 import { StatCard } from "../components/StatCard";
 import { useAuth } from "../auth/useAuth";
-import { dashboardMock } from "../data/mocks/dashboard";
+import { useHome } from "../features/home/hooks";
 import { useTheme } from "../theme/ThemeContext";
 import { spacing } from "../theme/theme";
 import { useThemedStyles } from "../theme/useThemedStyles";
@@ -20,7 +20,7 @@ export function DashboardScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { workout, nutrition, recovery, weeklyProgress, coachSuggestion } = dashboardMock;
+  const { dashboard, loading } = useHome();
   const firstName = user?.first_name ?? user?.username ?? "there";
 
   const styles = useThemedStyles(({ colors, typography, radius }) =>
@@ -134,6 +134,13 @@ export function DashboardScreen() {
   const macroProgress = (current: number, target: number) =>
     Math.round((current / target) * 100);
 
+  if (loading || !dashboard) {
+    return null;
+  }
+
+  const { workoutPreview, nutritionSummary, recovery, weeklyProgress, coachSummary, streak } =
+    dashboard;
+
   return (
     <GradientBackground variant="canvas">
       <TabScreenContainer
@@ -144,7 +151,7 @@ export function DashboardScreen() {
         <DashboardHero
           firstName={firstName}
           recoveryScore={recovery.score}
-          streakDays={weeklyProgress.streakDays}
+          streakDays={streak.days}
           workoutsCompleted={weeklyProgress.workoutsCompleted}
           workoutsTarget={weeklyProgress.workoutsTarget}
         />
@@ -157,12 +164,12 @@ export function DashboardScreen() {
                 <Ionicons name="barbell-outline" size={spacing.icon.lg} color={colors.pulse} />
               </View>
               <View style={styles.workoutMeta}>
-                <Text style={styles.cardTitle}>{workout.name}</Text>
-                <Text style={styles.cardSubtitle}>{workout.muscleGroups}</Text>
+                <Text style={styles.cardTitle}>{workoutPreview.name}</Text>
+                <Text style={styles.cardSubtitle}>{workoutPreview.muscleGroups}</Text>
               </View>
             </View>
             <View style={styles.cardMetaRow}>
-              <Chip label={`${workout.durationMinutes} min`} icon="time-outline" variant="neutral" size="sm" />
+              <Chip label={`${workoutPreview.durationMinutes} min`} icon="time-outline" variant="neutral" size="sm" />
               <Chip label="Ready" variant="accent" size="sm" />
             </View>
           </AppCard>
@@ -174,33 +181,33 @@ export function DashboardScreen() {
             <View style={styles.macroGrid}>
               <StatCard
                 label="Calories"
-                value={nutrition.calories.current}
-                unit={`/ ${nutrition.calories.target}`}
+                value={nutritionSummary.calories.current}
+                unit={`/ ${nutritionSummary.calories.target}`}
                 icon="flame-outline"
-                progress={macroProgress(nutrition.calories.current, nutrition.calories.target)}
+                progress={macroProgress(nutritionSummary.calories.current, nutritionSummary.calories.target)}
               />
               <StatCard
                 label="Protein"
-                value={`${nutrition.protein.current}g`}
-                unit={`/ ${nutrition.protein.target}g`}
+                value={`${nutritionSummary.protein.current}g`}
+                unit={`/ ${nutritionSummary.protein.target}g`}
                 icon="nutrition-outline"
-                progress={macroProgress(nutrition.protein.current, nutrition.protein.target)}
+                progress={macroProgress(nutritionSummary.protein.current, nutritionSummary.protein.target)}
               />
             </View>
             <View style={[styles.macroGrid, { marginTop: spacing.md }]}>
               <StatCard
                 label="Carbs"
-                value={`${nutrition.carbs.current}g`}
-                unit={`/ ${nutrition.carbs.target}g`}
+                value={`${nutritionSummary.carbs.current}g`}
+                unit={`/ ${nutritionSummary.carbs.target}g`}
                 icon="leaf-outline"
-                progress={macroProgress(nutrition.carbs.current, nutrition.carbs.target)}
+                progress={macroProgress(nutritionSummary.carbs.current, nutritionSummary.carbs.target)}
               />
               <StatCard
                 label="Fat"
-                value={`${nutrition.fat.current}g`}
-                unit={`/ ${nutrition.fat.target}g`}
+                value={`${nutritionSummary.fat.current}g`}
+                unit={`/ ${nutritionSummary.fat.target}g`}
                 icon="water-outline"
-                progress={macroProgress(nutrition.fat.current, nutrition.fat.target)}
+                progress={macroProgress(nutritionSummary.fat.current, nutritionSummary.fat.target)}
               />
             </View>
           </AppCard>
@@ -238,7 +245,7 @@ export function DashboardScreen() {
               </View>
               <View style={styles.statDivider} />
               <View style={styles.weeklyStat}>
-                <Text style={styles.weeklyStatValue}>{weeklyProgress.streakDays}</Text>
+                <Text style={styles.weeklyStatValue}>{streak.days}</Text>
                 <Text style={styles.weeklyStatLabel}>Day streak</Text>
               </View>
             </View>
@@ -252,7 +259,7 @@ export function DashboardScreen() {
               <View style={styles.coachIcon}>
                 <Ionicons name="chatbubble-ellipses-outline" size={spacing.icon.md} color={colors.pulse} />
               </View>
-              <Text style={styles.coachMessage}>{coachSuggestion.message}</Text>
+              <Text style={styles.coachMessage}>{coachSummary.message}</Text>
             </View>
             <Text style={styles.coachLink}>Ask Coach →</Text>
           </AppCard>

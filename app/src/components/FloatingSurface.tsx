@@ -1,9 +1,35 @@
-import { View, type ViewStyle } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  Keyboard,
+  Platform,
+  StyleSheet,
+  View,
+  type KeyboardEvent,
+  type ViewStyle,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "../theme/ThemeContext";
 import { floatingFooterMetrics, spacing } from "../theme/theme";
 import { useFloatingFooterBottomOffset } from "../theme/useTabLayout";
 import { useThemedStyles } from "../theme/useThemedStyles";
 
 type FloatingSurfaceVariant = "bar" | "footer";
+
+/** Nearly-opaque floating chrome — shared with FloatingTabBar treatment. */
+const FLOATING_GLASS = {
+  light: {
+    base: "rgba(255,255,255,0.94)",
+    frost: "rgba(255,255,255,0.55)",
+    tint: "rgba(247,246,244,0.45)",
+    border: "rgba(12,12,14,0.14)",
+  },
+  dark: {
+    base: "rgba(30,30,34,0.96)",
+    frost: "rgba(255,255,255,0.08)",
+    tint: "rgba(21,21,24,0.5)",
+    border: "rgba(250,250,250,0.16)",
+  },
+} as const;
 
 interface FloatingSurfaceProps {
   children: React.ReactNode;
@@ -15,7 +41,7 @@ interface FloatingSurfaceProps {
 }
 
 /**
- * Fixed bottom bar / floating panel — glass-like elevated surface.
+ * Fixed bottom bar / floating panel — nearly-opaque glass elevated surface.
  * Use `variant="footer"` for workout CTA, coach input, and future floating actions.
  */
 export function FloatingSurface({
@@ -24,25 +50,50 @@ export function FloatingSurface({
   bordered,
   variant = "bar",
 }: FloatingSurfaceProps) {
+  const { mode } = useTheme();
+  const glass = FLOATING_GLASS[mode];
+
   const styles = useThemedStyles(({ colors, shadows }) => ({
     barSurface: {
-      backgroundColor: colors.glass,
+      backgroundColor: glass.base,
       paddingHorizontal: spacing.screenPadding,
       paddingTop: spacing.md,
+      borderWidth: 1,
+      borderColor: glass.border,
       ...shadows.floating,
     },
     footerSurface: {
-      backgroundColor: colors.glass,
+      backgroundColor: glass.base,
       borderWidth: 1,
-      borderColor: colors.borderStrong,
+      borderColor: glass.border,
       paddingHorizontal: spacing.lg,
-      paddingTop: spacing.lg,
-      paddingBottom: spacing.md,
-      gap: spacing.md,
-      ...shadows.floating,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.sm,
+      gap: spacing.sm,
+      overflow: "hidden",
+      ...Platform.select({
+        ios: {
+          shadowColor: "#0C0C0E",
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.12,
+          shadowRadius: 20,
+        },
+        android: {
+          elevation: 12,
+        },
+        default: {},
+      }),
+    },
+    frostOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: glass.frost,
+    },
+    tintOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: glass.tint,
     },
     bordered: {
-      borderTopWidth: 1,
+      borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: colors.border,
     },
   }));
@@ -58,6 +109,12 @@ export function FloatingSurface({
         style,
       ]}
     >
+      {isFooter ? (
+        <>
+          <View style={styles.frostOverlay} pointerEvents="none" />
+          <View style={styles.tintOverlay} pointerEvents="none" />
+        </>
+      ) : null}
       {children}
     </View>
   );
@@ -67,11 +124,53 @@ export function FloatingSurface({
 export function FloatingFooterAnchor({
   children,
   style,
+  keyboardAware = false,
+  onKeyboardHeightChange,
 }: {
   children: React.ReactNode;
   style?: ViewStyle;
+  /** Lift above the software keyboard — use for text composers only. */
+  keyboardAware?: boolean;
+  /** Reports keyboard lift used for bottom offset — 0 when hidden. Use for chat scroll insets. */
+  onKeyboardHeightChange?: (lift: number) => void;
 }) {
-  const bottom = useFloatingFooterBottomOffset();
+  const insets = useSafeAreaInsets();
+  const baseBottom = useFloatingFooterBottomOffset();
+  const [keyboardLift, setKeyboardLift] = useState(0);
+
+  useEffect(() => {
+    if (!keyboardAware) {
+      return;
+    }
+
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const onShow = (event: KeyboardEvent) => {
+      const { height } = event.endCoordinates;
+      const lift =
+        Platform.OS === "ios"
+          ? height
+          : Math.max(0, height - insets.bottom);
+      setKeyboardLift(lift);
+      onKeyboardHeightChange?.(lift);
+    };
+    const onHide = () => {
+      setKeyboardLift(0);
+      onKeyboardHeightChange?.(0);
+    };
+
+    const showSub = Keyboard.addListener(showEvent, onShow);
+    const hideSub = Keyboard.addListener(hideEvent, onHide);
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [insets.bottom, keyboardAware, onKeyboardHeightChange]);
+
+  const bottom = keyboardLift > 0 ? keyboardLift : baseBottom;
+
   const styles = useThemedStyles(() => ({
     anchor: {
       position: "absolute",

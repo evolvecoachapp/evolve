@@ -3,19 +3,18 @@ import { AppHeader } from "../components/AppHeader";
 import { GradientBackground } from "../components/GradientBackground";
 import { TabScreenContainer } from "../components/TabScreenContainer";
 import { SectionTitle } from "../components/SectionTitle";
-import { nutritionMock } from "../data/mocks/nutrition";
 import {
   NutritionHero,
   NutritionMacroGrid,
   NutritionMealCard,
 } from "../features/nutrition/components";
+import { useNutrition } from "../features/nutrition/hooks";
 import { formatMacroProgress } from "../features/nutrition/utils";
 import { spacing } from "../theme/theme";
 import { useThemedStyles } from "../theme/useThemedStyles";
 
 export function NutritionScreen() {
-  const { calories, protein, carbs, fat, meals } = nutritionMock;
-  const calorieProgress = formatMacroProgress(calories.current, calories.target);
+  const { nutrition, loading } = useNutrition();
 
   const styles = useThemedStyles(() =>
     StyleSheet.create({
@@ -28,6 +27,13 @@ export function NutritionScreen() {
       },
     }),
   );
+
+  if (loading || !nutrition) {
+    return null;
+  }
+
+  const { calories, protein, carbs, fat, meals } = nutrition.daily;
+  const calorieProgress = formatMacroProgress(calories.current, calories.target);
 
   return (
     <GradientBackground variant="canvas">
@@ -55,7 +61,7 @@ export function NutritionScreen() {
             <View style={styles.mealList}>
               {meals.map((meal) => (
                 <NutritionMealCard
-                  key={meal.name}
+                  key={meal.id}
                   name={meal.name}
                   time={meal.time}
                   calories={meal.calories}

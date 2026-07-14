@@ -1,6 +1,11 @@
 # EVOLVE Tasks
 
-> Actionable checklist derived from [`ROADMAP.md`](./ROADMAP.md). Tasks are ordered by priority within each sprint. Check items off as they are completed; do not reorder completed items.
+**Project:** EVOLVE  
+**Version:** 0.5.0  
+**Status:** Living Document  
+**Last Updated:** 2026-07-14  
+**Purpose:** Actionable sprint checklists derived from [ROADMAP.md](./ROADMAP.md).  
+**Source of Truth:** Partial — checklists only; completion status may lag code (verify against [PROJECT_STATE.md](./PROJECT_STATE.md)).
 
 ---
 

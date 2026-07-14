@@ -1,8 +1,13 @@
 # Architecture Decision Records
 
-This document records significant technical decisions made for EVOLVE, why they were made, and what alternatives were considered. New decisions should be appended with the next sequential number — existing entries are not renumbered or deleted, even if later superseded (mark superseded decisions explicitly).
+**Project:** EVOLVE  
+**Version:** 0.5.0  
+**Status:** Living Document (append-only)  
+**Last Updated:** 2026-07-14  
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-027). Append only — never renumber.  
+**Source of Truth:** Yes — for architecture decisions and rationale.
 
-Format inspired by lightweight ADRs (Architecture Decision Records).
+New decisions append as Decision 028, 029, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
 
 ---
 

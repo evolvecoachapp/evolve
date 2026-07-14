@@ -44,7 +44,7 @@ export function WorkoutStartFooter({
         fontWeight: "600",
       },
       cta: {
-        minHeight: spacing["3xl"] + spacing.sm,
+        minHeight: spacing["3xl"],
         borderRadius: radius.lg,
       },
     }),

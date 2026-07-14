@@ -7,13 +7,12 @@ import { HeroSection } from "../components/HeroSection";
 import { TabScreenContainer } from "../components/TabScreenContainer";
 import { SectionTitle } from "../components/SectionTitle";
 import { StatCard } from "../components/StatCard";
-import { progressMock } from "../data/mocks/progress";
+import { useProgress } from "../features/progress/hooks";
 import { spacing } from "../theme/theme";
 import { useThemedStyles } from "../theme/useThemedStyles";
 
 export function ProgressScreen() {
-  const { stats } = progressMock;
-  const headlineStat = stats[0];
+  const { dashboard, loading } = useProgress();
 
   const styles = useThemedStyles(({ typography }) =>
     StyleSheet.create({
@@ -39,6 +38,13 @@ export function ProgressScreen() {
       },
     }),
   );
+
+  if (loading || !dashboard) {
+    return null;
+  }
+
+  const { stats } = dashboard;
+  const headlineStat = stats[0];
 
   return (
     <GradientBackground variant="canvas">

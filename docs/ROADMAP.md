@@ -1,14 +1,62 @@
 # EVOLVE Roadmap
 
-> Source of truth for phases: [`EVOLVE_ARCHITECTURE.md`](../.cursor/rules/EVOLVE_ARCHITECTURE.md). This document translates that architecture into a working roadmap with sprint-level granularity.
+**Project:** EVOLVE  
+**Version:** 0.5.0  
+**Status:** Living Document  
+**Last Updated:** 2026-07-14  
+**Purpose:** Engineering roadmap with phase and sprint granularity, completion status, and forward plan.  
+**Source of Truth:** Yes — for phase milestones and sprint sequencing.
+
+Product vision and users: [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Phase architecture detail: [`EVOLVE_ARCHITECTURE.md`](../.cursor/rules/EVOLVE_ARCHITECTURE.md).
+
+---
+
+## Phase Completion Status
+
+| Phase | Name | Status | Completion |
+|-------|------|--------|------------|
+| 1 | Foundation | In progress | ~85% |
+| 2 | Authentication | In progress | ~90% |
+| 3 | Workout Engine | **Complete** | ~95% |
+| 4 | AI Coach | **Complete** | ~95% |
+| 5 | Mobile App | In progress | ~60% |
+| 6 | Production | Not started | 0% |
+
+### Sprint Checklist (High Level)
+
+| Sprint | Status |
+|--------|--------|
+| 1.1 Database & Config | Done |
+| 1.2 Alembic & Docker | Partial (DB only) |
+| 1.3 API Skeleton & CI | Partial |
+| 2.1 User Model | Done |
+| 2.2 Auth Core | Done |
+| 2.3 Profile & Hardening | Partial |
+| 3.1 Exercise Catalog | Done |
+| 3.2 Programs & Workouts | Done |
+| 3.3 Workout Logging | Done |
+| 4.1 Workout Resolution | Done |
+| 4.2 AI Orchestrator | Done |
+| 4.3 Nutrition Engine | Done |
+| 4.4 Recovery Engine | Done |
+| 4.5 Coach Service | Done |
+| 4.6 Progress & Real LLM | Done |
+| 5.1 Mobile Scaffold & Auth | Done |
+| 5.2 UI Foundation | Done |
+| 5.6 UI Polish | Done |
+| 5.3 API Integration | **Next** |
+| 5.4 Progress & Offline | Pending |
+| 6.1–6.3 Production | Pending |
+| DOC-1 Knowledge Base | Done |
+| DOC-1.1 Documentation Finalization | Done |
 
 ---
 
 ## Vision
 
-EVOLVE is an **AI-first fitness coaching platform**. It replaces fragmented workout apps, nutrition trackers, and generic chatbots with a single, continuous digital coach — one that programs training, guides nutrition, monitors recovery, remembers context, and analyzes progress over time.
+See [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md#product-vision) for full product vision, target users, and competitive positioning.
 
-The long-term vision is a platform where a user opens one app, talks to one Coach, and receives adaptive guidance that improves as the platform learns from their history, feedback, and outcomes — scaling from individual users to coaches managing multiple clients.
+EVOLVE is an **AI-first fitness coaching platform** — one continuous digital coach for training, nutrition, recovery, and progress.
 
 ---
 

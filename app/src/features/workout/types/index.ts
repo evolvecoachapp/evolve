@@ -16,3 +16,10 @@ export type { WorkoutDay } from "./workout-day";
 export type { WorkoutWeek } from "./workout-week";
 export type { OneRepMaxMap, WorkoutProgram, WorkoutProgramMetadata } from "./workout-program";
 export type { WorkoutSession } from "./workout-session";
+export type {
+  WorkoutProviderId,
+  WorkoutService,
+  SaveSetRequest,
+  SkipExerciseRequest,
+} from "./workoutService";
+export { WorkoutServiceError } from "./workoutService";

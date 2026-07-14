@@ -1,32 +1,39 @@
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { workoutService } from "../services";
-import type { WorkoutSession } from "../types";
-import { cloneExercises } from "../utils";
-import { useWorkoutProgram } from "./useWorkoutProgram";
+import type { WorkoutSession } from "../models/WorkoutSession";
+import { cloneWorkoutExercises } from "../utils/workoutAdapters";
 
 /**
- * Returns a scheduled session preview cloned from the day template.
- * Call workoutService.createSession() when the user taps Start Workout.
+ * Returns a scheduled session preview cloned from today's workout template.
+ * Call workoutService.startWorkout() when the user taps Start Workout.
  */
-export function useWorkoutSession(weekNumber: number, dayNumber: number): WorkoutSession | undefined {
-  const program = useWorkoutProgram();
+export function useWorkoutSession(): WorkoutSession | undefined {
+  const [session, setSession] = useState<WorkoutSession | undefined>();
 
-  return useMemo(() => {
-    const day = workoutService.getDay(program.id, weekNumber, dayNumber);
-    if (!day || day.isRestDay) {
-      return undefined;
-    }
+  useEffect(() => {
+    let cancelled = false;
 
-    return {
-      id: `preview-${program.id}-w${weekNumber}-d${dayNumber}`,
-      programId: program.id,
-      weekNumber,
-      dayNumber,
-      dayLabel: day.label,
-      status: "scheduled",
-      startedAt: null,
-      completedAt: null,
-      exercises: cloneExercises(day.exercises),
+    void workoutService.getTodayWorkout().then((workout) => {
+      if (cancelled) {
+        return;
+      }
+
+      setSession({
+        id: `preview-${workout.id}`,
+        workoutId: workout.id,
+        title: workout.title,
+        subtitle: workout.subtitle,
+        status: "scheduled",
+        startedAt: null,
+        completedAt: null,
+        exercises: cloneWorkoutExercises(workout.exercises),
+      });
+    });
+
+    return () => {
+      cancelled = true;
     };
-  }, [program.id, weekNumber, dayNumber]);
+  }, []);
+
+  return session;
 }

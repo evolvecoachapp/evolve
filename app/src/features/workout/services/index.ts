@@ -1,2 +1,7 @@
-export { workoutService } from "./workoutService";
-export type { WorkoutService } from "./workoutService";
+export { workoutService } from "./defaultWorkoutService";
+export { createWorkoutService, resolveWorkoutProviderId } from "./workoutServiceFactory";
+export type { WorkoutProviderId, WorkoutService, SaveSetRequest, SkipExerciseRequest } from "../types/workoutService";
+export { WorkoutServiceError } from "../types/workoutService";
+export { mockWorkoutService } from "../providers/MockWorkoutService";
+export { backendWorkoutService } from "../providers/BackendWorkoutService";
+export { localWorkoutService } from "../providers/LocalWorkoutService";

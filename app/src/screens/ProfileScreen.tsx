@@ -140,7 +140,7 @@ export function ProfileScreen() {
                   description="App preferences and appearance"
                   icon="settings-outline"
                   showChevron
-                  onPress={() => router.push("/(app)/settings/index")}
+                  onPress={() => router.push("/(app)/settings")}
                 />
               </View>
             </AppCard>

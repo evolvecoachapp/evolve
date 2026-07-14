@@ -23,3 +23,7 @@ export function formatAiStatusLabel(status: "active" | "thinking" | "idle"): str
       return "Active";
   }
 }
+
+export function formatMessageTimestamp(date: Date = new Date()): string {
+  return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
