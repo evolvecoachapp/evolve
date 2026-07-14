@@ -354,10 +354,32 @@ EVOLVE/
 │   ├── memory/
 │   └── progress/
 │
-├── app/                                # Mobile application (Phase 5)
-│   ├── ios/
-│   ├── android/
-│   └── shared/                         # Shared client logic (API client, models)
+├── app/                                # Mobile application (Phase 5) — React Native +
+│   │                                   # Expo (managed workflow), TypeScript, Expo Router
+│   │                                   # (see Decision 025 in docs/DECISIONS.md). Supersedes
+│   │                                   # this section's original app/ios, app/android,
+│   │                                   # app/shared sketch, written before any stack was
+│   │                                   # chosen — Expo's managed workflow does not check
+│   │                                   # native ios/android project files into source
+│   │                                   # control; they would only appear via a future
+│   │                                   # `expo prebuild`/EAS Build.
+│   ├── app.config.ts                   # Dynamic Expo config; reads EXPO_PUBLIC_API_BASE_URL
+│   ├── package.json / tsconfig.json / babel.config.js
+│   ├── app/                            # Expo Router route tree — thin route files only,
+│   │   │                               # each mounting a screen component from src/screens/
+│   │   ├── _layout.tsx                 # Root layout — mounts AuthProvider, global Stack
+│   │   ├── index.tsx                   # Bootstrap/splash — redirects once session state is known
+│   │   ├── (onboarding)/welcome.tsx
+│   │   ├── (auth)/login.tsx, register.tsx
+│   │   └── (app)/home.tsx              # Auth-guarded group (see (app)/_layout.tsx)
+│   └── src/
+│       ├── api/                        # client.ts (typed fetch wrapper, 401 → refresh →
+│       │                               # retry-once), auth.ts (endpoint calls), config.ts
+│       ├── auth/                       # AuthContext/useAuth, secureStorage.ts
+│       │                               # (expo-secure-store — see Decision 026)
+│       ├── components/                 # Shared UI primitives (Button, TextField)
+│       ├── screens/                    # Screen implementations rendered by app/ routes
+│       └── types/                      # TypeScript mirrors of backend Pydantic schemas
 │
 ├── database/                           # Database utilities and seed data
 │   ├── seeds/                          # Reference data (exercises, templates)
@@ -401,12 +423,30 @@ EVOLVE/
 | `backend/app/utils/` | Stateless helper functions |
 | `backend/tests/` | Automated test suite |
 | `ai/` | Independently deployable AI packages (future) |
-| `app/` | Mobile client codebase |
+| `app/` | Mobile client codebase — React Native + Expo, TypeScript (see "Mobile Client" below) |
 | `database/` | Seed data and DB maintenance tooling |
 | `docker/` | Environment-specific Compose files |
 | `docs/` | Human-readable documentation beyond this file |
 | `infrastructure/` | Cloud and deployment provisioning |
 | `scripts/` | Automation for local dev and CI |
+
+---
+
+## Mobile Client
+
+**Role:** Native/cross-platform client for daily coaching interaction (Phase 5).
+
+`app/` is a React Native + Expo (managed workflow) project, TypeScript throughout, using Expo Router for file-based navigation — see Decision 025 in `docs/DECISIONS.md` for the stack rationale versus Flutter and separate native apps.
+
+**Current state (Sprint 5.1):** the mobile scaffold, a typed API client, and the auth flow exist. The client talks to the existing backend over plain HTTP — no backend changes were required for this sprint.
+
+- **API client** (`src/api/client.ts`) — a thin hand-written `fetch` wrapper (no axios; avoids a speculative dependency). Attaches the stored access token as a bearer credential; on a `401` from an authenticated call, attempts exactly one silent token refresh (`POST /api/v1/auth/refresh`) and retries the original request once before giving up and clearing the session.
+- **Auth state** (`src/auth/AuthContext.tsx`/`useAuth.ts`) — a React Context provider owning bootstrap-on-launch (resume an existing session from secure storage), login, register, logout, and the current user. Screens and route guards consume it exclusively via `useAuth()`; no screen calls `src/api/auth.ts` or token storage directly.
+- **Token persistence** (`src/auth/secureStorage.ts`) — `expo-secure-store` (iOS Keychain / Android Keystore), never `AsyncStorage` — see Decision 026.
+- **Routing** — Expo Router route files under `app/app/` stay thin (mount a screen component), mirroring the backend's "routes stay thin" convention; `(app)/_layout.tsx` guards every authenticated route, redirecting to onboarding if no session exists.
+- **Screens implemented this sprint:** Welcome (onboarding), Login, Register, and a placeholder authenticated Home screen. Coach chat, today's workout, meal plan, and progress dashboard screens are Sprint 5.2/5.3 — not yet built.
+
+As later mobile sprints add screens that call the Nutrition/Recovery/Coach/Progress APIs, they follow the same `api/` → `auth/`(where relevant) → `screens/` pattern established here, without introducing a global state library or a second navigation approach unless a real, non-speculative need emerges.
 
 ---
 

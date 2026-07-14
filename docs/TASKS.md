@@ -111,11 +111,11 @@
 
 > Originally scoped as "Nutrition & Recovery"; Recovery Engine split out into Sprint 4.4 below.
 
-- [ ] Create `Meal`/`MealLog` models and migration (`Meal` uses a nullable `created_by_id` + `is_public` flag, future-proofed for shared/public meals — see Decision 012)
-- [ ] Implement `MealRepository`, `NutritionService`
-- [ ] Implement Nutrition Engine (rule-based BMR/TDEE/macro-target calculation via a swappable `BMRStrategy` — see Decision 013; decoupled from `AIOrchestrator`/`AIEngine` — see Decision 011)
-- [ ] Implement `/api/v1/nutrition` API (meal template CRUD, meal logging, daily targets/adherence)
-- [ ] Write unit tests (`BMRStrategy`/`NutritionEngine`, `NutritionService`) and an integration test for the nutrition API
+- [x] Create `Meal`/`MealLog` models and migration (`Meal` uses a nullable `created_by_id` + `is_public` flag, future-proofed for shared/public meals — see Decision 012)
+- [x] Implement `MealRepository`, `NutritionService`
+- [x] Implement Nutrition Engine (rule-based BMR/TDEE/macro-target calculation via a swappable `BMRStrategy` — see Decision 013; decoupled from `AIOrchestrator`/`AIEngine` — see Decision 011)
+- [x] Implement `/api/v1/nutrition` API (meal template CRUD, meal logging, daily targets/adherence)
+- [x] Write unit tests (`BMRStrategy`/`NutritionEngine`, `NutritionService`) and an integration test for the nutrition API
 
 ### Sprint 4.4 — Recovery Engine
 
@@ -129,12 +129,12 @@
 
 > Originally scoped as "Progress & Coach Endpoint"; split per Decision 018 — Progress Analyzer/`Goal`/`Progress`/real LLM integration moved to Sprint 4.6 below.
 
-- [ ] Implement `WorkoutCoachEngine`, `NutritionCoachEngine`, `RecoveryCoachEngine` (`app/ai/coach_engines.py`) — thin `AIEngine`-conformant adapters over the existing `WorkoutResolutionService`/`NutritionService`/`RecoveryService`, resolving the binding question deferred by Decisions 011/016 (see Decision 017)
-- [ ] Register the three adapters into `AIOrchestrator.engines`
-- [ ] Extend `AIOrchestrator`/`CoachResponse` to persist and surface engine `artifacts`
-- [ ] Implement `CoachService` — thin application-layer wrapper: conversation-ownership check, then delegates straight to `AIOrchestrator.process_message` (see Decision 019); no orchestration logic of its own
-- [ ] Implement `/api/v1/coach` conversational endpoint (send message; fetch one conversation's message history)
-- [ ] Write unit tests (coach engine adapters, `CoachService`) and an integration test for the Coach API end to end
+- [x] Implement `WorkoutCoachEngine`, `NutritionCoachEngine`, `RecoveryCoachEngine` (`app/ai/coach_engines.py`) — thin `AIEngine`-conformant adapters over the existing `WorkoutResolutionService`/`NutritionService`/`RecoveryService`, resolving the binding question deferred by Decisions 011/016 (see Decision 017)
+- [x] Register the three adapters into `AIOrchestrator.engines`
+- [x] Extend `AIOrchestrator`/`CoachResponse` to persist and surface engine `artifacts`
+- [x] Implement `CoachService` — thin application-layer wrapper: conversation-ownership check, then delegates straight to `AIOrchestrator.process_message` (see Decision 019); no orchestration logic of its own
+- [x] Implement `/api/v1/coach` conversational endpoint (send message; fetch one conversation's message history)
+- [x] Write unit tests (coach engine adapters, `CoachService`) and an integration test for the Coach API end to end
 
 ### Sprint 4.6 — Progress & Real LLM
 
@@ -154,9 +154,11 @@
 
 ### Sprint 5.1 — Scaffold & Auth
 
-- [ ] Set up mobile project scaffold
-- [ ] Implement API client with JWT auth flow
-- [ ] Implement onboarding screens
+> Stack decision: React Native + Expo (managed workflow), TypeScript, Expo Router — see Decision 025 in `docs/DECISIONS.md`. Onboarding this sprint is a welcome screen plus login/register; a full profile-completion wizard (height/weight/activity/goal for the Nutrition Engine) is deferred to a later mobile sprint.
+
+- [x] Set up mobile project scaffold (`app/` — Expo + TypeScript + Expo Router, ESLint/Prettier, strict `tsconfig`)
+- [x] Implement API client with JWT auth flow (`app/src/api/client.ts` — bearer auth, single refresh-and-retry-once on `401`; `app/src/api/auth.ts` against the existing `/api/v1/auth/*`/`/api/v1/users/me` endpoints, no backend changes) and token persistence via `expo-secure-store` (see Decision 026)
+- [x] Implement onboarding screens (Welcome, Login, Register, and a placeholder authenticated Home screen proving the full loop)
 
 ### Sprint 5.2 — Core Screens
 

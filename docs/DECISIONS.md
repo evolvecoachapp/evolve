@@ -826,4 +826,60 @@ Ship `GoalService`/`ProgressService` and `/api/v1/goals`/`/api/v1/progress` (inc
 
 ---
 
-*New decisions are appended as Decision 025, 026, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 025 — Mobile Client Built with React Native + Expo (Managed Workflow), TypeScript
+
+**Status:** Accepted
+
+**Context:**
+`docs/ROADMAP.md`/`docs/TASKS.md` scope Sprint 5.1 as "Mobile scaffold, API client, auth flow," the first sprint of Phase 5. No mobile technology decision had been made anywhere in EVOLVE before now — `EVOLVE_ARCHITECTURE.md`'s folder sketch (`app/ios/`, `app/android/`, `app/shared/`) predates any stack choice and was written to stay neutral across native, cross-platform, or hybrid approaches.
+
+**Decision:**
+Build the mobile client as a single React Native + Expo project (managed workflow, not bare/ejected) at top-level `app/`, using TypeScript throughout and Expo Router for file-based navigation. `app/app/` holds thin route files (mount a screen component, nothing else); `app/src/` holds `api/` (typed HTTP client), `auth/` (`AuthContext`/`useAuth`, secure token storage), `components/` (shared UI primitives), `screens/` (actual screen implementations), and `types/` (TypeScript mirrors of backend Pydantic schemas). No global state library (Redux/Zustand), no GraphQL client, and no monorepo tooling (Turborepo/pnpm workspaces) are introduced — a single Expo app has no current need for any of them.
+
+**Why:**
+- **One codebase, one language, for both iOS and Android** — avoids the 2x implementation cost of separate Swift/Kotlin apps for a single-developer-velocity early-stage product with no identified need yet for deep native APIs beyond what Expo's SDK already wraps (secure storage, notifications, camera, etc., as later sprints need them).
+- **TypeScript keeps the "always use type hints" principle (`evolve.mdc`) consistent across the stack**, even though the language changes from Python to TypeScript at the client boundary.
+- **Expo's managed workflow removes an entire class of native build/tooling problems** (Xcode/Android Studio project configuration, CocoaPods, Gradle) for a scaffold-and-early-iteration sprint — `expo prebuild`/EAS Build remain available later, without ever needing hand-maintained native project files in source control now.
+- **Expo Router (the current Expo default for new projects) avoids hand-rolled React Navigation boilerplate** — screens map directly to files, matching this codebase's general preference for convention over configuration where a well-supported default exists.
+- **React Context (`AuthProvider`/`useAuth`) is sufficient for this sprint's only cross-screen state (the current user/session)** — introducing a global state library now, before any second slice of state exists, would be a speculative abstraction per this plan's explicit constraint.
+- **A thin hand-written `fetch`-based API client (no axios)** keeps the dependency footprint minimal; the one non-trivial piece of client logic (401 → refresh → retry-once) is simple enough to implement directly, mirroring the "avoid speculative abstractions" principle already applied throughout the backend (e.g. Decision 010's no-ORM-for-nutrition-formulas reasoning).
+
+**Alternatives considered:**
+- **Flutter (Dart)** — comparable cross-platform reach and performance, but introduces a second programming language into the stack with no corresponding benefit over React Native for this product's needs.
+- **Separate native apps (Swift/SwiftUI + Kotlin/Jetpack Compose)** — the most native-feeling UX, but doubles every future mobile sprint's implementation and testing cost; rejected as disproportionate to current team size and roadmap velocity.
+- **React Native bare workflow (no Expo)** — more native-module flexibility, but that flexibility has no identified use yet, at the cost of manually maintaining native project files and build tooling from day one.
+- **Redux/Zustand for state, or a monorepo tool** — rejected as premature; nothing in this sprint's scope needs cross-screen state beyond auth, or a second JS/TS package alongside this one.
+
+**Consequences:**
+- `app/` (repository root) is a standalone Expo project with its own `package.json`, not part of any workspace/monorepo tool; `backend/` and `app/` are independently installed and run.
+- `EVOLVE_ARCHITECTURE.md` §3's folder sketch is updated to reflect the actual Expo-managed layout (see the corresponding documentation update alongside this sprint) — `app/ios/`/`app/android/` native directories are not hand-maintained in source control; they would only appear if a future sprint runs `expo prebuild` or an EAS Build requires them.
+- Every future mobile sprint (5.2/5.3) builds on this same project rather than introducing a second mobile codebase or a competing navigation/state approach.
+
+---
+
+## Decision 026 — Mobile Token Persistence via `expo-secure-store`, Never `AsyncStorage`
+
+**Status:** Accepted
+
+**Context:**
+Sprint 5.1's API client needs to persist the access/refresh token pair returned by `/api/v1/auth/login`/`/refresh` across app restarts. React Native offers two common storage mechanisms for this: `AsyncStorage` (a simple, unencrypted key-value store) and `expo-secure-store` (backed by the iOS Keychain / Android Keystore, encrypted at rest).
+
+**Decision:**
+All token persistence (`app/src/auth/secureStorage.ts`) uses `expo-secure-store` exclusively. `AsyncStorage` is not added as a dependency at all this sprint.
+
+**Why:**
+- **Access and refresh tokens are bearer credentials** — equivalent in sensitivity to the backend's `ai_llm_api_key: SecretStr` (Decision 020) or a session cookie; storing them unencrypted on-device is a materially weaker security posture for no implementation-cost savings, since `expo-secure-store` exposes the same simple `getItemAsync`/`setItemAsync`/`deleteItemAsync` API shape as `AsyncStorage`.
+- **Matches the reviewer checklist's secrets-handling expectations**, already applied consistently on the backend side (`SecretStr`, never logging credentials) — this sprint extends the same posture to the client.
+- **No trade-off is being accepted for this benefit**: `expo-secure-store` requires no additional native configuration under Expo's managed workflow beyond the config plugin already declared in `app.config.ts`.
+
+**Alternatives considered:**
+- **`AsyncStorage`** — simpler mental model (no encryption to reason about), but stores tokens as plain text on-device, which a compromised device or a poorly-sandboxed second app could read; rejected outright given `expo-secure-store` costs nothing extra to use instead.
+- **In-memory only (no persistence)** — would force a full re-login on every app restart, failing this sprint's explicit "auth flow" deliverable (a session should survive an app restart, matching normal mobile app UX expectations).
+
+**Consequences:**
+- `app/src/auth/secureStorage.ts` is the only module that imports `expo-secure-store` directly; `AuthContext` and the API client both go through it rather than touching the native module themselves.
+- Logging out, or an unrecoverable `401` (refresh also fails), clears both tokens via the same module — there is exactly one place tokens are written or erased.
+
+---
+
+*New decisions are appended as Decision 027, 028, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
