@@ -160,15 +160,30 @@
 - [x] Implement API client with JWT auth flow (`app/src/api/client.ts` — bearer auth, single refresh-and-retry-once on `401`; `app/src/api/auth.ts` against the existing `/api/v1/auth/*`/`/api/v1/users/me` endpoints, no backend changes) and token persistence via `expo-secure-store` (see Decision 026)
 - [x] Implement onboarding screens (Welcome, Login, Register, and a placeholder authenticated Home screen proving the full loop)
 
-### Sprint 5.2 — Core Screens
+### Sprint 5.2 — UI Foundation & Navigation
 
-- [ ] Implement Coach chat screen
-- [ ] Implement today's workout screen
-- [ ] Implement meal plan screen
+> Design system and navigation decision: token-based StyleSheet theme, 6-tab Expo Router layout, mock-first screen shells — see Decision 027 in `docs/DECISIONS.md`. Former Sprint 5.2 (API-connected core screens) is renumbered to 5.3; former 5.3 to 5.4.
 
-### Sprint 5.3 — Progress & Offline
+- [x] Create design system (`app/src/theme/` — colors, typography, spacing, radius, shadows, theme.ts; light mode only)
+- [x] Build shared UI components (`AppButton`, `AppCard`, `AppHeader`, `AppInput`, `SectionTitle`, `LoadingSpinner`, `EmptyState`, `StatCard`, `ScreenContainer`)
+- [x] Implement bottom tab navigation (Home, Workout, Nutrition, Coach, Progress, Profile)
+- [x] Implement Dashboard screen with mocked data (greeting, workout card, nutrition summary, recovery, weekly progress, coach suggestion)
+- [x] Implement Workout screen shell (today's workout, exercise list placeholder, Start Workout button)
+- [x] Implement Nutrition screen shell (macros, meals placeholder)
+- [x] Implement Coach screen shell (conversation placeholder, Ask Coach input)
+- [x] Implement Progress screen shell (stat cards, chart placeholders)
+- [x] Implement Profile screen shell (avatar, personal info, subscription placeholder, logout)
+- [x] Migrate auth/onboarding screens to design system; update folder organization and architecture docs
 
-- [ ] Implement progress dashboard screen
+### Sprint 5.3 — Core Screens (API Integration)
+
+- [ ] Implement Coach chat screen (wire to `/api/v1/coach/*`)
+- [ ] Implement today's workout screen (wire to `/api/v1/workout-resolution/today`)
+- [ ] Implement meal plan screen (wire to `/api/v1/nutrition/*`)
+
+### Sprint 5.4 — Progress & Offline
+
+- [ ] Implement progress dashboard with real data (wire to `/api/v1/progress/*`)
 - [ ] Implement push notifications
 - [ ] Implement offline-friendly workout logging with sync
 

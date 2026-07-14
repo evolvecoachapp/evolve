@@ -1,6 +1,7 @@
 import { Redirect } from "expo-router";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { LoadingSpinner } from "../src/components/LoadingSpinner";
 import { useAuth } from "../src/auth/useAuth";
+import { colors } from "../src/theme/theme";
 
 /**
  * Entry route: shows a splash/loading indicator while `AuthProvider` checks
@@ -11,21 +12,8 @@ export default function Index() {
   const { isBootstrapping, isAuthenticated } = useAuth();
 
   if (isBootstrapping) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#111827" />
-      </View>
-    );
+    return <LoadingSpinner color={colors.primary} />;
   }
 
-  return <Redirect href={isAuthenticated ? "/(app)/home" : "/(onboarding)/welcome"} />;
+  return <Redirect href={isAuthenticated ? "/(app)/(tabs)" : "/(onboarding)/welcome"} />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-  },
-});

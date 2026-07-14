@@ -153,8 +153,9 @@ Each phase is broken into 1–3 sprints. Sprint length is indicative (assume 1�
 | Sprint | Focus |
 |--------|-------|
 | 5.1 | Mobile scaffold, API client, auth flow — delivered as a React Native + Expo (managed workflow) project with Expo Router, a typed `fetch`-based API client (JWT login/register/refresh, secure-store token persistence), and Welcome/Login/Register/placeholder-Home screens (see Decisions 025/026). Full profile-completion onboarding (height/weight/activity/goal) is deferred to whichever later mobile sprint first needs those fields. |
-| 5.2 | Coach chat, workout, and meal plan screens |
-| 5.3 | Progress dashboard, push notifications, offline sync |
+| 5.2 | UI foundation & navigation — design system (`src/theme/`), shared components, 6-tab bottom navigation, production-ready screen shells with mocked data (Dashboard, Workout, Nutrition, Coach, Progress, Profile). Delivers a navigable, premium-feeling app shell; API integration follows in 5.3 (see Decision 027). |
+| 5.3 | API-connected Coach chat, workout, and meal plan screens (replaces mock data with backend calls) |
+| 5.4 | Progress dashboard with real data, push notifications, offline sync |
 
 ### Phase 6 — Production
 

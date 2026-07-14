@@ -1,7 +1,7 @@
 # EVOLVE Mobile
 
 React Native + Expo (managed workflow, TypeScript, Expo Router) client for
-the EVOLVE API. See Decision 025/026 in [`docs/DECISIONS.md`](../docs/DECISIONS.md)
+the EVOLVE API. See Decision 025/026/027 in [`docs/DECISIONS.md`](../docs/DECISIONS.md)
 for the stack rationale, and [`EVOLVE_ARCHITECTURE.md`](../.cursor/rules/EVOLVE_ARCHITECTURE.md)
 for how this fits the overall platform.
 
@@ -43,21 +43,25 @@ Then press `i` (iOS simulator), `a` (Android emulator), or scan the QR code with
 
 ```
 app/              # Expo Router route tree (thin — mounts screens from src/screens)
+  (app)/(tabs)/   # Authenticated 6-tab navigation (Home, Workout, Nutrition, Coach, Progress, Profile)
 src/
   api/            # Typed HTTP client (fetch-based) + endpoint calls
   auth/           # AuthContext/useAuth, secure token storage
-  components/     # Shared UI primitives (Button, TextField)
+  theme/          # Design tokens (colors, typography, spacing, radius, shadows)
+  components/     # Shared UI (AppButton, AppCard, AppHeader, AppInput, etc.)
+  data/mocks/     # Static mock fixtures for screen shells
   screens/        # Screen components rendered by the route files
   types/          # TypeScript types mirroring backend Pydantic schemas
 ```
 
-## Scope of this sprint (5.1)
+## Scope of this sprint (5.2)
 
-Delivered: project scaffold, a typed API client with JWT auth (login,
-register, refresh-on-401, secure token persistence), and a welcome →
-login/register → placeholder home screen flow, all against the existing,
-unmodified backend `/api/v1/auth/*` and `/api/v1/users/me` endpoints.
+Delivered: design system (`src/theme/`), 8 shared UI components, 6-tab bottom
+navigation, and production-ready screen shells (Dashboard, Workout, Nutrition,
+Coach, Progress, Profile) with mocked data. Auth/onboarding screens migrated
+to the design system. Post-login users land on the Dashboard tab.
 
-Not in this sprint: Coach chat, workout, meal, and progress screens (5.2/5.3),
-push notifications and offline sync (5.3), full profile-completion
-onboarding, and native/EAS builds. See `docs/TASKS.md`/`docs/ROADMAP.md`.
+Not in this sprint: API-connected Coach/workout/nutrition screens (5.3),
+real progress charts, push notifications, offline sync (5.4), full
+profile-completion onboarding, dark mode, and native/EAS builds.
+See `docs/TASKS.md`/`docs/ROADMAP.md`.

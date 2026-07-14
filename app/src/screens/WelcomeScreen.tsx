@@ -1,6 +1,8 @@
 import { useRouter } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
-import { Button } from "../components/Button";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AppButton } from "../components/AppButton";
+import { colors, spacing, typography } from "../theme/theme";
 
 /**
  * Static introductory screen shown to a never-authenticated user on
@@ -9,9 +11,15 @@ import { Button } from "../components/Button";
  */
 export function WelcomeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top + spacing["3xl"], paddingBottom: insets.bottom + spacing["3xl"] },
+      ]}
+    >
       <View style={styles.hero}>
         <Text style={styles.title}>EVOLVE</Text>
         <Text style={styles.subtitle}>
@@ -19,8 +27,8 @@ export function WelcomeScreen() {
         </Text>
       </View>
       <View style={styles.actions}>
-        <Button label="Create account" onPress={() => router.push("/(auth)/register")} />
-        <Button
+        <AppButton label="Create account" onPress={() => router.push("/(auth)/register")} />
+        <AppButton
           label="I already have an account"
           variant="secondary"
           onPress={() => router.push("/(auth)/login")}
@@ -34,25 +42,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "space-between",
-    padding: 24,
-    paddingTop: 96,
-    paddingBottom: 48,
-    backgroundColor: "#FFFFFF",
+    padding: spacing.xl,
+    backgroundColor: colors.surface,
   },
   hero: {
-    gap: 12,
+    gap: spacing.md,
   },
   title: {
     fontSize: 40,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.text,
   },
   subtitle: {
+    ...typography.body,
     fontSize: 17,
-    color: "#4B5563",
+    color: colors.textSecondary,
     lineHeight: 24,
   },
   actions: {
-    gap: 12,
+    gap: spacing.md,
   },
 });

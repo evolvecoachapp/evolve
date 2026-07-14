@@ -1,4 +1,5 @@
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { LoginScreen } from "../LoginScreen";
 import { useAuth } from "../../auth/useAuth";
 
@@ -9,6 +10,19 @@ jest.mock("expo-router", () => ({
 
 const mockedUseAuth = useAuth as jest.Mock;
 
+const safeAreaMetrics = {
+  insets: { top: 0, right: 0, bottom: 0, left: 0 },
+  frame: { x: 0, y: 0, width: 390, height: 844 },
+};
+
+function renderLoginScreen() {
+  return render(
+    <SafeAreaProvider initialMetrics={safeAreaMetrics}>
+      <LoginScreen />
+    </SafeAreaProvider>,
+  );
+}
+
 describe("LoginScreen", () => {
   beforeEach(() => {
     jest.resetAllMocks();
@@ -18,7 +32,7 @@ describe("LoginScreen", () => {
     const login = jest.fn().mockResolvedValue(undefined);
     mockedUseAuth.mockReturnValue({ login });
 
-    const { getByPlaceholderText, getByText } = render(<LoginScreen />);
+    const { getByPlaceholderText, getByText } = renderLoginScreen();
 
     fireEvent.changeText(getByPlaceholderText("you@example.com"), "user@example.com");
     fireEvent.changeText(getByPlaceholderText("••••••••"), "Password123!");
@@ -31,7 +45,7 @@ describe("LoginScreen", () => {
     const login = jest.fn().mockRejectedValue(new Error("Invalid email or password."));
     mockedUseAuth.mockReturnValue({ login });
 
-    const { getByPlaceholderText, getByText, findByText } = render(<LoginScreen />);
+    const { getByPlaceholderText, getByText, findByText } = renderLoginScreen();
 
     fireEvent.changeText(getByPlaceholderText("you@example.com"), "user@example.com");
     fireEvent.changeText(getByPlaceholderText("••••••••"), "wrong-password");

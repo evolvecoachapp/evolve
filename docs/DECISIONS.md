@@ -882,4 +882,45 @@ All token persistence (`app/src/auth/secureStorage.ts`) uses `expo-secure-store`
 
 ---
 
-*New decisions are appended as Decision 027, 028, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 027 — Mobile UI Foundation: Token-Based Design System, 6-Tab Navigation, Mock-First Screen Shells
+
+**Status:** Accepted
+
+**Context:**
+Sprint 5.1 delivered a working Expo scaffold with JWT auth and a single placeholder Home screen. The original Phase 5 roadmap scoped Sprint 5.2 as API-connected Coach chat, workout, and meal plan screens. Before wiring business features, the mobile client needs a cohesive visual foundation — a reusable design system, bottom tab navigation, and production-ready screen layouts — so later sprints can focus on data integration rather than UI structure.
+
+**Decision:**
+Sprint 5.2 is reframed as **Mobile UI Foundation & Navigation**:
+
+1. **Design system** — centralized theme tokens under `app/src/theme/` (`colors`, `typography`, `spacing`, `radius`, `shadows`, `theme.ts`), consumed via direct imports (no `ThemeProvider` yet; light mode only).
+2. **Styling** — continue React Native `StyleSheet` + theme tokens (consistent with Decision 025; no NativeWind, Tamagui, or third-party UI kit).
+3. **Icons** — `@expo/vector-icons` (Ionicons), already available via Expo; no new icon dependency.
+4. **Typography** — tokenized scale using system fonts (SF Pro / Roboto); no custom font loading this sprint.
+5. **Navigation** — Expo Router `(tabs)` nested inside the authenticated `(app)` group with six tabs: Home (Dashboard), Workout, Nutrition, Coach, Progress, Profile. Auth guard stays in `(app)/_layout.tsx`.
+6. **Screen shells** — six screen components under `src/screens/` with mocked data from `src/data/mocks/`; no API calls beyond existing auth.
+7. **Shared components** — `AppButton`, `AppCard`, `AppHeader`, `AppInput`, `SectionTitle`, `LoadingSpinner`, `EmptyState`, `StatCard`, plus a `ScreenContainer` layout helper. Replace the Sprint 5.1 `Button`/`TextField` primitives.
+8. **Safe area** — `useSafeAreaInsets()` from `react-native-safe-area-context` replaces hardcoded `paddingTop: 96`.
+9. **Sprint renumbering** — former Sprint 5.2 (API-connected core screens) becomes Sprint 5.3; former Sprint 5.3 (progress, notifications, offline) becomes Sprint 5.4.
+
+**Why:**
+- **Separating UI foundation from API integration** lets the app feel premium and navigable before business logic is wired — reducing rework when real data arrives (screens already have the right layout slots).
+- **Token files over a UI kit** keeps the dependency footprint minimal (Decision 025's rationale) while eliminating the duplicated hex values that accumulated across Sprint 5.1 auth screens.
+- **Mock-first shells** avoid coupling layout work to backend availability, profile-completion wizard timing, or Coach LLM error handling — all deferred concerns for Sprint 5.3+.
+- **Six-tab bottom navigation** matches the product's five coaching domains plus a home dashboard — the standard pattern for daily-use fitness apps and the structure EVOLVE's backend APIs already imply.
+
+**Alternatives considered:**
+- **Proceed directly with API-connected screens (original 5.2 scope)** — rejected: without a design system or tab navigation, each screen would invent its own styling and routing, creating inconsistency and rework when the shell matures.
+- **NativeWind / Tailwind for React Native** — rejected: adds a build-time dependency and learning curve with no identified benefit over centralized tokens for a light-only, single-theme app.
+- **Dark mode from day one** — deferred: doubles token surface area for no current user-facing requirement; `userInterfaceStyle` is set to `"light"` until a later sprint needs dark support.
+- **Custom font (Inter) via `expo-font`** — deferred: system fonts are sufficient for a foundation sprint; custom typography can be added without restructuring the token files.
+
+**Consequences:**
+- `app/src/theme/`, `app/src/data/mocks/`, and expanded `app/src/components/` are new permanent folders in the mobile client.
+- `app/app/(app)/(tabs)/` replaces the single `home.tsx` route; post-login redirects target `/(app)/(tabs)`.
+- Sprint 5.3 will wire Coach, workout, and nutrition screens to their existing backend APIs, replacing mock data module by module.
+- Sprint 5.4 will add real progress charts, push notifications, and offline workout logging.
+- `docs/TASKS.md`, `docs/ROADMAP.md`, and `EVOLVE_ARCHITECTURE.md` are updated to reflect the renumbered sprint scope.
+
+---
+
+*New decisions are appended as Decision 028, 029, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

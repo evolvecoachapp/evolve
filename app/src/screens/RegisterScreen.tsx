@@ -1,9 +1,11 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Button } from "../components/Button";
-import { TextField } from "../components/TextField";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AppButton } from "../components/AppButton";
+import { AppInput } from "../components/AppInput";
 import { useAuth } from "../auth/useAuth";
+import { colors, spacing, typography } from "../theme/theme";
 
 /**
  * Collects only `UserCreate`'s required fields (email, username, password).
@@ -14,6 +16,7 @@ import { useAuth } from "../auth/useAuth";
  */
 export function RegisterScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { register } = useAuth();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -26,7 +29,7 @@ export function RegisterScreen() {
     setIsSubmitting(true);
     try {
       await register({ email: email.trim(), username: username.trim(), password });
-      router.replace("/(app)/home");
+      router.replace("/(app)/(tabs)");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
@@ -35,9 +38,9 @@ export function RegisterScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top + spacing["3xl"] }]}>
       <Text style={styles.title}>Create your account</Text>
-      <TextField
+      <AppInput
         label="Email"
         value={email}
         onChangeText={setEmail}
@@ -45,14 +48,14 @@ export function RegisterScreen() {
         textContentType="emailAddress"
         placeholder="you@example.com"
       />
-      <TextField
+      <AppInput
         label="Username"
         value={username}
         onChangeText={setUsername}
         textContentType="username"
         placeholder="yourname"
       />
-      <TextField
+      <AppInput
         label="Password"
         value={password}
         onChangeText={setPassword}
@@ -61,13 +64,13 @@ export function RegisterScreen() {
         placeholder="At least 8 characters"
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Button
+      <AppButton
         label="Create account"
         onPress={handleSubmit}
         loading={isSubmitting}
         disabled={!email || !username || !password}
       />
-      <Button
+      <AppButton
         label="I already have an account"
         variant="secondary"
         onPress={() => router.push("/(auth)/login")}
@@ -79,20 +82,17 @@ export function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
-    paddingTop: 96,
-    gap: 12,
-    backgroundColor: "#FFFFFF",
+    padding: spacing.xl,
+    gap: spacing.md,
+    backgroundColor: colors.surface,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#111827",
-    marginBottom: 12,
+    ...typography.h1,
+    marginBottom: spacing.md,
   },
   error: {
-    color: "#DC2626",
+    color: colors.error,
     fontSize: 14,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
 });

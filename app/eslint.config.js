@@ -7,4 +7,14 @@ module.exports = defineConfig([
   {
     ignores: ["dist/*", ".expo/*", "web-build/*"],
   },
+  {
+    rules: {
+      "import/no-unresolved": [
+        "error",
+        {
+          ignore: ["^@expo/vector-icons$"],
+        },
+      ],
+    },
+  },
 ]);

@@ -371,13 +371,21 @@ EVOLVE/
 │   │   ├── index.tsx                   # Bootstrap/splash — redirects once session state is known
 │   │   ├── (onboarding)/welcome.tsx
 │   │   ├── (auth)/login.tsx, register.tsx
-│   │   └── (app)/home.tsx              # Auth-guarded group (see (app)/_layout.tsx)
+│   │   └── (app)/(tabs)/               # Auth-guarded tab group (see (app)/_layout.tsx)
+│   │       ├── index.tsx               # Dashboard (Home tab)
+│   │       ├── workout.tsx, nutrition.tsx, coach.tsx
+│   │       └── progress.tsx, profile.tsx
 │   └── src/
 │       ├── api/                        # client.ts (typed fetch wrapper, 401 → refresh →
 │       │                               # retry-once), auth.ts (endpoint calls), config.ts
 │       ├── auth/                       # AuthContext/useAuth, secureStorage.ts
 │       │                               # (expo-secure-store — see Decision 026)
-│       ├── components/                 # Shared UI primitives (Button, TextField)
+│       ├── theme/                      # Design tokens (colors, typography, spacing,
+│       │                               # radius, shadows, theme.ts — see Decision 027)
+│       ├── components/                 # Shared UI (AppButton, AppCard, AppHeader,
+│       │                               # AppInput, SectionTitle, LoadingSpinner,
+│       │                               # EmptyState, StatCard, ScreenContainer)
+│       ├── data/mocks/                   # Static mock fixtures for screen shells
 │       ├── screens/                    # Screen implementations rendered by app/ routes
 │       └── types/                      # TypeScript mirrors of backend Pydantic schemas
 │
@@ -438,13 +446,14 @@ EVOLVE/
 
 `app/` is a React Native + Expo (managed workflow) project, TypeScript throughout, using Expo Router for file-based navigation — see Decision 025 in `docs/DECISIONS.md` for the stack rationale versus Flutter and separate native apps.
 
-**Current state (Sprint 5.1):** the mobile scaffold, a typed API client, and the auth flow exist. The client talks to the existing backend over plain HTTP — no backend changes were required for this sprint.
+**Current state (Sprint 5.2):** the mobile scaffold, typed API client, auth flow, design system, 6-tab navigation, and production-ready screen shells with mocked data exist. The client talks to the existing backend over plain HTTP for auth only — Coach, workout, nutrition, and progress API integration is Sprint 5.3/5.4.
 
+- **Design system** (`src/theme/`) — centralized tokens for colors, typography, spacing, radius, and shadows; consumed via direct imports (light mode only; see Decision 027).
 - **API client** (`src/api/client.ts`) — a thin hand-written `fetch` wrapper (no axios; avoids a speculative dependency). Attaches the stored access token as a bearer credential; on a `401` from an authenticated call, attempts exactly one silent token refresh (`POST /api/v1/auth/refresh`) and retries the original request once before giving up and clearing the session.
 - **Auth state** (`src/auth/AuthContext.tsx`/`useAuth.ts`) — a React Context provider owning bootstrap-on-launch (resume an existing session from secure storage), login, register, logout, and the current user. Screens and route guards consume it exclusively via `useAuth()`; no screen calls `src/api/auth.ts` or token storage directly.
 - **Token persistence** (`src/auth/secureStorage.ts`) — `expo-secure-store` (iOS Keychain / Android Keystore), never `AsyncStorage` — see Decision 026.
-- **Routing** — Expo Router route files under `app/app/` stay thin (mount a screen component), mirroring the backend's "routes stay thin" convention; `(app)/_layout.tsx` guards every authenticated route, redirecting to onboarding if no session exists.
-- **Screens implemented this sprint:** Welcome (onboarding), Login, Register, and a placeholder authenticated Home screen. Coach chat, today's workout, meal plan, and progress dashboard screens are Sprint 5.2/5.3 — not yet built.
+- **Routing** — Expo Router route files under `app/app/` stay thin (mount a screen component), mirroring the backend's "routes stay thin" convention; `(app)/_layout.tsx` guards every authenticated route, redirecting to onboarding if no session exists. Authenticated users land in `(app)/(tabs)/` with six bottom tabs: Home (Dashboard), Workout, Nutrition, Coach, Progress, Profile.
+- **Screens implemented:** Welcome (onboarding), Login, Register (auth flow); Dashboard, Workout, Nutrition, Coach, Progress, Profile (authenticated tabs, mocked data). API-connected versions of Coach, workout, meal plan, and progress screens are Sprint 5.3/5.4.
 
 As later mobile sprints add screens that call the Nutrition/Recovery/Coach/Progress APIs, they follow the same `api/` → `auth/`(where relevant) → `screens/` pattern established here, without introducing a global state library or a second navigation approach unless a real, non-speculative need emerges.
 
@@ -1030,11 +1039,11 @@ Development proceeds in six phases. Each phase delivers a shippable increment an
 **Objective:** Deliver a native mobile client for daily coaching interaction.
 
 **Deliverables:**
-- Mobile project scaffold (`app/ios`, `app/android`, or cross-platform)
+- Mobile project scaffold (React Native + Expo managed workflow — see Decision 025)
 - API client with JWT auth flow
-- Core screens: onboarding, Coach chat, today's workout, meal plan, progress dashboard
-- Push notifications for workout reminders and Coach messages
-- Offline-friendly workout logging with sync
+- Design system, 6-tab navigation, and production-ready screen shells (Sprint 5.2)
+- API-connected core screens: Coach chat, today's workout, meal plan (Sprint 5.3)
+- Progress dashboard with real data, push notifications, offline workout logging (Sprint 5.4)
 
 **Exit criteria:** Users can complete the full daily coaching loop on mobile without a desktop browser.
 

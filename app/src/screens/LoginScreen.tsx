@@ -1,12 +1,15 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Button } from "../components/Button";
-import { TextField } from "../components/TextField";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AppButton } from "../components/AppButton";
+import { AppInput } from "../components/AppInput";
 import { useAuth } from "../auth/useAuth";
+import { colors, spacing, typography } from "../theme/theme";
 
 export function LoginScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,7 +21,7 @@ export function LoginScreen() {
     setIsSubmitting(true);
     try {
       await login(email.trim(), password);
-      router.replace("/(app)/home");
+      router.replace("/(app)/(tabs)");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
@@ -27,9 +30,9 @@ export function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top + spacing["3xl"] }]}>
       <Text style={styles.title}>Welcome back</Text>
-      <TextField
+      <AppInput
         label="Email"
         value={email}
         onChangeText={setEmail}
@@ -37,7 +40,7 @@ export function LoginScreen() {
         textContentType="emailAddress"
         placeholder="you@example.com"
       />
-      <TextField
+      <AppInput
         label="Password"
         value={password}
         onChangeText={setPassword}
@@ -46,8 +49,8 @@ export function LoginScreen() {
         placeholder="••••••••"
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Button label="Log in" onPress={handleSubmit} loading={isSubmitting} disabled={!email || !password} />
-      <Button
+      <AppButton label="Log in" onPress={handleSubmit} loading={isSubmitting} disabled={!email || !password} />
+      <AppButton
         label="Create an account instead"
         variant="secondary"
         onPress={() => router.push("/(auth)/register")}
@@ -59,20 +62,17 @@ export function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
-    paddingTop: 96,
-    gap: 12,
-    backgroundColor: "#FFFFFF",
+    padding: spacing.xl,
+    gap: spacing.md,
+    backgroundColor: colors.surface,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#111827",
-    marginBottom: 12,
+    ...typography.h1,
+    marginBottom: spacing.md,
   },
   error: {
-    color: "#DC2626",
+    color: colors.error,
     fontSize: 14,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
 });
