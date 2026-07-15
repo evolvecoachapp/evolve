@@ -1,5 +1,6 @@
 import { router } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { useEffect } from "react";
+import { Alert, StyleSheet, Text, View } from "react-native";
 import { AppButton } from "../components/AppButton";
 import { AppCard } from "../components/AppCard";
 import { AppHeader } from "../components/AppHeader";
@@ -9,9 +10,14 @@ import { GradientBackground } from "../components/GradientBackground";
 import { TabScreenContainer } from "../components/TabScreenContainer";
 import { SectionTitle } from "../components/SectionTitle";
 import { useAuth } from "../auth/useAuth";
-import { ProfileEditForm, SettingsRow } from "../features/profile/components";
+import {
+  ProfileEditForm,
+  ProfileInfoReadCard,
+  SettingsRow,
+} from "../features/profile/components";
 import { useProfileEdit } from "../features/profile/hooks/useProfileEdit";
 import { useCurrentUser } from "../features/shared";
+import { validateProfileForm } from "../features/profile/utils";
 import { spacing } from "../theme/theme";
 import { useThemedStyles } from "../theme/useThemedStyles";
 
@@ -42,6 +48,8 @@ export function ProfileScreen() {
   const {
     isEditing,
     form,
+    baseline,
+    hasChanges,
     fieldErrors,
     submitError,
     successMessage,
@@ -51,14 +59,26 @@ export function ProfileScreen() {
     cancelEdit,
     updateField,
     save,
+    clearSuccessMessage,
   } = useProfileEdit({
     profile,
     displayName,
+    username: user?.username,
     updateProfile,
     refresh,
   });
 
   const isSaving = saving || hookSaving;
+
+  useEffect(() => {
+    if (!successMessage) {
+      return;
+    }
+
+    Alert.alert("Profile updated", successMessage, [
+      { text: "OK", onPress: clearSuccessMessage },
+    ]);
+  }, [clearSuccessMessage, successMessage]);
 
   const styles = useThemedStyles(({ colors, typography }) =>
     StyleSheet.create({
@@ -78,23 +98,6 @@ export function ProfileScreen() {
       email: {
         ...typography.callout,
         color: colors.inkMuted,
-      },
-      infoRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        paddingVertical: spacing.md,
-      },
-      infoLabel: {
-        ...typography.callout,
-        color: colors.inkMuted,
-      },
-      infoValue: {
-        ...typography.bodyMedium,
-      },
-      divider: {
-        height: 1,
-        backgroundColor: colors.border,
       },
       subscriptionRow: {
         marginBottom: spacing.lg,
@@ -118,14 +121,11 @@ export function ProfileScreen() {
         ...typography.callout,
         textAlign: "center",
       },
-      successText: {
-        color: colors.success,
-      },
       errorText: {
         color: colors.error,
       },
-      changePhotoButton: {
-        marginTop: spacing.xs,
+      bottomAction: {
+        marginTop: spacing.md,
       },
     }),
   );
@@ -140,24 +140,10 @@ export function ProfileScreen() {
             <Text style={styles.displayName}>{displayName}</Text>
             <Text style={styles.email}>{email}</Text>
             <Chip label={`Member since ${memberSince}`} variant="neutral" size="sm" />
-            {isEditing ? (
-              <AppButton
-                label="Change photo"
-                variant="ghost"
-                size="sm"
-                disabled
-                onPress={() => {}}
-                style={styles.changePhotoButton}
-              />
-            ) : null}
           </View>
 
-          {successMessage ? (
-            <Text style={[styles.feedbackText, styles.successText]}>{successMessage}</Text>
-          ) : null}
-
           <View>
-            <SectionTitle title="Personal Info" />
+            <SectionTitle title="Personal Information" />
             <AppCard variant="elevated">
               {isEditing ? (
                 <ProfileEditForm
@@ -167,22 +153,7 @@ export function ProfileScreen() {
                   onFieldChange={updateField}
                 />
               ) : (
-                <>
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Name</Text>
-                    <Text style={styles.infoValue}>{displayName}</Text>
-                  </View>
-                  <View style={styles.divider} />
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Email</Text>
-                    <Text style={styles.infoValue}>{email}</Text>
-                  </View>
-                  <View style={styles.divider} />
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Member since</Text>
-                    <Text style={styles.infoValue}>{memberSince}</Text>
-                  </View>
-                </>
+                <ProfileInfoReadCard profile={profile} />
               )}
             </AppCard>
 
@@ -191,6 +162,19 @@ export function ProfileScreen() {
                 {submitError ? (
                   <Text style={[styles.feedbackText, styles.errorText]}>{submitError}</Text>
                 ) : null}
+                {(() => {
+                  const saveButtonDisabled = !canSave;
+                  console.debug("[ProfileSaveState:saveButtonRender]", {
+                    profile,
+                    form,
+                    initialValues: baseline,
+                    hasChanges,
+                    "validation.isValid": validateProfileForm(form).isValid,
+                    canSave,
+                    saveButtonDisabled,
+                  });
+                  return null;
+                })()}
                 <AppButton
                   label="Save"
                   onPress={() => void save()}
@@ -204,11 +188,7 @@ export function ProfileScreen() {
                   disabled={isSaving}
                 />
               </View>
-            ) : (
-              <View style={styles.editActions}>
-                <AppButton label="Edit Profile" variant="secondary" onPress={enterEditMode} />
-              </View>
-            )}
+            ) : null}
           </View>
 
           <View>
@@ -242,6 +222,15 @@ export function ProfileScreen() {
           </View>
 
           <AppButton label="Log out" variant="secondary" onPress={() => logout()} />
+
+          {!isEditing ? (
+            <AppButton
+              label="Edit Profile"
+              variant="secondary"
+              onPress={enterEditMode}
+              style={styles.bottomAction}
+            />
+          ) : null}
         </TabScreenContainer>
       </View>
     </GradientBackground>

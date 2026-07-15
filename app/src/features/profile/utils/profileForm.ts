@@ -19,10 +19,11 @@ export interface ProfileFormValues {
 export function buildProfileFormValues(
   profile: UserProfile | null,
   displayName: string,
+  username?: string | null,
 ): ProfileFormValues {
   return {
     displayName,
-    firstName: profile?.firstName ?? "",
+    firstName: profile?.firstName ?? profile?.displayName ?? username ?? "",
     lastName: profile?.lastName ?? "",
     birthDate: profile?.birthDate ?? "",
     gender: profile?.gender ?? null,
@@ -71,6 +72,29 @@ function persistedFieldChanged(
   return normalizedCurrent !== normalizedNext;
 }
 
+/** True when any editable form field differs from the edit-mode baseline snapshot. */
+export function hasFormValuesChanges(
+  current: ProfileFormValues,
+  baseline: ProfileFormValues,
+): boolean {
+  const heightChanged =
+    parsePositiveNumber(current.heightCm) !== parsePositiveNumber(baseline.heightCm) ||
+    normalizeText(current.heightCm) !== normalizeText(baseline.heightCm);
+  const weightChanged =
+    parsePositiveNumber(current.weightKg) !== parsePositiveNumber(baseline.weightKg) ||
+    normalizeText(current.weightKg) !== normalizeText(baseline.weightKg);
+
+  return (
+    normalizeText(current.firstName) !== normalizeText(baseline.firstName) ||
+    normalizeText(current.lastName) !== normalizeText(baseline.lastName) ||
+    normalizeText(current.birthDate) !== normalizeText(baseline.birthDate) ||
+    current.gender !== baseline.gender ||
+    heightChanged ||
+    weightChanged ||
+    current.goal !== baseline.goal
+  );
+}
+
 /** True when any backend-persisted field differs from the loaded profile. */
 export function hasProfileFormChanges(
   form: ProfileFormValues,
@@ -101,4 +125,30 @@ export function formatProfileValue(
     return fallback;
   }
   return String(value);
+}
+
+export function formatBirthDateDisplay(isoDate: string | null | undefined): string {
+  if (!isoDate) {
+    return "—";
+  }
+
+  const [year, month, day] = isoDate.split("-").map(Number);
+  if (!year || !month || !day) {
+    return isoDate;
+  }
+
+  const date = new Date(year, month - 1, day);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return isoDate;
+  }
+
+  return date.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 }

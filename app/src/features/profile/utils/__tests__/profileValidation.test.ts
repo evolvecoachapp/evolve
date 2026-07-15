@@ -77,3 +77,49 @@ describe("profileForm helpers", () => {
     });
   });
 });
+
+describe("buildProfileFormValues firstName initialization (Sprint 6.1.8)", () => {
+  it("uses profile.firstName for accounts that already have first_name", () => {
+    const form = buildProfileFormValues(baseProfile, "Alex Rivera", "evolve_user");
+
+    expect(form.firstName).toBe("Alex");
+    expect(validateProfileForm(form).isValid).toBe(true);
+  });
+
+  it("falls back to profile.displayName for legacy accounts with null first_name", () => {
+    const legacyProfile = {
+      ...baseProfile,
+      firstName: null,
+      lastName: null,
+      displayName: "antonello",
+    };
+
+    const form = buildProfileFormValues(legacyProfile, "antonello", "antonello");
+
+    expect(form.firstName).toBe("antonello");
+    expect(validateProfileForm(form).isValid).toBe(true);
+  });
+
+  it("falls back to username when profile is null", () => {
+    const form = buildProfileFormValues(null, "antonello", "antonello");
+
+    expect(form.firstName).toBe("antonello");
+    expect(validateProfileForm(form).isValid).toBe(true);
+  });
+
+  it("keeps first_name for partially completed accounts with other fields unset", () => {
+    const partialProfile = {
+      ...baseProfile,
+      birthDate: null,
+      gender: null,
+      heightCm: null,
+      currentWeightKg: null,
+      goal: null,
+    };
+
+    const form = buildProfileFormValues(partialProfile, "Alex Rivera", "evolve_user");
+
+    expect(form.firstName).toBe("Alex");
+    expect(validateProfileForm(form).isValid).toBe(true);
+  });
+});

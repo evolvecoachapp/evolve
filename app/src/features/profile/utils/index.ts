@@ -1,6 +1,8 @@
 export {
   buildProfileFormValues,
+  formatBirthDateDisplay,
   formatProfileValue,
+  hasFormValuesChanges,
   hasProfileFormChanges,
   profileFormToUserUpdate,
   type ProfileFormValues,

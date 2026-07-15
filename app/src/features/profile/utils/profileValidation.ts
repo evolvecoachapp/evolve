@@ -67,36 +67,36 @@ export function validateProfileForm(form: ProfileFormValues): ProfileValidationR
     errors.firstName = "First name is required.";
   }
 
-  if (!form.birthDate.trim()) {
-    errors.birthDate = "Date of birth is required.";
-  } else if (!isReasonableBirthDate(form.birthDate.trim())) {
+  // birthDate, gender, height, weight, and goal are optional on the backend
+  // (`UserUpdate` accepts `None` for each) — only validate format/range when
+  // the user has actually entered a value, never require them outright.
+  const birthDate = form.birthDate.trim();
+  if (birthDate && !isReasonableBirthDate(birthDate)) {
     errors.birthDate = "Enter a valid date of birth (YYYY-MM-DD).";
   }
 
-  if (!form.gender) {
-    errors.gender = "Gender is required.";
+  const heightInput = form.heightCm.trim();
+  if (heightInput) {
+    const height = parsePositiveNumber(heightInput);
+    if (height == null) {
+      errors.heightCm = "Enter a valid height.";
+    } else if (height <= 0) {
+      errors.heightCm = "Height must be greater than 0.";
+    } else if (height > 300) {
+      errors.heightCm = "Height must be 300 cm or less.";
+    }
   }
 
-  const height = parsePositiveNumber(form.heightCm);
-  if (height == null) {
-    errors.heightCm = "Height is required.";
-  } else if (height <= 0) {
-    errors.heightCm = "Height must be greater than 0.";
-  } else if (height > 300) {
-    errors.heightCm = "Height must be 300 cm or less.";
-  }
-
-  const weight = parsePositiveNumber(form.weightKg);
-  if (weight == null) {
-    errors.weightKg = "Weight is required.";
-  } else if (weight <= 0) {
-    errors.weightKg = "Weight must be greater than 0.";
-  } else if (weight > 500) {
-    errors.weightKg = "Weight must be 500 kg or less.";
-  }
-
-  if (!form.goal) {
-    errors.goal = "Primary goal is required.";
+  const weightInput = form.weightKg.trim();
+  if (weightInput) {
+    const weight = parsePositiveNumber(weightInput);
+    if (weight == null) {
+      errors.weightKg = "Enter a valid weight.";
+    } else if (weight <= 0) {
+      errors.weightKg = "Weight must be greater than 0.";
+    } else if (weight > 500) {
+      errors.weightKg = "Weight must be 500 kg or less.";
+    }
   }
 
   return {
