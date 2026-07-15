@@ -1,4 +1,6 @@
-import { StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Alert, StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
 import { AppHeader } from "../components/AppHeader";
 import { GradientBackground } from "../components/GradientBackground";
 import { TabScreenContainer } from "../components/TabScreenContainer";
@@ -8,6 +10,8 @@ import {
   WorkoutStartFooter,
 } from "../features/workout/components";
 import { useWorkout } from "../features/workout/hooks";
+import type { WorkoutSession } from "../features/workout/models/WorkoutSession";
+import { setPendingSession, workoutService } from "../features/workout/services";
 import {
   countWorkingSets,
   formatMuscleGroups,
@@ -20,6 +24,28 @@ import { useThemedStyles } from "../theme/useThemedStyles";
 
 export function WorkoutScreen() {
   const { workout, loading, error } = useWorkout();
+  const [starting, setStarting] = useState(false);
+  // Tapping "Start Workout" while a session is already `in_progress` should
+  // resume it rather than start a duplicate (the backend rejects a second
+  // concurrent session with a 409) — checked silently, no layout/label change.
+  const activeSessionRef = useRef<WorkoutSession | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void workoutService
+      .getActiveSession()
+      .then((session) => {
+        if (!cancelled) {
+          activeSessionRef.current = session;
+        }
+      })
+      .catch(() => {
+        // Resume detection is a best-effort convenience — fall through to a normal start on failure.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const styles = useThemedStyles((theme) =>
     StyleSheet.create({
@@ -65,6 +91,32 @@ export function WorkoutScreen() {
     floatingFooterMetrics.workoutContentHeight,
   );
 
+  const handleStartPress = async () => {
+    if (!workout || starting) {
+      return;
+    }
+
+    setStarting(true);
+
+    try {
+      const session = activeSessionRef.current ?? (await workoutService.startWorkout(workout.id));
+      setPendingSession(session);
+      router.push({
+        pathname: "/(app)/workout/session",
+        params: { sessionId: session.id },
+      });
+    } catch (startWorkoutError) {
+      Alert.alert(
+        "Unable to start workout",
+        startWorkoutError instanceof Error
+          ? startWorkoutError.message
+          : "Failed to start workout.",
+      );
+    } finally {
+      setStarting(false);
+    }
+  };
+
   return (
     <GradientBackground variant="canvas">
       <View style={styles.screen}>
@@ -87,6 +139,8 @@ export function WorkoutScreen() {
         <WorkoutStartFooter
           exerciseCount={workout.exercises.length}
           durationMinutes={workout.estimatedDuration}
+          onStartPress={() => void handleStartPress()}
+          disabled={starting}
         />
       </View>
     </GradientBackground>

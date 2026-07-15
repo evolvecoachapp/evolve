@@ -1,4 +1,9 @@
 export { WorkoutExercisePreviewList } from "./WorkoutExercisePreviewList";
 export { WorkoutExercisePreviewRow } from "./WorkoutExercisePreviewRow";
 export { WorkoutPreviewHero } from "./WorkoutPreviewHero";
+export { RestTimerOverlay } from "./RestTimerOverlay";
+export { WorkoutSessionExerciseCard } from "./WorkoutSessionExerciseCard";
+export { WorkoutSessionFooter } from "./WorkoutSessionFooter";
+export { WorkoutSetInputRow } from "./WorkoutSetInputRow";
 export { WorkoutStartFooter } from "./WorkoutStartFooter";
+export { WorkoutSummaryStats } from "./WorkoutSummaryStats";

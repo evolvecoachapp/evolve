@@ -14,6 +14,7 @@ import {
   mapWorkoutLogDetailToWorkoutSession,
   mapWorkoutLogDetailToWorkoutSummary,
   mapWorkoutPublicToWorkout,
+  mapWorkoutSetLogToSavedSetResult,
 } from "../backendWorkoutAdapters";
 
 function buildExerciseCatalogRef(overrides: Partial<ExerciseCatalogRefDto> = {}): ExerciseCatalogRefDto {
@@ -294,10 +295,54 @@ describe("mapWorkoutLogDetailToWorkoutSummary", () => {
     const summary = mapWorkoutLogDetailToWorkoutSummary(dto, "Leg Day");
 
     expect(summary.durationMinutes).toBe(55);
+    expect(summary.totalVolumeKg).toBe(800);
     expect(summary.completedSets).toBe(1);
     expect(summary.totalSets).toBe(6);
+    expect(summary.completedExercises).toBe(1);
+    expect(summary.totalExercises).toBe(1);
     expect(summary.skippedExercises).toBe(1);
     expect(summary.completedAt).toBe("2026-07-01T11:00:00Z");
+  });
+});
+
+describe("mapWorkoutSetLogToSavedSetResult", () => {
+  it("converts decimal-as-string fields into numbers", () => {
+    const result = mapWorkoutSetLogToSavedSetResult({
+      id: "set-1",
+      set_number: 1,
+      weight_kg: "100.00",
+      reps: 8,
+      rpe: "7.5",
+      duration_seconds: null,
+      is_warmup: false,
+      notes: null,
+      created_at: "2026-07-01T10:05:00Z",
+      updated_at: "2026-07-01T10:05:00Z",
+    });
+
+    expect(result).toEqual({
+      id: "set-1",
+      completedReps: 8,
+      completedWeight: 100,
+      rpe: 7.5,
+    });
+  });
+
+  it("passes through nulls untouched", () => {
+    const result = mapWorkoutSetLogToSavedSetResult({
+      id: "set-1",
+      set_number: 1,
+      weight_kg: null,
+      reps: null,
+      rpe: null,
+      duration_seconds: 30,
+      is_warmup: false,
+      notes: null,
+      created_at: "2026-07-01T10:05:00Z",
+      updated_at: "2026-07-01T10:05:00Z",
+    });
+
+    expect(result).toEqual({ id: "set-1", completedReps: null, completedWeight: null, rpe: null });
   });
 });
 

@@ -4,6 +4,7 @@ import type { WorkoutSession } from "../models/WorkoutSession";
 import type { WorkoutSummary } from "../models/WorkoutSummary";
 import {
   WorkoutServiceError,
+  type SavedSetResult,
   type SaveSetRequest,
   type SkipExerciseRequest,
   type WorkoutService,
@@ -28,6 +29,14 @@ export const localWorkoutService: WorkoutService = {
     return notConfigured();
   },
 
+  async getSession(): Promise<WorkoutSession | null> {
+    return notConfigured();
+  },
+
+  async getActiveSession(): Promise<WorkoutSession | null> {
+    return notConfigured();
+  },
+
   async startWorkout(): Promise<WorkoutSession> {
     return notConfigured();
   },
@@ -36,7 +45,7 @@ export const localWorkoutService: WorkoutService = {
     return notConfigured();
   },
 
-  async saveSet(_request: SaveSetRequest): Promise<void> {
+  async saveSet(_request: SaveSetRequest): Promise<SavedSetResult | null> {
     return notConfigured();
   },
 

@@ -8,6 +8,7 @@ import type { WorkoutExercise } from "../models/WorkoutExercise";
 import type { WorkoutSession } from "../models/WorkoutSession";
 import type { WorkoutSummary } from "../models/WorkoutSummary";
 import type {
+  SavedSetResult,
   SaveSetRequest,
   SkipExerciseRequest,
   WorkoutService,
@@ -42,6 +43,32 @@ function countCompletedWorkingSets(exercises: WorkoutExercise[]): number {
   );
 }
 
+function countCompletedExercises(exercises: WorkoutExercise[]): number {
+  return exercises.filter(
+    (exercise) => !exercise.skipped && exercise.workingSets.some((set) => set.completed),
+  ).length;
+}
+
+function countTotalExercises(exercises: WorkoutExercise[]): number {
+  return exercises.filter((exercise) => !exercise.skipped).length;
+}
+
+function computeSessionVolumeKg(exercises: WorkoutExercise[]): number {
+  return exercises.reduce((total, exercise) => {
+    return (
+      total +
+      exercise.workingSets.reduce((setTotal, set) => {
+        if (!set.completed) {
+          return setTotal;
+        }
+        const weight = set.completedWeight ?? 0;
+        const reps = set.completedReps ?? 0;
+        return setTotal + weight * reps;
+      }, 0)
+    );
+  }, 0);
+}
+
 function getSessionOrThrow(sessionId: string): WorkoutSession {
   const session = sessions.get(sessionId);
   if (!session) {
@@ -62,6 +89,28 @@ export const mockWorkoutService: WorkoutService = {
   async getWorkout(id: string): Promise<Workout | null> {
     const workout = findWorkout(id);
     return workout ? cloneWorkout(workout) : null;
+  },
+
+  async getSession(sessionId: string): Promise<WorkoutSession | null> {
+    const session = sessions.get(sessionId);
+    if (!session) {
+      return null;
+    }
+    return {
+      ...session,
+      exercises: cloneWorkoutExercises(session.exercises),
+    };
+  },
+
+  async getActiveSession(): Promise<WorkoutSession | null> {
+    const active = [...sessions.values()].find((session) => session.status === "in_progress");
+    if (!active) {
+      return null;
+    }
+    return {
+      ...active,
+      exercises: cloneWorkoutExercises(active.exercises),
+    };
   },
 
   async startWorkout(workoutId: string): Promise<WorkoutSession> {
@@ -135,14 +184,17 @@ export const mockWorkoutService: WorkoutService = {
       workoutId: session.workoutId,
       title: session.title,
       durationMinutes,
+      totalVolumeKg: computeSessionVolumeKg(session.exercises),
       completedSets,
       totalSets,
+      completedExercises: countCompletedExercises(session.exercises),
+      totalExercises: countTotalExercises(session.exercises),
       skippedExercises,
       completedAt,
     };
   },
 
-  async saveSet(request: SaveSetRequest): Promise<void> {
+  async saveSet(request: SaveSetRequest): Promise<SavedSetResult | null> {
     const session = getSessionOrThrow(request.sessionId);
     const exercise = session.exercises.find((entry) => entry.id === request.exerciseId);
 
@@ -163,6 +215,17 @@ export const mockWorkoutService: WorkoutService = {
     set.rpe = request.rpe;
     set.completed = request.completed;
     sessions.set(request.sessionId, session);
+
+    if (!request.completed) {
+      return null;
+    }
+
+    return {
+      id: set.id,
+      completedReps: set.completedReps,
+      completedWeight: set.completedWeight,
+      rpe: set.rpe,
+    };
   },
 
   async skipExercise(request: SkipExerciseRequest): Promise<void> {

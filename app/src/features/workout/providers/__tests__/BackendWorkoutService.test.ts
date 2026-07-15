@@ -12,6 +12,7 @@ jest.mock("../../../../api/workouts", () => ({
   skipWorkoutLogExercise: jest.fn(),
   listWorkoutLogHistory: jest.fn(),
   getWorkoutLog: jest.fn(),
+  getActiveWorkoutLog: jest.fn(),
 }));
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -167,6 +168,53 @@ describe("backendWorkoutService", () => {
     });
   });
 
+  describe("getSession", () => {
+    it("loads a session by id and maps it using cached display metadata", async () => {
+      api.getTodayPreview.mockResolvedValueOnce({
+        state: "training_day",
+        program: { name: "Powerbuilding Block 1" },
+        assignment_id: "assignment-1",
+        week_number: 1,
+        day_number: 1,
+        day_label: "Leg Day",
+        workout: buildWorkoutPublic(),
+        today_log_status: "none",
+        active_workout_log_id: null,
+      });
+      await backendWorkoutService.getTodayWorkout();
+      api.startWorkoutLog.mockResolvedValueOnce(buildWorkoutLogDetail());
+      const started = await backendWorkoutService.startWorkout("workout-1");
+
+      api.getWorkoutLog.mockResolvedValueOnce(buildWorkoutLogDetail());
+      const session = await backendWorkoutService.getSession(started.id);
+
+      expect(api.getWorkoutLog).toHaveBeenCalledWith(started.id);
+      expect(session?.id).toBe("log-1");
+      expect(session?.title).toBe("Powerbuilding Block 1");
+    });
+
+    it("returns null for a missing session", async () => {
+      api.getWorkoutLog.mockRejectedValueOnce(new ApiError(404, null, "not found"));
+      const session = await backendWorkoutService.getSession("missing");
+      expect(session).toBeNull();
+    });
+  });
+
+  describe("getActiveSession", () => {
+    it("returns null when there is no in-progress session", async () => {
+      api.getActiveWorkoutLog.mockResolvedValueOnce(null);
+      const session = await backendWorkoutService.getActiveSession();
+      expect(session).toBeNull();
+    });
+
+    it("maps the active session when one exists", async () => {
+      api.getActiveWorkoutLog.mockResolvedValueOnce(buildWorkoutLogDetail());
+      const session = await backendWorkoutService.getActiveSession();
+      expect(session?.id).toBe("log-1");
+      expect(session?.status).toBe("in_progress");
+    });
+  });
+
   describe("startWorkout / finishWorkout", () => {
     it("starts a session and attaches the cached program_assignment_id from the last preview", async () => {
       api.getTodayPreview.mockResolvedValueOnce({
@@ -228,10 +276,21 @@ describe("backendWorkoutService", () => {
   });
 
   describe("saveSet", () => {
-    it("creates a set when the local set id is a placeholder", async () => {
-      api.logWorkoutSet.mockResolvedValueOnce({});
+    it("creates a set when the local set id is a placeholder, returning the server-confirmed result", async () => {
+      api.logWorkoutSet.mockResolvedValueOnce({
+        id: "server-set-1",
+        set_number: 1,
+        weight_kg: "100.00",
+        reps: 8,
+        rpe: "7",
+        duration_seconds: null,
+        is_warmup: false,
+        notes: null,
+        created_at: "2026-07-01T10:05:00Z",
+        updated_at: "2026-07-01T10:05:00Z",
+      });
 
-      await backendWorkoutService.saveSet({
+      const saved = await backendWorkoutService.saveSet({
         sessionId: "log-1",
         exerciseId: "log-exercise-1",
         setId: "log-exercise-1-set-1",
@@ -246,10 +305,11 @@ describe("backendWorkoutService", () => {
         reps: 8,
         rpe: 7,
       });
+      expect(saved).toEqual({ id: "server-set-1", completedReps: 8, completedWeight: 100, rpe: 7 });
     });
 
     it("does nothing for an un-completed placeholder set", async () => {
-      await backendWorkoutService.saveSet({
+      const saved = await backendWorkoutService.saveSet({
         sessionId: "log-1",
         exerciseId: "log-exercise-1",
         setId: "log-exercise-1-set-1",
@@ -260,12 +320,24 @@ describe("backendWorkoutService", () => {
       });
 
       expect(api.logWorkoutSet).not.toHaveBeenCalled();
+      expect(saved).toBeNull();
     });
 
-    it("updates an existing logged set by its real backend id", async () => {
-      api.updateWorkoutSet.mockResolvedValueOnce({});
+    it("updates an existing logged set by its real backend id, returning the server-confirmed result", async () => {
+      api.updateWorkoutSet.mockResolvedValueOnce({
+        id: "11111111-1111-1111-1111-111111111111",
+        set_number: 1,
+        weight_kg: "105.00",
+        reps: 9,
+        rpe: "8",
+        duration_seconds: null,
+        is_warmup: false,
+        notes: null,
+        created_at: "2026-07-01T10:05:00Z",
+        updated_at: "2026-07-01T10:05:00Z",
+      });
 
-      await backendWorkoutService.saveSet({
+      const saved = await backendWorkoutService.saveSet({
         sessionId: "log-1",
         exerciseId: "log-exercise-1",
         setId: "11111111-1111-1111-1111-111111111111",
@@ -281,12 +353,18 @@ describe("backendWorkoutService", () => {
         "11111111-1111-1111-1111-111111111111",
         { weight_kg: 105, reps: 9, rpe: 8 },
       );
+      expect(saved).toEqual({
+        id: "11111111-1111-1111-1111-111111111111",
+        completedReps: 9,
+        completedWeight: 105,
+        rpe: 8,
+      });
     });
 
-    it("deletes a logged set when un-completing it", async () => {
+    it("deletes a logged set when un-completing it, returning null", async () => {
       api.deleteWorkoutSet.mockResolvedValueOnce(undefined);
 
-      await backendWorkoutService.saveSet({
+      const saved = await backendWorkoutService.saveSet({
         sessionId: "log-1",
         exerciseId: "log-exercise-1",
         setId: "11111111-1111-1111-1111-111111111111",
@@ -301,6 +379,7 @@ describe("backendWorkoutService", () => {
         "log-exercise-1",
         "11111111-1111-1111-1111-111111111111",
       );
+      expect(saved).toBeNull();
     });
   });
 

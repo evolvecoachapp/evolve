@@ -23,6 +23,22 @@ export {
   sessionProgress,
 } from "./programSelectors";
 export {
+  computeSessionVolumeKg,
+  countCompletedExercises,
+  countRemainingExercises,
+  countSessionCompletedWorkingSets,
+  countSessionWorkingSets,
+  countTotalExercises,
+  findNextIncompleteSet,
+  isSessionComplete,
+  mergeSavedSetIntoSession,
+} from "./sessionSelectors";
+export type { SessionPosition } from "./sessionSelectors";
+export {
+  parseWorkoutSummaryParams,
+  serializeWorkoutSummaryParams,
+} from "./summaryRouteParams";
+export {
   formatDurationMinutes,
   formatExerciseIntensity,
   formatMuscleGroupLabel,

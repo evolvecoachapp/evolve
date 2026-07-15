@@ -2,6 +2,7 @@ import { ApiError } from "../../../api/client";
 import {
   deleteWorkoutSet,
   finishWorkoutLog,
+  getActiveWorkoutLog,
   getTodayPreview,
   getWorkoutLog,
   getWorkoutTemplate,
@@ -19,6 +20,7 @@ import type { WorkoutSummary } from "../models/WorkoutSummary";
 import {
   WorkoutServiceError,
   type SaveSetRequest,
+  type SavedSetResult,
   type SkipExerciseRequest,
   type WorkoutService,
 } from "../types/workoutService";
@@ -28,6 +30,7 @@ import {
   mapWorkoutLogDetailToWorkoutSession,
   mapWorkoutLogDetailToWorkoutSummary,
   mapWorkoutPublicToWorkout,
+  mapWorkoutSetLogToSavedSetResult,
 } from "../utils/backendWorkoutAdapters";
 
 /** Display metadata a `WorkoutLog`/`WorkoutSetLog` response doesn't carry itself. */
@@ -117,6 +120,33 @@ function createBackendWorkoutService(): WorkoutService {
       }
     },
 
+    async getSession(sessionId: string): Promise<WorkoutSession | null> {
+      try {
+        const dto = await getWorkoutLog(sessionId);
+        const meta = sessionDisplayCache.get(sessionId) ?? { title: "Workout", subtitle: "" };
+        return mapWorkoutLogDetailToWorkoutSession(dto, meta.title, meta.subtitle);
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+          return null;
+        }
+        throw toServiceError(error, "Failed to load the workout session.");
+      }
+    },
+
+    async getActiveSession(): Promise<WorkoutSession | null> {
+      try {
+        const dto = await getActiveWorkoutLog();
+        if (!dto) {
+          return null;
+        }
+        const meta = sessionDisplayCache.get(dto.id) ?? { title: "Workout", subtitle: "" };
+        sessionDisplayCache.set(dto.id, meta);
+        return mapWorkoutLogDetailToWorkoutSession(dto, meta.title, meta.subtitle);
+      } catch (error) {
+        throw toServiceError(error, "Failed to load the active workout session.");
+      }
+    },
+
     async startWorkout(workoutId: string): Promise<WorkoutSession> {
       try {
         const assignmentId =
@@ -145,31 +175,32 @@ function createBackendWorkoutService(): WorkoutService {
       }
     },
 
-    async saveSet(request: SaveSetRequest): Promise<void> {
+    async saveSet(request: SaveSetRequest): Promise<SavedSetResult | null> {
       const { sessionId, exerciseId, setId, completedReps, completedWeight, rpe, completed } = request;
       try {
         if (isPlaceholderSetId(setId)) {
           if (!completed || (completedReps === null && completedWeight === null)) {
-            return;
+            return null;
           }
-          await logWorkoutSet(sessionId, exerciseId, {
+          const dto = await logWorkoutSet(sessionId, exerciseId, {
             weight_kg: completedWeight ?? undefined,
             reps: completedReps ?? undefined,
             rpe: rpe ?? undefined,
           });
-          return;
+          return mapWorkoutSetLogToSavedSetResult(dto);
         }
 
         if (!completed) {
           await deleteWorkoutSet(sessionId, exerciseId, setId);
-          return;
+          return null;
         }
 
-        await updateWorkoutSet(sessionId, exerciseId, setId, {
+        const dto = await updateWorkoutSet(sessionId, exerciseId, setId, {
           weight_kg: completedWeight ?? undefined,
           reps: completedReps ?? undefined,
           rpe: rpe ?? undefined,
         });
+        return mapWorkoutSetLogToSavedSetResult(dto);
       } catch (error) {
         throw toServiceError(error, "Failed to save the logged set.");
       }

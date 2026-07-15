@@ -16,6 +16,7 @@ import type { WorkoutExercise } from "../models/WorkoutExercise";
 import type { WorkoutSession } from "../models/WorkoutSession";
 import type { WorkoutStatus } from "../models/WorkoutStatus";
 import type { WorkoutSummary } from "../models/WorkoutSummary";
+import type { SavedSetResult } from "../types/workoutService";
 
 /**
  * Maps EVOLVE API DTOs (`src/types/api.ts`) onto the Workout feature's
@@ -219,6 +220,16 @@ function mapWorkoutSetLogToExerciseSet(
   };
 }
 
+/** Maps a logged/updated `WorkoutSetLogRead` onto the caller-facing `SavedSetResult` used to optimistically merge a session. */
+export function mapWorkoutSetLogToSavedSetResult(dto: WorkoutSetLogReadDto): SavedSetResult {
+  return {
+    id: dto.id,
+    completedReps: dto.reps,
+    completedWeight: dto.weight_kg !== null ? Number(dto.weight_kg) : null,
+    rpe: dto.rpe !== null ? Number(dto.rpe) : null,
+  };
+}
+
 /**
  * Maps a `WorkoutLogExerciseRead` (an in-progress/completed session's exercise
  * instance) onto the frontend `WorkoutExercise`. Logged sets become completed
@@ -297,6 +308,38 @@ function countLoggedSets(dto: WorkoutLogDetailDto): number {
   return dto.exercises.reduce((total, exercise) => total + exercise.sets.length, 0);
 }
 
+function countLoggedWorkingSets(dto: WorkoutLogDetailDto): number {
+  return dto.exercises.reduce(
+    (total, exercise) => total + exercise.sets.filter((set) => !set.is_warmup).length,
+    0,
+  );
+}
+
+function computeLoggedVolumeKg(dto: WorkoutLogDetailDto): number {
+  return dto.exercises.reduce((total, exercise) => {
+    return (
+      total +
+      exercise.sets
+        .filter((set) => !set.is_warmup)
+        .reduce((setTotal, set) => {
+          const weight = set.weight_kg !== null ? Number(set.weight_kg) : 0;
+          const reps = set.reps ?? 0;
+          return setTotal + weight * reps;
+        }, 0)
+    );
+  }, 0);
+}
+
+function countCompletedExercises(dto: WorkoutLogDetailDto): number {
+  return dto.exercises.filter(
+    (exercise) => !exercise.skipped && exercise.sets.some((set) => !set.is_warmup),
+  ).length;
+}
+
+function countTotalExercises(dto: WorkoutLogDetailDto): number {
+  return dto.exercises.filter((exercise) => !exercise.skipped).length;
+}
+
 function countPrescribedSets(dto: WorkoutLogDetailDto): number {
   return dto.exercises.reduce(
     (total, exercise) => total + Math.max(exercise.target_sets ?? 0, exercise.sets.length),
@@ -318,8 +361,11 @@ export function mapWorkoutLogDetailToWorkoutSummary(dto: WorkoutLogDetailDto, ti
     workoutId: dto.workout_id ?? "",
     title,
     durationMinutes,
-    completedSets: countLoggedSets(dto),
+    totalVolumeKg: computeLoggedVolumeKg(dto),
+    completedSets: countLoggedWorkingSets(dto),
     totalSets: countPrescribedSets(dto),
+    completedExercises: countCompletedExercises(dto),
+    totalExercises: countTotalExercises(dto),
     skippedExercises: dto.exercises.filter((exercise) => exercise.skipped).length,
     completedAt,
   };

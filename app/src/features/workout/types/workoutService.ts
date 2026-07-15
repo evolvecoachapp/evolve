@@ -15,6 +15,18 @@ export interface SaveSetRequest {
   completed: boolean;
 }
 
+/**
+ * Server-confirmed result of a logged/updated set — enough for the caller to
+ * optimistically merge it into an in-memory `WorkoutSession` without an extra
+ * full-session fetch. `null` when the write removed the set (un-completing it).
+ */
+export interface SavedSetResult {
+  id: string;
+  completedReps: number | null;
+  completedWeight: number | null;
+  rpe: number | null;
+}
+
 export interface SkipExerciseRequest {
   sessionId: string;
   exerciseId: string;
@@ -26,9 +38,12 @@ export interface WorkoutService {
 
   getTodayWorkout(): Promise<Workout>;
   getWorkout(id: string): Promise<Workout | null>;
+  getSession(sessionId: string): Promise<WorkoutSession | null>;
+  /** The user's current `in_progress` session, if any — used to offer resume instead of starting a duplicate. */
+  getActiveSession(): Promise<WorkoutSession | null>;
   startWorkout(workoutId: string): Promise<WorkoutSession>;
   finishWorkout(sessionId: string): Promise<WorkoutSummary>;
-  saveSet(request: SaveSetRequest): Promise<void>;
+  saveSet(request: SaveSetRequest): Promise<SavedSetResult | null>;
   skipExercise(request: SkipExerciseRequest): Promise<void>;
   getHistory(): Promise<ExerciseHistory[]>;
 }

@@ -9,6 +9,8 @@ function createFailingService(message: string): WorkoutService {
     providerId: "backend",
     getTodayWorkout: () => Promise.reject(new WorkoutServiceError(message, "backend")),
     getWorkout: () => Promise.resolve(null),
+    getSession: () => Promise.resolve(null),
+    getActiveSession: () => Promise.resolve(null),
     startWorkout: () => Promise.reject(new Error("not implemented")),
     finishWorkout: () => Promise.reject(new Error("not implemented")),
     saveSet: () => Promise.reject(new Error("not implemented")),

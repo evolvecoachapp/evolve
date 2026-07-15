@@ -4,8 +4,11 @@ export interface WorkoutSummary {
   workoutId: string;
   title: string;
   durationMinutes: number;
+  totalVolumeKg: number;
   completedSets: number;
   totalSets: number;
+  completedExercises: number;
+  totalExercises: number;
   skippedExercises: number;
   completedAt: string;
 }
