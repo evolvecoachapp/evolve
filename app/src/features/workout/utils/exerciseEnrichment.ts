@@ -2,6 +2,8 @@ import type { Exercise } from "../models/Exercise";
 import type { ExerciseMetadata } from "../models/ExerciseMetadata";
 import type { ExerciseMuscleGroup } from "../models/ExerciseMuscleGroup";
 import { createDefaultExerciseMetadata } from "../models/ExerciseMetadata";
+import type { ExerciseKnowledge } from "../models/ExerciseKnowledge";
+import { createDefaultExerciseKnowledge } from "../models/ExerciseKnowledge";
 
 interface ExerciseEnrichment {
   metadata?: Partial<ExerciseMetadata>;
@@ -9,6 +11,7 @@ interface ExerciseEnrichment {
   secondaryMuscles?: ExerciseMuscleGroup[];
   stabilizerMuscles?: ExerciseMuscleGroup[];
   commonMistakes?: string[];
+  knowledge?: Partial<ExerciseKnowledge>;
 }
 
 /** Static enrichment for mock catalog exercises until catalog metadata is fully wired. */
@@ -31,6 +34,12 @@ const EXERCISE_ENRICHMENT: Record<string, ExerciseEnrichment> = {
       breathingInstructions: "Inhale at the top, brace, and exhale forcefully as you stand.",
       rangeOfMotion: "Full squat depth with a strong upright torso.",
       safetyNotes: ["Keep the knees tracking over the toes.", "Do not lose tension in the upper back."],
+    },
+    knowledge: {
+      aliases: ["low-bar back squat"],
+      substitutions: [{ id: "ex-high-bar-squat", reason: "similar squat pattern" }, { id: "ex-front-squat" }],
+      variations: [{ id: "ex-box-squat" }],
+      tags: ["strength", "compound"],
     },
     primaryMuscles: ["quads", "glutes"],
     secondaryMuscles: ["hamstrings", "core"],
@@ -60,6 +69,10 @@ const EXERCISE_ENRICHMENT: Record<string, ExerciseEnrichment> = {
       rangeOfMotion: "Touch the chest lightly and lock out without flaring the elbows.",
       safetyNotes: ["Use a spotter for heavy loads.", "Keep the wrists neutral."],
     },
+    knowledge: {
+      substitutions: [{ id: "ex-incline-db-press", reason: "upper-chest emphasis" }],
+      tags: ["press"],
+    },
     primaryMuscles: ["chest"],
     secondaryMuscles: ["shoulders", "triceps"],
     stabilizerMuscles: ["core"],
@@ -87,6 +100,10 @@ const EXERCISE_ENRICHMENT: Record<string, ExerciseEnrichment> = {
       breathingInstructions: "Brace before the first pull and maintain tension through the set.",
       rangeOfMotion: "Full floor-to-standing range with controlled lowering.",
       safetyNotes: ["Keep the spine neutral.", "Avoid overloading if form is compromised."],
+    },
+    knowledge: {
+      substitutions: [{ id: "ex-romanian-deadlift", reason: "hamstring focus" }],
+      tags: ["hinge", "posterior-chain"],
     },
     primaryMuscles: ["back", "hamstrings"],
     secondaryMuscles: ["glutes", "core"],
@@ -223,6 +240,11 @@ const EXERCISE_ENRICHMENT: Record<string, ExerciseEnrichment> = {
       breathingInstructions: "Inhale on the way down and exhale as you rise.",
       rangeOfMotion: "Full depth with a strong front-leg drive.",
       safetyNotes: ["Keep the front knee tracking over the toes."],
+    },
+    knowledge: {
+      substitutions: [{ id: "ex-lunge", reason: "similar unilateral lower-body" }],
+      variations: [{ id: "ex-elevated-split-squat" }],
+      tags: ["unilateral"],
     },
     primaryMuscles: ["quads", "glutes"],
     secondaryMuscles: ["hamstrings"],
@@ -362,6 +384,10 @@ export function enrichExercise(exercise: Exercise): Exercise {
   const secondaryMuscles = enrichment?.secondaryMuscles ?? exercise.secondaryMuscles ?? [];
   const commonMistakes = enrichment?.commonMistakes ?? exercise.commonMistakes ?? [];
   const stabilizerMuscles = enrichment?.stabilizerMuscles ?? baseMetadata.stabilizerMuscles ?? [];
+  const baseKnowledge = createDefaultExerciseKnowledge({
+    ...baseMetadata.knowledge,
+    ...enrichment?.knowledge,
+  });
 
   return {
     ...exercise,
@@ -370,6 +396,21 @@ export function enrichExercise(exercise: Exercise): Exercise {
     commonMistakes,
     metadata: {
       ...baseMetadata,
+      knowledge: {
+        ...baseKnowledge,
+        primaryMuscles,
+        secondaryMuscles,
+        stabilizers: baseKnowledge.stabilizers ?? stabilizerMuscles,
+        movementPattern: baseKnowledge.movementPattern ?? baseMetadata.movementPattern,
+        equipment: baseKnowledge.equipment ?? baseMetadata.equipment,
+        recommendedRestSeconds: baseKnowledge.recommendedRestSeconds ?? baseMetadata.recommendedRestSeconds,
+        coachTip: baseKnowledge.coachTip ?? baseMetadata.coachTip,
+        executionSteps: baseKnowledge.executionSteps ?? baseMetadata.executionSteps,
+        breathing: baseKnowledge.breathing ?? baseMetadata.breathingInstructions,
+        rangeOfMotion: baseKnowledge.rangeOfMotion ?? baseMetadata.rangeOfMotion,
+        safetyNotes: baseKnowledge.safetyNotes ?? baseMetadata.safetyNotes,
+        commonMistakes: baseKnowledge.commonMistakes ?? baseMetadata.commonMistakes,
+      },
       primaryMuscles,
       secondaryMuscles,
       stabilizerMuscles,
