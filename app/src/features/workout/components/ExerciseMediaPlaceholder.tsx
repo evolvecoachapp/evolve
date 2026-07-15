@@ -3,6 +3,7 @@ import { Image, StyleSheet, Text, View } from "react-native";
 import { spacing } from "../../../theme/theme";
 import { useTheme } from "../../../theme/ThemeContext";
 import { useThemedStyles } from "../../../theme/useThemedStyles";
+import { resolveExerciseMedia } from "../utils/exerciseMedia";
 
 interface ExerciseMediaPlaceholderProps {
   imageUrl?: string | null;
@@ -17,7 +18,8 @@ export function ExerciseMediaPlaceholder({
   exerciseName,
 }: ExerciseMediaPlaceholderProps) {
   const { colors } = useTheme();
-  const hasMedia = Boolean(imageUrl);
+  const media = resolveExerciseMedia({ exerciseName, imageUrl, videoUrl });
+  const hasMedia = media.hasThumbnail;
   const styles = useThemedStyles(({ colors, typography, radius }) =>
     StyleSheet.create({
       container: {
@@ -63,16 +65,16 @@ export function ExerciseMediaPlaceholder({
     }),
   );
 
-  if (hasMedia && imageUrl) {
+  if (hasMedia && media.thumbnail) {
     return (
       <View style={styles.container}>
         <Image
-          source={{ uri: imageUrl }}
+          source={{ uri: media.thumbnail }}
           style={styles.image}
           accessibilityLabel={`${exerciseName} demonstration`}
           resizeMode="cover"
         />
-        {videoUrl ? (
+        {media.hasVideo ? (
           <View style={styles.badge}>
             <Ionicons name="play-circle-outline" size={spacing.icon.sm} color={colors.pulse} />
             <Text style={styles.badgeText}>Video</Text>
@@ -86,7 +88,7 @@ export function ExerciseMediaPlaceholder({
     <View style={styles.container} accessibilityLabel={`${exerciseName} media placeholder`}>
       <View style={styles.placeholder}>
         <Ionicons name="barbell-outline" size={spacing.icon.lg} color={colors.inkMuted} />
-        <Text style={styles.placeholderText}>Demonstration media coming soon</Text>
+        <Text style={styles.placeholderText}>{media.fallbackLabel}</Text>
       </View>
     </View>
   );
