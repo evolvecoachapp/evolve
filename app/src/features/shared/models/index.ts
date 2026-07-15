@@ -10,6 +10,13 @@ export type { MacroNutrient, NutritionPreferences } from "./NutritionPreferences
 export type { PrivacySettings, ProfileVisibility } from "./PrivacySettings";
 export type { RecoverySettings } from "./RecoverySettings";
 export type {
+  NotificationAction,
+  NotificationPriority,
+  NotificationStatus,
+  NotificationType,
+  CoachNotification,
+} from "./CoachNotification";
+export type {
   Subscription,
   SubscriptionStatus,
   SubscriptionTier,
