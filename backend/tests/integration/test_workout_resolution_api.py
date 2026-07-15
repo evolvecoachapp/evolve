@@ -196,12 +196,12 @@ def test_full_resolution_lifecycle(
     assert rejected_advance.status_code == 409
 
 
-def test_resolution_returns_no_active_program_state(
+def test_resolution_returns_503_when_default_program_missing(
     client: TestClient, auth_headers: dict[str, str]
 ) -> None:
     response = client.get(f"{RESOLUTION_PREFIX}/today", headers=auth_headers)
-    assert response.status_code == 200
-    assert response.json()["state"] == "no_active_program"
+    assert response.status_code == 503
+    assert "beginner-foundation" in response.json()["detail"]
 
 
 def test_advance_rest_day_without_active_assignment_is_not_found(

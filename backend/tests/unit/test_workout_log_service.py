@@ -20,6 +20,8 @@ from app.schemas.workout_log import (
     WorkoutLogExerciseCreate,
     WorkoutLogFinish,
     WorkoutLogStart,
+    WorkoutSessionAction,
+    WorkoutSessionUpdate,
     WorkoutSetLogCreate,
     WorkoutSetLogUpdate,
 )
@@ -383,6 +385,90 @@ def test_add_exercise_raises_when_session_not_in_progress(service, workout_log_r
 
     with pytest.raises(InvalidWorkoutLogStateError):
         service.add_exercise(USER_ID, log.id, WorkoutLogExerciseCreate(exercise_id=uuid.uuid4()))
+
+
+# -- skip_exercise -----------------------------------------------------------------
+
+
+def test_skip_exercise_marks_flag_and_commits(service, workout_log_repository):
+    log = _make_log()
+    log_exercise = _make_log_exercise(workout_log_id=log.id)
+    workout_log_repository.get_by_id.return_value = log
+    workout_log_repository.get_exercise_by_id.return_value = log_exercise
+    workout_log_repository.update_exercise.side_effect = lambda x: x
+
+    result = service.skip_exercise(USER_ID, log.id, log_exercise.id)
+
+    assert result.skipped is True
+    workout_log_repository.update_exercise.assert_called_once_with(log_exercise)
+    workout_log_repository.db.commit.assert_called_once()
+
+
+def test_skip_exercise_raises_when_session_not_in_progress(service, workout_log_repository):
+    log = _make_log(status=WorkoutLogStatus.COMPLETED)
+    workout_log_repository.get_by_id.return_value = log
+
+    with pytest.raises(InvalidWorkoutLogStateError):
+        service.skip_exercise(USER_ID, log.id, uuid.uuid4())
+
+
+def test_skip_exercise_raises_when_exercise_belongs_to_another_log(
+    service, workout_log_repository
+):
+    log = _make_log()
+    mismatched_exercise = _make_log_exercise(workout_log_id=uuid.uuid4())
+    workout_log_repository.get_by_id.return_value = log
+    workout_log_repository.get_exercise_by_id.return_value = mismatched_exercise
+
+    with pytest.raises(LogExerciseNotFoundError):
+        service.skip_exercise(USER_ID, log.id, mismatched_exercise.id)
+
+
+# -- update_session ---------------------------------------------------------------
+
+
+def test_update_session_notes_only(service, workout_log_repository):
+    log = _make_log()
+    workout_log_repository.get_by_id.return_value = log
+    workout_log_repository.update.side_effect = lambda x: x
+
+    result = service.update_session(
+        USER_ID, log.id, WorkoutSessionUpdate(notes="Felt good today")
+    )
+
+    assert result.notes == "Felt good today"
+    workout_log_repository.update.assert_called_once()
+    workout_log_repository.db.commit.assert_called_once()
+
+
+def test_update_session_finish_delegates(service, mocker):
+    log = _make_log()
+    mocker.patch.object(service, "finish_workout", return_value=log)
+
+    result = service.update_session(
+        USER_ID,
+        log.id,
+        WorkoutSessionUpdate(action=WorkoutSessionAction.FINISH, notes="Done"),
+    )
+
+    service.finish_workout.assert_called_once_with(
+        USER_ID,
+        log.id,
+        WorkoutLogFinish(notes="Done", duration_actual_minutes=None),
+    )
+    assert result is log
+
+
+def test_update_session_skip_delegates(service, mocker):
+    log = _make_log()
+    mocker.patch.object(service, "skip_workout", return_value=log)
+
+    result = service.update_session(
+        USER_ID, log.id, WorkoutSessionUpdate(action=WorkoutSessionAction.SKIP)
+    )
+
+    service.skip_workout.assert_called_once_with(USER_ID, log.id)
+    assert result is log
 
 
 # -- log_set ----------------------------------------------------------------------

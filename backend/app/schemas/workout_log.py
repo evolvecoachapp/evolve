@@ -16,11 +16,13 @@ excludes ``status`` in ``app.schemas.program``.
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
+from enum import Enum
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 from app.models.workout_log import WorkoutLog, WorkoutLogExercise, WorkoutLogStatus, WorkoutSetLog
+from app.schemas.exercise import ExerciseCatalogRef
 
 WorkoutLogTextField = Annotated[str, StringConstraints(max_length=10_000)]
 RpeField = Annotated[Decimal, Field(ge=0, le=10)]
@@ -39,6 +41,33 @@ class WorkoutLogStart(BaseModel):
     program_assignment_id: uuid.UUID | None = None
     scheduled_date: date | None = None
     notes: WorkoutLogTextField | None = None
+
+
+class WorkoutSessionAction(str, Enum):
+    """Lifecycle actions supported by ``PATCH /workouts/session/{id}``."""
+
+    FINISH = "finish"
+    SKIP = "skip"
+
+
+class WorkoutSessionUpdate(BaseModel):
+    """Input schema for partially updating an in-progress workout session.
+
+    ``action`` drives state transitions (finish/skip); ``notes`` and
+    ``duration_actual_minutes`` apply to finish or a notes-only update when
+    ``action`` is omitted.
+    """
+
+    action: WorkoutSessionAction | None = None
+    notes: WorkoutLogTextField | None = None
+    duration_actual_minutes: int | None = Field(default=None, gt=0)
+
+    @model_validator(mode="after")
+    def _check_not_empty(self) -> "WorkoutSessionUpdate":
+        """Ensure the patch changes at least one field."""
+        if self.action is None and self.notes is None and self.duration_actual_minutes is None:
+            raise ValueError("At least one of action, notes, or duration_actual_minutes is required.")
+        return self
 
 
 class WorkoutLogFinish(BaseModel):
@@ -138,12 +167,22 @@ class WorkoutSetLogRead(BaseModel):
 
 
 class WorkoutLogExerciseRead(BaseModel):
-    """Public-facing representation of a single logged exercise instance, with its sets."""
+    """Public-facing representation of a single logged exercise instance, with its sets.
+
+    Embeds :class:`~app.schemas.exercise.ExerciseCatalogRef` (current
+    catalog data — muscle group, equipment, media) alongside
+    ``exercise_name_snapshot`` (the immutable historical name; see
+    ``app.models.workout_log``). The two are deliberately different: the
+    snapshot is never re-synced, while ``exercise`` reflects the catalog
+    as it is today, which is fine for display metadata that isn't part of
+    the historical record's accuracy contract (Sprint 6.3).
+    """
 
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     exercise_id: uuid.UUID
+    exercise: ExerciseCatalogRef
     workout_exercise_id: uuid.UUID | None
     order_index: int
     exercise_name_snapshot: str
@@ -152,16 +191,18 @@ class WorkoutLogExerciseRead(BaseModel):
     target_reps_max: int | None
     rest_seconds: int | None
     notes: str | None
+    skipped: bool
     sets: list[WorkoutSetLogRead]
     created_at: datetime
     updated_at: datetime
 
     @classmethod
     def from_model(cls, log_exercise: WorkoutLogExercise) -> "WorkoutLogExerciseRead":
-        """Build this schema from a :class:`WorkoutLogExercise` with ``set_logs`` loaded."""
+        """Build this schema from a :class:`WorkoutLogExercise` with ``exercise``/``set_logs`` loaded."""
         return cls(
             id=log_exercise.id,
             exercise_id=log_exercise.exercise_id,
+            exercise=ExerciseCatalogRef.from_model(log_exercise.exercise),
             workout_exercise_id=log_exercise.workout_exercise_id,
             order_index=log_exercise.order_index,
             exercise_name_snapshot=log_exercise.exercise_name_snapshot,
@@ -170,6 +211,7 @@ class WorkoutLogExerciseRead(BaseModel):
             target_reps_max=log_exercise.target_reps_max,
             rest_seconds=log_exercise.rest_seconds,
             notes=log_exercise.notes,
+            skipped=log_exercise.skipped,
             sets=[WorkoutSetLogRead.model_validate(set_log) for set_log in log_exercise.set_logs],
             created_at=log_exercise.created_at,
             updated_at=log_exercise.updated_at,

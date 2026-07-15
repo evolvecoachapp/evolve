@@ -1,9 +1,9 @@
 # EVOLVE API Status
 
 **Project:** EVOLVE  
-**Version:** 0.5.0  
+**Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-14  
+**Last Updated:** 2026-07-15  
 **Purpose:** Complete inventory of backend HTTP endpoints and implementation status.  
 **Source of Truth:** Yes — for endpoint counts and route status (reconcile summary table when routes change).
 
@@ -15,11 +15,11 @@
 
 | Status | Count |
 |--------|-------|
-| Complete | 50 |
+| Complete | 56 |
 | Partial | 0 |
 | Stub | 0 |
 | Not implemented | 6 (planned) |
-| **Total documented** | **56** |
+| **Total documented** | **62** |
 
 ---
 
@@ -69,6 +69,18 @@
 
 ---
 
+## Workouts (`/api/v1/workouts`)
+
+| Endpoint | Method | Auth | Status | Notes |
+|----------|--------|------|--------|-------|
+| `/workouts/current` | GET | Yes | Complete | Today's program slot preview — alias for `/workout-resolution/today`; auto-assigns default program (Sprint 6.3.1) |
+| `/workouts/session` | POST | Yes | Complete | Start logged session — alias for `/workout-logs/start` (Sprint 6.3) |
+| `/workouts/session/{id}` | PATCH | Yes | Complete | Update/finish/skip session — `action=finish\|skip` or notes-only (Sprint 6.3) |
+| `/workouts` | GET | Yes | Complete | Paginated, searchable list of active workout templates (Sprint 6.3) |
+| `/workouts/{id_or_slug}` | GET | Yes | Complete | Single workout template, ordered exercises embedded with catalog refs (Sprint 6.3) |
+
+---
+
 ## Workout Logs (`/api/v1/workout-logs`)
 
 | Endpoint | Method | Auth | Status | Notes |
@@ -80,6 +92,7 @@
 | `/workout-logs/{id}/finish` | POST | Yes | Complete | Complete session; may advance program cursor |
 | `/workout-logs/{id}/skip` | POST | Yes | Complete | Skip session; may advance program cursor |
 | `/workout-logs/{id}/exercises` | POST | Yes | Complete | Add exercise to session |
+| `/workout-logs/{id}/exercises/{exercise_id}/skip` | POST | Yes | Complete | Mark a single exercise instance as skipped (Sprint 6.3) |
 | `/workout-logs/{id}/exercises/{exercise_id}/sets` | POST | Yes | Complete | Log a set |
 | `/workout-logs/{id}/exercises/{exercise_id}/sets/{set_id}` | PATCH | Yes | Complete | Update set (within edit window) |
 | `/workout-logs/{id}/exercises/{exercise_id}/sets/{set_id}` | DELETE | Yes | Complete | Delete set |
@@ -90,7 +103,7 @@
 
 | Endpoint | Method | Auth | Status | Notes |
 |----------|--------|------|--------|-------|
-| `/workout-resolution/today` | GET | Yes | Complete | Today's program slot preview |
+| `/workout-resolution/today` | GET | Yes | Complete | Today's preview; auto-assigns default program when user has none (Sprint 6.3.1) |
 | `/workout-resolution/advance-rest-day` | POST | Yes | Complete | Explicitly advance past rest day |
 
 ---
@@ -163,7 +176,7 @@
 |----------|--------|------|--------|-------|
 | `/health` | GET | No | **Not implemented** | DB connectivity check |
 | `/programs` | * | Yes | **Not implemented** | Program CRUD — service exists |
-| `/workouts` | * | Yes | **Not implemented** | Workout template CRUD — service exists |
+| `/workouts` | POST/PATCH/DELETE | Yes | **Not implemented** | Workout template authoring (create/update/deactivate) — service exists; read endpoints (`GET /workouts`, `GET /workouts/{id_or_slug}`) went live in Sprint 6.3 |
 | `/programs/{id}/assign` | POST | Yes | **Not implemented** | Assignment — service exists |
 | `/coach/conversations` | GET | Yes | **Not implemented** | List conversations |
 | `/exercises` | POST | Yes | **Not implemented** | Admin exercise create |
@@ -186,7 +199,7 @@
 | Mobile screen | Primary endpoints | Sprint |
 |---------------|-------------------|--------|
 | CoachScreen | `/coach/messages`, `/coach/conversations/{id}/messages` | 5.3 |
-| WorkoutScreen | `/workout-resolution/today`, `/workout-logs/*` | 5.3 |
+| WorkoutScreen | `/workout-resolution/today`, `/workouts/current`, `/workouts/{id}`, `/workouts/session`, `/workout-logs/*` | 6.3 (live) |
 | NutritionScreen | `/nutrition/targets`, `/nutrition/meals`, `/nutrition/logs` | 5.3 |
 | ProgressScreen | `/progress`, `/progress/summary`, `/goals` | 5.4 |
 | DashboardScreen | Aggregates above | 5.3+ |

@@ -189,6 +189,51 @@ class ExercisePage(BaseModel):
     offset: int
 
 
+class ExerciseCatalogRef(BaseModel):
+    """A lean catalog reference embedded inside Workout/WorkoutLog line items.
+
+    Deliberately lighter than :class:`ExercisePublic` (no substitutions,
+    no full association metadata) — consumers embedding this (``Workout``
+    templates and ``WorkoutLog`` sessions, see ``app.schemas.workout``/
+    ``app.schemas.workout_log``) only need enough to render a line item
+    without a second round-trip to ``GET /exercises/{id}``.
+    ``primary_muscle_group``/``equipment_slugs`` are flattened from the
+    association tables so mobile clients don't need to know about
+    ``is_primary``/``is_required`` to render a simple summary.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    name: str
+    slug: str
+    category: ExerciseCategory
+    difficulty_level: DifficultyLevel
+    video_url: str | None
+    image_url: str | None
+    primary_muscle_group: str | None
+    equipment_slugs: list[str]
+
+    @classmethod
+    def from_model(cls, exercise: Exercise) -> "ExerciseCatalogRef":
+        """Build this schema from an :class:`Exercise` with associations loaded."""
+        primary_link = next(
+            (link for link in exercise.muscle_group_links if link.is_primary),
+            exercise.muscle_group_links[0] if exercise.muscle_group_links else None,
+        )
+        return cls(
+            id=exercise.id,
+            name=exercise.name,
+            slug=exercise.slug,
+            category=exercise.category,
+            difficulty_level=exercise.difficulty_level,
+            video_url=exercise.video_url,
+            image_url=exercise.image_url,
+            primary_muscle_group=primary_link.muscle_group.slug if primary_link else None,
+            equipment_slugs=[link.equipment.slug for link in exercise.equipment_links],
+        )
+
+
 class ExerciseSummary(BaseModel):
     """A minimal exercise representation, used inside substitution results."""
 

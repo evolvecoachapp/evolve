@@ -13,12 +13,14 @@ from app.api.v1.recovery import router as recovery_router
 from app.api.v1.users import router as users_router
 from app.api.v1.workout_logs import router as workout_logs_router
 from app.api.v1.workout_resolution import router as workout_resolution_router
+from app.api.v1.workouts import router as workouts_router
 
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(auth_router)
 api_router.include_router(users_router)
 api_router.include_router(exercises_router)
 api_router.include_router(catalog_router)
+api_router.include_router(workouts_router)
 api_router.include_router(workout_logs_router)
 api_router.include_router(workout_resolution_router)
 api_router.include_router(nutrition_router)

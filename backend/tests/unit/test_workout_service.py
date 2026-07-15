@@ -11,8 +11,12 @@ import uuid
 
 import pytest
 
-from app.models.program import Program, ProgramDay, ProgramStatus
-from app.services.workout_service import ProgramNotAssignableError, WorkoutService
+from app.models.program import AssignmentStatus, Program, ProgramAssignment, ProgramDay, ProgramStatus
+from app.services.workout_service import (
+    DefaultProgramNotFoundError,
+    ProgramNotAssignableError,
+    WorkoutService,
+)
 
 USER_ID = uuid.uuid4()
 
@@ -83,3 +87,56 @@ def test_assign_program_raises_when_program_not_published(service, program_repos
         service.assign_program(USER_ID, program.id)
 
     program_repository.get_first_day.assert_not_called()
+
+
+def test_ensure_active_assignment_returns_existing_without_reassigning(
+    service, program_repository
+):
+    existing = ProgramAssignment(
+        id=uuid.uuid4(),
+        program_id=uuid.uuid4(),
+        user_id=USER_ID,
+        status=AssignmentStatus.ACTIVE,
+        current_week_number=1,
+        current_day_number=1,
+    )
+    program_repository.get_active_assignment_for_user.return_value = existing
+
+    result = service.ensure_active_assignment(USER_ID)
+
+    assert result is existing
+    program_repository.get_by_slug.assert_not_called()
+
+
+def test_ensure_active_assignment_assigns_default_when_none_active(
+    service, program_repository, mocker
+):
+    program = _make_program()
+    first_day = ProgramDay(
+        id=uuid.uuid4(), program_id=program.id, week_number=1, day_number=1
+    )
+    program_repository.get_active_assignment_for_user.return_value = None
+    program_repository.get_by_slug.return_value = program
+    program_repository.get_first_day.return_value = first_day
+    program_repository.get_by_id.return_value = program
+    program_repository.create_assignment.side_effect = lambda a: a
+    mocker.patch(
+        "app.services.workout_service.settings.default_program_slug",
+        "beginner-foundation",
+    )
+
+    created = service.ensure_active_assignment(USER_ID)
+
+    assert created.current_week_number == 1
+    program_repository.get_by_slug.assert_called_once_with("beginner-foundation")
+
+
+def test_assign_default_program_raises_when_slug_missing(service, program_repository, mocker):
+    program_repository.get_by_slug.return_value = None
+    mocker.patch(
+        "app.services.workout_service.settings.default_program_slug",
+        "beginner-foundation",
+    )
+
+    with pytest.raises(DefaultProgramNotFoundError, match="not configured"):
+        service.assign_default_program(USER_ID)

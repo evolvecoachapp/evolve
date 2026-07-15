@@ -23,7 +23,10 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.core.config import settings
 from app.db.database import get_db
 from app.main import app
+from app.models.exercise import DifficultyLevel, Exercise, ExerciseCategory
+from app.models.program import Program, ProgramDay, ProgramGoal, ProgramStatus
 from app.models.user import User
+from app.models.workout import Workout, WorkoutExercise
 from app.security.hashing import hash_password
 from app.security.jwt import create_access_token
 
@@ -118,3 +121,64 @@ def client(db_session: Session) -> Generator[TestClient, None, None]:
         yield TestClient(app)
     finally:
         app.dependency_overrides.pop(get_db, None)
+
+
+@pytest.fixture()
+def default_program_exercise(db_session: Session) -> Exercise:
+    """A minimal catalog exercise for default-program workout fixtures."""
+    exercise = Exercise(
+        name=f"Goblet Squat {uuid.uuid4().hex[:8]}",
+        slug=f"goblet-squat-{uuid.uuid4().hex[:8]}",
+        difficulty_level=DifficultyLevel.BEGINNER,
+        category=ExerciseCategory.COMPOUND,
+    )
+    db_session.add(exercise)
+    db_session.commit()
+    db_session.refresh(exercise)
+    return exercise
+
+
+@pytest.fixture()
+def default_program(db_session: Session, default_program_exercise: Exercise) -> Program:
+    """Published default beginner program at :attr:`Settings.default_program_slug`."""
+    workout = Workout(
+        name="Beginner Full Body A",
+        slug=f"beginner-full-body-a-{uuid.uuid4().hex[:8]}",
+        estimated_duration_minutes=45,
+    )
+    db_session.add(workout)
+    db_session.flush()
+    db_session.add(
+        WorkoutExercise(
+            workout_id=workout.id,
+            exercise_id=default_program_exercise.id,
+            order_index=0,
+            target_sets=3,
+            target_reps_min=8,
+            target_reps_max=12,
+            rest_seconds=90,
+        )
+    )
+
+    program = Program(
+        name="EVOLVE Beginner Foundation",
+        slug=settings.default_program_slug,
+        duration_weeks=4,
+        goal=ProgramGoal.GENERAL_FITNESS,
+        difficulty_level=DifficultyLevel.BEGINNER,
+        status=ProgramStatus.PUBLISHED,
+    )
+    db_session.add(program)
+    db_session.flush()
+    db_session.add(
+        ProgramDay(
+            program_id=program.id,
+            week_number=1,
+            day_number=1,
+            label="Full Body A",
+            workout_id=workout.id,
+        )
+    )
+    db_session.commit()
+    db_session.refresh(program)
+    return program

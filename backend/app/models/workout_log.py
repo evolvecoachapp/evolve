@@ -45,6 +45,7 @@ from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
+from app.models.exercise import Exercise
 
 
 class WorkoutLogStatus(str, Enum):
@@ -183,6 +184,13 @@ class WorkoutLogExercise(Base):
     ``target_*``/``rest_seconds`` columns are copied once, at add-time, and
     never re-synced, so history stays accurate and readable even after the
     catalog entry is renamed or the template is edited.
+
+    ``skipped`` marks that the user explicitly chose not to perform this
+    exercise instance during the session — distinct from simply having no
+    logged sets (which just means "not gotten to yet" while the session is
+    still ``IN_PROGRESS``). Mirrors the intent of
+    :attr:`WorkoutLog.status`'s ``SKIPPED`` state, but scoped to a single
+    exercise rather than the whole session.
     """
 
     __tablename__ = "workout_log_exercises"
@@ -259,6 +267,7 @@ class WorkoutLogExercise(Base):
     target_reps_max: Mapped[int | None] = mapped_column(nullable=True)
     rest_seconds: Mapped[int | None] = mapped_column(nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    skipped: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -273,6 +282,7 @@ class WorkoutLogExercise(Base):
     )
 
     workout_log: Mapped["WorkoutLog"] = relationship(back_populates="log_exercises")
+    exercise: Mapped["Exercise"] = relationship(lazy="joined")
     set_logs: Mapped[list["WorkoutSetLog"]] = relationship(
         back_populates="workout_log_exercise",
         cascade="all, delete-orphan",

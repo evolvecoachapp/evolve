@@ -4,7 +4,6 @@ import {
   mockWorkoutService,
 } from "..";
 import { MOCK_TODAY_WORKOUT_ID } from "../../mocks/workoutCatalog";
-import { WorkoutServiceError } from "../../types/workoutService";
 
 describe("workoutService architecture", () => {
   it("defaults to the mock provider", () => {
@@ -57,7 +56,13 @@ describe("workoutService architecture", () => {
     expect(history.length).toBeGreaterThan(0);
   });
 
-  it("throws when an unconfigured provider is invoked", async () => {
-    await expect(backendWorkoutService.getTodayWorkout()).rejects.toBeInstanceOf(WorkoutServiceError);
+  it("exposes a backend provider distinct from the mock provider", () => {
+    expect(backendWorkoutService.providerId).toBe("backend");
+    expect(backendWorkoutService).not.toBe(mockWorkoutService);
+  });
+
+  it("defaults to the backend provider when no override is given", () => {
+    const service = createWorkoutService();
+    expect(service.providerId).toBe("backend");
   });
 });

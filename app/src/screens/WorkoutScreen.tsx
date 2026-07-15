@@ -1,4 +1,4 @@
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { AppHeader } from "../components/AppHeader";
 import { GradientBackground } from "../components/GradientBackground";
 import { TabScreenContainer } from "../components/TabScreenContainer";
@@ -19,19 +19,41 @@ import { floatingFooterMetrics } from "../theme/theme";
 import { useThemedStyles } from "../theme/useThemedStyles";
 
 export function WorkoutScreen() {
-  const { workout, loading } = useWorkout();
+  const { workout, loading, error } = useWorkout();
 
-  const styles = useThemedStyles(() =>
+  const styles = useThemedStyles((theme) =>
     StyleSheet.create({
       screen: {
         flex: 1,
         backgroundColor: "transparent",
       },
+      message: {
+        color: theme.colors.textSecondary,
+        fontSize: 16,
+        lineHeight: 24,
+        textAlign: "center",
+        paddingHorizontal: 24,
+      },
     }),
   );
 
-  if (loading || !workout) {
+  if (loading) {
     return null;
+  }
+
+  if (error || !workout) {
+    return (
+      <GradientBackground variant="canvas">
+        <View style={styles.screen}>
+          <AppHeader title="Workout" subtitle="Your session briefing" />
+          <TabScreenContainer gradient={false}>
+            <Text style={styles.message}>
+              {error ?? "No workout is scheduled for today."}
+            </Text>
+          </TabScreenContainer>
+        </View>
+      </GradientBackground>
+    );
   }
 
   const presentationDay = toPresentationDay(workout);

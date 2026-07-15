@@ -1,9 +1,9 @@
 # Changelog
 
 **Project:** EVOLVE  
-**Version:** 0.5.0 (current release)  
-**Status:** Living Document  
-**Last Updated:** 2026-07-14  
+**Version:** 0.6.0 (current release)
+**Status:** Living Document
+**Last Updated:** 2026-07-15
 **Purpose:** Semantic release history; accumulate changes under `[Unreleased]` until tagged.  
 **Source of Truth:** Yes — for release versions and shipped changes.
 All notable changes to EVOLVE are documented in this file.
@@ -27,6 +27,20 @@ Each release section groups changes under: `Added`, `Changed`, `Deprecated`, `Re
 ## [Unreleased]
 
 ### Added
+- Default program auto-assignment on first workout access (Sprint 6.3.1)
+- `WorkoutService.ensure_active_assignment()` and `assign_default_program()` — reuses `assign_program()` with `Settings.default_program_slug`
+- `database/seeds/seed_default_program.py` — idempotent `beginner-foundation` program seed
+- `DEFAULT_PROGRAM_SLUG` setting (default: `beginner-foundation`)
+- Workout Engine v1 — production backend integration for mobile Workout domain (Sprint 6.3)
+- `GET /api/v1/workouts/current` — workout resolution preview alias
+- `POST /api/v1/workouts/session` and `PATCH /api/v1/workouts/session/{id}` — session lifecycle aliases (`finish`/`skip`/notes)
+- `GET /api/v1/workouts` + `GET /api/v1/workouts/{id_or_slug}` — read-only workout template browsing with embedded exercise catalog refs
+- `POST /api/v1/workout-logs/{id}/exercises/{exercise_id}/skip` — per-exercise skip within a session (`WorkoutLogExercise.skipped`, migration `37fd64b528a8`)
+- `BackendWorkoutService` — full `WorkoutService` implementation against `/workout-resolution/*`, `/workouts/*`, `/workout-logs/*`
+- `app/src/api/workouts.ts` — typed workout domain API client
+- `backendWorkoutAdapters.ts` — DTO → production model mapping (muscle/equipment slugs, placeholder sets, history)
+- `useWorkout()` hook — loads today's workout via `workoutService.getTodayWorkout()`; surfaces `error` for non-training-day states
+- Workout unit/integration tests: `test_workouts_api.py`, `test_workout_logs_api.py`, `BackendWorkoutService.test.ts`, `useWorkout.test.ts`
 - `UserService` with `update_profile()` — partial profile updates with email/username conflict detection
 - `PATCH /api/v1/users/me` route wired through `get_user_service()` dependency
 - Mobile user profile provider stack: `BackendUserService`, `MockCurrentUserService`, `useCurrentUser()` hook
@@ -41,6 +55,9 @@ Each release section groups changes under: `Added`, `Changed`, `Deprecated`, `Re
 - Documentation Maintenance Policy in [README.md](./README.md)
 
 ### Changed
+- `GET /workout-resolution/today` and `GET /workouts/current` auto-assign the default beginner program when the user has no active assignment; return **503** when the default program is not seeded (Sprint 6.3.1)
+- `EXPO_PUBLIC_WORKOUT_PROVIDER` defaults to `backend` (mirrors user profile provider)
+- API endpoint counts reconciled: **56 implemented**, **6 planned** ([API_STATUS.md](./API_STATUS.md))
 - `ProfileScreen` now supports read/edit modes with backend-backed save via `useCurrentUser()` (Sprint 6.1)
 - `ProfileScreen` now consumes `useCurrentUser()` instead of `profileMock` + direct `useAuth()` user fields
 - `CurrentUserService` extended with `providerId` and `refresh()` for async backend loading

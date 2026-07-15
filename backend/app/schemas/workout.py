@@ -17,7 +17,8 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, StringConstraints, model_validator
 
-from app.models.workout import Workout
+from app.models.workout import Workout, WorkoutExercise
+from app.schemas.exercise import ExerciseCatalogRef
 
 WorkoutNameField = Annotated[str, StringConstraints(min_length=2, max_length=150)]
 WorkoutTextField = Annotated[str, StringConstraints(max_length=10_000)]
@@ -88,18 +89,40 @@ class WorkoutUpdate(BaseModel):
 
 
 class WorkoutExerciseRead(BaseModel):
-    """Public-facing representation of a single ordered exercise line item."""
+    """Public-facing representation of a single ordered exercise line item.
+
+    Embeds :class:`~app.schemas.exercise.ExerciseCatalogRef` (rather than
+    a bare ``exercise_id``) so mobile clients can render a full line item
+    — name, muscle group, equipment, media — without a second round-trip
+    to ``GET /exercises/{id}`` per exercise (Sprint 6.3).
+    """
 
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     exercise_id: uuid.UUID
+    exercise: ExerciseCatalogRef
     order_index: int
     target_sets: int
     target_reps_min: int | None
     target_reps_max: int | None
     rest_seconds: int | None
     notes: str | None
+
+    @classmethod
+    def from_model(cls, link: WorkoutExercise) -> "WorkoutExerciseRead":
+        """Build this schema from a :class:`WorkoutExercise` with ``exercise`` loaded."""
+        return cls(
+            id=link.id,
+            exercise_id=link.exercise_id,
+            exercise=ExerciseCatalogRef.from_model(link.exercise),
+            order_index=link.order_index,
+            target_sets=link.target_sets,
+            target_reps_min=link.target_reps_min,
+            target_reps_max=link.target_reps_max,
+            rest_seconds=link.rest_seconds,
+            notes=link.notes,
+        )
 
 
 class WorkoutPublic(BaseModel):
@@ -133,7 +156,7 @@ class WorkoutPublic(BaseModel):
             estimated_duration_minutes=workout.estimated_duration_minutes,
             is_active=workout.is_active,
             exercises=[
-                WorkoutExerciseRead.model_validate(link) for link in workout.exercise_links
+                WorkoutExerciseRead.from_model(link) for link in workout.exercise_links
             ],
             created_at=workout.created_at,
             updated_at=workout.updated_at,

@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-14  
+**Last Updated:** 2026-07-15  
 **Purpose:** Mobile client modules, providers, completed work, and backend integration plan.  
 **Source of Truth:** Yes — for frontend layer status (stack versions: [TECH_STACK.md](./TECH_STACK.md)).
 ---
@@ -50,7 +50,7 @@ app/
 | Module | Path | Hooks | Providers | Status |
 |--------|------|-------|-----------|--------|
 | **coach** | `features/coach/` | `useCoachChat` | mock, backend (stub), OpenAI/Anthropic/local (stub) | UI complete; mock data |
-| **workout** | `features/workout/` | `useWorkoutSession`, `useWorkoutProgram` | mock, backend (stub), local | Domain foundation + UI |
+| **workout** | `features/workout/` | `useWorkout`, `useWorkoutSession`, `useWorkoutProgram` | mock, **backend (live, Sprint 6.3)**, local | Production — `useWorkout()` backed by `/workout-resolution/today` + `/workout-logs/*` |
 | **nutrition** | `features/nutrition/` | `useNutrition` | mock, backend (stub) | UI complete; mock data |
 | **progress** | `features/progress/` | via `progressService` | mock, backend (stub) | UI complete; mock data |
 | **home** | `features/home/` | `useHome` | mock, backend (stub), local | Dashboard aggregation |
@@ -100,7 +100,7 @@ Default provider for all domains is **mock**. Mock providers serve static fixtur
 
 | Provider | Env var | Default | Status |
 |----------|---------|---------|--------|
-| Workout | `EXPO_PUBLIC_WORKOUT_PROVIDER` | mock | Working |
+| Workout | `EXPO_PUBLIC_WORKOUT_PROVIDER` | **backend** (Sprint 6.3) | Working — `mock` still available for local/offline dev |
 | Nutrition | `EXPO_PUBLIC_NUTRITION_PROVIDER` | mock | Working |
 | Coach | `EXPO_PUBLIC_COACH_PROVIDER` | mock | Working |
 | Progress | `EXPO_PUBLIC_PROGRESS_PROVIDER` | mock | Working |
@@ -115,7 +115,7 @@ Default provider for all domains is **mock**. Mock providers serve static fixtur
 |--------|-------------------------|---------------|--------|
 | User profile | `GET /users/me`, `PATCH /users/me` | `BackendUserService` | **Live** (Sprint 6.0–6.1) |
 | Coach | `POST /coach/messages`, `GET /coach/conversations/{id}/messages` | `BackendCoachService` (stub) | Pending |
-| Workout | `GET /workout-resolution/today`, `/workout-logs/*` | `BackendWorkoutService` (stub) | Pending |
+| Workout | `GET /workout-resolution/today`, `GET /workouts/current`, `GET /workouts/{id}`, `POST /workouts/session`, `/workout-logs/*` | `BackendWorkoutService` | **Live** (Sprint 6.3) |
 | Nutrition | `/nutrition/meals`, `/nutrition/logs`, `/nutrition/targets` | `BackendNutritionService` (stub) | Pending |
 | Progress | `/progress`, `/progress/summary`, `/goals` | `BackendProgressService` (stub) | Pending |
 | Home | Aggregates above APIs | `BackendHomeService` (stub) | Pending |

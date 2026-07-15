@@ -28,6 +28,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy.exc import IntegrityError
 
+from app.core.config import settings
 from app.models.program import (
     AssignmentStatus,
     Program,
@@ -95,6 +96,15 @@ class ConcurrentAssignmentError(WorkoutServiceError):
     ``uq_program_assignments_one_active_per_user`` — this should be
     exceedingly rare given :meth:`WorkoutService.assign_program` abandons
     any existing active assignment before inserting the new one.
+    """
+
+
+class DefaultProgramNotFoundError(WorkoutServiceError):
+    """Raised when the configured default program cannot be assigned.
+
+    Covers a missing slug, a non-``PUBLISHED`` program, a soft-deleted row,
+    or a published program with no scheduled days — callers should translate
+    this to a clear HTTP error rather than returning ``no_active_program``.
     """
 
 
@@ -507,6 +517,50 @@ class WorkoutService:
             ) from exc
         return created
 
+    def ensure_active_assignment(self, user_id: uuid.UUID) -> ProgramAssignment:
+        """Return the user's active assignment, auto-assigning the default program if needed.
+
+        Idempotent for users who already have an ``ACTIVE`` assignment.
+        On first workout access (no assignment), delegates to
+        :meth:`assign_default_program`, which reuses :meth:`assign_program`.
+
+        Args:
+            user_id: The authenticated user.
+
+        Returns:
+            The user's ``ACTIVE`` assignment (existing or newly created).
+
+        Raises:
+            DefaultProgramNotFoundError: If no assignable default program is
+                configured in the database.
+            ConcurrentAssignmentError: If a race slips a second active
+                assignment past the abandon-then-create sequence.
+        """
+        existing = self.get_active_assignment(user_id)
+        if existing is not None:
+            return existing
+        return self.assign_default_program(user_id)
+
+    def assign_default_program(self, user_id: uuid.UUID) -> ProgramAssignment:
+        """Assign the configured default beginner program to a user.
+
+        Looks up :attr:`~app.core.config.Settings.default_program_slug`
+        and reuses :meth:`assign_program` — no duplicate assignment logic.
+
+        Args:
+            user_id: The user receiving the default program.
+
+        Returns:
+            The newly created, ``ACTIVE`` assignment.
+
+        Raises:
+            DefaultProgramNotFoundError: If the slug does not resolve to an
+                assignable published program with at least one scheduled day.
+            ConcurrentAssignmentError: Propagated from :meth:`assign_program`.
+        """
+        program = self._get_default_program_or_raise()
+        return self.assign_program(user_id, program.id)
+
     def get_active_assignment(self, user_id: uuid.UUID) -> ProgramAssignment | None:
         """Return the user's current active assignment, or ``None`` if they have none."""
         return self.program_repository.get_active_assignment_for_user(user_id)
@@ -621,3 +675,23 @@ class WorkoutService:
         if not include_inactive and not workout.is_active:
             raise WorkoutNotFoundError("Workout not found.")
         return workout
+
+    def _get_default_program_or_raise(self) -> Program:
+        """Resolve the configured default program slug to an assignable template."""
+        slug = settings.default_program_slug
+        program = self.program_repository.get_by_slug(slug)
+        if program is None or program.deleted_at is not None:
+            raise DefaultProgramNotFoundError(
+                f"Default beginner program '{slug}' is not configured. "
+                "Run database/seeds/seed_default_program.py after seeding exercises."
+            )
+        if program.status != ProgramStatus.PUBLISHED:
+            raise DefaultProgramNotFoundError(
+                f"Default beginner program '{slug}' is not published "
+                f"(current status: {program.status.value})."
+            )
+        if self.program_repository.get_first_day(program.id) is None:
+            raise DefaultProgramNotFoundError(
+                f"Default beginner program '{slug}' has no scheduled days."
+            )
+        return program

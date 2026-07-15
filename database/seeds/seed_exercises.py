@@ -14,7 +14,13 @@ import sys
 import uuid
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "backend"))
+_SEEDS_DIR = Path(__file__).resolve().parent
+if str(_SEEDS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SEEDS_DIR))
+
+from _bootstrap import bootstrap_backend  # noqa: E402
+
+bootstrap_backend()
 
 from app.db.database import SessionLocal  # noqa: E402
 from app.models.equipment import Equipment  # noqa: E402

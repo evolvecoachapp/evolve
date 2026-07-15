@@ -173,6 +173,17 @@ class WorkoutLogRepository:
             select(WorkoutLogExercise).where(WorkoutLogExercise.id == log_exercise_id)
         ).scalar_one_or_none()
 
+    def update_exercise(self, log_exercise: WorkoutLogExercise) -> WorkoutLogExercise:
+        """Flush pending changes on an already-tracked :class:`WorkoutLogExercise` and return it.
+
+        Mirrors :meth:`update`/:meth:`update_set` — the caller mutates
+        attributes on an instance obtained from this session before
+        calling this method.
+        """
+        self.db.flush()
+        self.db.refresh(log_exercise)
+        return log_exercise
+
     def next_exercise_order_index(self, workout_log_id: uuid.UUID) -> int:
         """Return the next available ``order_index`` for a log (``max + 1``, or ``0``)."""
         current_max = self.db.execute(

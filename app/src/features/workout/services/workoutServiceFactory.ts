@@ -9,13 +9,13 @@ const PROVIDERS: Record<WorkoutProviderId, WorkoutService> = {
   local: localWorkoutService,
 };
 
-/** Resolves the active provider from env — defaults to mock when unset or unknown. */
+/** Resolves the active provider from env — defaults to backend when unset or unknown, mirroring `currentUserServiceFactory`. */
 export function resolveWorkoutProviderId(): WorkoutProviderId {
   const configured = process.env.EXPO_PUBLIC_WORKOUT_PROVIDER as WorkoutProviderId | undefined;
   if (configured && configured in PROVIDERS) {
     return configured;
   }
-  return "mock";
+  return "backend";
 }
 
 export function createWorkoutService(

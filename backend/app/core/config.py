@@ -49,6 +49,15 @@ class Settings(BaseSettings):
         ),
     )
 
+    default_program_slug: str = Field(
+        default="beginner-foundation",
+        description=(
+            "Slug of the published program auto-assigned when an authenticated "
+            "user has no active ProgramAssignment on first workout access "
+            "(Sprint 6.3.1)."
+        ),
+    )
+
     ai_provider: str = Field(
         default="mock",
         description=(

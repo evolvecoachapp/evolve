@@ -51,6 +51,8 @@ from app.schemas.workout_log import (
     WorkoutLogExerciseCreate,
     WorkoutLogFinish,
     WorkoutLogStart,
+    WorkoutSessionAction,
+    WorkoutSessionUpdate,
     WorkoutSetLogCreate,
     WorkoutSetLogUpdate,
 )
@@ -305,6 +307,50 @@ class WorkoutLogService:
         self._advance_resolution_cursor(user_id, updated)
         return updated
 
+    def update_session(
+        self, user_id: uuid.UUID, workout_log_id: uuid.UUID, data: WorkoutSessionUpdate
+    ) -> WorkoutLog:
+        """Partially update an in-progress session or transition it to a terminal state.
+
+        When ``data.action`` is :attr:`WorkoutSessionAction.FINISH` or
+        :attr:`WorkoutSessionAction.SKIP`, delegates to
+        :meth:`finish_workout`/:meth:`skip_workout`. Otherwise updates
+        session metadata (``notes``) on an ``IN_PROGRESS`` row.
+
+        Args:
+            user_id: The authenticated user updating the session.
+            workout_log_id: The session to update.
+            data: Validated patch input.
+
+        Returns:
+            The updated session.
+
+        Raises:
+            WorkoutLogNotFoundError: If ``workout_log_id`` does not resolve
+                to a session owned by ``user_id``.
+            InvalidWorkoutLogStateError: If a metadata-only patch targets a
+                session that is not ``IN_PROGRESS``, or if a finish/skip
+                action is invalid for the current status.
+        """
+        if data.action == WorkoutSessionAction.FINISH:
+            return self.finish_workout(
+                user_id,
+                workout_log_id,
+                WorkoutLogFinish(
+                    duration_actual_minutes=data.duration_actual_minutes,
+                    notes=data.notes,
+                ),
+            )
+        if data.action == WorkoutSessionAction.SKIP:
+            return self.skip_workout(user_id, workout_log_id)
+
+        workout_log = self._get_owned_in_progress_log_or_raise(user_id, workout_log_id)
+        if data.notes is not None:
+            workout_log.notes = data.notes
+        updated = self.workout_log_repository.update(workout_log)
+        self.workout_log_repository.db.commit()
+        return updated
+
     # -- Logging: exercises and sets -----------------------------------------
 
     def add_exercise(
@@ -346,6 +392,42 @@ class WorkoutLogService:
         created = self.workout_log_repository.add_exercise(entry)
         self.workout_log_repository.db.commit()
         return created
+
+    def skip_exercise(
+        self, user_id: uuid.UUID, workout_log_id: uuid.UUID, log_exercise_id: uuid.UUID
+    ) -> WorkoutLogExercise:
+        """Mark a single exercise instance as explicitly skipped.
+
+        Distinct from :meth:`skip_workout` (which skips the whole
+        session) — this marks one exercise within an otherwise
+        in-progress session as intentionally not performed, e.g. an
+        injury or lack of equipment discovered mid-session. Allowed
+        regardless of whether any sets have already been logged against
+        this exercise.
+
+        Args:
+            user_id: The authenticated user skipping the exercise.
+            workout_log_id: The session the exercise belongs to.
+            log_exercise_id: The log-exercise to mark skipped.
+
+        Returns:
+            The updated log-exercise.
+
+        Raises:
+            WorkoutLogNotFoundError: If ``workout_log_id`` does not resolve
+                to a session owned by ``user_id``.
+            InvalidWorkoutLogStateError: If the session is not
+                ``IN_PROGRESS``.
+            LogExerciseNotFoundError: If ``log_exercise_id`` does not
+                belong to ``workout_log_id``.
+        """
+        workout_log = self._get_owned_in_progress_log_or_raise(user_id, workout_log_id)
+        log_exercise = self._get_log_exercise_or_raise(workout_log.id, log_exercise_id)
+
+        log_exercise.skipped = True
+        updated = self.workout_log_repository.update_exercise(log_exercise)
+        self.workout_log_repository.db.commit()
+        return updated
 
     def log_set(
         self,

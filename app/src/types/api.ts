@@ -92,3 +92,227 @@ export interface TokenResponse {
 export interface ApiErrorBody {
   detail?: string;
 }
+
+/*
+ * ---------------------------------------------------------------------------
+ * Workout domain (backend/app/schemas/exercise.py, workout.py, workout_log.py,
+ * workout_resolution.py, program.py).
+ *
+ * Decimal fields (`weight_kg`, `rpe`) are serialized by FastAPI/Pydantic as
+ * JSON *strings* (e.g. `"60.00"`), never numbers — callers must `Number(...)`
+ * them before doing arithmetic.
+ * ---------------------------------------------------------------------------
+ */
+
+/** Mirrors `app.models.exercise.ExerciseCategory`. */
+export type ExerciseCategoryDto = "compound" | "isolation" | "cardio" | "mobility";
+
+/** Mirrors `app.models.exercise.DifficultyLevel`. */
+export type DifficultyLevelDto = "beginner" | "intermediate" | "advanced";
+
+/** Mirrors `app.schemas.exercise.ExerciseCatalogRef`. */
+export interface ExerciseCatalogRefDto {
+  id: string;
+  name: string;
+  slug: string;
+  category: ExerciseCategoryDto;
+  difficulty_level: DifficultyLevelDto;
+  video_url: string | null;
+  image_url: string | null;
+  primary_muscle_group: string | null;
+  equipment_slugs: string[];
+}
+
+/** Mirrors `app.schemas.workout.WorkoutExerciseRead`. */
+export interface WorkoutExerciseReadDto {
+  id: string;
+  exercise_id: string;
+  exercise: ExerciseCatalogRefDto;
+  order_index: number;
+  target_sets: number;
+  target_reps_min: number | null;
+  target_reps_max: number | null;
+  rest_seconds: number | null;
+  notes: string | null;
+}
+
+/** Mirrors `app.schemas.workout.WorkoutPublic`. */
+export interface WorkoutPublicDto {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  estimated_duration_minutes: number | null;
+  is_active: boolean;
+  exercises: WorkoutExerciseReadDto[];
+  created_at: string;
+  updated_at: string;
+}
+
+/** Mirrors `app.schemas.workout.WorkoutPage`. */
+export interface WorkoutPageDto {
+  items: WorkoutPublicDto[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+/** Mirrors `app.models.program.ProgramGoal`. */
+export type ProgramGoalDto = "strength" | "hypertrophy" | "endurance" | "general_fitness";
+
+/** Mirrors `app.models.program.ProgramStatus`. */
+export type ProgramStatusDto = "draft" | "published" | "archived";
+
+/** Mirrors `app.schemas.program.ProgramPublic`. */
+export interface ProgramPublicDto {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  duration_weeks: number;
+  goal: ProgramGoalDto;
+  difficulty_level: DifficultyLevelDto;
+  status: ProgramStatusDto;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Mirrors `app.schemas.workout_resolution.WorkoutResolutionState`. */
+export type WorkoutResolutionStateDto =
+  | "training_day"
+  | "rest_day"
+  | "program_complete"
+  | "no_active_program";
+
+/** Mirrors `app.schemas.workout_resolution.TodayLogStatus`. */
+export type TodayLogStatusDto = "none" | "in_progress" | "completed" | "skipped";
+
+/** Mirrors `app.schemas.workout_resolution.WorkoutPreview`. */
+export interface WorkoutPreviewDto {
+  state: WorkoutResolutionStateDto;
+  program: ProgramPublicDto | null;
+  assignment_id: string | null;
+  week_number: number | null;
+  day_number: number | null;
+  day_label: string | null;
+  workout: WorkoutPublicDto | null;
+  today_log_status: TodayLogStatusDto;
+  active_workout_log_id: string | null;
+}
+
+/** Mirrors `app.models.workout_log.WorkoutLogStatus`. */
+export type WorkoutLogStatusDto = "planned" | "in_progress" | "completed" | "skipped";
+
+/** Mirrors `app.schemas.workout_log.WorkoutLogStart`. */
+export interface WorkoutLogStartRequest {
+  workout_id?: string | null;
+  program_assignment_id?: string | null;
+  scheduled_date?: string | null;
+  notes?: string | null;
+}
+
+/** Mirrors `app.schemas.workout_log.WorkoutLogFinish`. */
+export interface WorkoutLogFinishRequest {
+  duration_actual_minutes?: number | null;
+  notes?: string | null;
+}
+
+/** Mirrors `app.schemas.workout_log.WorkoutLogExerciseCreate`. */
+export interface WorkoutLogExerciseCreateRequest {
+  exercise_id: string;
+  order_index?: number | null;
+  notes?: string | null;
+}
+
+/** Mirrors `app.schemas.workout_log.WorkoutSetLogCreate`. `weight_kg`/`rpe` are numbers on the wire in requests (unlike Decimal responses). */
+export interface WorkoutSetLogCreateRequest {
+  weight_kg?: number | null;
+  reps?: number | null;
+  rpe?: number | null;
+  duration_seconds?: number | null;
+  is_warmup?: boolean;
+  notes?: string | null;
+}
+
+/** Mirrors `app.schemas.workout_log.WorkoutSetLogUpdate`. */
+export interface WorkoutSetLogUpdateRequest {
+  weight_kg?: number | null;
+  reps?: number | null;
+  rpe?: number | null;
+  duration_seconds?: number | null;
+  is_warmup?: boolean | null;
+  notes?: string | null;
+}
+
+/** Mirrors `app.schemas.workout_log.WorkoutSetLogRead`. */
+export interface WorkoutSetLogReadDto {
+  id: string;
+  set_number: number;
+  weight_kg: string | null;
+  reps: number | null;
+  rpe: string | null;
+  duration_seconds: number | null;
+  is_warmup: boolean;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Mirrors `app.schemas.workout_log.WorkoutLogExerciseRead`. */
+export interface WorkoutLogExerciseReadDto {
+  id: string;
+  exercise_id: string;
+  exercise: ExerciseCatalogRefDto;
+  workout_exercise_id: string | null;
+  order_index: number;
+  exercise_name_snapshot: string;
+  target_sets: number | null;
+  target_reps_min: number | null;
+  target_reps_max: number | null;
+  rest_seconds: number | null;
+  notes: string | null;
+  skipped: boolean;
+  sets: WorkoutSetLogReadDto[];
+  created_at: string;
+  updated_at: string;
+}
+
+/** Mirrors `app.schemas.workout_log.WorkoutLogDetail`. */
+export interface WorkoutLogDetailDto {
+  id: string;
+  user_id: string;
+  program_assignment_id: string | null;
+  workout_id: string | null;
+  status: WorkoutLogStatusDto;
+  scheduled_date: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  duration_actual_minutes: number | null;
+  notes: string | null;
+  exercises: WorkoutLogExerciseReadDto[];
+  created_at: string;
+  updated_at: string;
+}
+
+/** Mirrors `app.schemas.workout_log.WorkoutLogSummary`. */
+export interface WorkoutLogSummaryDto {
+  id: string;
+  program_assignment_id: string | null;
+  workout_id: string | null;
+  status: WorkoutLogStatusDto;
+  scheduled_date: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  duration_actual_minutes: number | null;
+  notes: string | null;
+  exercise_count: number;
+  created_at: string;
+}
+
+/** Mirrors `app.schemas.workout_log.WorkoutLogPage`. */
+export interface WorkoutLogPageDto {
+  items: WorkoutLogSummaryDto[];
+  total: number;
+  limit: number;
+  offset: number;
+}

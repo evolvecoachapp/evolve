@@ -218,6 +218,35 @@ def add_exercise(
 
 
 @router.post(
+    "/{workout_log_id}/exercises/{log_exercise_id}/skip",
+    response_model=WorkoutLogExerciseRead,
+)
+def skip_exercise(
+    workout_log_id: uuid.UUID,
+    log_exercise_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    workout_log_service: WorkoutLogService = Depends(get_workout_log_service),
+) -> WorkoutLogExerciseRead:
+    """Mark a single exercise instance within an in-progress session as skipped.
+
+    Raises:
+        HTTPException: 404 if the session/exercise doesn't exist/isn't
+            owned; 409 if the session is not ``IN_PROGRESS``.
+    """
+    try:
+        log_exercise = workout_log_service.skip_exercise(
+            current_user.id, workout_log_id, log_exercise_id
+        )
+    except WorkoutLogNotFoundError as exc:
+        raise _not_found("Workout log not found.") from exc
+    except LogExerciseNotFoundError as exc:
+        raise _not_found("Logged exercise not found.") from exc
+    except InvalidWorkoutLogStateError as exc:
+        raise _conflict(str(exc)) from exc
+    return WorkoutLogExerciseRead.from_model(log_exercise)
+
+
+@router.post(
     "/{workout_log_id}/exercises/{log_exercise_id}/sets",
     response_model=WorkoutSetLogRead,
     status_code=status.HTTP_201_CREATED,

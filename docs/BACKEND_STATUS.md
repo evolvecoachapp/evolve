@@ -3,9 +3,9 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-14  
+**Last Updated:** 2026-07-15  
 **Purpose:** Backend modules, services, repositories, models, and remaining work.  
-**Source of Truth:** Yes — for backend layer status (endpoints: [API_STATUS.md](./API_STATUS.md) — 50 implemented, 6 planned).
+**Source of Truth:** Yes — for backend layer status (endpoints: [API_STATUS.md](./API_STATUS.md) — 56 implemented, 6 planned).
 ---
 
 ## Stack
@@ -35,7 +35,8 @@
 | users | `/users` | me (read, update) |
 | exercises | `/exercises` | list, detail, substitutes |
 | catalog | `/catalog` | muscle-groups, equipment |
-| workout_logs | `/workout-logs` | full session lifecycle |
+| workouts | `/workouts` | current preview, session start/patch, list, detail (Sprint 6.3) |
+| workout_logs | `/workout-logs` | full session lifecycle, including per-exercise skip (Sprint 6.3) |
 | workout_resolution | `/workout-resolution` | today, advance-rest-day |
 | nutrition | `/nutrition` | meals, logs, targets |
 | recovery | `/recovery` | check-ins, readiness |
@@ -49,8 +50,8 @@
 |---------|----------------|--------------|
 | `auth_service` | Register, login, refresh | Yes |
 | `user_service` | Profile update | Yes |
-| `workout_service` | Program/workout authoring, assignment | **No** |
-| `workout_log_service` | Session start/finish/skip/log sets | Yes |
+| `workout_service` | Program/workout authoring, assignment; workout template reads; default program auto-assignment (Sprint 6.3.1) | Partial — reads + ensure assignment |
+| `workout_log_service` | Session start/finish/skip/log sets, per-exercise skip (Sprint 6.3) | Yes |
 | `workout_resolution_service` | Today's workout resolution | Yes |
 | `exercise_service` | Exercise catalog reads | Yes |
 | `catalog_service` | Muscle groups, equipment | Yes |
@@ -86,7 +87,7 @@
 | `muscle_group.py`, `equipment.py` | Catalog metadata |
 | `program.py` | Program, ProgramDay, ProgramAssignment (+ cursor) |
 | `workout.py` | Workout template, WorkoutExercise |
-| `workout_log.py` | WorkoutLog, WorkoutLogExercise, WorkoutSetLog |
+| `workout_log.py` | WorkoutLog, WorkoutLogExercise (+ `skipped` flag, Sprint 6.3), WorkoutSetLog |
 | `meal.py` | Meal (nullable created_by, is_public), MealLog |
 | `recovery.py` | RecoveryCheckIn |
 | `chat.py` | Conversation, ChatMessage (JSONB metadata) |
@@ -97,7 +98,7 @@
 
 ## Database
 
-### Migrations (8 applied)
+### Migrations (9 applied)
 
 | Revision | Tables created |
 |----------|----------------|
@@ -110,9 +111,11 @@
 | `b92f14d464ca` | meals, meal_logs |
 | `699e9e7afa70` | recovery_check_ins |
 | `a4facc05013e` | goals, progress_entries |
+| `37fd64b528a8` | `workout_log_exercises.skipped` column (Sprint 6.3) |
 
 ### Seed Data
 - `database/seeds/seed_exercises.py` — idempotent exercise catalog
+- `database/seeds/seed_default_program.py` — idempotent default beginner program (`beginner-foundation`, Sprint 6.3.1)
 
 ---
 
@@ -150,7 +153,8 @@
 | Domain | Service exists | HTTP API |
 |--------|----------------|----------|
 | Program CRUD | Yes (`WorkoutService`) | **Missing** |
-| Workout template CRUD | Yes | **Missing** |
+| Workout template reads | Yes | **Live** — `GET /workouts`, `GET /workouts/{id_or_slug}` (Sprint 6.3) |
+| Workout template writes (create/update/deactivate) | Yes | **Missing** |
 | Program assignment | Yes | **Missing** |
 | Exercise writes (admin) | Yes (`ExerciseService`) | **Missing** (read-only by design) |
 | User profile update | Yes (`UserService`) | **Live** — `PATCH /users/me` (Sprint 6.0); consumed by mobile edit UI (Sprint 6.1) |
@@ -181,11 +185,11 @@
 
 | Type | Count | Location |
 |------|-------|----------|
-| Unit tests | 18 files | `backend/tests/unit/` |
-| Integration tests | 10 files | `backend/tests/integration/` |
+| Unit tests | 19 files | `backend/tests/unit/` |
+| Integration tests | 11 files | `backend/tests/integration/` |
 | Fixtures | Shared | `backend/tests/conftest.py` |
 
-**Coverage areas:** auth (indirect), workout logs/resolution, nutrition, recovery, coach, chat, goals, progress, orchestrator, engines, LLM, intent
+**Coverage areas:** auth (indirect), workout templates, workout logs/resolution, nutrition, recovery, coach, chat, goals, progress, orchestrator, engines, LLM, intent
 
 Run: `pytest` from `backend/` (requires PostgreSQL)
 

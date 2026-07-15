@@ -155,6 +155,54 @@ def test_skip_workout(client: TestClient, auth_headers: dict[str, str]) -> None:
     assert second_start.status_code == 201
 
 
+def test_skip_exercise(
+    client: TestClient, auth_headers: dict[str, str], bench_press: Exercise
+) -> None:
+    start_response = client.post(f"{API_PREFIX}/start", json={}, headers=auth_headers)
+    workout_log_id = start_response.json()["id"]
+
+    add_exercise_response = client.post(
+        f"{API_PREFIX}/{workout_log_id}/exercises",
+        json={"exercise_id": str(bench_press.id)},
+        headers=auth_headers,
+    )
+    log_exercise_id = add_exercise_response.json()["id"]
+    assert add_exercise_response.json()["skipped"] is False
+    assert add_exercise_response.json()["exercise"]["id"] == str(bench_press.id)
+
+    skip_response = client.post(
+        f"{API_PREFIX}/{workout_log_id}/exercises/{log_exercise_id}/skip", headers=auth_headers
+    )
+    assert skip_response.status_code == 200, skip_response.text
+    assert skip_response.json()["skipped"] is True
+
+    # Reflected in the session detail view too.
+    detail_response = client.get(f"{API_PREFIX}/{workout_log_id}", headers=auth_headers)
+    assert detail_response.json()["exercises"][0]["skipped"] is True
+
+
+def test_skip_exercise_not_found_for_mismatched_log(
+    client: TestClient, auth_headers: dict[str, str], bench_press: Exercise
+) -> None:
+    first_start = client.post(f"{API_PREFIX}/start", json={}, headers=auth_headers)
+    first_log_id = first_start.json()["id"]
+    add_exercise_response = client.post(
+        f"{API_PREFIX}/{first_log_id}/exercises",
+        json={"exercise_id": str(bench_press.id)},
+        headers=auth_headers,
+    )
+    log_exercise_id = add_exercise_response.json()["id"]
+    client.post(f"{API_PREFIX}/{first_log_id}/skip", headers=auth_headers)
+
+    second_start = client.post(f"{API_PREFIX}/start", json={}, headers=auth_headers)
+    second_log_id = second_start.json()["id"]
+
+    response = client.post(
+        f"{API_PREFIX}/{second_log_id}/exercises/{log_exercise_id}/skip", headers=auth_headers
+    )
+    assert response.status_code == 404
+
+
 def test_workout_log_not_visible_to_other_users(
     client: TestClient, auth_headers: dict[str, str], other_user: User
 ) -> None:

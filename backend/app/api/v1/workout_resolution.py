@@ -13,7 +13,8 @@ request body or path, mirroring ``workout_logs.py``.
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.core.dependencies import get_workout_resolution_service
+from app.api.v1.workout_preview import resolve_today_preview_for_user
+from app.core.dependencies import get_workout_resolution_service, get_workout_service
 from app.models.user import User
 from app.schemas.workout_resolution import WorkoutPreview
 from app.security.dependencies import get_current_user
@@ -22,6 +23,7 @@ from app.services.workout_resolution_service import (
     NotARestDayError,
     WorkoutResolutionService,
 )
+from app.services.workout_service import WorkoutService
 
 router = APIRouter(prefix="/workout-resolution", tags=["workout-resolution"])
 
@@ -37,16 +39,23 @@ def _conflict(detail: str) -> HTTPException:
 @router.get("/today", response_model=WorkoutPreview)
 def get_today_preview(
     current_user: User = Depends(get_current_user),
+    workout_service: WorkoutService = Depends(get_workout_service),
     resolution_service: WorkoutResolutionService = Depends(get_workout_resolution_service),
 ) -> WorkoutPreview:
-    """Return a read-only preview of what the user should do right now.
+    """Return a preview of what the user should do right now.
 
-    Always returns ``200`` — ``state`` disambiguates ``training_day``,
-    ``rest_day``, ``program_complete``, and ``no_active_program``. Never
-    mutates the user's program assignment.
+    Auto-assigns the configured default beginner program when the user has
+    no active :class:`~app.models.program.ProgramAssignment` (Sprint
+    6.3.1). ``state`` disambiguates ``training_day``, ``rest_day``,
+    ``program_complete``, and (only when auto-assignment fails)
+    ``no_active_program`` is never returned — a missing default program
+    yields ``503`` instead.
     """
-    result = resolution_service.resolve_current(current_user.id)
-    return WorkoutPreview.from_result(result)
+    return resolve_today_preview_for_user(
+        current_user.id,
+        workout_service=workout_service,
+        resolution_service=resolution_service,
+    )
 
 
 @router.post("/advance-rest-day", response_model=WorkoutPreview)

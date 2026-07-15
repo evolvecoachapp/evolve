@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
-**Last Updated:** 2026-07-14  
+**Last Updated:** 2026-07-15  
 **Purpose:** Chronological record of every sprint. Append new entries at the bottom — never rewrite past entries.  
 **Source of Truth:** Yes — for sprint chronology and completion dates.
 ---
@@ -346,6 +346,33 @@
 ---
 
 *Append new sprint entries below this line.*
+
+### Sprint 6.3.1 — Default Program Assignment
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 6.3.1 |
+| **Title** | Default Program Assignment |
+| **Date** | 2026-07-15 |
+| **Goal** | Auto-assign default beginner program on first workout access when user has no active ProgramAssignment |
+| **Files modified** | `backend/app/services/workout_service.py`, `backend/app/core/config.py`, `backend/app/api/v1/workout_resolution.py`, `backend/app/api/v1/workouts.py`, `backend/tests/`, docs |
+| **Files created** | `backend/app/api/v1/workout_preview.py`, `database/seeds/seed_default_program.py`, `backend/tests/integration/test_default_program_assignment_api.py` |
+| **Architecture impact** | `WorkoutService.ensure_active_assignment()` reuses `assign_program()`; `WorkoutResolutionService` stays read-only; API layer orchestrates ensure-then-resolve |
+| **Status** | Complete |
+| **Notes** | `DEFAULT_PROGRAM_SLUG=beginner-foundation`; missing seed returns HTTP 503. Run `seed_default_program.py` after `seed_exercises.py`. |
+
+### Sprint 6.3 — Workout Engine v1 (Production Ready)
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 6.3 |
+| **Title** | Workout Engine v1 (Production Ready) |
+| **Date** | 2026-07-15 |
+| **Goal** | Transform Workout from presentation layer into a production-ready domain with PostgreSQL persistence |
+| **Files modified** | `backend/app/api/v1/workouts.py`, `backend/app/api/v1/workout_logs.py`, `backend/app/services/workout_log_service.py`, `backend/app/schemas/workout_log.py`, `backend/alembic/versions/37fd64b528a8_*`, `app/src/api/workouts.ts`, `app/src/features/workout/providers/BackendWorkoutService.ts`, `app/src/features/workout/hooks/useWorkout.ts`, `app/src/screens/WorkoutScreen.tsx`, docs |
+| **Architecture impact** | Provider → Service → Hook → Screen pattern completed for Workout; template layer (`Workout`/`WorkoutExercise`/`Program`/`ProgramDay`) separated from execution layer (`WorkoutLog`/`WorkoutLogExercise`/`WorkoutSetLog`); `EXPO_PUBLIC_WORKOUT_PROVIDER` defaults to `backend` |
+| **Status** | Complete |
+| **Notes** | Sprint-specified aliases: `GET /workouts/current`, `POST /workouts/session`, `PATCH /workouts/session/{id}`. Canonical execution routes remain under `/workout-logs`. Session UI (start/finish/set logging screens) deferred — preview screen wired via `useWorkout()` only. |
 
 ### Sprint 6.1 — Editable User Profile (Production Ready)
 
