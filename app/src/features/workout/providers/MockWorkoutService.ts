@@ -137,7 +137,7 @@ export const mockWorkoutService: WorkoutService = {
     };
   },
 
-  async finishWorkout(sessionId: string): Promise<WorkoutSummary> {
+  async finishWorkout(sessionId: string, options?: { notes?: string | null }): Promise<WorkoutSummary> {
     const session = getSessionOrThrow(sessionId);
     const completedAt = new Date().toISOString();
     const totalSets = countWorkingSets(session.exercises);
@@ -191,6 +191,7 @@ export const mockWorkoutService: WorkoutService = {
       totalExercises: countTotalExercises(session.exercises),
       skippedExercises,
       completedAt,
+      notes: options?.notes ?? null,
     };
   },
 

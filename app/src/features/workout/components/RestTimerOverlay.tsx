@@ -1,9 +1,13 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import Animated from "react-native-reanimated";
+import { heroEntering } from "../../../animation/entering";
+import { useReduceMotion } from "../../../animation/useReduceMotion";
 import { AppButton } from "../../../components/AppButton";
 import { AppCard } from "../../../components/AppCard";
-import { ProgressBar } from "../../../components/ProgressBar";
 import { spacing } from "../../../theme/theme";
 import { useThemedStyles } from "../../../theme/useThemedStyles";
+import { CircularCountdown } from "./CircularCountdown";
+import { RestUpNextCard } from "./RestUpNextCard";
 
 interface RestTimerOverlayProps {
   secondsLeft: number;
@@ -11,14 +15,9 @@ interface RestTimerOverlayProps {
   onSkipRest: () => void;
   onAddTime: () => void;
   onSubtractTime: () => void;
-  /** e.g. "Back Squat · Set 3 of 4" — what the athlete moves to once rest ends. */
-  nextLabel?: string | null;
-}
-
-function formatCountdown(seconds: number): string {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  nextExerciseName?: string | null;
+  nextSetLabel?: string | null;
+  nextMuscleGroupLabel?: string | null;
 }
 
 export function RestTimerOverlay({
@@ -27,13 +26,16 @@ export function RestTimerOverlay({
   onSkipRest,
   onAddTime,
   onSubtractTime,
-  nextLabel,
+  nextExerciseName,
+  nextSetLabel,
+  nextMuscleGroupLabel,
 }: RestTimerOverlayProps) {
+  const reduceMotion = useReduceMotion();
   const styles = useThemedStyles(({ colors, typography }) =>
     StyleSheet.create({
       card: {
         alignItems: "center",
-        gap: spacing.md,
+        gap: spacing.lg,
         borderWidth: 1,
         borderColor: colors.borderPulse,
         backgroundColor: colors.pulseMuted,
@@ -44,19 +46,6 @@ export function RestTimerOverlay({
         fontWeight: "700",
         textTransform: "uppercase",
         letterSpacing: 0.8,
-      },
-      timer: {
-        ...typography.display,
-        color: colors.ink,
-        fontVariant: ["tabular-nums"],
-      },
-      nextLabel: {
-        ...typography.callout,
-        color: colors.inkSecondary,
-        textAlign: "center",
-      },
-      progressTrack: {
-        width: "100%",
       },
       adjustRow: {
         flexDirection: "row",
@@ -72,39 +61,45 @@ export function RestTimerOverlay({
     }),
   );
 
-  const progress = totalSeconds > 0 ? (secondsLeft / totalSeconds) * 100 : 0;
+  const showUpNext = Boolean(nextExerciseName && nextSetLabel);
 
   return (
-    <AppCard variant="elevated" style={styles.card}>
-      <Text style={styles.label}>Rest</Text>
-      <Text style={styles.timer}>{formatCountdown(secondsLeft)}</Text>
-      {nextLabel ? <Text style={styles.nextLabel}>Up next · {nextLabel}</Text> : null}
+    <Animated.View entering={heroEntering(0, reduceMotion)}>
+      <AppCard variant="elevated" style={styles.card}>
+        <CircularCountdown secondsLeft={secondsLeft} totalSeconds={totalSeconds} />
 
-      <ProgressBar progress={progress} style={styles.progressTrack} height={6} />
+        <View style={styles.adjustRow}>
+          <AppButton
+            label="-10s"
+            variant="ghost"
+            size="sm"
+            onPress={onSubtractTime}
+            style={styles.adjustButton}
+          />
+          <AppButton
+            label="+10s"
+            variant="ghost"
+            size="sm"
+            onPress={onAddTime}
+            style={styles.adjustButton}
+          />
+        </View>
 
-      <View style={styles.adjustRow}>
         <AppButton
-          label="-10s"
-          variant="ghost"
-          size="sm"
-          onPress={onSubtractTime}
-          style={styles.adjustButton}
+          label="Skip Rest"
+          variant="secondary"
+          onPress={onSkipRest}
+          style={styles.skipButton}
         />
-        <AppButton
-          label="+10s"
-          variant="ghost"
-          size="sm"
-          onPress={onAddTime}
-          style={styles.adjustButton}
-        />
-      </View>
 
-      <AppButton
-        label="Skip Rest"
-        variant="secondary"
-        onPress={onSkipRest}
-        style={styles.skipButton}
-      />
-    </AppCard>
+        {showUpNext ? (
+          <RestUpNextCard
+            exerciseName={nextExerciseName!}
+            setLabel={nextSetLabel!}
+            muscleGroupLabel={nextMuscleGroupLabel ?? undefined}
+          />
+        ) : null}
+      </AppCard>
+    </Animated.View>
   );
 }

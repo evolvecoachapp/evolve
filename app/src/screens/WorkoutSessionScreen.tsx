@@ -3,21 +3,26 @@ import { StyleSheet, Text, View } from "react-native";
 import { AppButton } from "../components/AppButton";
 import { GradientBackground } from "../components/GradientBackground";
 import { LoadingSpinner } from "../components/LoadingSpinner";
-import { ProgressBar } from "../components/ProgressBar";
 import { ScreenContainer } from "../components/ScreenContainer";
 import { SettingsHeader } from "../components/SettingsHeader";
 import {
   RestTimerOverlay,
+  SetUndoBanner,
+  WorkoutFinishNotes,
+  WorkoutProgressHeader,
+  formatElapsed,
   WorkoutSessionExerciseCard,
   WorkoutSessionFooter,
   WorkoutSetInputRow,
 } from "../features/workout/components";
 import { useActiveWorkoutSession } from "../features/workout/hooks/useActiveWorkoutSession";
 import type { WorkoutSession } from "../features/workout/models/WorkoutSession";
+import { formatMuscleGroupLabel } from "../features/workout/utils/presentationFormatters";
 import {
   countSessionCompletedWorkingSets,
   countSessionWorkingSets,
   countTotalExercises,
+  getExerciseSetProgress,
 } from "../features/workout/utils/sessionSelectors";
 import { serializeWorkoutSummaryParams } from "../features/workout/utils/summaryRouteParams";
 import { floatingFooterMetrics, spacing } from "../theme/theme";
@@ -27,12 +32,6 @@ import { useThemedStyles } from "../theme/useThemedStyles";
 interface WorkoutSessionScreenProps {
   sessionId: string;
   initialSession?: WorkoutSession;
-}
-
-function formatElapsed(totalSeconds: number): string {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
 export function WorkoutSessionScreen({ sessionId, initialSession }: WorkoutSessionScreenProps) {
@@ -46,8 +45,11 @@ export function WorkoutSessionScreen({ sessionId, initialSession }: WorkoutSessi
     inputError,
     weightInput,
     repsInput,
+    weightAutoFilled,
+    finishNotes,
     setWeightInput,
     setRepsInput,
+    setFinishNotes,
     position,
     elapsedSeconds,
     isResting,
@@ -57,7 +59,11 @@ export function WorkoutSessionScreen({ sessionId, initialSession }: WorkoutSessi
     addRestSeconds,
     subtractRestSeconds,
     isComplete,
+    pendingUndo,
+    undoSecondsRemaining,
     completeSet,
+    undoLastSet,
+    dismissUndo,
     finishWorkout,
   } = useActiveWorkoutSession({ sessionId, initialSession });
 
@@ -75,19 +81,7 @@ export function WorkoutSessionScreen({ sessionId, initialSession }: WorkoutSessi
         paddingHorizontal: spacing.screenPadding,
       },
       content: {
-        gap: spacing.lg,
-      },
-      progressHeader: {
-        gap: spacing.xs,
-      },
-      progressLabelRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-      },
-      progressLabel: {
-        ...theme.typography.caption,
-        color: theme.colors.inkSecondary,
-        fontWeight: "600",
+        gap: spacing.xl,
       },
       finishEarlyLink: {
         alignSelf: "center",
@@ -135,12 +129,11 @@ export function WorkoutSessionScreen({ sessionId, initialSession }: WorkoutSessi
   const totalWorkingSets = countSessionWorkingSets(session.exercises);
   const completedWorkingSets = countSessionCompletedWorkingSets(session.exercises);
   const sessionProgress = totalWorkingSets > 0 ? (completedWorkingSets / totalWorkingSets) * 100 : 0;
+  const exerciseProgress = position ? getExerciseSetProgress(position.exercise) : null;
   const footerReserve = floatingFooterMetrics.scrollReserve(
     floatingFooterMetrics.workoutContentHeight,
   );
-  const nextLabel = position
-    ? `${position.exercise.exercise.name} · Set ${position.setIndex + 1} of ${position.exercise.workingSets.length}`
-    : null;
+  const showFinishNotes = !position || isComplete;
 
   return (
     <GradientBackground variant="canvas">
@@ -148,15 +141,26 @@ export function WorkoutSessionScreen({ sessionId, initialSession }: WorkoutSessi
         <SettingsHeader title="Active Workout" />
         <ScreenContainer gradient={false} withHeader={false} footerReserve={footerReserve}>
           <View style={styles.content}>
-            <View style={styles.progressHeader}>
-              <View style={styles.progressLabelRow}>
-                <Text style={styles.progressLabel}>
-                  {completedWorkingSets} / {totalWorkingSets} sets
-                </Text>
-                <Text style={styles.progressLabel}>{formatElapsed(elapsedSeconds)} elapsed</Text>
-              </View>
-              <ProgressBar progress={sessionProgress} />
-            </View>
+            <WorkoutProgressHeader
+              completedSets={completedWorkingSets}
+              totalSets={totalWorkingSets}
+              sessionProgress={sessionProgress}
+              exerciseProgress={exerciseProgress?.percent ?? null}
+              exerciseLabel={
+                position
+                  ? `${position.exercise.exercise.name} · ${exerciseProgress?.completed ?? 0} / ${exerciseProgress?.total ?? 0} sets`
+                  : null
+              }
+              elapsedLabel={`${formatElapsed(elapsedSeconds)} elapsed`}
+            />
+
+            {pendingUndo ? (
+              <SetUndoBanner
+                secondsRemaining={undoSecondsRemaining}
+                onUndo={() => void undoLastSet()}
+                onDismiss={dismissUndo}
+              />
+            ) : null}
 
             {position ? (
               <WorkoutSessionExerciseCard
@@ -177,7 +181,15 @@ export function WorkoutSessionScreen({ sessionId, initialSession }: WorkoutSessi
                 onSkipRest={skipRest}
                 onAddTime={addRestSeconds}
                 onSubtractTime={subtractRestSeconds}
-                nextLabel={nextLabel}
+                nextExerciseName={position?.exercise.exercise.name ?? null}
+                nextSetLabel={
+                  position
+                    ? `Set ${position.setIndex + 1} of ${position.exercise.workingSets.length}`
+                    : null
+                }
+                nextMuscleGroupLabel={
+                  position ? formatMuscleGroupLabel(position.exercise.exercise.muscleGroup) : null
+                }
               />
             ) : position ? (
               <>
@@ -188,6 +200,7 @@ export function WorkoutSessionScreen({ sessionId, initialSession }: WorkoutSessi
                   onRepsChange={setRepsInput}
                   error={inputError}
                   targetReps={position.set.targetReps}
+                  weightAutoFilled={weightAutoFilled}
                 />
                 {!isComplete ? (
                   <AppButton
@@ -200,6 +213,14 @@ export function WorkoutSessionScreen({ sessionId, initialSession }: WorkoutSessi
                   />
                 ) : null}
               </>
+            ) : null}
+
+            {showFinishNotes ? (
+              <WorkoutFinishNotes
+                value={finishNotes}
+                onChange={setFinishNotes}
+                disabled={saving || finishing}
+              />
             ) : null}
           </View>
         </ScreenContainer>

@@ -95,14 +95,18 @@ export function mapEquipmentSlugs(slugs: string[]): ExerciseEquipment {
 
 /** Maps an `ExerciseCatalogRef` embedded line item onto the frontend `Exercise` model. */
 export function mapExerciseCatalogRef(dto: ExerciseCatalogRefDto, nameOverride?: string): Exercise {
+  const muscleGroup = mapMuscleGroupSlug(dto.primary_muscle_group);
   return {
     id: dto.id,
     name: nameOverride ?? dto.name,
-    muscleGroup: mapMuscleGroupSlug(dto.primary_muscle_group),
+    muscleGroup,
     equipment: mapEquipmentSlugs(dto.equipment_slugs),
     instructions: null,
     videoUrl: dto.video_url,
     imageUrl: dto.image_url,
+    primaryMuscles: [muscleGroup],
+    secondaryMuscles: [],
+    commonMistakes: [],
   };
 }
 
@@ -368,6 +372,7 @@ export function mapWorkoutLogDetailToWorkoutSummary(dto: WorkoutLogDetailDto, ti
     totalExercises: countTotalExercises(dto),
     skippedExercises: dto.exercises.filter((exercise) => exercise.skipped).length,
     completedAt,
+    notes: dto.notes ?? null,
   };
 }
 

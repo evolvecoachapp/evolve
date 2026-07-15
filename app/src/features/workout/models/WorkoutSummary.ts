@@ -11,4 +11,6 @@ export interface WorkoutSummary {
   totalExercises: number;
   skippedExercises: number;
   completedAt: string;
+  /** Optional athlete notes captured at completion. */
+  notes?: string | null;
 }

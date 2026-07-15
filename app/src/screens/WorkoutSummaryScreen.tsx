@@ -30,6 +30,26 @@ export function WorkoutSummaryScreen({ summary }: WorkoutSummaryScreenProps) {
         lineHeight: 24,
         textAlign: "center",
       },
+      notesCard: {
+        gap: spacing.sm,
+        padding: spacing.lg,
+        borderRadius: theme.radius.lg,
+        backgroundColor: theme.colors.surfaceElevated,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+      },
+      notesLabel: {
+        ...theme.typography.caption,
+        color: theme.colors.inkSecondary,
+        fontWeight: "600",
+        textTransform: "uppercase",
+        letterSpacing: 0.6,
+      },
+      notesBody: {
+        ...theme.typography.callout,
+        color: theme.colors.inkSecondary,
+        lineHeight: 22,
+      },
       doneButton: {
         minHeight: spacing["3xl"] + spacing.sm,
       },
@@ -45,6 +65,12 @@ export function WorkoutSummaryScreen({ summary }: WorkoutSummaryScreenProps) {
             {summary ? (
               <>
                 <WorkoutSummaryStats summary={summary} />
+                {summary.notes ? (
+                  <View style={styles.notesCard}>
+                    <Text style={styles.notesLabel}>Your notes</Text>
+                    <Text style={styles.notesBody}>{summary.notes}</Text>
+                  </View>
+                ) : null}
                 <AppButton
                   label="Done"
                   size="lg"

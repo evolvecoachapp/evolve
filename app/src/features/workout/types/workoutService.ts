@@ -32,6 +32,10 @@ export interface SkipExerciseRequest {
   exerciseId: string;
 }
 
+export interface FinishWorkoutOptions {
+  notes?: string | null;
+}
+
 /** Contract for Workout backends — UI and hooks depend on this interface only. */
 export interface WorkoutService {
   readonly providerId: WorkoutProviderId;
@@ -42,7 +46,7 @@ export interface WorkoutService {
   /** The user's current `in_progress` session, if any — used to offer resume instead of starting a duplicate. */
   getActiveSession(): Promise<WorkoutSession | null>;
   startWorkout(workoutId: string): Promise<WorkoutSession>;
-  finishWorkout(sessionId: string): Promise<WorkoutSummary>;
+  finishWorkout(sessionId: string, options?: FinishWorkoutOptions): Promise<WorkoutSummary>;
   saveSet(request: SaveSetRequest): Promise<SavedSetResult | null>;
   skipExercise(request: SkipExerciseRequest): Promise<void>;
   getHistory(): Promise<ExerciseHistory[]>;

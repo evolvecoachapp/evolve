@@ -3,14 +3,17 @@ import { AppState } from "react-native";
 import type { WorkoutSession } from "../models/WorkoutSession";
 import type { WorkoutSummary } from "../models/WorkoutSummary";
 import { workoutService } from "../services";
-import type { WorkoutService } from "../types/workoutService";
+import type { FinishWorkoutOptions, WorkoutService } from "../types/workoutService";
 import {
   findNextIncompleteSet,
   isSessionComplete,
   mergeSavedSetIntoSession,
+  revertSavedSetInSession,
   type SessionPosition,
 } from "../utils/sessionSelectors";
+import { useRestFeedback } from "./useRestFeedback";
 import { useRestTimer } from "./useRestTimer";
+import { useSetUndo } from "./useSetUndo";
 
 const ELAPSED_TICK_MS = 1000;
 
@@ -50,17 +53,8 @@ function findPreviousLoggedSet(exercise: SessionPosition["exercise"], setIndex: 
 }
 
 /**
- * Manages an in-progress workout session — set logging, rest timing, and
- * finish.
- *
- * Set completion is optimistic: `saveSet` returns just the server-confirmed
- * set (id + logged values), which is merged directly into local session
- * state via `mergeSavedSetIntoSession`. This keeps the happy path down to a
- * single request per set instead of a `POST` followed by a full session
- * `GET` — the UI advances and the rest timer starts as soon as the write
- * succeeds. A full `getSession` re-fetch is reserved for: initial load,
- * returning to the foreground, and recovering from a failed save (in case
- * the write partially landed).
+ * Manages an in-progress workout session — set logging, rest timing, undo,
+ * and finish.
  */
 export function useActiveWorkoutSession({
   sessionId,
@@ -75,9 +69,13 @@ export function useActiveWorkoutSession({
   const [inputError, setInputError] = useState<string | null>(null);
   const [weightInput, setWeightInput] = useState("");
   const [repsInput, setRepsInput] = useState("");
+  const [weightAutoFilled, setWeightAutoFilled] = useState(false);
+  const [finishNotes, setFinishNotes] = useState("");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const positionRef = useRef<SessionPosition | null>(null);
-  const restTimer = useRestTimer();
+  const restFeedback = useRestFeedback();
+  const restTimer = useRestTimer({ events: restFeedback });
+  const setUndo = useSetUndo();
 
   const refreshSession = useCallback(async () => {
     const nextSession = await service.getSession(sessionId);
@@ -125,22 +123,16 @@ export function useActiveWorkoutSession({
     };
   }, [initialSession, service, sessionId]);
 
-  // Reconcile with the server whenever the app returns to the foreground —
-  // catches drift from writes that succeeded server-side but were never
-  // confirmed locally (e.g. a dropped response after backgrounding).
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {
       if (nextState === "active") {
-        void refreshSession().catch(() => {
-          // Best-effort reconciliation — a transient failure here shouldn't surface as a screen error.
-        });
+        void refreshSession().catch(() => {});
       }
     });
 
     return () => subscription.remove();
   }, [refreshSession]);
 
-  // Elapsed-time ticker for the session header — purely derived from `startedAt`, no server round-trip.
   useEffect(() => {
     if (!session?.startedAt) {
       setElapsedSeconds(0);
@@ -164,13 +156,13 @@ export function useActiveWorkoutSession({
     }
 
     const previousSet = findPreviousLoggedSet(position.exercise, position.setIndex);
+    const autoWeight = previousSet?.completedWeight ?? null;
+    const nextWeight = autoWeight ?? position.set.targetWeight;
+    const nextReps = previousSet?.completedReps ?? position.set.targetReps;
 
-    setWeightInput(
-      (previousSet?.completedWeight ?? position.set.targetWeight)?.toString() ?? "",
-    );
-    setRepsInput(
-      (previousSet?.completedReps ?? position.set.targetReps)?.toString() ?? "",
-    );
+    setWeightInput(nextWeight?.toString() ?? "");
+    setRepsInput(nextReps?.toString() ?? "");
+    setWeightAutoFilled(autoWeight !== null);
     setInputError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- re-seed only when the position moves, not on every render.
   }, [restTimer.isActive, position?.exercise.id, position?.set.id]);
@@ -191,6 +183,7 @@ export function useActiveWorkoutSession({
 
     setSaving(true);
     setInputError(null);
+    const snapshot = { ...currentPosition.set };
 
     try {
       const saved = await service.saveSet({
@@ -209,37 +202,78 @@ export function useActiveWorkoutSession({
 
       setSession(mergedSession);
 
+      setUndo.offerUndo({
+        exerciseId: currentPosition.exercise.id,
+        setId: saved?.id ?? currentPosition.set.id,
+        snapshot,
+      });
+
       const nextPosition = findNextIncompleteSet(mergedSession);
       if (nextPosition) {
         restTimer.start(currentPosition.set.restSeconds);
       }
     } catch (saveError) {
       setInputError(saveError instanceof Error ? saveError.message : "Failed to save set.");
-      // The write may have partially landed server-side — reconcile rather than trust local state.
       void refreshSession().catch(() => {});
     } finally {
       setSaving(false);
     }
-  }, [refreshSession, repsInput, restTimer, saving, service, session, weightInput]);
+  }, [refreshSession, repsInput, restTimer, saving, service, session, setUndo, weightInput]);
 
-  const finishWorkout = useCallback(async (): Promise<WorkoutSummary | null> => {
-    if (!session || finishing) {
-      return null;
+  const undoLastSet = useCallback(async () => {
+    const undoItem = setUndo.pendingUndo;
+    if (!session || !undoItem || saving) {
+      return;
     }
 
-    setFinishing(true);
-    setError(null);
+    setSaving(true);
+    setInputError(null);
+    restTimer.skip();
+    setUndo.dismissUndo();
 
     try {
-      const summary = await service.finishWorkout(session.id);
-      return summary;
-    } catch (finishError) {
-      setError(finishError instanceof Error ? finishError.message : "Failed to finish workout.");
-      return null;
+      await service.saveSet({
+        sessionId: session.id,
+        exerciseId: undoItem.exerciseId,
+        setId: undoItem.setId,
+        completedReps: null,
+        completedWeight: null,
+        rpe: null,
+        completed: false,
+      });
+
+      setSession(revertSavedSetInSession(session, undoItem.exerciseId, undoItem.setId, undoItem.snapshot));
+    } catch (undoError) {
+      setInputError(undoError instanceof Error ? undoError.message : "Failed to undo set.");
+      void refreshSession().catch(() => {});
     } finally {
-      setFinishing(false);
+      setSaving(false);
     }
-  }, [finishing, service, session]);
+  }, [refreshSession, restTimer, saving, service, session, setUndo]);
+
+  const finishWorkout = useCallback(
+    async (options?: FinishWorkoutOptions): Promise<WorkoutSummary | null> => {
+      if (!session || finishing) {
+        return null;
+      }
+
+      setFinishing(true);
+      setError(null);
+
+      const notes = options?.notes ?? (finishNotes.trim() || null);
+
+      try {
+        const summary = await service.finishWorkout(session.id, { notes });
+        return summary;
+      } catch (finishError) {
+        setError(finishError instanceof Error ? finishError.message : "Failed to finish workout.");
+        return null;
+      } finally {
+        setFinishing(false);
+      }
+    },
+    [finishNotes, finishing, service, session],
+  );
 
   return {
     session,
@@ -250,8 +284,11 @@ export function useActiveWorkoutSession({
     inputError,
     weightInput,
     repsInput,
+    weightAutoFilled,
+    finishNotes,
     setWeightInput,
     setRepsInput,
+    setFinishNotes,
     position,
     elapsedSeconds,
     isResting: restTimer.isActive,
@@ -261,7 +298,11 @@ export function useActiveWorkoutSession({
     addRestSeconds: restTimer.addTenSeconds,
     subtractRestSeconds: restTimer.subtractTenSeconds,
     isComplete: session ? isSessionComplete(session) : false,
+    pendingUndo: setUndo.pendingUndo,
+    undoSecondsRemaining: setUndo.secondsRemaining,
     completeSet,
+    undoLastSet,
+    dismissUndo: setUndo.dismissUndo,
     finishWorkout,
   };
 }

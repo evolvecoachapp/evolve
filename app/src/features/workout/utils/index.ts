@@ -30,14 +30,17 @@ export {
   countSessionWorkingSets,
   countTotalExercises,
   findNextIncompleteSet,
+  getExerciseSetProgress,
   isSessionComplete,
   mergeSavedSetIntoSession,
+  revertSavedSetInSession,
 } from "./sessionSelectors";
 export type { SessionPosition } from "./sessionSelectors";
 export {
   parseWorkoutSummaryParams,
   serializeWorkoutSummaryParams,
 } from "./summaryRouteParams";
+export { enrichExercise } from "./exerciseEnrichment";
 export {
   formatDurationMinutes,
   formatExerciseIntensity,

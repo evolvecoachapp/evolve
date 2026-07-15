@@ -1,9 +1,17 @@
 export { WorkoutExercisePreviewList } from "./WorkoutExercisePreviewList";
 export { WorkoutExercisePreviewRow } from "./WorkoutExercisePreviewRow";
 export { WorkoutPreviewHero } from "./WorkoutPreviewHero";
+export { CircularCountdown } from "./CircularCountdown";
+export { ExerciseDetailPanel } from "./ExerciseDetailPanel";
+export { ExerciseMediaPlaceholder } from "./ExerciseMediaPlaceholder";
 export { RestTimerOverlay } from "./RestTimerOverlay";
+export { RestUpNextCard } from "./RestUpNextCard";
+export { SetUndoBanner } from "./SetUndoBanner";
+export { WorkoutFinishNotes } from "./WorkoutFinishNotes";
+export { WorkoutProgressHeader, formatElapsed } from "./WorkoutProgressHeader";
 export { WorkoutSessionExerciseCard } from "./WorkoutSessionExerciseCard";
 export { WorkoutSessionFooter } from "./WorkoutSessionFooter";
 export { WorkoutSetInputRow } from "./WorkoutSetInputRow";
 export { WorkoutStartFooter } from "./WorkoutStartFooter";
 export { WorkoutSummaryStats } from "./WorkoutSummaryStats";
+export { WorkoutWarmupSetsList } from "./WorkoutWarmupSetsList";

@@ -130,6 +130,7 @@ describe("useActiveWorkoutSession", () => {
     });
 
     expect(result.current.isResting).toBe(true);
+    expect(result.current.pendingUndo).not.toBeNull();
     const restingSeconds = result.current.restSecondsLeft;
 
     act(() => {
@@ -141,6 +142,47 @@ describe("useActiveWorkoutSession", () => {
       result.current.skipRest();
     });
     expect(result.current.isResting).toBe(false);
+  });
+
+  it("undoes a completed set and cancels the rest timer", async () => {
+    const session = await createStartedSession();
+    const saveSetSpy = jest.fn(mockWorkoutService.saveSet);
+    const service: WorkoutService = {
+      ...mockWorkoutService,
+      saveSet: saveSetSpy,
+    };
+
+    const { result } = renderHook(() =>
+      useActiveWorkoutSession({ sessionId: session.id, initialSession: session, service }),
+    );
+
+    await waitFor(() => expect(result.current.position).not.toBeNull());
+
+    act(() => {
+      result.current.setWeightInput("100");
+      result.current.setRepsInput("8");
+    });
+
+    await act(async () => {
+      await result.current.completeSet();
+    });
+
+    expect(result.current.isResting).toBe(true);
+
+    await act(async () => {
+      await result.current.undoLastSet();
+    });
+
+    expect(saveSetSpy).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        completed: false,
+        completedReps: null,
+        completedWeight: null,
+      }),
+    );
+    expect(result.current.isResting).toBe(false);
+    expect(result.current.pendingUndo).toBeNull();
+    expect(result.current.session?.exercises[0].workingSets[0].completed).toBe(false);
   });
 
   it("finishes the workout and returns a summary", async () => {
@@ -173,13 +215,14 @@ describe("useActiveWorkoutSession", () => {
 
     let summary = null;
     await act(async () => {
-      summary = await result.current.finishWorkout();
+      summary = await result.current.finishWorkout({ notes: "Strong session." });
     });
 
     expect(summary).toMatchObject({
       sessionId: session.id,
       completedSets: 1,
       totalVolumeKg: 800,
+      notes: "Strong session.",
     });
   });
 });

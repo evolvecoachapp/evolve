@@ -1,11 +1,20 @@
 import { StyleSheet, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
+import { heroEntering } from "../../../animation/entering";
+import { useReduceMotion } from "../../../animation/useReduceMotion";
 import { AppCard } from "../../../components/AppCard";
 import { Chip } from "../../../components/Chip";
+import { ProgressBar } from "../../../components/ProgressBar";
 import { spacing } from "../../../theme/theme";
 import { useThemedStyles } from "../../../theme/useThemedStyles";
 import type { WorkoutExercise } from "../models/WorkoutExercise";
+import { enrichExercise } from "../utils/exerciseEnrichment";
 import { formatMuscleGroupLabel, formatWorkingSetsSummary } from "../utils/presentationFormatters";
+import { getExerciseSetProgress } from "../utils/sessionSelectors";
 import { toLegacyExerciseSet } from "../utils/workoutAdapters";
+import { ExerciseDetailPanel } from "./ExerciseDetailPanel";
+import { ExerciseMediaPlaceholder } from "./ExerciseMediaPlaceholder";
+import { WorkoutWarmupSetsList } from "./WorkoutWarmupSetsList";
 
 interface WorkoutSessionExerciseCardProps {
   exercise: WorkoutExercise;
@@ -22,10 +31,14 @@ export function WorkoutSessionExerciseCard({
   setNumber,
   setTotal,
 }: WorkoutSessionExerciseCardProps) {
+  const reduceMotion = useReduceMotion();
+  const enriched = enrichExercise(exercise.exercise);
+  const exerciseProgress = getExerciseSetProgress(exercise);
+
   const styles = useThemedStyles(({ colors, typography, radius }) =>
     StyleSheet.create({
       card: {
-        gap: spacing.md,
+        gap: spacing.lg,
       },
       eyebrow: {
         ...typography.caption,
@@ -59,28 +72,55 @@ export function WorkoutSessionExerciseCard({
         ...typography.callout,
         color: colors.inkSecondary,
       },
+      progressSection: {
+        gap: spacing.xs,
+      },
+      progressLabel: {
+        ...typography.caption,
+        color: colors.inkMuted,
+        fontWeight: "600",
+      },
     }),
   );
 
   return (
-    <AppCard variant="elevated" style={styles.card}>
-      <Text style={styles.eyebrow}>
-        Exercise {exerciseNumber} of {exerciseTotal}
-      </Text>
-      <Text style={styles.title}>{exercise.exercise.name}</Text>
-
-      <View style={styles.metaRow}>
-        <Chip label={formatMuscleGroupLabel(exercise.exercise.muscleGroup)} />
-        <Text style={styles.summary}>
-          {formatWorkingSetsSummary(exercise.workingSets.map(toLegacyExerciseSet))}
+    <Animated.View entering={heroEntering(0, reduceMotion)}>
+      <AppCard variant="elevated" style={styles.card}>
+        <Text style={styles.eyebrow}>
+          Exercise {exerciseNumber} of {exerciseTotal}
         </Text>
-      </View>
 
-      <View style={styles.setBadge}>
-        <Text style={styles.setBadgeText}>
-          Set {setNumber} of {setTotal}
-        </Text>
-      </View>
-    </AppCard>
+        <ExerciseMediaPlaceholder
+          imageUrl={enriched.imageUrl}
+          videoUrl={enriched.videoUrl}
+          exerciseName={enriched.name}
+        />
+
+        <Text style={styles.title}>{enriched.name}</Text>
+
+        <View style={styles.metaRow}>
+          <Chip label={formatMuscleGroupLabel(enriched.muscleGroup)} />
+          <Text style={styles.summary}>
+            {formatWorkingSetsSummary(exercise.workingSets.map(toLegacyExerciseSet))}
+          </Text>
+        </View>
+
+        <View style={styles.progressSection}>
+          <Text style={styles.progressLabel}>
+            Exercise progress · {exerciseProgress.completed} / {exerciseProgress.total} sets
+          </Text>
+          <ProgressBar progress={exerciseProgress.percent} height={4} />
+        </View>
+
+        <View style={styles.setBadge}>
+          <Text style={styles.setBadgeText}>
+            Set {setNumber} of {setTotal}
+          </Text>
+        </View>
+
+        <WorkoutWarmupSetsList warmupSets={exercise.warmupSets} />
+        <ExerciseDetailPanel exercise={enriched} />
+      </AppCard>
+    </Animated.View>
   );
 }

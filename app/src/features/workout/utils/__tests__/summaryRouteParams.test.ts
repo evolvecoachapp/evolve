@@ -27,4 +27,10 @@ describe("summaryRouteParams", () => {
   it("returns null when required params are missing", () => {
     expect(parseWorkoutSummaryParams({ sessionId: "session-1" })).toBeNull();
   });
+
+  it("round-trips notes when present", () => {
+    const withNotes = { ...sampleSummary, notes: "Felt strong on squats." };
+    const params = serializeWorkoutSummaryParams(withNotes);
+    expect(parseWorkoutSummaryParams(params)).toEqual(withNotes);
+  });
 });

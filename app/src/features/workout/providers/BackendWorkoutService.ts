@@ -164,9 +164,11 @@ function createBackendWorkoutService(): WorkoutService {
       }
     },
 
-    async finishWorkout(sessionId: string): Promise<WorkoutSummary> {
+    async finishWorkout(sessionId: string, options?: { notes?: string | null }): Promise<WorkoutSummary> {
       try {
-        const dto = await finishWorkoutLog(sessionId, {});
+        const dto = await finishWorkoutLog(sessionId, {
+          notes: options?.notes ?? undefined,
+        });
         const meta = sessionDisplayCache.get(sessionId) ?? { title: "Workout", subtitle: "" };
         sessionDisplayCache.delete(sessionId);
         return mapWorkoutLogDetailToWorkoutSummary(dto, meta.title);

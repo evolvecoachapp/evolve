@@ -91,6 +91,21 @@ export function countSessionCompletedWorkingSets(exercises: WorkoutExercise[]): 
   );
 }
 
+/** Progress within a single exercise's working sets. */
+export function getExerciseSetProgress(exercise: WorkoutExercise): {
+  completed: number;
+  total: number;
+  percent: number;
+} {
+  const total = exercise.workingSets.length;
+  const completed = exercise.workingSets.filter((set) => set.completed).length;
+  return {
+    completed,
+    total,
+    percent: total > 0 ? (completed / total) * 100 : 0,
+  };
+}
+
 /**
  * Returns a new `WorkoutSession` with the working set identified by
  * `exerciseId`/`setId` replaced by a server-confirmed `SavedSetResult`.
@@ -124,6 +139,41 @@ export function mergeSavedSetIntoSession(
                 completedWeight: saved.completedWeight,
                 rpe: saved.rpe,
                 completed: true,
+              }
+            : set,
+        ),
+      };
+    }),
+  };
+}
+
+/**
+ * Returns a new `WorkoutSession` with a previously logged set reverted to its
+ * pre-completion snapshot — used by the set-undo flow.
+ */
+export function revertSavedSetInSession(
+  session: WorkoutSession,
+  exerciseId: string,
+  setId: string,
+  snapshot: ExerciseSet,
+): WorkoutSession {
+  return {
+    ...session,
+    exercises: session.exercises.map((exercise) => {
+      if (exercise.id !== exerciseId) {
+        return exercise;
+      }
+
+      return {
+        ...exercise,
+        workingSets: exercise.workingSets.map((set) =>
+          set.id === setId || set.id === snapshot.id
+            ? {
+                ...snapshot,
+                completed: false,
+                completedReps: null,
+                completedWeight: null,
+                rpe: null,
               }
             : set,
         ),

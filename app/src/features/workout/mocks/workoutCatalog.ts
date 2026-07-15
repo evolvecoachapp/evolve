@@ -1,6 +1,7 @@
 import type { Workout } from "../models/Workout";
 import type { WorkoutExercise } from "../models/WorkoutExercise";
 import type { Exercise } from "../models/Exercise";
+import { enrichExercise } from "../utils/exerciseEnrichment";
 import type { ExerciseSet } from "../models/ExerciseSet";
 import type { WorkoutExercise as LegacyWorkoutExercise } from "../types/workout-exercise";
 import type { ExerciseSet as LegacyExerciseSet } from "../types/exercise-set";
@@ -24,7 +25,7 @@ function toModelExerciseSet(set: LegacyExerciseSet): ExerciseSet {
 }
 
 function toModelExercise(legacy: LegacyWorkoutExercise): Exercise {
-  return {
+  return enrichExercise({
     id: legacy.id,
     name: legacy.name,
     muscleGroup: legacy.muscleGroup,
@@ -32,7 +33,9 @@ function toModelExercise(legacy: LegacyWorkoutExercise): Exercise {
     instructions: legacy.notes,
     videoUrl: legacy.videoUrl ?? null,
     imageUrl: legacy.thumbnail ?? null,
-  };
+    primaryMuscles: legacy.primaryMuscles,
+    secondaryMuscles: legacy.secondaryMuscles,
+  });
 }
 
 function toModelWorkoutExercise(legacy: LegacyWorkoutExercise, order: number): WorkoutExercise {

@@ -10,4 +10,10 @@ export interface Exercise {
   instructions: string | null;
   videoUrl?: string | null;
   imageUrl?: string | null;
+  /** Primary movers — defaults to `[muscleGroup]` when omitted. */
+  primaryMuscles?: ExerciseMuscleGroup[];
+  /** Supporting muscles recruited during the movement. */
+  secondaryMuscles?: ExerciseMuscleGroup[];
+  /** Coaching cues for form errors to watch for. */
+  commonMistakes?: string[];
 }

@@ -267,9 +267,13 @@ describe("backendWorkoutService", () => {
         }),
       );
 
-      const summary = await backendWorkoutService.finishWorkout(session.id);
+      const summary = await backendWorkoutService.finishWorkout(session.id, {
+        notes: "Felt great today.",
+      });
 
-      expect(api.finishWorkoutLog).toHaveBeenCalledWith(session.id, {});
+      expect(api.finishWorkoutLog).toHaveBeenCalledWith(session.id, {
+        notes: "Felt great today.",
+      });
       expect(summary.title).toBe("Powerbuilding Block 1");
       expect(summary.durationMinutes).toBe(60);
     });

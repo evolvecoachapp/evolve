@@ -1,4 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
+import { chipEntering } from "../../../animation/entering";
+import { useReduceMotion } from "../../../animation/useReduceMotion";
 import { AppInput } from "../../../components/AppInput";
 import { spacing } from "../../../theme/theme";
 import { useThemedStyles } from "../../../theme/useThemedStyles";
@@ -10,8 +13,10 @@ interface WorkoutSetInputRowProps {
   onRepsChange: (value: string) => void;
   error?: string | null;
   disabled?: boolean;
-  /** Prescribed rep target for the current set, e.g. "Target: ~8 reps". */
+  /** Prescribed rep target for the current set. */
   targetReps?: number | null;
+  /** Whether weight was auto-filled from the previous working set. */
+  weightAutoFilled?: boolean;
 }
 
 export function WorkoutSetInputRow({
@@ -22,8 +27,10 @@ export function WorkoutSetInputRow({
   error,
   disabled = false,
   targetReps,
+  weightAutoFilled = false,
 }: WorkoutSetInputRowProps) {
-  const styles = useThemedStyles(({ colors, typography }) =>
+  const reduceMotion = useReduceMotion();
+  const styles = useThemedStyles(({ colors, typography, radius }) =>
     StyleSheet.create({
       row: {
         flexDirection: "row",
@@ -33,38 +40,62 @@ export function WorkoutSetInputRow({
         flex: 1,
         marginBottom: 0,
       },
+      hints: {
+        gap: spacing.xs,
+        marginTop: spacing.sm,
+      },
       hint: {
         ...typography.caption,
         color: colors.inkMuted,
-        marginTop: spacing.xs,
+      },
+      targetHint: {
+        ...typography.caption,
+        color: colors.pulse,
+        fontWeight: "600",
+        alignSelf: "flex-start",
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.xs,
+        borderRadius: radius.full,
+        backgroundColor: colors.pulseMuted,
+      },
+      autoFillHint: {
+        ...typography.caption,
+        color: colors.inkSecondary,
       },
     }),
   );
 
   return (
-    <View>
-      <View style={styles.row}>
-        <AppInput
-          label="Weight (kg)"
-          value={weightInput}
-          onChangeText={onWeightChange}
-          keyboardType="decimal-pad"
-          editable={!disabled}
-          placeholder="0"
-          style={styles.field}
-          error={error}
-        />
-        <AppInput
-          label="Reps"
-          value={repsInput}
-          onChangeText={onRepsChange}
-          keyboardType="number-pad"
-          editable={!disabled}
-          placeholder="0"
-          style={styles.field}
-        />
+    <Animated.View entering={chipEntering(0, reduceMotion)}>
+      <View>
+        <View style={styles.row}>
+          <AppInput
+            label="Weight (kg)"
+            value={weightInput}
+            onChangeText={onWeightChange}
+            keyboardType="decimal-pad"
+            editable={!disabled}
+            placeholder="0"
+            style={styles.field}
+            error={error}
+          />
+          <AppInput
+            label="Reps"
+            value={repsInput}
+            onChangeText={onRepsChange}
+            keyboardType="number-pad"
+            editable={!disabled}
+            placeholder="0"
+            style={styles.field}
+          />
+        </View>
+        <View style={styles.hints}>
+          {targetReps ? <Text style={styles.targetHint}>Target · ~{targetReps} reps</Text> : null}
+          {weightAutoFilled && weightInput ? (
+            <Text style={styles.autoFillHint}>Weight carried from your last working set</Text>
+          ) : null}
+        </View>
       </View>
-      {targetReps ? <Text style={styles.hint}>Target: ~{targetReps} reps</Text> : null}
-    </View>
+    </Animated.View>
   );
 }

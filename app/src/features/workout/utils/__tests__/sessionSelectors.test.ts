@@ -7,8 +7,10 @@ import {
   countSessionCompletedWorkingSets,
   countSessionWorkingSets,
   findNextIncompleteSet,
+  getExerciseSetProgress,
   isSessionComplete,
   mergeSavedSetIntoSession,
+  revertSavedSetInSession,
 } from "../sessionSelectors";
 
 function buildSet(overrides: Partial<ExerciseSet> = {}): ExerciseSet {
@@ -161,5 +163,47 @@ describe("sessionSelectors", () => {
     });
 
     expect(merged.exercises[0].workingSets[0].completed).toBe(false);
+  });
+
+  it("computes per-exercise set progress", () => {
+    const exercise = buildExercise({
+      workingSets: [
+        buildSet({ completed: true, completedReps: 8, completedWeight: 100 }),
+        buildSet({ id: "set-2", setNumber: 2 }),
+      ],
+    });
+
+    expect(getExerciseSetProgress(exercise)).toEqual({
+      completed: 1,
+      total: 2,
+      percent: 50,
+    });
+  });
+
+  it("reverts a logged set back to its pre-completion snapshot", () => {
+    const snapshot = buildSet({ id: "exercise-1-set-1" });
+    const session = buildSession([
+      buildExercise({
+        workingSets: [
+          buildSet({
+            id: "server-set-1",
+            completed: true,
+            completedReps: 8,
+            completedWeight: 100,
+            rpe: 7,
+          }),
+        ],
+      }),
+    ]);
+
+    const reverted = revertSavedSetInSession(session, "exercise-1", "server-set-1", snapshot);
+
+    expect(reverted.exercises[0].workingSets[0]).toMatchObject({
+      id: "exercise-1-set-1",
+      completed: false,
+      completedReps: null,
+      completedWeight: null,
+      rpe: null,
+    });
   });
 });

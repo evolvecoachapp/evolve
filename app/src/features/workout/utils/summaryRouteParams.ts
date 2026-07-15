@@ -32,6 +32,8 @@ export function parseWorkoutSummaryParams(
     return null;
   }
 
+  const notes = readParam(params, "notes");
+
   return {
     sessionId,
     workoutId,
@@ -44,6 +46,7 @@ export function parseWorkoutSummaryParams(
     totalExercises: readNumberParam(params, "totalExercises"),
     skippedExercises: readNumberParam(params, "skippedExercises"),
     completedAt,
+    ...(notes ? { notes } : {}),
   };
 }
 
@@ -61,5 +64,6 @@ export function serializeWorkoutSummaryParams(summary: WorkoutSummary): Record<s
     totalExercises: String(summary.totalExercises),
     skippedExercises: String(summary.skippedExercises),
     completedAt: summary.completedAt,
+    ...(summary.notes ? { notes: summary.notes } : {}),
   };
 }
