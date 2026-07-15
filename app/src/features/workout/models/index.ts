@@ -2,6 +2,7 @@ export type { Exercise } from "./Exercise";
 export type { ExerciseDifficulty } from "./ExerciseDifficulty";
 export type { ExerciseEquipment } from "./ExerciseEquipment";
 export type { ExerciseHistory } from "./ExerciseHistory";
+export type { ExerciseMetadata } from "./ExerciseMetadata";
 export type { ExerciseMuscleGroup } from "./ExerciseMuscleGroup";
 export type { ExerciseSet } from "./ExerciseSet";
 export type { PersonalRecord } from "./PersonalRecord";

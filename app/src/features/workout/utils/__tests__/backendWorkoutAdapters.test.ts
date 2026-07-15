@@ -66,6 +66,29 @@ describe("mapExerciseCatalogRef", () => {
     expect(exercise.equipment).toBe("barbell");
   });
 
+  it("supplies safe metadata defaults when the backend payload omits coaching fields", () => {
+    const exercise = mapExerciseCatalogRef(buildExerciseCatalogRef());
+
+    expect(exercise.metadata).toMatchObject({
+      difficulty: "Intermediate",
+      movementPattern: "compound",
+      equipment: [],
+      unilateral: false,
+      bodyRegion: "full-body",
+      tempo: "2-0-2",
+      recommendedRestSeconds: 60,
+      coachTip: "",
+      executionSteps: [],
+      breathingInstructions: "",
+      rangeOfMotion: "",
+      safetyNotes: [],
+      commonMistakes: [],
+      primaryMuscles: ["quads"],
+      secondaryMuscles: [],
+      stabilizerMuscles: [],
+    });
+  });
+
   it("honors a name override (used for historical exercise_name_snapshot)", () => {
     const exercise = mapExerciseCatalogRef(buildExerciseCatalogRef(), "Renamed Squat");
     expect(exercise.name).toBe("Renamed Squat");

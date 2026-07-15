@@ -9,6 +9,7 @@ import type {
 import type { Exercise } from "../models/Exercise";
 import type { ExerciseEquipment } from "../models/ExerciseEquipment";
 import type { ExerciseHistory } from "../models/ExerciseHistory";
+import type { ExerciseMetadata } from "../models/ExerciseMetadata";
 import type { ExerciseMuscleGroup } from "../models/ExerciseMuscleGroup";
 import type { ExerciseSet } from "../models/ExerciseSet";
 import type { Workout, WorkoutScheduleLabels } from "../models/Workout";
@@ -93,6 +94,34 @@ export function mapEquipmentSlugs(slugs: string[]): ExerciseEquipment {
   return mapped[0] ?? "bodyweight";
 }
 
+function buildExerciseMetadata(dto: ExerciseCatalogRefDto): ExerciseMetadata {
+  const muscleGroup = mapMuscleGroupSlug(dto.primary_muscle_group);
+  return {
+    difficulty: dto.difficulty_level
+      ? dto.difficulty_level === "advanced"
+        ? "Advanced"
+        : dto.difficulty_level === "intermediate"
+          ? "Intermediate"
+          : "Beginner"
+      : "Beginner",
+    movementPattern: "compound",
+    equipment: [],
+    unilateral: false,
+    bodyRegion: muscleGroup === "core" ? "core" : "full-body",
+    tempo: "2-0-2",
+    recommendedRestSeconds: 60,
+    coachTip: "",
+    executionSteps: [],
+    breathingInstructions: "",
+    rangeOfMotion: "",
+    safetyNotes: [],
+    commonMistakes: [],
+    primaryMuscles: [muscleGroup],
+    secondaryMuscles: [],
+    stabilizerMuscles: [],
+  };
+}
+
 /** Maps an `ExerciseCatalogRef` embedded line item onto the frontend `Exercise` model. */
 export function mapExerciseCatalogRef(dto: ExerciseCatalogRefDto, nameOverride?: string): Exercise {
   const muscleGroup = mapMuscleGroupSlug(dto.primary_muscle_group);
@@ -107,6 +136,7 @@ export function mapExerciseCatalogRef(dto: ExerciseCatalogRefDto, nameOverride?:
     primaryMuscles: [muscleGroup],
     secondaryMuscles: [],
     commonMistakes: [],
+    metadata: buildExerciseMetadata(dto),
   };
 }
 

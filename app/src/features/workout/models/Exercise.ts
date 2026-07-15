@@ -1,5 +1,6 @@
 import type { ExerciseEquipment } from "./ExerciseEquipment";
 import type { ExerciseMuscleGroup } from "./ExerciseMuscleGroup";
+import type { ExerciseMetadata } from "./ExerciseMetadata";
 
 /** Catalog exercise definition shared across workouts. */
 export interface Exercise {
@@ -16,4 +17,6 @@ export interface Exercise {
   secondaryMuscles?: ExerciseMuscleGroup[];
   /** Coaching cues for form errors to watch for. */
   commonMistakes?: string[];
+  /** Optional professional coaching metadata for premium exercise catalog experiences. */
+  metadata?: ExerciseMetadata;
 }
