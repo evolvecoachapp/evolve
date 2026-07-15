@@ -10,6 +10,7 @@ import { TabScreenContainer } from "../components/TabScreenContainer";
 import { DashboardHero } from "../features/dashboard/components";
 import { SectionTitle } from "../components/SectionTitle";
 import { StatCard } from "../components/StatCard";
+import { RecommendationWidget } from "../features/recommendations/components";
 import { useAuth } from "../auth/useAuth";
 import { useHome } from "../features/home/hooks";
 import { useTheme } from "../theme/ThemeContext";
@@ -263,6 +264,11 @@ export function DashboardScreen() {
             </View>
             <Text style={styles.coachLink}>Ask Coach →</Text>
           </AppCard>
+        </View>
+
+        <View>
+          <SectionTitle title="Today's Intelligence" />
+          <RecommendationWidget />
         </View>
       </TabScreenContainer>
     </GradientBackground>
