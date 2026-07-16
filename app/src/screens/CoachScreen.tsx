@@ -3,14 +3,14 @@ import { ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GradientBackground } from "../components/GradientBackground";
 import { coachHeroMock } from "../data/mocks/coach";
+import { CoachHero } from "../features/coach/components";
+import { notificationStore } from "../features/notifications/service";
 import {
-  CoachAssistantMessage,
-  CoachHero,
-  CoachInputBar,
-  CoachTypingIndicator,
-  CoachUserMessage,
-} from "../features/coach/components";
-import { useCoachChat } from "../features/coach/hooks";
+  presentCoachNotification,
+  sortNotificationsNewestFirst,
+} from "../features/notifications/components/CoachPresenter";
+import { CoachTimeline } from "../features/notifications/components/CoachTimeline";
+import { CoachEmptyState } from "../features/notifications/components/CoachEmptyState";
 import { coachLayout, floatingFooterMetrics, spacing } from "../theme/theme";
 import { useTabSceneBottomReserve } from "../theme/useTabLayout";
 import { useThemedStyles } from "../theme/useThemedStyles";
@@ -27,7 +27,9 @@ export function CoachScreen() {
   const [keyboardLift, setKeyboardLift] = useState(0);
   const [composerHeight, setComposerHeight] = useState(COMPOSER_HEIGHT_FALLBACK);
 
-  const { messages, message, setMessage, sendMessage, isTyping, canSend } = useCoachChat();
+  const [notifications, setNotifications] = useState(() => notificationStore.getNotifications());
+
+  const unreadCount = notificationStore.getUnreadCount();
 
   const footerReserve = floatingFooterMetrics.scrollReserve(composerHeight);
   const scrollBottomPadding =
@@ -53,7 +55,7 @@ export function CoachScreen() {
 
   useEffect(() => {
     scrollToLatest(true);
-  }, [messages.length, isTyping, scrollToLatest]);
+  }, [notifications.length, scrollToLatest]);
 
   const styles = useThemedStyles(() =>
     StyleSheet.create({
@@ -75,15 +77,18 @@ export function CoachScreen() {
     }),
   );
 
-  const handleSendPress = () => {
-    void sendMessage().then(() => {
-      scrollToLatest(true);
-    });
-    scrollToLatest(true);
-  };
-
   const handleContentSizeChange = () => {
     scrollToLatest(false);
+  };
+
+  useEffect(() => {
+    const items = sortNotificationsNewestFirst(notificationStore.getNotifications());
+    setNotifications(items);
+  }, []);
+
+  const handleItemPress = (id: string) => {
+    notificationStore.markAsRead(id);
+    setNotifications(sortNotificationsNewestFirst(notificationStore.getNotifications()));
   };
 
   return (
@@ -113,34 +118,15 @@ export function CoachScreen() {
           />
 
           <View style={styles.conversation}>
-            {messages.map((msg) =>
-              msg.role === "coach" ? (
-                <CoachAssistantMessage
-                  key={msg.id}
-                  content={msg.content}
-                  timestamp={msg.timestamp}
-                />
-              ) : (
-                <CoachUserMessage
-                  key={msg.id}
-                  content={msg.content}
-                  timestamp={msg.timestamp}
-                />
-              ),
+            {notifications.length === 0 ? (
+              <CoachEmptyState />
+            ) : (
+              <CoachTimeline items={notifications.map(presentCoachNotification)} onItemPress={handleItemPress} />
             )}
-            {isTyping ? <CoachTypingIndicator /> : null}
           </View>
         </ScrollView>
 
-        <CoachInputBar
-          value={message}
-          onChangeText={setMessage}
-          onSendPress={handleSendPress}
-          canSend={canSend}
-          placeholder="Message your Coach…"
-          onKeyboardHeightChange={setKeyboardLift}
-          onComposerLayout={setComposerHeight}
-        />
+        {/* Coach inbox has no input composer */}
       </View>
     </GradientBackground>
   );
