@@ -104,6 +104,26 @@ export const rules: Rule[] = [
     return null
   },
 
+  // Weight change progress insight
+  (ctx) => {
+    const current = ctx.currentWeightKg
+    const previous = ctx.previousWeightKg
+    if (current == null || previous == null) return null
+    const delta = current - previous
+    if (delta === 0) return null
+
+    return {
+      id: idFor(delta > 0 ? 'weight-gain' : 'weight-loss'),
+      title: delta > 0 ? 'Weight trending up' : 'Weight trending down',
+      message:
+        delta > 0
+          ? `Your weight increased by ${delta.toFixed(1)} kg. Adjust your plan to stay aligned with your goals.`
+          : `Your weight decreased by ${Math.abs(delta).toFixed(1)} kg. Keep up the consistent habits.`,
+      category: InsightCategory.PROGRESS,
+      priority: InsightPriority.MEDIUM,
+    }
+  },
+
   // Personal record achieved
   (ctx) => {
     const prs = ctx.personalRecords || []

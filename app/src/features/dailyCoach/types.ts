@@ -34,4 +34,6 @@ export interface DailyContext {
   workoutsPlanned?: string[]
   workoutsCompleted?: string[]
   personalRecords?: Array<{ exerciseId: string; isNewPR: boolean }>
+  currentWeightKg?: number
+  previousWeightKg?: number
 }

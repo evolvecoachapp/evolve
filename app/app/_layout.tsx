@@ -4,6 +4,8 @@ import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider } from "../src/auth/AuthContext";
 import { ThemeProvider, useStatusBarStyle } from "../src/theme/ThemeContext";
+import { useEffect } from "react";
+import { initializeEventSystem } from "../src/features/events/bootstrap";
 
 function RootStatusBar() {
   const statusBarStyle = useStatusBarStyle();
@@ -16,6 +18,10 @@ function RootStatusBar() {
  * `app/(app)/_layout.tsx` — this layout only wires providers and stack options.
  */
 export default function RootLayout() {
+  useEffect(() => {
+    initializeEventSystem();
+  }, []);
+
   return (
     <SafeAreaProvider>
       <ThemeProvider>
