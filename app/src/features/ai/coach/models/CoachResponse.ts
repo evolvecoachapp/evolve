@@ -1,5 +1,5 @@
 import { Decision } from "../../decision/models/Decision";
-import { CoachMemory } from "./CoachMemory";
+import { CoachProfile } from "../../profile/models/CoachProfile";
 
 export interface CoachResponse {
   message: string;
@@ -8,5 +8,5 @@ export interface CoachResponse {
 
   suggestions: string[];
 
-  memory: CoachMemory;
+  profile: CoachProfile;
 }

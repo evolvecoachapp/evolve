@@ -2,6 +2,7 @@ import { DecisionInput } from "../../decision/models/DecisionInput";
 import { DecisionType } from "../../decision/models/DecisionType";
 import { DecisionEngine } from "../../decision/services/DecisionEngine";
 import { MemoryManager } from "../../memory/services/MemoryManager";
+import { ProfileService } from "../../profile/services/ProfileService";
 import { CoachResponse } from "../models/CoachResponse";
 import { SuggestionService } from "./SuggestionService";
 
@@ -10,6 +11,7 @@ export class CoachService {
     private readonly decisionEngine: DecisionEngine,
     private readonly suggestionService: SuggestionService,
     private readonly memoryManager: MemoryManager,
+    private readonly profileService: ProfileService,
   ) {}
 
   private readonly messagesByDecisionType: Record<DecisionType, string> = {
@@ -24,15 +26,22 @@ export class CoachService {
 
   async evaluate(input: DecisionInput): Promise<CoachResponse> {
     const decision = this.decisionEngine.evaluate(input);
-    const suggestions = this.suggestionService.getSuggestions(decision);
     const memories = await this.memoryManager.getAll();
+    const athleteProfile = this.profileService.buildProfile(memories);
+
+    const context = {
+      decision,
+      profile: athleteProfile,
+    };
+
+    const suggestions = this.suggestionService.getSuggestions(context);
 
     return {
       message: this.messagesByDecisionType[decision.type],
       decision,
       suggestions,
-      memory: {
-        memories,
+      profile: {
+        profile: athleteProfile,
       },
     };
   }
