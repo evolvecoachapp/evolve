@@ -237,26 +237,27 @@ const BEGINNER_FULL_BODY_MAX_SESSIONS = 3;
  */
 export class DefaultSplitTypeSelector implements SplitTypeSelector {
   selectSplitType(input: SplitPlanningInput): SplitType {
+    const { goal, experienceLevel } = input.planningContext;
     const sessionsPerWeek = input.frequencyPlan.sessionsPerWeek;
 
     if (sessionsPerWeek <= 0) {
       return SplitType.FullBody;
     }
 
-    if (input.experienceLevel === ExperienceLevel.Beginner) {
+    if (experienceLevel === ExperienceLevel.Beginner) {
       return sessionsPerWeek <= BEGINNER_FULL_BODY_MAX_SESSIONS ? SplitType.FullBody : SplitType.UpperLower;
     }
 
-    if (input.goal === TrainingGoal.Powerlifting && sessionsPerWeek >= MIN_SESSIONS_FOR_SPECIALIZED_SPLIT) {
+    if (goal === TrainingGoal.Powerlifting && sessionsPerWeek >= MIN_SESSIONS_FOR_SPECIALIZED_SPLIT) {
       return SplitType.PowerliftingSpecialized;
     }
     if (sessionsPerWeek < MIN_SESSIONS_FOR_SPECIALIZED_SPLIT) {
       return SplitType.FullBody;
     }
-    if (input.goal === TrainingGoal.Hybrid) {
+    if (goal === TrainingGoal.Hybrid) {
       return SplitType.Hybrid;
     }
-    if (STRENGTH_FOCUSED_GOALS.has(input.goal) || sessionsPerWeek < MIN_SESSIONS_FOR_THREE_WAY_SPLIT) {
+    if (STRENGTH_FOCUSED_GOALS.has(goal) || sessionsPerWeek < MIN_SESSIONS_FOR_THREE_WAY_SPLIT) {
       return SplitType.UpperLower;
     }
     return SplitType.PushPullLegs;
@@ -389,8 +390,8 @@ export class DefaultMuscleGroupAssignmentStrategy implements MuscleGroupAssignme
  * split generator — can be introduced without touching this class or any
  * caller that only knows about the `SplitPlanner` contract:
  *
- * 1. Split-type resolution — honors `input.preferredSplitType` verbatim
- *    when the caller supplies one; otherwise a `SplitTypeSelector` picks
+ * 1. Split-type resolution — honors `input.planningContext.preferredSplitType`
+ *    verbatim when the caller supplies one; otherwise a `SplitTypeSelector` picks
  *    one of Full Body, Upper/Lower, Push/Pull/Legs, Bro Split, Powerlifting
  *    Specialized, Conjugate, or Hybrid from goal, experience, and the
  *    frequency plan's session count. `Custom` is only ever produced by an
@@ -437,7 +438,7 @@ export class RuleBasedSplitPlanner implements SplitPlanner {
   }
 
   planSplit(input: SplitPlanningInput): SplitPlanningResult {
-    const splitType = input.preferredSplitType ?? this.splitTypeSelector.selectSplitType(input);
+    const splitType = input.planningContext.preferredSplitType ?? this.splitTypeSelector.selectSplitType(input);
     const cycleLengthDays = input.frequencyPlan.microcycleLengthDays;
 
     if (cycleLengthDays <= 0) {

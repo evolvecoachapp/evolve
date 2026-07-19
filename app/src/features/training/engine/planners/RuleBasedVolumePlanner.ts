@@ -462,8 +462,8 @@ export class RuleBasedVolumePlanner implements VolumePlanner {
       const prescriptions = this.setSchemeStrategy.buildSetPrescriptions(
         exercise,
         allocation,
-        input.goal,
-        input.experienceLevel,
+        input.planningContext.goal,
+        input.planningContext.experienceLevel,
       );
 
       return {

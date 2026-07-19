@@ -9,6 +9,7 @@ import type { ExerciseId, TrainingDayId, TrainingExerciseId, TrainingProgramId, 
 import { ConstraintEngine } from "../constraints/ConstraintEngine";
 import type { ConstraintEvaluator } from "../constraints/contracts/ConstraintEvaluator";
 import type { ConstraintContext } from "../constraints/models/ConstraintContext";
+import type { PlanningContext } from "../context/PlanningContext";
 import type {
   GeneratedTrainingProgram,
   ProgramGenerationRequest,
@@ -75,23 +76,29 @@ const DEFAULT_SETS_PER_SESSION_FOR_TARGETED_MUSCLE = 3;
  * to the `ConstraintEvaluator` injected through the constructor. What is
  * left, and all this class does, is:
  *
- * 1. Resolve the exercise catalogue for this request — `exerciseCatalogue`
+ * 1. Build this pass's `PlanningContext` once from the incoming
+ *    `ProgramGenerationRequest` — the single canonical snapshot of
+ *    `goal`, `experienceLevel`, `durationWeeks`, `availableDaysPerWeek`,
+ *    `availableEquipment`, and `preferredSplitType` that every planner
+ *    below receives verbatim instead of each redeclaring, or re-reading
+ *    off the request, the same handful of fields.
+ * 2. Resolve the exercise catalogue for this request — `exerciseCatalogue`
  *    on `ProgramGenerationRequest` is already the resolved output of an
  *    `ExerciseCatalog` (its query methods are `Promise`-based, while
  *    `generateProgram` is synchronous per the unmodified `ProgramGenerator`
  *    contract, so resolution happens upstream; this class only consumes it).
- * 2. Filter that catalogue through the injected `ConstraintEvaluator`
+ * 3. Filter that catalogue through the injected `ConstraintEvaluator`
  *    (`ConstraintEngine` by default) so only exercises the athlete can
  *    actually perform, and hasn't excluded, reach selection.
- * 3. Ask `FrequencyPlanner` how often each muscle group should be trained.
- * 4. Ask `SplitPlanner` how to lay out the microcycle's days from that
+ * 4. Ask `FrequencyPlanner` how often each muscle group should be trained.
+ * 5. Ask `SplitPlanner` how to lay out the microcycle's days from that
  *    frequency plan.
- * 5. For every non-rest day, ask `ExerciseSelector` to fill its slots from
+ * 6. For every non-rest day, ask `ExerciseSelector` to fill its slots from
  *    the constraint-filtered catalogue, targeting that day's blueprinted
  *    muscle focus.
- * 6. Ask `VolumePlanner` to turn each day's selections into concrete set
+ * 7. Ask `VolumePlanner` to turn each day's selections into concrete set
  *    prescriptions.
- * 7. Ask `ProgressionPlanner`, once per distinct exercise used anywhere in
+ * 8. Ask `ProgressionPlanner`, once per distinct exercise used anywhere in
  *    the program, how that exercise should progress over its duration.
  *
  * Every dependency — the constraint evaluator, the muscle-group scope, the
@@ -123,21 +130,18 @@ export class RuleBasedProgramGenerator implements ProgramGenerator {
   }
 
   generateProgram(request: ProgramGenerationRequest, planners: ProgramGeneratorPlanners): GeneratedTrainingProgram {
+    const planningContext = this.buildPlanningContext(request);
     const exerciseLookup = this.buildExerciseLookup(request.exerciseCatalogue);
-    const eligibleCatalogue = this.filterByConstraints(request, exerciseLookup);
+    const eligibleCatalogue = this.filterByConstraints(planningContext, exerciseLookup);
 
     const frequencyPlan = planners.frequencyPlanner.planFrequency({
-      goal: request.goal,
-      experienceLevel: request.experienceLevel,
-      availableDaysPerWeek: request.availableDaysPerWeek,
+      planningContext,
       targetMuscleGroups: this.targetMuscleGroups,
     });
 
     const splitPlan = planners.splitPlanner.planSplit({
-      goal: request.goal,
-      experienceLevel: request.experienceLevel,
+      planningContext,
       frequencyPlan,
-      preferredSplitType: request.preferredSplitType,
     });
 
     const slug = this.slugify(request.name);
@@ -149,7 +153,7 @@ export class RuleBasedProgramGenerator implements ProgramGenerator {
       this.buildTrainingDay(
         dayBlueprint,
         splitId,
-        request,
+        planningContext,
         planners,
         frequencyPlan,
         eligibleCatalogue,
@@ -157,7 +161,12 @@ export class RuleBasedProgramGenerator implements ProgramGenerator {
       ),
     );
 
-    const progressionByExercise = this.planProgressions(exerciseIdsInProgram, exerciseLookup, request, planners);
+    const progressionByExercise = this.planProgressions(
+      exerciseIdsInProgram,
+      exerciseLookup,
+      planningContext,
+      planners,
+    );
     const finishedDays = days.map((day) => this.withProgressionSchemes(day, progressionByExercise));
 
     const split: TrainingSplit = {
@@ -172,9 +181,9 @@ export class RuleBasedProgramGenerator implements ProgramGenerator {
       id: programId,
       name: request.name,
       description: request.description,
-      goal: request.goal,
-      experienceLevel: request.experienceLevel,
-      durationWeeks: request.durationWeeks,
+      goal: planningContext.goal,
+      experienceLevel: planningContext.experienceLevel,
+      durationWeeks: planningContext.durationWeeks,
       splitId: split.id,
       defaultProgressionSchemeId: null,
       tags: request.tags,
@@ -187,6 +196,26 @@ export class RuleBasedProgramGenerator implements ProgramGenerator {
     };
   }
 
+  /**
+   * Constructs this generation pass's single `PlanningContext` from the
+   * incoming `ProgramGenerationRequest`. Called exactly once per
+   * `generateProgram` invocation; the resulting instance is then threaded,
+   * unchanged, through every planner below instead of each one re-reading
+   * (or redeclaring) `goal`, `experienceLevel`, `availableEquipment`,
+   * `durationWeeks`, `availableDaysPerWeek`, and `preferredSplitType`
+   * straight off the request.
+   */
+  private buildPlanningContext(request: ProgramGenerationRequest): PlanningContext {
+    return {
+      goal: request.goal,
+      experienceLevel: request.experienceLevel,
+      durationWeeks: request.durationWeeks,
+      availableDaysPerWeek: request.availableDaysPerWeek,
+      availableEquipment: request.availableEquipment,
+      preferredSplitType: request.preferredSplitType,
+    };
+  }
+
   private buildExerciseLookup(
     catalogue: readonly ExerciseDefinition[],
   ): ReadonlyMap<ExerciseId, ExerciseDefinition> {
@@ -195,13 +224,13 @@ export class RuleBasedProgramGenerator implements ProgramGenerator {
 
   /** Delegates every keep/reject decision to the injected `ConstraintEvaluator`. */
   private filterByConstraints(
-    request: ProgramGenerationRequest,
+    planningContext: PlanningContext,
     exerciseLookup: ReadonlyMap<ExerciseId, ExerciseDefinition>,
   ): readonly ExerciseDefinition[] {
     return Array.from(exerciseLookup.values()).filter((exercise) => {
       const context: ConstraintContext = {
         exercise,
-        availableEquipment: request.availableEquipment,
+        availableEquipment: planningContext.availableEquipment,
         excludedExerciseIds: [],
         targetMuscleGroups: this.targetMuscleGroups,
       };
@@ -212,7 +241,7 @@ export class RuleBasedProgramGenerator implements ProgramGenerator {
   private buildTrainingDay(
     dayBlueprint: TrainingDayBlueprint,
     splitId: TrainingSplitId,
-    request: ProgramGenerationRequest,
+    planningContext: PlanningContext,
     planners: ProgramGeneratorPlanners,
     frequencyPlan: FrequencyPlanningResult,
     eligibleCatalogue: readonly ExerciseDefinition[],
@@ -232,12 +261,12 @@ export class RuleBasedProgramGenerator implements ProgramGenerator {
     }
 
     const selectionCriteria: ExerciseSelectionCriteria = {
-      goal: request.goal,
-      experienceLevel: request.experienceLevel,
+      goal: planningContext.goal,
+      experienceLevel: planningContext.experienceLevel,
       targetMuscleGroups: dayBlueprint.primaryFocus,
       requiredMovementPatterns: [],
       preferredCategories: [],
-      availableEquipment: request.availableEquipment,
+      availableEquipment: planningContext.availableEquipment,
       excludedExerciseIds: [],
       minExercises: this.exerciseSlotBudget.min,
       maxExercises: this.exerciseSlotBudget.max,
@@ -247,8 +276,7 @@ export class RuleBasedProgramGenerator implements ProgramGenerator {
 
     const volumeTargets = this.buildVolumeTargets(dayBlueprint.primaryFocus, frequencyPlan);
     const { assignments } = planners.volumePlanner.planVolume({
-      goal: request.goal,
-      experienceLevel: request.experienceLevel,
+      planningContext,
       volumeTargets,
       selectedExercises: selections,
     });
@@ -310,7 +338,7 @@ export class RuleBasedProgramGenerator implements ProgramGenerator {
   private planProgressions(
     exerciseIds: ReadonlySet<ExerciseId>,
     exerciseLookup: ReadonlyMap<ExerciseId, ExerciseDefinition>,
-    request: ProgramGenerationRequest,
+    planningContext: PlanningContext,
     planners: ProgramGeneratorPlanners,
   ): ReadonlyMap<ExerciseId, ProgressionPlanningResult> {
     const progressionByExercise = new Map<ExerciseId, ProgressionPlanningResult>();
@@ -318,11 +346,9 @@ export class RuleBasedProgramGenerator implements ProgramGenerator {
     for (const exerciseId of exerciseIds) {
       const exerciseCategory = exerciseLookup.get(exerciseId)?.category ?? ExerciseCategory.Accessory;
       const result = planners.progressionPlanner.planProgression({
-        goal: request.goal,
-        experienceLevel: request.experienceLevel,
+        planningContext,
         exerciseId,
         exerciseCategory,
-        programDurationWeeks: request.durationWeeks,
       });
       progressionByExercise.set(exerciseId, result);
     }

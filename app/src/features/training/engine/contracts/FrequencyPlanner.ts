@@ -1,6 +1,5 @@
-import type { ExperienceLevel } from "../../enums/ExperienceLevel";
 import type { MuscleGroup } from "../../enums/MuscleGroup";
-import type { TrainingGoal } from "../../enums/TrainingGoal";
+import type { PlanningContext } from "../context/PlanningContext";
 
 /** How often a single muscle group is trained within one microcycle. */
 export interface MuscleGroupFrequency {
@@ -11,14 +10,13 @@ export interface MuscleGroupFrequency {
 /**
  * Inputs a `FrequencyPlanner` needs to decide how many sessions a
  * microcycle should contain and how often each muscle group is trained
- * within it. Expressed in terms of goal, experience, and availability
- * rather than any specific split, so the same contract fits bodybuilding,
- * powerlifting, powerbuilding, and hybrid programming.
+ * within it. Consumes the shared `PlanningContext` (goal, experience, and
+ * availability, among others) rather than redeclaring those fields, so the
+ * same contract fits bodybuilding, powerlifting, powerbuilding, and hybrid
+ * programming without depending on anything specific to a split.
  */
 export interface FrequencyPlanningInput {
-  readonly goal: TrainingGoal;
-  readonly experienceLevel: ExperienceLevel;
-  readonly availableDaysPerWeek: number;
+  readonly planningContext: PlanningContext;
   readonly targetMuscleGroups: readonly MuscleGroup[];
 }
 

@@ -1,7 +1,6 @@
-import type { ExperienceLevel } from "../../enums/ExperienceLevel";
 import type { MuscleGroup } from "../../enums/MuscleGroup";
 import type { SplitType } from "../../enums/SplitType";
-import type { TrainingGoal } from "../../enums/TrainingGoal";
+import type { PlanningContext } from "../context/PlanningContext";
 import type { FrequencyPlanningResult } from "./FrequencyPlanner";
 
 /**
@@ -19,15 +18,16 @@ export interface TrainingDayBlueprint {
 
 /**
  * Inputs a `SplitPlanner` needs to lay out a microcycle's day structure.
- * Consumes a `FrequencyPlanningResult` so the resulting structure always
- * reflects an already-decided training frequency instead of re-deriving
- * one, keeping frequency and split-shape decisions independent.
+ * Consumes the shared `PlanningContext` (goal, experience, and the
+ * caller's `preferredSplitType`, among others) instead of redeclaring
+ * those fields, plus a `FrequencyPlanningResult` so the resulting
+ * structure always reflects an already-decided training frequency instead
+ * of re-deriving one — keeping frequency and split-shape decisions
+ * independent.
  */
 export interface SplitPlanningInput {
-  readonly goal: TrainingGoal;
-  readonly experienceLevel: ExperienceLevel;
+  readonly planningContext: PlanningContext;
   readonly frequencyPlan: FrequencyPlanningResult;
-  readonly preferredSplitType: SplitType | null;
 }
 
 /** Outcome of a split planning pass: a full microcycle day-by-day layout. */

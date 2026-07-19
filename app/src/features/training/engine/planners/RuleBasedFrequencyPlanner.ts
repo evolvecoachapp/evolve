@@ -83,9 +83,14 @@ const EXPERIENCE_SESSION_BOUNDS: Readonly<Record<ExperienceLevel, { readonly min
  */
 export class DefaultSessionCountStrategy implements SessionCountStrategy {
   resolveSessionStructure(input: FrequencyPlanningInput): SessionStructure {
-    const availableDaysPerWeek = this.clamp(Math.round(input.availableDaysPerWeek), 0, MICROCYCLE_LENGTH_DAYS);
-    const bounds = EXPERIENCE_SESSION_BOUNDS[input.experienceLevel];
-    const goalBaseline = GOAL_BASE_SESSIONS_PER_WEEK[input.goal];
+    const { planningContext } = input;
+    const availableDaysPerWeek = this.clamp(
+      Math.round(planningContext.availableDaysPerWeek),
+      0,
+      MICROCYCLE_LENGTH_DAYS,
+    );
+    const bounds = EXPERIENCE_SESSION_BOUNDS[planningContext.experienceLevel];
+    const goalBaseline = GOAL_BASE_SESSIONS_PER_WEEK[planningContext.goal];
     const experienceAdjusted = this.clamp(goalBaseline, bounds.min, bounds.max);
     const sessionsPerWeek = Math.min(experienceAdjusted, availableDaysPerWeek);
 
@@ -202,7 +207,7 @@ export class DefaultMuscleFrequencyStrategy implements MuscleFrequencyStrategy {
       return [];
     }
 
-    const perMuscleCap = this.resolvePerMuscleCap(input.goal, sessionStructure);
+    const perMuscleCap = this.resolvePerMuscleCap(input.planningContext.goal, sessionStructure);
     const desiredFrequencies = this.resolveDesiredFrequencies(input, perMuscleCap);
     const finalFrequencies = this.distributeAcrossWeek(desiredFrequencies, sessionStructure.sessionsPerWeek);
 
@@ -219,10 +224,10 @@ export class DefaultMuscleFrequencyStrategy implements MuscleFrequencyStrategy {
   }
 
   private resolveDesiredFrequencies(input: FrequencyPlanningInput, perMuscleCap: number): readonly number[] {
-    const boostEligibleCount = PRIORITY_BOOST_EXPERIENCE_LEVELS.has(input.experienceLevel)
+    const boostEligibleCount = PRIORITY_BOOST_EXPERIENCE_LEVELS.has(input.planningContext.experienceLevel)
       ? resolvePriorityBoostCount(input.targetMuscleGroups.length)
       : 0;
-    const baseline = GOAL_BASE_MUSCLE_FREQUENCY[input.goal];
+    const baseline = GOAL_BASE_MUSCLE_FREQUENCY[input.planningContext.goal];
 
     return input.targetMuscleGroups.map((_, index) => {
       const boosted = index < boostEligibleCount ? baseline + PRIORITY_BOOST_FREQUENCY : baseline;

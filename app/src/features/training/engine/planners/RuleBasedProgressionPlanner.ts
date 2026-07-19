@@ -480,11 +480,11 @@ export class RuleBasedProgressionPlanner implements ProgressionPlanner {
 
   private buildContext(input: ProgressionPlanningInput): ExerciseProgressionContext {
     return {
-      goal: input.goal,
-      experienceLevel: input.experienceLevel,
+      goal: input.planningContext.goal,
+      experienceLevel: input.planningContext.experienceLevel,
       exerciseCategory: input.exerciseCategory,
       movementPattern: this.exerciseLookup.get(input.exerciseId)?.movementPattern ?? null,
-      programDurationWeeks: input.programDurationWeeks,
+      programDurationWeeks: input.planningContext.durationWeeks,
     };
   }
 

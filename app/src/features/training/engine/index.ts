@@ -6,6 +6,7 @@
  * terms of the existing `training` domain models. No implementations,
  * business logic, mock data, or algorithms live here.
  */
+export type { PlanningContext } from "./context/PlanningContext";
 export type {
   ExerciseSelectionCriteria,
   ExerciseSelectionResult,

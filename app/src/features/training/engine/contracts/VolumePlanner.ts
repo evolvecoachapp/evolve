@@ -1,8 +1,7 @@
-import type { ExperienceLevel } from "../../enums/ExperienceLevel";
 import type { MuscleGroup } from "../../enums/MuscleGroup";
-import type { TrainingGoal } from "../../enums/TrainingGoal";
 import type { SetPrescription } from "../../models/SetPrescription";
 import type { ExerciseId } from "../../types/ids";
+import type { PlanningContext } from "../context/PlanningContext";
 import type { SelectedExercise } from "./ExerciseSelector";
 
 /** Target weekly and per-session set volume for one muscle group. */
@@ -14,14 +13,15 @@ export interface MuscleGroupVolumeTarget {
 
 /**
  * Inputs a `VolumePlanner` needs to assign concrete set prescriptions to
- * already-selected exercises. Volume is expressed per muscle group first,
- * then distributed across the exercises that target it, keeping the
- * contract generic across bodybuilding, powerlifting, powerbuilding, and
- * hybrid volume philosophies rather than baking in any one of them.
+ * already-selected exercises. Consumes the shared `PlanningContext` (goal
+ * and experience, among others) instead of redeclaring those fields.
+ * Volume is expressed per muscle group first, then distributed across the
+ * exercises that target it, keeping the contract generic across
+ * bodybuilding, powerlifting, powerbuilding, and hybrid volume
+ * philosophies rather than baking in any one of them.
  */
 export interface VolumePlanningInput {
-  readonly goal: TrainingGoal;
-  readonly experienceLevel: ExperienceLevel;
+  readonly planningContext: PlanningContext;
   readonly volumeTargets: readonly MuscleGroupVolumeTarget[];
   readonly selectedExercises: readonly SelectedExercise[];
 }
