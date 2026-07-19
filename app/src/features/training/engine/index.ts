@@ -7,6 +7,7 @@
  * business logic, mock data, or algorithms live here.
  */
 export type { PlanningContext } from "./context/PlanningContext";
+export type { ExerciseLookup } from "./context/ExerciseLookup";
 export type {
   ExerciseSelectionCriteria,
   ExerciseSelectionResult,

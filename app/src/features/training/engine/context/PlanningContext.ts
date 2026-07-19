@@ -2,6 +2,7 @@ import type { EquipmentType } from "../../enums/EquipmentType";
 import type { ExperienceLevel } from "../../enums/ExperienceLevel";
 import type { SplitType } from "../../enums/SplitType";
 import type { TrainingGoal } from "../../enums/TrainingGoal";
+import type { ExerciseLookup } from "./ExerciseLookup";
 
 /**
  * Canonical, immutable snapshot of the planning information shared across
@@ -30,6 +31,14 @@ import type { TrainingGoal } from "../../enums/TrainingGoal";
  * everywhere" shape that motivates including it. Contains no algorithmic
  * defaults, derived values, or planner decisions of its own: it is a pure
  * data holder, so introducing it changes no planning behavior.
+ *
+ * `exerciseLookup` follows the same "decided once, consulted everywhere"
+ * rationale: `RuleBasedProgramGenerator`, `RuleBasedVolumePlanner`, and
+ * `RuleBasedProgressionPlanner` previously each built their own
+ * `ExerciseId` -> `ExerciseDefinition` map from the same
+ * `exerciseCatalogue`, three independent copies that could silently drift
+ * apart. It is built exactly once, by `RuleBasedProgramGenerator`, and
+ * every planner reads the same instance from here instead of owning one.
  */
 export interface PlanningContext {
   /** Primary training objective the entire program is built around. */
@@ -44,4 +53,6 @@ export interface PlanningContext {
   readonly availableEquipment: readonly EquipmentType[];
   /** Split shape explicitly requested by the caller, or `null` to let `SplitPlanner` decide one. */
   readonly preferredSplitType: SplitType | null;
+  /** Single canonical exercise catalogue lookup shared by every planner in this pass. */
+  readonly exerciseLookup: ExerciseLookup;
 }

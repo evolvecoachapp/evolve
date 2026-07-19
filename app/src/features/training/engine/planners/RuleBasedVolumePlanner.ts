@@ -10,6 +10,7 @@ import type { ExerciseId, SetPrescriptionId } from "../../types/ids";
 import type { IntensityTarget } from "../../types/IntensityTarget";
 import type { RepRange } from "../../types/RepRange";
 import type { Tempo } from "../../types/Tempo";
+import type { ExerciseLookup } from "../context/ExerciseLookup";
 import type { SelectedExercise } from "../contracts/ExerciseSelector";
 import type {
   ExerciseVolumeAssignment,
@@ -56,10 +57,7 @@ export interface ExerciseVolumeAllocation {
  * tuned, or be replaced independently.
  */
 export interface VolumeAllocationStrategy {
-  allocate(
-    input: VolumePlanningInput,
-    exerciseLookup: ReadonlyMap<ExerciseId, ExerciseDefinition>,
-  ): readonly ExerciseVolumeAllocation[];
+  allocate(input: VolumePlanningInput, exerciseLookup: ExerciseLookup): readonly ExerciseVolumeAllocation[];
 }
 
 /**
@@ -124,10 +122,7 @@ const ORPHAN_EXERCISE_FALLBACK_SETS = 2;
  * several targets.
  */
 export class DefaultVolumeAllocationStrategy implements VolumeAllocationStrategy {
-  allocate(
-    input: VolumePlanningInput,
-    exerciseLookup: ReadonlyMap<ExerciseId, ExerciseDefinition>,
-  ): readonly ExerciseVolumeAllocation[] {
+  allocate(input: VolumePlanningInput, exerciseLookup: ExerciseLookup): readonly ExerciseVolumeAllocation[] {
     const contributionsByExercise = this.collectContributionsByExercise(input, exerciseLookup);
 
     return [...input.selectedExercises]
@@ -137,7 +132,7 @@ export class DefaultVolumeAllocationStrategy implements VolumeAllocationStrategy
 
   private collectContributionsByExercise(
     input: VolumePlanningInput,
-    exerciseLookup: ReadonlyMap<ExerciseId, ExerciseDefinition>,
+    exerciseLookup: ExerciseLookup,
   ): ReadonlyMap<ExerciseId, readonly MuscleVolumeContribution[]> {
     const byExercise = new Map<ExerciseId, MuscleVolumeContribution[]>();
 
@@ -430,35 +425,36 @@ export class DefaultSetSchemeStrategy implements SetSchemeStrategy {
  *    concrete, immutable `SetPrescription`s (reps, intensity, rest, tempo)
  *    based on goal, experience level, category, movement pattern, and role.
  *
- * The exercise catalogue is injected once at construction time, mirroring
- * `ExerciseCatalog`'s dependency on `ExerciseRepository`: `planVolume`
- * itself only receives `VolumePlanningInput`, as fixed by the
- * `VolumePlanner` contract, so category and movement pattern lookups must
- * come from a dependency rather than the call site. There is no
- * randomness, network access, persistence, or UI concern anywhere in this
- * pipeline: identical inputs always produce identical, fully immutable
- * output.
+ * Category and movement pattern lookups are resolved from
+ * `input.planningContext.exerciseLookup` — the single `ExerciseLookup`
+ * `RuleBasedProgramGenerator` builds once per generation pass and threads
+ * through every planner via the shared `PlanningContext` (see
+ * `ExerciseLookup`) — rather than from a catalogue this class builds or
+ * owns itself. `planVolume` itself only receives `VolumePlanningInput`, as
+ * fixed by the `VolumePlanner` contract, but that input already carries
+ * `planningContext`, so no separate catalogue dependency is needed at
+ * construction time. There is no randomness, network access, persistence,
+ * or UI concern anywhere in this pipeline: identical inputs always produce
+ * identical, fully immutable output.
  */
 export class RuleBasedVolumePlanner implements VolumePlanner {
-  private readonly exerciseLookup: ReadonlyMap<ExerciseId, ExerciseDefinition>;
   private readonly allocationStrategy: VolumeAllocationStrategy;
   private readonly setSchemeStrategy: SetSchemeStrategy;
 
   constructor(
-    exerciseCatalogue: readonly ExerciseDefinition[] = [],
     allocationStrategy: VolumeAllocationStrategy = new DefaultVolumeAllocationStrategy(),
     setSchemeStrategy: SetSchemeStrategy = new DefaultSetSchemeStrategy(),
   ) {
-    this.exerciseLookup = new Map(exerciseCatalogue.map((exercise) => [exercise.id, exercise]));
     this.allocationStrategy = allocationStrategy;
     this.setSchemeStrategy = setSchemeStrategy;
   }
 
   planVolume(input: VolumePlanningInput): VolumePlanningResult {
-    const allocations = this.allocationStrategy.allocate(input, this.exerciseLookup);
+    const exerciseLookup = input.planningContext.exerciseLookup;
+    const allocations = this.allocationStrategy.allocate(input, exerciseLookup);
 
     const assignments: readonly ExerciseVolumeAssignment[] = allocations.map((allocation) => {
-      const exercise = this.exerciseLookup.get(allocation.exerciseId) ?? null;
+      const exercise = exerciseLookup.get(allocation.exerciseId) ?? null;
       const prescriptions = this.setSchemeStrategy.buildSetPrescriptions(
         exercise,
         allocation,

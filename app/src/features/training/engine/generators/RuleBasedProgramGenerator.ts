@@ -9,6 +9,7 @@ import type { ExerciseId, TrainingDayId, TrainingExerciseId, TrainingProgramId, 
 import { ConstraintEngine } from "../constraints/ConstraintEngine";
 import type { ConstraintEvaluator } from "../constraints/contracts/ConstraintEvaluator";
 import type { ConstraintContext } from "../constraints/models/ConstraintContext";
+import { createExerciseLookup } from "../context/ExerciseLookup";
 import type { PlanningContext } from "../context/PlanningContext";
 import type {
   GeneratedTrainingProgram,
@@ -79,26 +80,30 @@ const DEFAULT_SETS_PER_SESSION_FOR_TARGETED_MUSCLE = 3;
  * 1. Build this pass's `PlanningContext` once from the incoming
  *    `ProgramGenerationRequest` — the single canonical snapshot of
  *    `goal`, `experienceLevel`, `durationWeeks`, `availableDaysPerWeek`,
- *    `availableEquipment`, and `preferredSplitType` that every planner
- *    below receives verbatim instead of each redeclaring, or re-reading
- *    off the request, the same handful of fields.
- * 2. Resolve the exercise catalogue for this request — `exerciseCatalogue`
- *    on `ProgramGenerationRequest` is already the resolved output of an
- *    `ExerciseCatalog` (its query methods are `Promise`-based, while
+ *    `availableEquipment`, `preferredSplitType`, and `exerciseLookup`
+ *    that every planner below receives verbatim instead of each
+ *    redeclaring, or re-reading off the request, the same handful of
+ *    fields. `exerciseLookup` is built exactly once here, via
+ *    `createExerciseLookup`, from `exerciseCatalogue` on
+ *    `ProgramGenerationRequest` (already the resolved output of an
+ *    `ExerciseCatalog` — its query methods are `Promise`-based, while
  *    `generateProgram` is synchronous per the unmodified `ProgramGenerator`
- *    contract, so resolution happens upstream; this class only consumes it).
- * 3. Filter that catalogue through the injected `ConstraintEvaluator`
+ *    contract, so resolution happens upstream; this class only consumes
+ *    it) and is the single canonical `ExerciseId` -> `ExerciseDefinition`
+ *    lookup every planner in this pipeline reads instead of building its
+ *    own.
+ * 2. Filter that catalogue through the injected `ConstraintEvaluator`
  *    (`ConstraintEngine` by default) so only exercises the athlete can
  *    actually perform, and hasn't excluded, reach selection.
- * 4. Ask `FrequencyPlanner` how often each muscle group should be trained.
- * 5. Ask `SplitPlanner` how to lay out the microcycle's days from that
+ * 3. Ask `FrequencyPlanner` how often each muscle group should be trained.
+ * 4. Ask `SplitPlanner` how to lay out the microcycle's days from that
  *    frequency plan.
- * 6. For every non-rest day, ask `ExerciseSelector` to fill its slots from
+ * 5. For every non-rest day, ask `ExerciseSelector` to fill its slots from
  *    the constraint-filtered catalogue, targeting that day's blueprinted
  *    muscle focus.
- * 7. Ask `VolumePlanner` to turn each day's selections into concrete set
+ * 6. Ask `VolumePlanner` to turn each day's selections into concrete set
  *    prescriptions.
- * 8. Ask `ProgressionPlanner`, once per distinct exercise used anywhere in
+ * 7. Ask `ProgressionPlanner`, once per distinct exercise used anywhere in
  *    the program, how that exercise should progress over its duration.
  *
  * Every dependency — the constraint evaluator, the muscle-group scope, the
@@ -131,8 +136,7 @@ export class RuleBasedProgramGenerator implements ProgramGenerator {
 
   generateProgram(request: ProgramGenerationRequest, planners: ProgramGeneratorPlanners): GeneratedTrainingProgram {
     const planningContext = this.buildPlanningContext(request);
-    const exerciseLookup = this.buildExerciseLookup(request.exerciseCatalogue);
-    const eligibleCatalogue = this.filterByConstraints(planningContext, exerciseLookup);
+    const eligibleCatalogue = this.filterByConstraints(planningContext);
 
     const frequencyPlan = planners.frequencyPlanner.planFrequency({
       planningContext,
@@ -161,12 +165,7 @@ export class RuleBasedProgramGenerator implements ProgramGenerator {
       ),
     );
 
-    const progressionByExercise = this.planProgressions(
-      exerciseIdsInProgram,
-      exerciseLookup,
-      planningContext,
-      planners,
-    );
+    const progressionByExercise = this.planProgressions(exerciseIdsInProgram, planningContext, planners);
     const finishedDays = days.map((day) => this.withProgressionSchemes(day, progressionByExercise));
 
     const split: TrainingSplit = {
@@ -213,21 +212,13 @@ export class RuleBasedProgramGenerator implements ProgramGenerator {
       availableDaysPerWeek: request.availableDaysPerWeek,
       availableEquipment: request.availableEquipment,
       preferredSplitType: request.preferredSplitType,
+      exerciseLookup: createExerciseLookup(request.exerciseCatalogue),
     };
   }
 
-  private buildExerciseLookup(
-    catalogue: readonly ExerciseDefinition[],
-  ): ReadonlyMap<ExerciseId, ExerciseDefinition> {
-    return new Map(catalogue.map((exercise) => [exercise.id, exercise]));
-  }
-
   /** Delegates every keep/reject decision to the injected `ConstraintEvaluator`. */
-  private filterByConstraints(
-    planningContext: PlanningContext,
-    exerciseLookup: ReadonlyMap<ExerciseId, ExerciseDefinition>,
-  ): readonly ExerciseDefinition[] {
-    return Array.from(exerciseLookup.values()).filter((exercise) => {
+  private filterByConstraints(planningContext: PlanningContext): readonly ExerciseDefinition[] {
+    return planningContext.exerciseLookup.values().filter((exercise) => {
       const context: ConstraintContext = {
         exercise,
         availableEquipment: planningContext.availableEquipment,
@@ -337,14 +328,13 @@ export class RuleBasedProgramGenerator implements ProgramGenerator {
   /** Delegates to `ProgressionPlanner` once per distinct exercise used anywhere in the program. */
   private planProgressions(
     exerciseIds: ReadonlySet<ExerciseId>,
-    exerciseLookup: ReadonlyMap<ExerciseId, ExerciseDefinition>,
     planningContext: PlanningContext,
     planners: ProgramGeneratorPlanners,
   ): ReadonlyMap<ExerciseId, ProgressionPlanningResult> {
     const progressionByExercise = new Map<ExerciseId, ProgressionPlanningResult>();
 
     for (const exerciseId of exerciseIds) {
-      const exerciseCategory = exerciseLookup.get(exerciseId)?.category ?? ExerciseCategory.Accessory;
+      const exerciseCategory = planningContext.exerciseLookup.get(exerciseId)?.category ?? ExerciseCategory.Accessory;
       const result = planners.progressionPlanner.planProgression({
         planningContext,
         exerciseId,

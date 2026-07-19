@@ -4,7 +4,6 @@ import { MovementPattern } from "../../enums/MovementPattern";
 import { ProgressionModel } from "../../enums/ProgressionModel";
 import { TrainingGoal } from "../../enums/TrainingGoal";
 import { WeightUnit } from "../../enums/WeightUnit";
-import type { ExerciseDefinition } from "../../models/ExerciseDefinition";
 import type { ProgressionScheme } from "../../models/ProgressionScheme";
 import type { ExerciseId, ProgressionSchemeId } from "../../types/ids";
 import type {
@@ -420,33 +419,35 @@ const MODEL_LABEL: Readonly<Record<ProgressionModel, string>> = {
  *    model's current cycle runs before reassessment.
  *
  * `ProgressionPlanningInput` has no `movementPattern` field — it lives on
- * `ExerciseDefinition`, not on the planning contract — so an exercise
- * catalogue is injected once at construction time, exactly like
- * `RuleBasedVolumePlanner`'s `exerciseLookup`. `planProgression` itself
- * only receives `ProgressionPlanningInput`, as fixed by the
- * `ProgressionPlanner` contract; the catalogue lookup happens internally
- * to resolve the `ExerciseProgressionContext` every strategy above
- * actually depends on.
+ * `ExerciseDefinition`, not on the planning contract — so movement
+ * pattern is resolved from `input.planningContext.exerciseLookup`, the
+ * single `ExerciseLookup` `RuleBasedProgramGenerator` builds once per
+ * generation pass and threads through every planner via the shared
+ * `PlanningContext` (see `ExerciseLookup`), exactly like
+ * `RuleBasedVolumePlanner` resolves category and movement pattern from
+ * the same shared lookup. `planProgression` itself only receives
+ * `ProgressionPlanningInput`, as fixed by the `ProgressionPlanner`
+ * contract, but that input already carries `planningContext`, so no
+ * separate catalogue dependency is needed at construction time; the
+ * lookup happens internally to resolve the `ExerciseProgressionContext`
+ * every strategy above actually depends on.
  *
  * There is no randomness, network access, persistence, or UI concern
  * anywhere in this pipeline: identical inputs always produce identical,
  * fully immutable `ProgressionScheme` output.
  */
 export class RuleBasedProgressionPlanner implements ProgressionPlanner {
-  private readonly exerciseLookup: ReadonlyMap<ExerciseId, ExerciseDefinition>;
   private readonly modelStrategy: ProgressionModelStrategy;
   private readonly incrementStrategy: IncrementStrategy;
   private readonly deloadCadenceStrategy: DeloadCadenceStrategy;
   private readonly progressionLimitStrategy: ProgressionLimitStrategy;
 
   constructor(
-    exerciseCatalogue: readonly ExerciseDefinition[] = [],
     modelStrategy: ProgressionModelStrategy = new DefaultProgressionModelStrategy(),
     incrementStrategy: IncrementStrategy = new DefaultIncrementStrategy(),
     deloadCadenceStrategy: DeloadCadenceStrategy = new DefaultDeloadCadenceStrategy(),
     progressionLimitStrategy: ProgressionLimitStrategy = new DefaultProgressionLimitStrategy(),
   ) {
-    this.exerciseLookup = new Map(exerciseCatalogue.map((exercise) => [exercise.id, exercise]));
     this.modelStrategy = modelStrategy;
     this.incrementStrategy = incrementStrategy;
     this.deloadCadenceStrategy = deloadCadenceStrategy;
@@ -483,7 +484,7 @@ export class RuleBasedProgressionPlanner implements ProgressionPlanner {
       goal: input.planningContext.goal,
       experienceLevel: input.planningContext.experienceLevel,
       exerciseCategory: input.exerciseCategory,
-      movementPattern: this.exerciseLookup.get(input.exerciseId)?.movementPattern ?? null,
+      movementPattern: input.planningContext.exerciseLookup.get(input.exerciseId)?.movementPattern ?? null,
       programDurationWeeks: input.planningContext.durationWeeks,
     };
   }
