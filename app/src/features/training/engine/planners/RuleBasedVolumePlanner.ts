@@ -6,7 +6,7 @@ import { SetType } from "../../enums/SetType";
 import { TrainingGoal } from "../../enums/TrainingGoal";
 import type { ExerciseDefinition } from "../../models/ExerciseDefinition";
 import type { SetPrescription } from "../../models/SetPrescription";
-import type { ExerciseId, SetPrescriptionId } from "../../types/ids";
+import type { ExerciseId } from "../../types/ids";
 import type { IntensityTarget } from "../../types/IntensityTarget";
 import type { RepRange } from "../../types/RepRange";
 import type { Tempo } from "../../types/Tempo";
@@ -18,6 +18,8 @@ import type {
   VolumePlanningInput,
   VolumePlanningResult,
 } from "../contracts/VolumePlanner";
+import { DeterministicIdGenerator } from "../identity/IdGenerator";
+import type { IdGenerator } from "../identity/IdGenerator";
 
 /**
  * Whether a selected exercise is the main driver of a muscle group's
@@ -433,20 +435,26 @@ export class DefaultSetSchemeStrategy implements SetSchemeStrategy {
  * owns itself. `planVolume` itself only receives `VolumePlanningInput`, as
  * fixed by the `VolumePlanner` contract, but that input already carries
  * `planningContext`, so no separate catalogue dependency is needed at
- * construction time. There is no randomness, network access, persistence,
- * or UI concern anywhere in this pipeline: identical inputs always produce
- * identical, fully immutable output.
+ * construction time. Each `SetPrescription`'s id is minted by the injected
+ * `IdGenerator` (`DeterministicIdGenerator` by default) rather than
+ * concatenated inline, for the same Dependency Inversion / Open/Closed
+ * reasons as the two strategies above. There is no randomness, network
+ * access, persistence, or UI concern anywhere in this pipeline: identical
+ * inputs always produce identical, fully immutable output.
  */
 export class RuleBasedVolumePlanner implements VolumePlanner {
   private readonly allocationStrategy: VolumeAllocationStrategy;
   private readonly setSchemeStrategy: SetSchemeStrategy;
+  private readonly idGenerator: IdGenerator;
 
   constructor(
     allocationStrategy: VolumeAllocationStrategy = new DefaultVolumeAllocationStrategy(),
     setSchemeStrategy: SetSchemeStrategy = new DefaultSetSchemeStrategy(),
+    idGenerator: IdGenerator = new DeterministicIdGenerator(),
   ) {
     this.allocationStrategy = allocationStrategy;
     this.setSchemeStrategy = setSchemeStrategy;
+    this.idGenerator = idGenerator;
   }
 
   planVolume(input: VolumePlanningInput): VolumePlanningResult {
@@ -480,7 +488,7 @@ export class RuleBasedVolumePlanner implements VolumePlanner {
   ): SetPrescription {
     return {
       ...prescription,
-      id: `${String(exerciseId)}::set-${index}` as SetPrescriptionId,
+      id: this.idGenerator.nextSetPrescriptionId(exerciseId, index),
     };
   }
 }

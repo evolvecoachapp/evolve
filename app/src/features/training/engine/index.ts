@@ -8,6 +8,7 @@
  */
 export type { PlanningContext } from "./context/PlanningContext";
 export type { ExerciseLookup } from "./context/ExerciseLookup";
+export type { IdGenerator } from "./identity/IdGenerator";
 export type {
   ExerciseSelectionCriteria,
   ExerciseSelectionResult,

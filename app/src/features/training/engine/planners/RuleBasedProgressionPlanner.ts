@@ -5,12 +5,14 @@ import { ProgressionModel } from "../../enums/ProgressionModel";
 import { TrainingGoal } from "../../enums/TrainingGoal";
 import { WeightUnit } from "../../enums/WeightUnit";
 import type { ProgressionScheme } from "../../models/ProgressionScheme";
-import type { ExerciseId, ProgressionSchemeId } from "../../types/ids";
+import type { ExerciseId } from "../../types/ids";
 import type {
   ProgressionPlanner,
   ProgressionPlanningInput,
   ProgressionPlanningResult,
 } from "../contracts/ProgressionPlanner";
+import { DeterministicIdGenerator } from "../identity/IdGenerator";
+import type { IdGenerator } from "../identity/IdGenerator";
 
 /**
  * Everything a progression decision actually depends on, resolved once up
@@ -432,6 +434,11 @@ const MODEL_LABEL: Readonly<Record<ProgressionModel, string>> = {
  * lookup happens internally to resolve the `ExerciseProgressionContext`
  * every strategy above actually depends on.
  *
+ * The `ProgressionScheme`'s id is minted by the injected `IdGenerator`
+ * (`DeterministicIdGenerator` by default) rather than concatenated inline,
+ * for the same Dependency Inversion / Open/Closed reasons as the three
+ * strategies above.
+ *
  * There is no randomness, network access, persistence, or UI concern
  * anywhere in this pipeline: identical inputs always produce identical,
  * fully immutable `ProgressionScheme` output.
@@ -441,17 +448,20 @@ export class RuleBasedProgressionPlanner implements ProgressionPlanner {
   private readonly incrementStrategy: IncrementStrategy;
   private readonly deloadCadenceStrategy: DeloadCadenceStrategy;
   private readonly progressionLimitStrategy: ProgressionLimitStrategy;
+  private readonly idGenerator: IdGenerator;
 
   constructor(
     modelStrategy: ProgressionModelStrategy = new DefaultProgressionModelStrategy(),
     incrementStrategy: IncrementStrategy = new DefaultIncrementStrategy(),
     deloadCadenceStrategy: DeloadCadenceStrategy = new DefaultDeloadCadenceStrategy(),
     progressionLimitStrategy: ProgressionLimitStrategy = new DefaultProgressionLimitStrategy(),
+    idGenerator: IdGenerator = new DeterministicIdGenerator(),
   ) {
     this.modelStrategy = modelStrategy;
     this.incrementStrategy = incrementStrategy;
     this.deloadCadenceStrategy = deloadCadenceStrategy;
     this.progressionLimitStrategy = progressionLimitStrategy;
+    this.idGenerator = idGenerator;
   }
 
   planProgression(input: ProgressionPlanningInput): ProgressionPlanningResult {
@@ -467,7 +477,7 @@ export class RuleBasedProgressionPlanner implements ProgressionPlanner {
     );
 
     const progressionScheme: ProgressionScheme = {
-      id: this.buildSchemeId(input.exerciseId),
+      id: this.idGenerator.nextProgressionSchemeId(input.exerciseId),
       model,
       incrementValue: increment.incrementValue,
       incrementUnit: increment.incrementUnit,
@@ -487,10 +497,6 @@ export class RuleBasedProgressionPlanner implements ProgressionPlanner {
       movementPattern: input.planningContext.exerciseLookup.get(input.exerciseId)?.movementPattern ?? null,
       programDurationWeeks: input.planningContext.durationWeeks,
     };
-  }
-
-  private buildSchemeId(exerciseId: ExerciseId): ProgressionSchemeId {
-    return `${String(exerciseId)}::progression` as ProgressionSchemeId;
   }
 
   private buildDescription(

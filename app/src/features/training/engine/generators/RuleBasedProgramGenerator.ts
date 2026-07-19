@@ -5,12 +5,14 @@ import type { TrainingDay } from "../../models/TrainingDay";
 import type { TrainingExercise } from "../../models/TrainingExercise";
 import type { TrainingProgram } from "../../models/TrainingProgram";
 import type { TrainingSplit } from "../../models/TrainingSplit";
-import type { ExerciseId, TrainingDayId, TrainingExerciseId, TrainingProgramId, TrainingSplitId } from "../../types/ids";
+import type { ExerciseId, TrainingDayId, TrainingSplitId } from "../../types/ids";
 import { ConstraintEngine } from "../constraints/ConstraintEngine";
 import type { ConstraintEvaluator } from "../constraints/contracts/ConstraintEvaluator";
 import type { ConstraintContext } from "../constraints/models/ConstraintContext";
 import { createExerciseLookup } from "../context/ExerciseLookup";
 import type { PlanningContext } from "../context/PlanningContext";
+import { DeterministicIdGenerator } from "../identity/IdGenerator";
+import type { IdGenerator } from "../identity/IdGenerator";
 import type {
   GeneratedTrainingProgram,
   ProgramGenerationRequest,
@@ -107,31 +109,34 @@ const DEFAULT_SETS_PER_SESSION_FOR_TARGETED_MUSCLE = 3;
  *    the program, how that exercise should progress over its duration.
  *
  * Every dependency — the constraint evaluator, the muscle-group scope, the
- * per-day exercise slot budget, and the volume bridging constant — is
- * supplied through the constructor with a deterministic default rather
- * than hard-coded (Dependency Inversion, Open/Closed): none of them encode
- * a goal- or experience-specific rule, so swapping any of them, or the
- * planners themselves, never requires touching this class. There is no
- * randomness, persistence, networking, AI, or UI concern anywhere in this
- * pipeline: identical inputs and planners always produce an identical,
- * fully immutable `GeneratedTrainingProgram`.
+ * per-day exercise slot budget, the volume bridging constant, and the id
+ * generator — is supplied through the constructor with a deterministic
+ * default rather than hard-coded (Dependency Inversion, Open/Closed): none
+ * of them encode a goal- or experience-specific rule, so swapping any of
+ * them, or the planners themselves, never requires touching this class.
+ * There is no randomness, persistence, networking, AI, or UI concern
+ * anywhere in this pipeline: identical inputs and planners always produce
+ * an identical, fully immutable `GeneratedTrainingProgram`.
  */
 export class RuleBasedProgramGenerator implements ProgramGenerator {
   private readonly constraintEvaluator: ConstraintEvaluator;
   private readonly targetMuscleGroups: readonly MuscleGroup[];
   private readonly exerciseSlotBudget: ExerciseSlotBudget;
   private readonly setsPerSessionForTargetedMuscle: number;
+  private readonly idGenerator: IdGenerator;
 
   constructor(
     constraintEvaluator: ConstraintEvaluator = new ConstraintEngine(),
     targetMuscleGroups: readonly MuscleGroup[] = DEFAULT_TARGET_MUSCLE_GROUPS,
     exerciseSlotBudget: ExerciseSlotBudget = DEFAULT_EXERCISE_SLOT_BUDGET,
     setsPerSessionForTargetedMuscle: number = DEFAULT_SETS_PER_SESSION_FOR_TARGETED_MUSCLE,
+    idGenerator: IdGenerator = new DeterministicIdGenerator(),
   ) {
     this.constraintEvaluator = constraintEvaluator;
     this.targetMuscleGroups = targetMuscleGroups;
     this.exerciseSlotBudget = exerciseSlotBudget;
     this.setsPerSessionForTargetedMuscle = setsPerSessionForTargetedMuscle;
+    this.idGenerator = idGenerator;
   }
 
   generateProgram(request: ProgramGenerationRequest, planners: ProgramGeneratorPlanners): GeneratedTrainingProgram {
@@ -148,9 +153,8 @@ export class RuleBasedProgramGenerator implements ProgramGenerator {
       frequencyPlan,
     });
 
-    const slug = this.slugify(request.name);
-    const programId = `program:${slug}` as TrainingProgramId;
-    const splitId = `split:${slug}` as TrainingSplitId;
+    const programId = this.idGenerator.nextProgramId(request.name);
+    const splitId = this.idGenerator.nextSplitId(request.name);
 
     const exerciseIdsInProgram = new Set<ExerciseId>();
     const days = splitPlan.days.map((dayBlueprint) =>
@@ -239,7 +243,7 @@ export class RuleBasedProgramGenerator implements ProgramGenerator {
     eligibleCatalogue: readonly ExerciseDefinition[],
     exerciseIdsInProgram: Set<ExerciseId>,
   ): TrainingDay {
-    const dayId = this.dayId(splitId, dayBlueprint.dayIndex);
+    const dayId = this.idGenerator.nextDayId(splitId, dayBlueprint.dayIndex);
 
     if (dayBlueprint.isRestDay) {
       return {
@@ -292,7 +296,7 @@ export class RuleBasedProgramGenerator implements ProgramGenerator {
     assignment: ExerciseVolumeAssignment | undefined,
   ): TrainingExercise {
     return {
-      id: this.trainingExerciseId(dayId, selected.order),
+      id: this.idGenerator.nextExerciseId(dayId, selected.order),
       exerciseId: selected.exerciseId,
       order: selected.order,
       setPrescriptions: assignment?.setPrescriptions ?? [],
@@ -360,21 +364,4 @@ export class RuleBasedProgramGenerator implements ProgramGenerator {
     };
   }
 
-  private dayId(splitId: TrainingSplitId, dayIndex: number): TrainingDayId {
-    return `${String(splitId)}::day-${dayIndex}` as TrainingDayId;
-  }
-
-  private trainingExerciseId(dayId: TrainingDayId, order: number): TrainingExerciseId {
-    return `${String(dayId)}::exercise-${order}` as TrainingExerciseId;
-  }
-
-  /** Deterministic, human-readable id fragment derived from the program's name. */
-  private slugify(name: string): string {
-    const slug = name
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-    return slug.length > 0 ? slug : "program";
-  }
 }
