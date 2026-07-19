@@ -213,6 +213,7 @@ export class RuleBasedProgramGenerator implements ProgramGenerator {
       availableEquipment: request.availableEquipment,
       preferredSplitType: request.preferredSplitType,
       exerciseLookup: createExerciseLookup(request.exerciseCatalogue),
+      excludedExerciseIds: request.excludedExerciseIds,
     };
   }
 
@@ -222,7 +223,7 @@ export class RuleBasedProgramGenerator implements ProgramGenerator {
       const context: ConstraintContext = {
         exercise,
         availableEquipment: planningContext.availableEquipment,
-        excludedExerciseIds: [],
+        excludedExerciseIds: planningContext.excludedExerciseIds,
         targetMuscleGroups: this.targetMuscleGroups,
       };
       return this.constraintEvaluator.evaluate(context).allowed;
@@ -258,7 +259,7 @@ export class RuleBasedProgramGenerator implements ProgramGenerator {
       requiredMovementPatterns: [],
       preferredCategories: [],
       availableEquipment: planningContext.availableEquipment,
-      excludedExerciseIds: [],
+      excludedExerciseIds: planningContext.excludedExerciseIds,
       minExercises: this.exerciseSlotBudget.min,
       maxExercises: this.exerciseSlotBudget.max,
     };

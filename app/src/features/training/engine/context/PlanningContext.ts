@@ -2,6 +2,7 @@ import type { EquipmentType } from "../../enums/EquipmentType";
 import type { ExperienceLevel } from "../../enums/ExperienceLevel";
 import type { SplitType } from "../../enums/SplitType";
 import type { TrainingGoal } from "../../enums/TrainingGoal";
+import type { ExerciseId } from "../../types/ids";
 import type { ExerciseLookup } from "./ExerciseLookup";
 
 /**
@@ -39,6 +40,15 @@ import type { ExerciseLookup } from "./ExerciseLookup";
  * `exerciseCatalogue`, three independent copies that could silently drift
  * apart. It is built exactly once, by `RuleBasedProgramGenerator`, and
  * every planner reads the same instance from here instead of owning one.
+ *
+ * `excludedExerciseIds` is carried over verbatim from
+ * `ProgramGenerationRequest` for the same reason: it is an athlete-level
+ * fact, decided once for the whole program, that both the
+ * `ConstraintEngine` (via `ConstraintContext`) and the `ExerciseSelector`
+ * (via `ExerciseSelectionCriteria`) need to see identically. Living here
+ * means `RuleBasedProgramGenerator` reads it from exactly one place when
+ * building each of those downstream inputs, instead of re-reading the
+ * request or risking the two consumers drifting apart.
  */
 export interface PlanningContext {
   /** Primary training objective the entire program is built around. */
@@ -55,4 +65,6 @@ export interface PlanningContext {
   readonly preferredSplitType: SplitType | null;
   /** Single canonical exercise catalogue lookup shared by every planner in this pass. */
   readonly exerciseLookup: ExerciseLookup;
+  /** Athlete-specific exercises excluded from this program, carried over verbatim from `ProgramGenerationRequest`. */
+  readonly excludedExerciseIds: readonly ExerciseId[];
 }

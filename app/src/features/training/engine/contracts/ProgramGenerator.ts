@@ -6,6 +6,7 @@ import type { ExerciseDefinition } from "../../models/ExerciseDefinition";
 import type { ProgressionScheme } from "../../models/ProgressionScheme";
 import type { TrainingProgram } from "../../models/TrainingProgram";
 import type { TrainingSplit } from "../../models/TrainingSplit";
+import type { ExerciseId } from "../../types/ids";
 import type { ExerciseSelector } from "./ExerciseSelector";
 import type { FrequencyPlanner } from "./FrequencyPlanner";
 import type { ProgressionPlanner } from "./ProgressionPlanner";
@@ -30,6 +31,15 @@ export interface ProgramGenerationRequest {
   readonly exerciseCatalogue: readonly ExerciseDefinition[];
   readonly preferredSplitType: SplitType | null;
   readonly tags: readonly string[];
+  /**
+   * Athlete-specific exercises to exclude from this program (e.g. due to
+   * injuries, pain, mobility limitations, or personal preferences).
+   * Flows unchanged into `PlanningContext`, then into every
+   * `ConstraintContext` the `ConstraintEngine` evaluates and every
+   * `ExerciseSelectionCriteria` the `ExerciseSelector` receives, so an
+   * exclusion stated here is honored everywhere an exercise is chosen.
+   */
+  readonly excludedExerciseIds: readonly ExerciseId[];
 }
 
 /**
