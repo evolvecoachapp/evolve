@@ -1,4 +1,6 @@
-import { StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
+import { useState } from "react";
+import { Alert, StyleSheet, Text, View } from "react-native";
 import { AppHeader } from "../components/AppHeader";
 import { GradientBackground } from "../components/GradientBackground";
 import { TabScreenContainer } from "../components/TabScreenContainer";
@@ -7,12 +9,18 @@ import {
   ProgramPreviewHero,
   ProgramProgressionSection,
   ProgramWeeklySchedule,
+  WorkoutStartFooter,
 } from "../features/workout/components";
-import { useWorkoutProgramPreview } from "../features/workout/hooks";
+import { useStartWorkoutSession, useWorkoutProgramPreview } from "../features/workout/hooks";
+import { setPendingExecutableSession } from "../features/workout/services";
+import { estimatePreviewDayDurationMinutes } from "../features/workout/utils/sessionPresentationFormatters";
+import { floatingFooterMetrics } from "../theme/theme";
 import { useThemedStyles } from "../theme/useThemedStyles";
 
 export function WorkoutScreen() {
   const { preview, selectedDay, selectDay, error } = useWorkoutProgramPreview();
+  const { startSession, canStart } = useStartWorkoutSession();
+  const [starting, setStarting] = useState(false);
 
   const styles = useThemedStyles((theme) =>
     StyleSheet.create({
@@ -50,12 +58,40 @@ export function WorkoutScreen() {
 
   const trainingDayCount = preview.weeklySchedule.days.filter((day) => !day.isRestDay).length;
   const restDayCount = preview.weeklySchedule.days.filter((day) => day.isRestDay).length;
+  const startEnabled = canStart(selectedDay);
+  const durationMinutes = estimatePreviewDayDurationMinutes(selectedDay);
+  const footerReserve = floatingFooterMetrics.scrollReserve(
+    floatingFooterMetrics.workoutContentHeight,
+  );
+
+  const handleStartPress = () => {
+    if (!startEnabled || starting) {
+      return;
+    }
+
+    setStarting(true);
+    try {
+      const session = startSession(preview, selectedDay);
+      setPendingExecutableSession(session);
+      router.push({
+        pathname: "/(app)/workout/session",
+        params: { sessionId: session.id },
+      });
+    } catch (startError: unknown) {
+      Alert.alert(
+        "Unable to start workout",
+        startError instanceof Error ? startError.message : "Failed to start workout.",
+      );
+    } finally {
+      setStarting(false);
+    }
+  };
 
   return (
     <GradientBackground variant="canvas">
       <View style={styles.screen}>
         <AppHeader title="Workout" subtitle="Your training program" />
-        <TabScreenContainer gradient={false}>
+        <TabScreenContainer gradient={false} footerReserve={footerReserve}>
           <View style={styles.stack}>
             <ProgramPreviewHero
               title={preview.title}
@@ -79,6 +115,13 @@ export function WorkoutScreen() {
             <ProgramProgressionSection summaries={preview.progressionSummary} />
           </View>
         </TabScreenContainer>
+
+        <WorkoutStartFooter
+          exerciseCount={selectedDay.isRestDay ? 0 : selectedDay.exercises.length}
+          durationMinutes={durationMinutes}
+          onStartPress={handleStartPress}
+          disabled={!startEnabled || starting}
+        />
       </View>
     </GradientBackground>
   );

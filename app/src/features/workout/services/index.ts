@@ -12,3 +12,7 @@ export { mockWorkoutService } from "../providers/MockWorkoutService";
 export { backendWorkoutService } from "../providers/BackendWorkoutService";
 export { localWorkoutService } from "../providers/LocalWorkoutService";
 export { consumePendingSession, setPendingSession } from "./sessionHandoff";
+export {
+  consumePendingExecutableSession,
+  setPendingExecutableSession,
+} from "./executableSessionHandoff";

@@ -7,4 +7,5 @@ export { useSetUndo } from "./useSetUndo";
 export type { UndoableSet } from "./useSetUndo";
 export { useWorkoutDay, useWorkoutProgram, useWorkoutWeek } from "./useWorkoutProgram";
 export { useWorkoutProgramPreview } from "./useWorkoutProgramPreview";
+export { useStartWorkoutSession } from "./useStartWorkoutSession";
 export { useWorkoutSession } from "./useWorkoutSession";

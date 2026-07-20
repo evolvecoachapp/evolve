@@ -57,3 +57,12 @@ export {
   formatPreviewSetLine,
   formatPreviewSetsSummary,
 } from "./previewPresentationFormatters";
+export {
+  countSessionSets,
+  estimatePreviewDayDurationMinutes,
+  estimateSessionDurationMinutes,
+  formatSessionExerciseIntensity,
+  formatSessionRest,
+  formatSessionSetLine,
+  formatSessionSetsSummary,
+} from "./sessionPresentationFormatters";
