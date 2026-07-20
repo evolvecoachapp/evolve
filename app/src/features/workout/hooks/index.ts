@@ -10,4 +10,6 @@ export { useWorkoutProgramPreview } from "./useWorkoutProgramPreview";
 export { useStartWorkoutSession } from "./useStartWorkoutSession";
 export { useLocalSessionInteraction } from "./useLocalSessionInteraction";
 export type { UseLocalSessionInteractionResult } from "./useLocalSessionInteraction";
+export { useSessionTiming } from "./useSessionTiming";
+export type { UseSessionTimingResult } from "./useSessionTiming";
 export { useWorkoutSession } from "./useWorkoutSession";

@@ -1,4 +1,11 @@
-import { StyleSheet, Text, View } from "react-native";
+import { useCallback, useRef } from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type NativeMethods,
+} from "react-native";
 import { GradientBackground } from "../components/GradientBackground";
 import { ScreenContainer } from "../components/ScreenContainer";
 import { SettingsHeader } from "../components/SettingsHeader";
@@ -7,8 +14,14 @@ import {
   SessionExerciseList,
   SessionHero,
   SessionProgressionReferences,
+  SessionRestTimer,
 } from "../features/workout/components";
 import { useLocalSessionInteraction } from "../features/workout/hooks/useLocalSessionInteraction";
+import { useSessionTiming } from "../features/workout/hooks/useSessionTiming";
+import {
+  findSessionSetRef,
+  formatUpcomingSetLabel,
+} from "../features/workout/utils/sessionSetFlow";
 import {
   countSessionSets,
   estimateSessionDurationMinutes,
@@ -25,8 +38,8 @@ interface WorkoutSessionScreenProps {
 
 /**
  * Interactive executable session view (local UI state only).
- * Consumes `useLocalSessionInteraction` for mark/skip/edit; does not persist,
- * sync, run timers, or touch the Training Engine / WorkoutSessionBuilder.
+ * Orchestrates interaction + timing hooks; does not persist, sync,
+ * or touch the Training Engine / WorkoutSessionBuilder.
  */
 export function WorkoutSessionScreen({ sessionId, session }: WorkoutSessionScreenProps) {
   const styles = useThemedStyles((theme) =>
@@ -80,14 +93,84 @@ function WorkoutSessionScreenContent({ session }: { session: WorkoutSession }) {
   );
 
   const interaction = useLocalSessionInteraction(session);
+  const timing = useSessionTiming(session, interaction.execution);
+
+  const scrollRef = useRef<ScrollView>(null);
+  const contentOffsetYRef = useRef(0);
+  const scrollWindowYRef = useRef(0);
+
   const setCount = countSessionSets(session.exercises);
   const durationMinutes = estimateSessionDurationMinutes(session);
+
+  const upcomingRef =
+    timing.rest.upcomingSetId !== null
+      ? findSessionSetRef(session, timing.rest.upcomingSetId)
+      : null;
+
+  const handleCompleteSet = useCallback(
+    (setId: string, defaultReps: number) => {
+      interaction.completeSet(setId, defaultReps);
+      timing.afterSetCompleted(setId);
+    },
+    [interaction, timing],
+  );
+
+  const handleSkipSet = useCallback(
+    (setId: string) => {
+      interaction.skipSet(setId);
+      timing.afterSetSkipped(setId);
+    },
+    [interaction, timing],
+  );
+
+  const handleUncompleteSet = useCallback(
+    (setId: string) => {
+      interaction.uncompleteSet(setId);
+      timing.syncActiveSet();
+    },
+    [interaction, timing],
+  );
+
+  const handleUnskipSet = useCallback(
+    (setId: string) => {
+      interaction.unskipSet(setId);
+      timing.syncActiveSet();
+    },
+    [interaction, timing],
+  );
+
+  const handleActiveSetLayout = useCallback((windowY: number) => {
+    const delta = windowY - scrollWindowYRef.current - spacing.lg;
+    if (Math.abs(delta) < 12) {
+      return;
+    }
+    scrollRef.current?.scrollTo({
+      y: Math.max(0, contentOffsetYRef.current + delta),
+      animated: true,
+    });
+  }, []);
 
   return (
     <GradientBackground variant="canvas">
       <View style={styles.screen}>
         <SettingsHeader title="Workout Session" />
-        <ScreenContainer gradient={false} withHeader={false}>
+        <ScreenContainer
+          gradient={false}
+          withHeader={false}
+          ref={scrollRef}
+          onScroll={(event) => {
+            contentOffsetYRef.current = event.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
+          onLayout={(event) => {
+            scrollWindowYRef.current = event.nativeEvent.layout.y;
+            // Prefer window coordinates when available after mount.
+            const scrollView = scrollRef.current as (ScrollView & NativeMethods) | null;
+            scrollView?.measureInWindow((_x: number, y: number) => {
+              scrollWindowYRef.current = y;
+            });
+          }}
+        >
           <View style={styles.content}>
             <SessionHero
               title={session.title}
@@ -103,16 +186,27 @@ function WorkoutSessionScreenContent({ session }: { session: WorkoutSession }) {
               sessionProgressPercent={interaction.sessionProgress.percent}
             />
 
+            <SessionRestTimer
+              rest={timing.rest}
+              upcomingExerciseName={upcomingRef?.exerciseName ?? null}
+              upcomingSetLabel={upcomingRef ? formatUpcomingSetLabel(upcomingRef) : null}
+              onPause={timing.pauseRest}
+              onResume={timing.resumeRest}
+              onSkip={timing.skipRest}
+            />
+
             <SessionExerciseList
               exercises={session.exercises}
               getSetState={interaction.getSetState}
               getExerciseProgress={interaction.getExerciseProgress}
-              onCompleteSet={interaction.completeSet}
-              onUncompleteSet={interaction.uncompleteSet}
-              onSkipSet={interaction.skipSet}
-              onUnskipSet={interaction.unskipSet}
+              activeSetId={timing.activeSetId}
+              onCompleteSet={handleCompleteSet}
+              onUncompleteSet={handleUncompleteSet}
+              onSkipSet={handleSkipSet}
+              onUnskipSet={handleUnskipSet}
               onUpdateCompletedReps={interaction.updateCompletedReps}
               onUpdateCompletedLoad={interaction.updateCompletedLoad}
+              onActiveSetLayout={handleActiveSetLayout}
             />
 
             <SessionProgressionReferences references={session.progressionReferences} />

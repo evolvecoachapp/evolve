@@ -127,20 +127,33 @@ describe("WorkoutSessionScreen", () => {
     expect(getByText("Session progress")).toBeTruthy();
   });
 
-  it("marks a set complete and shows reps/load editors", () => {
+  it("marks a set complete, starts rest, and highlights the next active set", () => {
     const session = createSession();
-    const { getByLabelText, getByText, queryByText } = renderScreen(
+    const { getByLabelText, getByText, getAllByText, queryByText } = renderScreen(
       <WorkoutSessionScreen sessionId={session.id} session={session} />,
     );
+
+    expect(getByText("Active set")).toBeTruthy();
 
     fireEvent.press(getByLabelText("Complete set 1"));
 
     expect(getByText("Completed")).toBeTruthy();
-    expect(getByText("In progress")).toBeTruthy();
+    expect(getAllByText("In progress").length).toBeGreaterThan(0);
     expect(getByLabelText("Completed reps for set 1")).toBeTruthy();
     expect(getByLabelText("Completed load for set 1")).toBeTruthy();
     expect(getByText("1 / 2 sets")).toBeTruthy();
     expect(queryByText("Ready")).toBeNull();
+    expect(getByText("Rest")).toBeTruthy();
+    expect(getByLabelText("Pause rest timer")).toBeTruthy();
+    expect(getByLabelText("Skip rest timer")).toBeTruthy();
+    expect(getByText("Up next")).toBeTruthy();
+    expect(getByText("Working · Set 2")).toBeTruthy();
+
+    fireEvent.press(getByLabelText("Pause rest timer"));
+    expect(getByLabelText("Resume rest timer")).toBeTruthy();
+
+    fireEvent.press(getByLabelText("Skip rest timer"));
+    expect(queryByText("Rest")).toBeNull();
 
     fireEvent.changeText(getByLabelText("Completed reps for set 1"), "10");
     fireEvent.changeText(getByLabelText("Completed load for set 1"), "62.5");
@@ -149,14 +162,15 @@ describe("WorkoutSessionScreen", () => {
     expect(getByLabelText("Complete set 1")).toBeTruthy();
   });
 
-  it("skips and restores a set", () => {
+  it("skips and restores a set without starting rest", () => {
     const session = createSession();
-    const { getByLabelText, getByText } = renderScreen(
+    const { getByLabelText, getByText, queryByText } = renderScreen(
       <WorkoutSessionScreen sessionId={session.id} session={session} />,
     );
 
     fireEvent.press(getByLabelText("Skip set 2"));
     expect(getByText("Skipped")).toBeTruthy();
+    expect(queryByText("Rest")).toBeNull();
 
     fireEvent.press(getByLabelText("Restore set 2"));
     expect(getByLabelText("Complete set 2")).toBeTruthy();

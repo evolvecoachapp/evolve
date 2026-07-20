@@ -42,7 +42,7 @@ export interface UseLocalSessionInteractionResult {
 /**
  * Local-only interactive session state.
  * Holds an execution overlay beside the immutable application `WorkoutSession`.
- * No persistence, sync, timers, or Training Engine access.
+ * No persistence, sync, or Training Engine access. Rest timing lives in `useSessionTiming`.
  */
 export function useLocalSessionInteraction(
   session: WorkoutSession,

@@ -81,3 +81,13 @@ export {
   updateCompletedLoad,
   updateCompletedReps,
 } from "./sessionExecutionState";
+export {
+  findFirstPendingSetId,
+  findNextPendingSetId,
+  findSessionSetRef,
+  formatUpcomingSetLabel,
+  isWorkingSet,
+  listSessionSetRefs,
+  shouldStartRestAfterComplete,
+  withProvisionalSetStatus,
+} from "./sessionSetFlow";

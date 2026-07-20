@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import type { WorkoutSessionSet } from "../../training/application";
 import type { SetExecutionState } from "../types/sessionExecutionState";
@@ -9,12 +9,16 @@ import { useThemedStyles } from "../../../theme/useThemedStyles";
 interface SessionSetRowProps {
   set: WorkoutSessionSet;
   execution: SetExecutionState;
+  /** True when this is the focused pending set in the local set flow. */
+  isActive?: boolean;
   onComplete: () => void;
   onUncomplete: () => void;
   onSkip: () => void;
   onUnskip: () => void;
   onRepsChange: (reps: number | null) => void;
   onLoadChange: (load: number | null) => void;
+  /** Fired when this row becomes active so the screen can scroll it into view. */
+  onActiveLayout?: (windowY: number) => void;
 }
 
 function formatOptionalNumber(value: number | null): string {
@@ -46,18 +50,29 @@ function parseLoadInput(text: string): number | null {
 export function SessionSetRow({
   set,
   execution,
+  isActive = false,
   onComplete,
   onUncomplete,
   onSkip,
   onUnskip,
   onRepsChange,
   onLoadChange,
+  onActiveLayout,
 }: SessionSetRowProps) {
   const styles = useThemedStyles(({ colors, typography, radius }) =>
     StyleSheet.create({
       container: {
         gap: spacing.sm,
         paddingLeft: spacing["3xl"] + spacing.md,
+        paddingVertical: spacing.sm,
+        paddingRight: spacing.sm,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: "transparent",
+      },
+      containerActive: {
+        borderColor: colors.borderPulse,
+        backgroundColor: colors.pulseMuted,
       },
       prescription: {
         ...typography.caption,
@@ -74,6 +89,13 @@ export function SessionSetRow({
         ...typography.caption,
         color: colors.inkSecondary,
         fontStyle: "italic",
+      },
+      activeLabel: {
+        ...typography.caption,
+        color: colors.pulse,
+        fontWeight: "700",
+        textTransform: "uppercase",
+        letterSpacing: 0.6,
       },
       actions: {
         flexDirection: "row",
@@ -150,6 +172,7 @@ export function SessionSetRow({
 
   const [repsDraft, setRepsDraft] = useState(formatOptionalNumber(execution.completedReps));
   const [loadDraft, setLoadDraft] = useState(formatOptionalNumber(execution.completedLoad));
+  const containerRef = useRef<View>(null);
 
   useEffect(() => {
     setRepsDraft(formatOptionalNumber(execution.completedReps));
@@ -158,6 +181,18 @@ export function SessionSetRow({
   useEffect(() => {
     setLoadDraft(formatOptionalNumber(execution.completedLoad));
   }, [execution.completedLoad]);
+
+  useEffect(() => {
+    if (!isActive || !onActiveLayout) {
+      return;
+    }
+    const frame = requestAnimationFrame(() => {
+      containerRef.current?.measureInWindow((_x, y) => {
+        onActiveLayout(y);
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [isActive, onActiveLayout, execution.status]);
 
   const isCompleted = execution.status === "completed";
   const isSkipped = execution.status === "skipped";
@@ -170,7 +205,12 @@ export function SessionSetRow({
   ];
 
   return (
-    <View style={styles.container}>
+    <View
+      ref={containerRef}
+      style={[styles.container, isActive ? styles.containerActive : null]}
+      accessibilityState={{ selected: isActive }}
+    >
+      {isActive ? <Text style={styles.activeLabel}>Active set</Text> : null}
       <Text style={prescriptionStyle}>{formatSessionSetLine(set)}</Text>
       {set.prescriptionNotes ? <Text style={styles.note}>{set.prescriptionNotes}</Text> : null}
 

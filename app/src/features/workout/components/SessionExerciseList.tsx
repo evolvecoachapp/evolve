@@ -20,28 +20,32 @@ interface SessionExerciseListProps {
   exercises: readonly WorkoutSessionExercise[];
   getSetState: (setId: string) => SetExecutionState;
   getExerciseProgress: (exercise: WorkoutSessionExercise) => ExerciseProgressSnapshot;
+  activeSetId?: string | null;
   onCompleteSet: (setId: string, defaultReps: number) => void;
   onUncompleteSet: (setId: string) => void;
   onSkipSet: (setId: string) => void;
   onUnskipSet: (setId: string) => void;
   onUpdateCompletedReps: (setId: string, reps: number | null) => void;
   onUpdateCompletedLoad: (setId: string, load: number | null) => void;
+  onActiveSetLayout?: (windowY: number) => void;
 }
 
 /**
  * Interactive ordered exercise + set list for local session execution.
- * Presentation only — mutation lives in the session interaction hook.
+ * Presentation only — mutation lives in session hooks.
  */
 export function SessionExerciseList({
   exercises,
   getSetState,
   getExerciseProgress,
+  activeSetId = null,
   onCompleteSet,
   onUncompleteSet,
   onSkipSet,
   onUnskipSet,
   onUpdateCompletedReps,
   onUpdateCompletedLoad,
+  onActiveSetLayout,
 }: SessionExerciseListProps) {
   const styles = useThemedStyles(({ colors, typography }) =>
     StyleSheet.create({
@@ -132,12 +136,16 @@ export function SessionExerciseList({
                       key={set.id}
                       set={set}
                       execution={getSetState(set.id)}
+                      isActive={activeSetId === set.id}
                       onComplete={() => onCompleteSet(set.id, set.targetReps.min)}
                       onUncomplete={() => onUncompleteSet(set.id)}
                       onSkip={() => onSkipSet(set.id)}
                       onUnskip={() => onUnskipSet(set.id)}
                       onRepsChange={(reps) => onUpdateCompletedReps(set.id, reps)}
                       onLoadChange={(load) => onUpdateCompletedLoad(set.id, load)}
+                      onActiveLayout={
+                        activeSetId === set.id ? onActiveSetLayout : undefined
+                      }
                     />
                   ))}
                   {exercise.progressionReference ? (
