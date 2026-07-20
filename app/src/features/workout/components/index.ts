@@ -1,3 +1,7 @@
+export { ProgramDayExerciseList } from "./ProgramDayExerciseList";
+export { ProgramPreviewHero } from "./ProgramPreviewHero";
+export { ProgramProgressionSection } from "./ProgramProgressionSection";
+export { ProgramWeeklySchedule } from "./ProgramWeeklySchedule";
 export { WorkoutExercisePreviewList } from "./WorkoutExercisePreviewList";
 export { WorkoutExercisePreviewRow } from "./WorkoutExercisePreviewRow";
 export { WorkoutPreviewHero } from "./WorkoutPreviewHero";

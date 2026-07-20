@@ -6,4 +6,5 @@ export { useRestFeedback } from "./useRestFeedback";
 export { useSetUndo } from "./useSetUndo";
 export type { UndoableSet } from "./useSetUndo";
 export { useWorkoutDay, useWorkoutProgram, useWorkoutWeek } from "./useWorkoutProgram";
+export { useWorkoutProgramPreview } from "./useWorkoutProgramPreview";
 export { useWorkoutSession } from "./useWorkoutSession";

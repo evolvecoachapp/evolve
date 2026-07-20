@@ -50,3 +50,10 @@ export {
   formatSessionDifficulty,
   formatWorkingSetsSummary,
 } from "./presentationFormatters";
+export {
+  countPreviewPrescriptionSets,
+  formatPreviewFocus,
+  formatPreviewIntensity,
+  formatPreviewSetLine,
+  formatPreviewSetsSummary,
+} from "./previewPresentationFormatters";
