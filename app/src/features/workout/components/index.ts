@@ -5,6 +5,7 @@ export { ProgramWeeklySchedule } from "./ProgramWeeklySchedule";
 export { SessionExerciseList } from "./SessionExerciseList";
 export { SessionHero } from "./SessionHero";
 export { SessionProgressionReferences } from "./SessionProgressionReferences";
+export { SessionSetRow } from "./SessionSetRow";
 export { WorkoutExercisePreviewList } from "./WorkoutExercisePreviewList";
 export { WorkoutExercisePreviewRow } from "./WorkoutExercisePreviewRow";
 export { WorkoutPreviewHero } from "./WorkoutPreviewHero";

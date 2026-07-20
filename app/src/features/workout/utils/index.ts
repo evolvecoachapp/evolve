@@ -66,3 +66,18 @@ export {
   formatSessionSetLine,
   formatSessionSetsSummary,
 } from "./sessionPresentationFormatters";
+export {
+  completeSet,
+  computeExerciseProgress,
+  computeSessionProgress,
+  createInitialExecutionState,
+  deriveInteractionStatus,
+  getSetExecution,
+  isExecutionPristine,
+  resetExecutionState,
+  skipSet,
+  uncompleteSet,
+  unskipSet,
+  updateCompletedLoad,
+  updateCompletedReps,
+} from "./sessionExecutionState";

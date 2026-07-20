@@ -8,6 +8,7 @@ import {
   SessionHero,
   SessionProgressionReferences,
 } from "../features/workout/components";
+import { useLocalSessionInteraction } from "../features/workout/hooks/useLocalSessionInteraction";
 import {
   countSessionSets,
   estimateSessionDurationMinutes,
@@ -23,9 +24,9 @@ interface WorkoutSessionScreenProps {
 }
 
 /**
- * Read-only executable session view.
- * Receives only application-layer `WorkoutSession` models — no timers, logging,
- * or persistence in this sprint.
+ * Interactive executable session view (local UI state only).
+ * Consumes `useLocalSessionInteraction` for mark/skip/edit; does not persist,
+ * sync, run timers, or touch the Training Engine / WorkoutSessionBuilder.
  */
 export function WorkoutSessionScreen({ sessionId, session }: WorkoutSessionScreenProps) {
   const styles = useThemedStyles((theme) =>
@@ -62,6 +63,23 @@ export function WorkoutSessionScreen({ sessionId, session }: WorkoutSessionScree
     );
   }
 
+  return <WorkoutSessionScreenContent session={session} />;
+}
+
+function WorkoutSessionScreenContent({ session }: { session: WorkoutSession }) {
+  const styles = useThemedStyles(() =>
+    StyleSheet.create({
+      screen: {
+        flex: 1,
+        backgroundColor: "transparent",
+      },
+      content: {
+        gap: spacing.xl,
+      },
+    }),
+  );
+
+  const interaction = useLocalSessionInteraction(session);
   const setCount = countSessionSets(session.exercises);
   const durationMinutes = estimateSessionDurationMinutes(session);
 
@@ -79,9 +97,23 @@ export function WorkoutSessionScreen({ sessionId, session }: WorkoutSessionScree
               setCount={setCount}
               durationMinutes={durationMinutes}
               primaryFocus={session.primaryFocus}
+              interactionStatus={interaction.interactionStatus}
+              completedSets={interaction.sessionProgress.completedSets}
+              accountedSets={interaction.sessionProgress.accountedSets}
+              sessionProgressPercent={interaction.sessionProgress.percent}
             />
 
-            <SessionExerciseList exercises={session.exercises} />
+            <SessionExerciseList
+              exercises={session.exercises}
+              getSetState={interaction.getSetState}
+              getExerciseProgress={interaction.getExerciseProgress}
+              onCompleteSet={interaction.completeSet}
+              onUncompleteSet={interaction.uncompleteSet}
+              onSkipSet={interaction.skipSet}
+              onUnskipSet={interaction.unskipSet}
+              onUpdateCompletedReps={interaction.updateCompletedReps}
+              onUpdateCompletedLoad={interaction.updateCompletedLoad}
+            />
 
             <SessionProgressionReferences references={session.progressionReferences} />
           </View>

@@ -8,4 +8,6 @@ export type { UndoableSet } from "./useSetUndo";
 export { useWorkoutDay, useWorkoutProgram, useWorkoutWeek } from "./useWorkoutProgram";
 export { useWorkoutProgramPreview } from "./useWorkoutProgramPreview";
 export { useStartWorkoutSession } from "./useStartWorkoutSession";
+export { useLocalSessionInteraction } from "./useLocalSessionInteraction";
+export type { UseLocalSessionInteractionResult } from "./useLocalSessionInteraction";
 export { useWorkoutSession } from "./useWorkoutSession";

@@ -1,25 +1,48 @@
 import { StyleSheet, Text, View } from "react-native";
 import type { WorkoutSessionExercise } from "../../training/application";
 import { AppCard } from "../../../components/AppCard";
+import { ProgressBar } from "../../../components/ProgressBar";
 import { SectionTitle } from "../../../components/SectionTitle";
 import { spacing } from "../../../theme/theme";
 import { useThemedStyles } from "../../../theme/useThemedStyles";
+import type {
+  ExerciseProgressSnapshot,
+  SetExecutionState,
+} from "../types/sessionExecutionState";
 import {
   formatSessionExerciseIntensity,
-  formatSessionSetLine,
   formatSessionSetsSummary,
 } from "../utils/sessionPresentationFormatters";
+import { SessionSetRow } from "./SessionSetRow";
 import { WorkoutExercisePreviewRow } from "./WorkoutExercisePreviewRow";
 
 interface SessionExerciseListProps {
   exercises: readonly WorkoutSessionExercise[];
+  getSetState: (setId: string) => SetExecutionState;
+  getExerciseProgress: (exercise: WorkoutSessionExercise) => ExerciseProgressSnapshot;
+  onCompleteSet: (setId: string, defaultReps: number) => void;
+  onUncompleteSet: (setId: string) => void;
+  onSkipSet: (setId: string) => void;
+  onUnskipSet: (setId: string) => void;
+  onUpdateCompletedReps: (setId: string, reps: number | null) => void;
+  onUpdateCompletedLoad: (setId: string, load: number | null) => void;
 }
 
 /**
- * Read-only ordered exercise + set list for an executable application-layer session.
- * No logging, timers, or mutation — display only.
+ * Interactive ordered exercise + set list for local session execution.
+ * Presentation only — mutation lives in the session interaction hook.
  */
-export function SessionExerciseList({ exercises }: SessionExerciseListProps) {
+export function SessionExerciseList({
+  exercises,
+  getSetState,
+  getExerciseProgress,
+  onCompleteSet,
+  onUncompleteSet,
+  onSkipSet,
+  onUnskipSet,
+  onUpdateCompletedReps,
+  onUpdateCompletedLoad,
+}: SessionExerciseListProps) {
   const styles = useThemedStyles(({ colors, typography }) =>
     StyleSheet.create({
       section: {
@@ -39,18 +62,17 @@ export function SessionExerciseList({ exercises }: SessionExerciseListProps) {
       setDetail: {
         paddingHorizontal: spacing.lg,
         paddingBottom: spacing.lg,
+        gap: spacing.md,
+      },
+      exerciseProgress: {
         gap: spacing.xs,
-      },
-      setLine: {
-        ...typography.caption,
-        color: colors.inkMuted,
         paddingLeft: spacing["3xl"] + spacing.md,
+        marginBottom: spacing.xs,
       },
-      prescriptionNote: {
+      exerciseProgressLabel: {
         ...typography.caption,
         color: colors.inkSecondary,
-        paddingLeft: spacing["3xl"] + spacing.md,
-        fontStyle: "italic",
+        fontWeight: "600",
       },
       progressionNote: {
         ...typography.caption,
@@ -83,6 +105,11 @@ export function SessionExerciseList({ exercises }: SessionExerciseListProps) {
       <AppCard style={styles.card} variant="floating" padding="none">
         {exercises.map((exercise, index) => {
           const isLast = index === exercises.length - 1;
+          const progress = getExerciseProgress(exercise);
+          const progressLabel =
+            progress.totalSets === 0
+              ? "No sets"
+              : `${progress.accountedSets} / ${progress.totalSets} sets`;
 
           return (
             <View key={exercise.id}>
@@ -96,13 +123,22 @@ export function SessionExerciseList({ exercises }: SessionExerciseListProps) {
               />
               {exercise.sets.length > 0 ? (
                 <View style={styles.setDetail}>
+                  <View style={styles.exerciseProgress}>
+                    <Text style={styles.exerciseProgressLabel}>{progressLabel}</Text>
+                    <ProgressBar progress={progress.percent} height={4} />
+                  </View>
                   {exercise.sets.map((set) => (
-                    <View key={set.id}>
-                      <Text style={styles.setLine}>{formatSessionSetLine(set)}</Text>
-                      {set.prescriptionNotes ? (
-                        <Text style={styles.prescriptionNote}>{set.prescriptionNotes}</Text>
-                      ) : null}
-                    </View>
+                    <SessionSetRow
+                      key={set.id}
+                      set={set}
+                      execution={getSetState(set.id)}
+                      onComplete={() => onCompleteSet(set.id, set.targetReps.min)}
+                      onUncomplete={() => onUncompleteSet(set.id)}
+                      onSkip={() => onSkipSet(set.id)}
+                      onUnskip={() => onUnskipSet(set.id)}
+                      onRepsChange={(reps) => onUpdateCompletedReps(set.id, reps)}
+                      onLoadChange={(load) => onUpdateCompletedLoad(set.id, load)}
+                    />
                   ))}
                   {exercise.progressionReference ? (
                     <Text style={styles.progressionNote} numberOfLines={2}>

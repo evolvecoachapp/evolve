@@ -1,8 +1,10 @@
 import { StyleSheet, Text, View } from "react-native";
 import { Chip } from "../../../components/Chip";
 import { FloatingStatChip } from "../../../components/FloatingStatChip";
+import { ProgressBar } from "../../../components/ProgressBar";
 import { heroLayout, spacing } from "../../../theme/theme";
 import { useThemedStyles } from "../../../theme/useThemedStyles";
+import type { SessionInteractionStatus } from "../types/sessionExecutionState";
 
 interface SessionHeroProps {
   title: string;
@@ -12,9 +14,28 @@ interface SessionHeroProps {
   setCount: number;
   durationMinutes: number;
   primaryFocus: readonly string[];
+  interactionStatus: SessionInteractionStatus;
+  completedSets: number;
+  accountedSets: number;
+  sessionProgressPercent: number;
 }
 
-/** Session briefing header — mirrors program preview hero language. */
+function statusChip(status: SessionInteractionStatus): {
+  label: string;
+  variant: "outline" | "accent" | "warm";
+  icon: "flash-outline" | "play-outline" | "checkmark-circle-outline";
+} {
+  switch (status) {
+    case "in_progress":
+      return { label: "In progress", variant: "accent", icon: "play-outline" };
+    case "completed":
+      return { label: "Complete", variant: "warm", icon: "checkmark-circle-outline" };
+    default:
+      return { label: "Ready", variant: "outline", icon: "flash-outline" };
+  }
+}
+
+/** Session briefing header with local execution progress. */
 export function SessionHero({
   title,
   subtitle,
@@ -23,6 +44,10 @@ export function SessionHero({
   setCount,
   durationMinutes,
   primaryFocus,
+  interactionStatus,
+  completedSets,
+  accountedSets,
+  sessionProgressPercent,
 }: SessionHeroProps) {
   const styles = useThemedStyles(({ colors, typography }) =>
     StyleSheet.create({
@@ -55,6 +80,24 @@ export function SessionHero({
         flexWrap: "wrap",
         gap: spacing.sm,
       },
+      progressBlock: {
+        gap: spacing.xs,
+        marginTop: spacing.xs,
+      },
+      progressRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+      },
+      progressLabel: {
+        ...typography.caption,
+        color: colors.inkSecondary,
+        fontWeight: "600",
+      },
+      progressMeta: {
+        ...typography.caption,
+        color: colors.inkMuted,
+      },
       statGrid: {
         gap: spacing.md,
         marginTop: spacing.sm,
@@ -72,12 +115,15 @@ export function SessionHero({
 
   const exerciseLabel = exerciseCount === 1 ? "1 movement" : `${exerciseCount} movements`;
   const setLabel = setCount === 1 ? "1 set" : `${setCount} sets`;
+  const status = statusChip(interactionStatus);
+  const progressValue =
+    setCount === 0 ? "0 sets" : `${accountedSets} / ${setCount} sets`;
 
   return (
     <View style={styles.content}>
       <View style={styles.chipRow}>
         <Chip label={goalLabel} variant="accent" size="sm" icon="flag-outline" />
-        <Chip label="Ready" variant="outline" size="sm" icon="flash-outline" />
+        <Chip label={status.label} variant={status.variant} size="sm" icon={status.icon} />
       </View>
 
       <View style={styles.headlineBlock}>
@@ -93,6 +139,17 @@ export function SessionHero({
           ))}
         </View>
       ) : null}
+
+      <View style={styles.progressBlock}>
+        <View style={styles.progressRow}>
+          <Text style={styles.progressLabel}>Session progress</Text>
+          <Text style={styles.progressMeta}>
+            {progressValue}
+            {completedSets > 0 ? ` · ${completedSets} logged` : ""}
+          </Text>
+        </View>
+        <ProgressBar progress={sessionProgressPercent} height={6} />
+      </View>
 
       <View style={styles.statGrid}>
         <View style={styles.statRow}>

@@ -23,3 +23,12 @@ export type {
   SkipExerciseRequest,
 } from "./workoutService";
 export { WorkoutServiceError } from "./workoutService";
+export type {
+  ExerciseProgressSnapshot,
+  SessionExecutionState,
+  SessionInteractionStatus,
+  SessionProgressSnapshot,
+  SetExecutionState,
+  SetExecutionStatus,
+} from "./sessionExecutionState";
+export { EMPTY_SESSION_EXECUTION, EMPTY_SET_EXECUTION } from "./sessionExecutionState";

@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react-native";
+import { fireEvent, render } from "@testing-library/react-native";
 import React from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import type { WorkoutSession } from "../../features/training/application";
@@ -58,6 +58,24 @@ function createSession(): WorkoutSession {
             completedReps: null,
             completedLoad: null,
           }),
+          Object.freeze({
+            id: "set:2",
+            order: 1,
+            setType: "working",
+            setTypeLabel: "Working",
+            targetReps: Object.freeze({ min: 8, max: 10, label: "8–10" }),
+            intensity: Object.freeze({
+              metric: "rir",
+              value: 2,
+              label: "RIR 2",
+            }),
+            restSeconds: 120,
+            prescriptionNotes: null,
+            notes: null,
+            completed: false,
+            completedReps: null,
+            completedLoad: null,
+          }),
         ]),
         notes: null,
         completed: false,
@@ -102,9 +120,46 @@ describe("WorkoutSessionScreen", () => {
     expect(getByText("Upper A")).toBeTruthy();
     expect(getByText("Hypertrophy Block · Chest, Upper Back")).toBeTruthy();
     expect(getByText("Barbell Bench Press")).toBeTruthy();
-    expect(getByText(/Working · 8–10 reps · RIR 2 · 2:00 rest/)).toBeTruthy();
+    expect(getAllByText(/Working · 8–10 reps · RIR 2 · 2:00 rest/).length).toBe(2);
     expect(getAllByText("Linear · +2.5 kg when progressing").length).toBeGreaterThan(0);
     expect(getByText("Linear")).toBeTruthy();
+    expect(getByText("Ready")).toBeTruthy();
+    expect(getByText("Session progress")).toBeTruthy();
+  });
+
+  it("marks a set complete and shows reps/load editors", () => {
+    const session = createSession();
+    const { getByLabelText, getByText, queryByText } = renderScreen(
+      <WorkoutSessionScreen sessionId={session.id} session={session} />,
+    );
+
+    fireEvent.press(getByLabelText("Complete set 1"));
+
+    expect(getByText("Completed")).toBeTruthy();
+    expect(getByText("In progress")).toBeTruthy();
+    expect(getByLabelText("Completed reps for set 1")).toBeTruthy();
+    expect(getByLabelText("Completed load for set 1")).toBeTruthy();
+    expect(getByText("1 / 2 sets")).toBeTruthy();
+    expect(queryByText("Ready")).toBeNull();
+
+    fireEvent.changeText(getByLabelText("Completed reps for set 1"), "10");
+    fireEvent.changeText(getByLabelText("Completed load for set 1"), "62.5");
+
+    fireEvent.press(getByLabelText("Unmark set 1"));
+    expect(getByLabelText("Complete set 1")).toBeTruthy();
+  });
+
+  it("skips and restores a set", () => {
+    const session = createSession();
+    const { getByLabelText, getByText } = renderScreen(
+      <WorkoutSessionScreen sessionId={session.id} session={session} />,
+    );
+
+    fireEvent.press(getByLabelText("Skip set 2"));
+    expect(getByText("Skipped")).toBeTruthy();
+
+    fireEvent.press(getByLabelText("Restore set 2"));
+    expect(getByLabelText("Complete set 2")).toBeTruthy();
   });
 
   it("shows a miss state when the session handoff is empty", () => {
