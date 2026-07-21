@@ -12,6 +12,7 @@ export function toCompletedWorkout(
     id: summary.sessionId,
     sessionId: summary.sessionId,
     title: summary.title,
+    programName: summary.programName,
     durationSeconds: summary.durationSeconds,
     completedExercises: summary.completedExercises,
     totalExercises: summary.totalExercises,

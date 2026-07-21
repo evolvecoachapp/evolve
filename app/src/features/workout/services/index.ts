@@ -21,6 +21,7 @@ export {
   setPendingSessionSummary,
 } from "./sessionSummaryHandoff";
 export {
+  listCompletedSessions,
   persistCompletedSession,
   toCompletedWorkout,
 } from "../application";

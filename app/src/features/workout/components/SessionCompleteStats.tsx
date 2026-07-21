@@ -3,7 +3,11 @@ import { AppCard } from "../../../components/AppCard";
 import { spacing } from "../../../theme/theme";
 import { useThemedStyles } from "../../../theme/useThemedStyles";
 import type { WorkoutSessionSummary } from "../types/workoutSessionSummary";
-import { formatSessionDuration, formatSessionVolumeKg } from "../utils/sessionSummaryFormatters";
+import {
+  formatCompletedAt,
+  formatSessionDuration,
+  formatSessionVolumeKg,
+} from "../utils/sessionSummaryFormatters";
 
 interface SessionCompleteStatsProps {
   summary: WorkoutSessionSummary;
@@ -91,17 +95,4 @@ export function SessionCompleteStats({ summary }: SessionCompleteStatsProps) {
       </View>
     </AppCard>
   );
-}
-
-function formatCompletedAt(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) {
-    return iso;
-  }
-  return date.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }

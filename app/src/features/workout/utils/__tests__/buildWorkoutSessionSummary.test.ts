@@ -116,6 +116,7 @@ describe("buildWorkoutSessionSummary", () => {
     expect(summary).toEqual({
       sessionId: "session:day:1",
       title: "Upper A",
+      programName: "Hypertrophy Block",
       durationSeconds: 2730,
       completedExercises: 1,
       totalExercises: 2,

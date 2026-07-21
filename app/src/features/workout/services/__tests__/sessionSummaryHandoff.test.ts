@@ -7,6 +7,7 @@ import {
 const sampleSummary: WorkoutSessionSummary = Object.freeze({
   sessionId: "session:day:1",
   title: "Upper A",
+  programName: "Hypertrophy Block",
   durationSeconds: 2700,
   completedExercises: 2,
   totalExercises: 2,

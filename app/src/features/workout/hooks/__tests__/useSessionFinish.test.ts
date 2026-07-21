@@ -94,6 +94,7 @@ describe("useSessionFinish", () => {
       id: "session:day:1",
       sessionId: "session:day:1",
       title: "Upper A",
+      programName: "Hypertrophy Block",
       durationSeconds: 0,
       completedExercises: 1,
       totalExercises: 2,

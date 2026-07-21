@@ -67,6 +67,7 @@ export function buildWorkoutSessionSummary(
   return Object.freeze({
     sessionId: session.id,
     title: session.title,
+    programName: session.programTitle.length > 0 ? session.programTitle : null,
     durationSeconds: computeDurationSeconds(options.startedAt, completedAt),
     completedExercises,
     totalExercises: session.exercises.length,

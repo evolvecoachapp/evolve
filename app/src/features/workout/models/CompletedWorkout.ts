@@ -10,6 +10,11 @@ export interface CompletedWorkout {
   readonly id: string;
   readonly sessionId: string;
   readonly title: string;
+  /**
+   * Optional program title when the session was built from a program preview.
+   * `null` for legacy entries or sessions without a program context.
+   */
+  readonly programName: string | null;
   /** Wall-clock duration from session entry to finish (seconds). */
   readonly durationSeconds: number;
   readonly completedExercises: number;

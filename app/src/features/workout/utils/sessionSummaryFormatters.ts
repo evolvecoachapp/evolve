@@ -1,3 +1,17 @@
+/** Short completion timestamp, e.g. "Jul 21, 10:45 AM". */
+export function formatCompletedAt(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return iso;
+  }
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 /** Human-readable session duration from seconds, e.g. "45 min" or "1h 5m". */
 export function formatSessionDuration(durationSeconds: number): string {
   const totalSeconds = Math.max(0, Math.round(durationSeconds));

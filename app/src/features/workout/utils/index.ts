@@ -94,6 +94,7 @@ export {
 export { buildWorkoutSessionSummary } from "./buildWorkoutSessionSummary";
 export type { BuildWorkoutSessionSummaryOptions } from "./buildWorkoutSessionSummary";
 export {
+  formatCompletedAt,
   formatSessionDuration,
   formatSessionVolumeKg,
 } from "./sessionSummaryFormatters";

@@ -135,6 +135,7 @@ function parseCompletedWorkout(value: unknown): CompletedWorkout | null {
     id,
     sessionId,
     title,
+    programName: parseOptionalProgramName(record.programName),
     durationSeconds,
     completedExercises,
     totalExercises,
@@ -146,6 +147,16 @@ function parseCompletedWorkout(value: unknown): CompletedWorkout | null {
     averageCompletedReps,
     completedAt,
   });
+}
+
+function parseOptionalProgramName(value: unknown): string | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  if (typeof value !== "string") {
+    return null;
+  }
+  return value.length > 0 ? value : null;
 }
 
 function asString(value: unknown): string | null {

@@ -1,9 +1,11 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { AppHeader } from "../components/AppHeader";
 import { GradientBackground } from "../components/GradientBackground";
 import { TabScreenContainer } from "../components/TabScreenContainer";
+import { useTheme } from "../theme/ThemeContext";
 import {
   ProgramDayExerciseList,
   ProgramPreviewHero,
@@ -18,6 +20,7 @@ import { floatingFooterMetrics } from "../theme/theme";
 import { useThemedStyles } from "../theme/useThemedStyles";
 
 export function WorkoutScreen() {
+  const { colors } = useTheme();
   const { preview, selectedDay, selectDay, error } = useWorkoutProgramPreview();
   const { startSession, canStart } = useStartWorkoutSession();
   const [starting, setStarting] = useState(false);
@@ -38,14 +41,37 @@ export function WorkoutScreen() {
       stack: {
         gap: theme.spacing.xl,
       },
+      historyButton: {
+        width: theme.spacing["2xl"],
+        height: theme.spacing["2xl"],
+        borderRadius: theme.spacing.md,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: theme.colors.overlayStrong,
+      },
     }),
+  );
+
+  const historyAction = (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Workout history"
+      onPress={() => router.push("/(app)/workout/history")}
+      style={({ pressed }) => [styles.historyButton, pressed && { opacity: 0.7 }]}
+    >
+      <Ionicons name="time-outline" size={22} color={colors.ink} />
+    </Pressable>
   );
 
   if (error || !preview || !selectedDay) {
     return (
       <GradientBackground variant="canvas">
         <View style={styles.screen}>
-          <AppHeader title="Workout" subtitle="Your training program" />
+          <AppHeader
+            title="Workout"
+            subtitle="Your training program"
+            rightAction={historyAction}
+          />
           <TabScreenContainer gradient={false}>
             <Text style={styles.message}>
               {error ?? "Unable to generate a workout program preview."}
@@ -90,7 +116,11 @@ export function WorkoutScreen() {
   return (
     <GradientBackground variant="canvas">
       <View style={styles.screen}>
-        <AppHeader title="Workout" subtitle="Your training program" />
+        <AppHeader
+          title="Workout"
+          subtitle="Your training program"
+          rightAction={historyAction}
+        />
         <TabScreenContainer gradient={false} footerReserve={footerReserve}>
           <View style={styles.stack}>
             <ProgramPreviewHero

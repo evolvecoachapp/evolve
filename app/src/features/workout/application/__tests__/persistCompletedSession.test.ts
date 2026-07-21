@@ -10,6 +10,7 @@ function createSummary(
   return Object.freeze({
     sessionId: "session:day:1",
     title: "Upper A",
+    programName: "Hypertrophy Block",
     durationSeconds: 2700,
     completedExercises: 2,
     totalExercises: 3,
@@ -33,6 +34,7 @@ describe("toCompletedWorkout", () => {
       id: "session:day:1",
       sessionId: "session:day:1",
       title: "Upper A",
+      programName: "Hypertrophy Block",
       durationSeconds: 2700,
       completedExercises: 2,
       totalExercises: 3,

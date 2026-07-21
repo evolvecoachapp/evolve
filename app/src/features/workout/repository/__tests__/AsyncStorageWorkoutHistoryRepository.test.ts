@@ -11,6 +11,7 @@ function createWorkout(
   return Object.freeze({
     sessionId: overrides.sessionId ?? overrides.id,
     title: overrides.title ?? "Upper A",
+    programName: overrides.programName ?? null,
     durationSeconds: overrides.durationSeconds ?? 3600,
     completedExercises: overrides.completedExercises ?? 2,
     totalExercises: overrides.totalExercises ?? 3,
@@ -145,5 +146,28 @@ describe("AsyncStorageWorkoutHistoryRepository", () => {
     await expect(repository.getCompletedSession("session:null-avg")).resolves.toEqual(
       workout,
     );
+  });
+
+  it("treats missing programName as null for legacy entries", async () => {
+    const legacy = {
+      id: "legacy",
+      sessionId: "legacy",
+      title: "Upper A",
+      durationSeconds: 1800,
+      completedExercises: 1,
+      totalExercises: 2,
+      completedSets: 3,
+      skippedSets: 0,
+      totalSets: 3,
+      completionPercent: 100,
+      estimatedVolumeKg: 500,
+      averageCompletedReps: 8,
+      completedAt: "2026-07-20T00:00:00.000Z",
+    };
+    await storage.setItem(WORKOUT_HISTORY_STORAGE_KEY, JSON.stringify([legacy]));
+
+    const sessions = await repository.getCompletedSessions();
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]?.programName).toBeNull();
   });
 });

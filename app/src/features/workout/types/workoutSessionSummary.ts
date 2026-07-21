@@ -12,6 +12,11 @@ export interface WorkoutSessionSummary {
   readonly sessionId: string;
   /** Session title from the immutable prescription. */
   readonly title: string;
+  /**
+   * Optional program title from the immutable session.
+   * `null` when the session has no program context.
+   */
+  readonly programName: string | null;
   /** Wall-clock duration from session screen entry to finish (seconds). */
   readonly durationSeconds: number;
   /** Exercises with at least one completed set and no pending sets. */
