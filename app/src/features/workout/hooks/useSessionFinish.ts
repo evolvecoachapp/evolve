@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import type { WorkoutSession } from "../../training/application";
+import { persistCompletedSession } from "../application";
 import type {
   SessionExecutionState,
   SessionInteractionStatus,
@@ -17,6 +18,8 @@ export interface UseSessionFinishResult {
 /**
  * Local finish helpers for the interactive session screen.
  * Tracks wall-clock start on mount; does not mutate `WorkoutSession`.
+ * After the summary is built, persists a `CompletedWorkout` via the
+ * application layer (fire-and-forget — never blocks navigation).
  */
 export function useSessionFinish(
   session: WorkoutSession,
@@ -25,13 +28,15 @@ export function useSessionFinish(
 ): UseSessionFinishResult {
   const startedAtRef = useRef(new Date().toISOString());
 
-  const buildSummary = useCallback(
-    () =>
-      buildWorkoutSessionSummary(session, execution, {
-        startedAt: startedAtRef.current,
-      }),
-    [session, execution],
-  );
+  const buildSummary = useCallback(() => {
+    const summary = buildWorkoutSessionSummary(session, execution, {
+      startedAt: startedAtRef.current,
+    });
+    void persistCompletedSession(summary).catch(() => {
+      // Persistence must not interrupt the finish → complete navigation.
+    });
+    return summary;
+  }, [session, execution]);
 
   return {
     canFinish: interactionStatus === "completed",

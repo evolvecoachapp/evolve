@@ -20,3 +20,14 @@ export {
   consumePendingSessionSummary,
   setPendingSessionSummary,
 } from "./sessionSummaryHandoff";
+export {
+  persistCompletedSession,
+  toCompletedWorkout,
+} from "../application";
+export {
+  workoutHistoryRepository,
+  AsyncStorageWorkoutHistoryRepository,
+  WORKOUT_HISTORY_STORAGE_KEY,
+} from "../repository";
+export type { WorkoutHistoryRepository } from "../repository";
+export type { CompletedWorkout } from "../models/CompletedWorkout";

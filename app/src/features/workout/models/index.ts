@@ -15,3 +15,4 @@ export type { WorkoutSession } from "./WorkoutSession";
 export type { WorkoutState } from "./WorkoutState";
 export type { WorkoutStatus } from "./WorkoutStatus";
 export type { WorkoutSummary } from "./WorkoutSummary";
+export type { CompletedWorkout } from "./CompletedWorkout";

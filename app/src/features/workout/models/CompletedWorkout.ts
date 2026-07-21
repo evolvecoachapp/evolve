@@ -1,20 +1,17 @@
 /**
- * Local presentation model for a finished interactive workout session.
+ * Domain model for a finished interactive workout session persisted on-device.
  *
- * Derived from the immutable application `WorkoutSession` plus the local
- * execution overlay — never mutates either source. The finish hook maps this
- * to a persisted `CompletedWorkout` via the application layer; this type
- * itself remains a presentation projection.
+ * Derived from the presentation `WorkoutSessionSummary` at finish time.
+ * Identity is the session id; later sprints may enrich this shape without
+ * changing the repository contract.
  */
-
-/** Completion metrics projected for the Workout Complete experience. */
-export interface WorkoutSessionSummary {
+export interface CompletedWorkout {
+  /** Stable identity — equals `sessionId`. */
+  readonly id: string;
   readonly sessionId: string;
-  /** Session title from the immutable prescription. */
   readonly title: string;
-  /** Wall-clock duration from session screen entry to finish (seconds). */
+  /** Wall-clock duration from session entry to finish (seconds). */
   readonly durationSeconds: number;
-  /** Exercises with at least one completed set and no pending sets. */
   readonly completedExercises: number;
   readonly totalExercises: number;
   readonly completedSets: number;
