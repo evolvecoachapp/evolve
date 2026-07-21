@@ -1,0 +1,1 @@
+export { useWorkoutAnalytics } from "./useWorkoutAnalytics";
