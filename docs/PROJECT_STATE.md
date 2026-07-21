@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-15  
+**Last Updated:** 2026-07-21  
 **Purpose:** Snapshot of the current project state only.  
 **Source of Truth:** Yes — for current sprint, completion %, and live system status.
 
@@ -19,10 +19,10 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Navigation | 6-tab bottom bar (Home, Workout, Nutrition, Coach, Progress, Profile) |
 | Design system | Token-based theme with light/dark/system preference (`ThemeContext`) |
 | Feature modules | coach, workout, nutrition, progress, home, dashboard, profile, shared |
-| Data layer | Service factory pattern; user profile (Sprint 6.0) and Workout domain (Sprint 6.3) wired to backend |
+| Data layer | Service factory pattern; user/workout backend providers; on-device workout history via `WorkoutHistoryRepository` + `StorageAdapter` (Sprint 13.0) |
 | Backend providers | `BackendUserService`, `BackendWorkoutService` live; other `Backend*Service` classes throw `notConfigured()` |
-| Tests | Jest + jest-expo (23 test files) |
-| Sprint status | UI foundation and polish complete; profile editing and Workout Engine v1 live; other API wiring pending |
+| Tests | Jest + jest-expo |
+| Sprint status | Interactive session finish persists locally; history timeline + workout detail shipped (13.1–13.2); analytics deferred |
 
 ---
 
@@ -117,23 +117,19 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 
 ## Last Completed Sprint
 
-**6.3.1 — Default Program Assignment** (2026-07-15)
+**13.2.0 — Workout Detail Experience** (2026-07-21)
 
-- `WorkoutService.ensure_active_assignment()` auto-assigns `Settings.default_program_slug` (`beginner-foundation`) when a user has no active `ProgramAssignment` on first workout access
-- `GET /workout-resolution/today` and `GET /workouts/current` call ensure-before-resolve; missing default program returns **503** with a clear message (no crash, no silent `no_active_program`)
-- `database/seeds/seed_default_program.py` — idempotent seed for the default beginner program (run after `seed_exercises.py`)
+- `WorkoutDetailScreen` loads via `useWorkoutDetail` → `getCompletedSession` → `WorkoutHistoryRepository.getCompletedSession`
+- Reusable hero, metrics grid, exercise cards, set rows, footer; empty/not-found state
+- Persisted exercise/set snapshots on `CompletedWorkout`; no editing, analytics, or AI
 
-Previous: **6.3 — Workout Engine v1** (2026-07-15), **6.1 — Editable User Profile** (2026-07-14)
+Previous: **13.1.0 — Workout History Timeline** (2026-07-21), **13.0.0 — Workout History Persistence Foundation** (2026-07-21)
 
 ---
 
 ## Next Sprint
 
-**5.3 — Core Screens (API Integration)**
-
-- Wire Coach chat → `/api/v1/coach/*`
-- Wire nutrition screen → `/api/v1/nutrition/*`
-- Implement remaining `Backend*Service` provider classes (coach, nutrition, progress, home)
+**Progress enrichment / analytics (TBD)** — charts and deeper history insights remain out of scope until explicitly planned.
 
 ---
 

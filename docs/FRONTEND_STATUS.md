@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-15  
+**Last Updated:** 2026-07-21  
 **Purpose:** Mobile client modules, providers, completed work, and backend integration plan.  
 **Source of Truth:** Yes — for frontend layer status (stack versions: [TECH_STACK.md](./TECH_STACK.md)).
 ---
@@ -40,7 +40,8 @@ app/
     ├── screens/               Screen implementations
     ├── features/              Domain modules (see below)
     ├── animation/             Reanimated utilities
-    └── haptics/               Haptic feedback helper
+    ├── haptics/               Haptic feedback helper
+    └── core/                  Shared infrastructure (storage adapters, …)
 ```
 
 ---
@@ -50,7 +51,7 @@ app/
 | Module | Path | Hooks | Providers | Status |
 |--------|------|-------|-----------|--------|
 | **coach** | `features/coach/` | `useCoachChat` | mock, backend (stub), OpenAI/Anthropic/local (stub) | UI complete; mock data |
-| **workout** | `features/workout/` | `useWorkout`, `useWorkoutSession`, `useWorkoutProgram` | mock, **backend (live, Sprint 6.3)**, local | Production — `useWorkout()` backed by `/workout-resolution/today` + `/workout-logs/*` |
+| **workout** | `features/workout/` | `useWorkout`, `useWorkoutProgramPreview`, `useStartWorkoutSession`, `useLocalSessionInteraction`, `useSessionTiming`, `useSessionFinish`, `useWorkoutHistory`, `useWorkoutDetail`, `useWorkoutSession` | mock, **backend (live, Sprint 6.3)**, local + training application preview/session | Preview → Start → session → local Finish → persist `CompletedWorkout` (Sprint 13.0) → complete screen (Sprint 12.7) → history (13.1) → detail (13.2); legacy logging service still present |
 | **nutrition** | `features/nutrition/` | `useNutrition` | mock, backend (stub) | UI complete; mock data |
 | **progress** | `features/progress/` | via `progressService` | mock, backend (stub) | UI complete; mock data |
 | **home** | `features/home/` | `useHome` | mock, backend (stub), local | Dashboard aggregation |
@@ -77,7 +78,19 @@ app/
 ### Navigation (Sprint 5.2)
 - 6-tab floating tab bar: Home, Workout, Nutrition, Coach, Progress, Profile
 - Settings stack: appearance, theme selection
+- Workout stack: `/(app)/workout/session` (Sprint 12.4), `/(app)/workout/complete` (Sprint 12.7), `/(app)/workout/history` (Sprint 13.1), `/(app)/workout/detail` (Sprint 13.2), legacy summary
 - 404 handler (`+not-found.tsx`)
+
+### Training preview → session → finish → history → detail (Sprint 12.4.0 – 13.2.0)
+- `WorkoutScreen` shows `WorkoutProgramPreview`; Start Workout calls `WorkoutSessionBuilder` via `useStartWorkoutSession`
+- In-memory `executableSessionHandoff` passes the immutable session to `WorkoutSessionScreen`
+- Session screen displays title, subtitle, ordered exercises/sets, reps, intensity, rest, progression references
+- Sprint 12.5: `useLocalSessionInteraction` holds a separate local execution overlay (complete/skip/edit reps/load + progress)
+- Sprint 12.6: `useSessionTiming` owns local rest countdown (pause/resume/skip), active-set selection, highlight, and auto-scroll
+- Sprint 12.7: when all sets are completed or skipped, Finish Workout builds a local `WorkoutSessionSummary` (via `buildWorkoutSessionSummary`) and opens `WorkoutSessionCompleteScreen` through `sessionSummaryHandoff`
+- Sprint 13.0: `useSessionFinish` auto-persists a `CompletedWorkout` through `persistCompletedSession` → `WorkoutHistoryRepository` → `StorageAdapter` → AsyncStorage after the summary is built
+- Sprint 13.1: `WorkoutHistoryScreen` loads via `useWorkoutHistory` → `listCompletedSessions` → repository; `WorkoutHistoryCard` shows date, duration, exercises, sets, volume, optional program name; empty state + detail navigation; no analytics/charts/filters
+- Sprint 13.2: `WorkoutDetailScreen` loads via `useWorkoutDetail` → `getCompletedSession` → repository; hero, metrics, exercise/set detail, not-found state; no edit/delete/analytics/AI
 
 ### Service Factory Pattern (Sprint 5.2b+)
 - Per-domain `*ServiceFactory.ts` resolves provider from env
@@ -88,6 +101,7 @@ app/
 All primary screens implemented with premium layout:
 - DashboardScreen, WorkoutScreen, NutritionScreen, CoachScreen
 - ProgressScreen, ProfileScreen, SettingsScreen, AppearanceScreen, ThemeScreen
+- WorkoutHistoryScreen (Sprint 13.1), WorkoutDetailScreen (Sprint 13.2)
 - WelcomeScreen, LoginScreen, RegisterScreen
 
 ---
@@ -144,9 +158,9 @@ Default provider for all domains is **mock**. Mock providers serve static fixtur
 | Area | Files |
 |------|-------|
 | Auth/API | `api/__tests__/`, `auth/__tests__/` |
-| Screens | `screens/__tests__/LoginScreen`, `RegisterScreen`, `ProfileScreen` |
-| Features | `features/*/__tests__/` — architecture and service tests |
-| Components | Selected component tests |
+| Screens | `screens/__tests__/LoginScreen`, `RegisterScreen`, `ProfileScreen`, `WorkoutHistoryScreen`, `WorkoutDetailScreen` |
+| Features | `features/*/__tests__/` — architecture and service tests (incl. workout history + detail) |
+| Components | Selected component tests (incl. `WorkoutHistoryCard`, `WorkoutMetricsGrid`, `WorkoutExerciseCard`) |
 
 Run: `npm test` from `app/`
 

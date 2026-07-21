@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0 (current release)
 **Status:** Living Document
-**Last Updated:** 2026-07-15
+**Last Updated:** 2026-07-21
 **Purpose:** Semantic release history; accumulate changes under `[Unreleased]` until tagged.  
 **Source of Truth:** Yes — for release versions and shipped changes.
 All notable changes to EVOLVE are documented in this file.
@@ -27,6 +27,14 @@ Each release section groups changes under: `Added`, `Changed`, `Deprecated`, `Re
 ## [Unreleased]
 
 ### Added
+- Sprint 13.2.0 — Workout Detail Experience: `WorkoutDetailScreen` + reusable `WorkoutDetailHero` / `WorkoutMetricsGrid` / `WorkoutExerciseCard` / `WorkoutSetRow` / `WorkoutDetailFooter`, `getCompletedSession` / `useWorkoutDetail`, empty/not-found state — loads via `WorkoutHistoryRepository.getCompletedSession`; completed exercises/sets persisted on `CompletedWorkout`; no editing, deletion, analytics, PRs, sharing, export, or AI
+- Sprint 13.1.0 — Workout History Timeline: `WorkoutHistoryScreen` + reusable `WorkoutHistoryCard`, `listCompletedSessions` / `useWorkoutHistory`, empty state, and detail-route stub — reads exclusively via `WorkoutHistoryRepository`; newest-first; no analytics, charts, filters, search, export, or cloud sync
+- Sprint 13.0.0 — Workout History Persistence Foundation: on-device `CompletedWorkout` domain model, `StorageAdapter` / `AsyncStorageAdapter`, `WorkoutHistoryRepository` (`saveCompletedSession`, `getCompletedSessions`, `getCompletedSession`, `getRecentSessions`, `clearHistory`), and application `persistCompletedSession` — auto-saves after summary build with no UI changes; no analytics, charts, or dashboards
+- Sprint 12.7.0 — Finish Workout Flow: local session completion detection, Finish Workout CTA, `WorkoutSessionSummary` mapper, in-memory summary handoff, and `WorkoutSessionCompleteScreen` — still no persistence, sync, AI, WorkoutSessionBuilder, or Training Engine changes
+- Sprint 12.6.0 — Rest Timer & Set Flow: local `useSessionTiming` rest countdown (pause / resume / skip), automatic next-set selection, active-set highlight, and auto-scroll on `WorkoutSessionScreen` — still no persistence, sync, AI, WorkoutSessionBuilder, or Training Engine changes
+- Sprint 12.5.0 — Interactive Workout Session: local-only set interaction via `useLocalSessionInteraction` (complete/uncomplete/skip, edit completed reps/load, session + exercise progress) without mutating immutable `WorkoutSession`, persistence, timers, AI, or the Training Engine
+- Sprint 12.4.0 — Connect Start Workout flow: `useStartWorkoutSession` invokes application-layer `WorkoutSessionBuilder`, in-memory `executableSessionHandoff`, and `WorkoutSessionScreen` renders immutable application `WorkoutSession` models (title, subtitle, ordered sets, reps, intensity, rest, progression)
+- Restored Expo Router tree under `app/app/` (thin routes) so preview → session navigation works again
 - Default program auto-assignment on first workout access (Sprint 6.3.1)
 - `WorkoutService.ensure_active_assignment()` and `assign_default_program()` — reuses `assign_program()` with `Settings.default_program_slug`
 - `database/seeds/seed_default_program.py` — idempotent `beginner-foundation` program seed
@@ -55,6 +63,14 @@ Each release section groups changes under: `Added`, `Changed`, `Deprecated`, `Re
 - Documentation Maintenance Policy in [README.md](./README.md)
 
 ### Changed
+- `CompletedWorkout` / `WorkoutSessionSummary` now carry ordered exercise snapshots with completed sets (weight, reps, set number) for detail rendering; legacy history entries parse with empty `exercises` (Sprint 13.2.0)
+- Optional `programName` on `WorkoutSessionSummary` / `CompletedWorkout` (from session `programTitle`); history entry from Workout tab; card press → detail stub (Sprint 13.1.0)
+- `useSessionFinish.buildSummary()` persists a `CompletedWorkout` via the application layer after mapping (fire-and-forget; finish navigation unchanged) (Sprint 13.0.0)
+- `WorkoutSessionScreen` orchestrates interaction + timing + finish hooks; when all sets are accounted, Finish Workout builds a local `WorkoutSessionSummary` and navigates to Workout Complete (Sprint 12.7.0)
+- `WorkoutSessionScreen` orchestrates `useLocalSessionInteraction` + `useSessionTiming`; rest timer, active-set highlight, and auto-scroll guide set flow locally (Sprint 12.6.0)
+- `WorkoutSessionScreen` consumes `useLocalSessionInteraction` for local execution overlay; `SessionHero` / `SessionExerciseList` / `SessionSetRow` show live progress and set actions (Sprint 12.5.0)
+- `WorkoutScreen` Start Workout CTA builds a session via `WorkoutSessionBuilder` (selected preview day) and navigates to `/(app)/workout/session` — React holds UI state only; no Training Engine changes (Sprint 12.4.0)
+- `WorkoutSessionScreen` now displays application-layer executable sessions (read-only briefing); logging remains deferred
 - `GET /workout-resolution/today` and `GET /workouts/current` auto-assign the default beginner program when the user has no active assignment; return **503** when the default program is not seeded (Sprint 6.3.1)
 - `EXPO_PUBLIC_WORKOUT_PROVIDER` defaults to `backend` (mirrors user profile provider)
 - API endpoint counts reconciled: **56 implemented**, **6 planned** ([API_STATUS.md](./API_STATUS.md))

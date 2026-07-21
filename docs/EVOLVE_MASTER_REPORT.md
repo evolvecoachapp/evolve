@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.5.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-14  
+**Last Updated:** 2026-07-21  
 **Purpose:** Authoritative narrative history and current-state summary. Update progress sections each sprint; do not rewrite history.  
 **Source of Truth:** Yes — for project timeline and phase narrative (live status: [PROJECT_STATE.md](./PROJECT_STATE.md)).
 
@@ -147,12 +147,12 @@ Not started. Planned: managed PostgreSQL, secrets management, full CI/CD, monito
 |------|--------|
 | Backend domain APIs | 49 implemented, 7 planned ([API_STATUS.md](./API_STATUS.md)) |
 | AI Coach stack | Operational with mock or OpenAI-compatible LLM |
-| Mobile UI | Premium shell with mock data |
-| Mobile ↔ Backend integration | Auth only; feature providers are stubs |
+| Mobile UI | Premium shell; interactive workout session with local finish, history timeline, and workout detail |
+| Mobile ↔ Backend integration | Auth, user profile, workout resolution/session; other feature providers are stubs |
 | Production readiness | Not started |
 
-**Last completed sprint:** DOC-1.1 — Documentation Finalization  
-**Next sprint:** 5.3 — Core Screens API Integration (Coach, workout resolution, nutrition)
+**Last completed sprint:** 13.2.0 — Workout Detail Experience  
+**Next sprint:** Progress enrichment / analytics (TBD)
 
 ---
 

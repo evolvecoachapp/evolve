@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
-**Last Updated:** 2026-07-15  
+**Last Updated:** 2026-07-21  
 **Purpose:** Chronological record of every sprint. Append new entries at the bottom — never rewrite past entries.  
 **Source of Truth:** Yes — for sprint chronology and completion dates.
 ---
@@ -399,3 +399,98 @@
 | **Architecture impact** | `UserService` added; `CurrentUserService` provider/factory pattern completed; ProfileScreen wired through `useCurrentUser()` |
 | **Status** | Complete |
 | **Notes** | `GET /users/me` already existed; `PATCH /users/me` added. Mock provider remains via `EXPO_PUBLIC_USER_PROVIDER=mock`. |
+
+---
+
+## Phase — Training Engine (Mobile Application Layer)
+
+### Sprint 13.2.0 — Workout Detail Experience
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 13.2.0 |
+| **Title** | Workout Detail Experience |
+| **Date** | 2026-07-21 |
+| **Goal** | Implement a premium workout detail screen backed by `WorkoutHistoryRepository` |
+| **Files modified** | `getCompletedSession`, `useWorkoutDetail`, `WorkoutDetailHero` / `WorkoutMetricsGrid` / `WorkoutExerciseCard` / `WorkoutSetRow` / `WorkoutDetailFooter`, `WorkoutDetailScreen`, exercise/set snapshots on `CompletedWorkout` + summary mapper, repository parse, unit tests, docs |
+| **Architecture impact** | UI → Hook → Application (`getCompletedSession`) → Repository; set volume calculated outside UI; no edit/delete/analytics/PRs/sharing/export/AI |
+| **Status** | Complete |
+| **Notes** | Not-found empty state when session missing; legacy entries without `exercises` degrade to empty exercise list |
+
+### Sprint 13.1.0 — Workout History Timeline
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 13.1.0 |
+| **Title** | Workout History Timeline |
+| **Date** | 2026-07-21 |
+| **Goal** | Create the first Workout History screen backed by `WorkoutHistoryRepository` |
+| **Files modified** | `listCompletedSessions`, `useWorkoutHistory`, `WorkoutHistoryCard`, `WorkoutHistoryScreen`, routes `workout/history` + `workout/detail` stub, optional `programName` on summary/domain models, `WorkoutScreen` history entry, unit tests, docs |
+| **Architecture impact** | UI → Hook → Application (`listCompletedSessions`) → Repository; presentation separated from storage; detail navigation stub only |
+| **Status** | Complete |
+| **Notes** | Newest-first ordering from repository; empty state when no sessions; no analytics, charts, filters, search, export, cloud sync, or workout detail content |
+
+### Sprint 13.0.0 — Workout History Persistence Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 13.0.0 |
+| **Title** | Workout History Persistence Foundation |
+| **Date** | 2026-07-21 |
+| **Goal** | Introduce an on-device persistence layer for completed workout sessions without changing the workout execution UI |
+| **Files modified** | `core/storage` (`StorageAdapter`, `AsyncStorageAdapter`, `InMemoryStorageAdapter`), `CompletedWorkout`, `WorkoutHistoryRepository`, `AsyncStorageWorkoutHistoryRepository`, `persistCompletedSession` / `toCompletedWorkout`, `useSessionFinish` auto-persist, unit tests, docs |
+| **Architecture impact** | UI → Application (`persistCompletedSession`) → Repository → Storage Adapter → AsyncStorage; finish navigation and complete screen unchanged; no analytics/charts/dashboards |
+| **Status** | Complete |
+| **Notes** | Persistence is fire-and-forget after summary build; `clearHistory` is for tests only; corrupt storage degrades to empty history |
+
+### Sprint 12.7.0 — Finish Workout Flow
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 12.7.0 |
+| **Title** | Finish Workout Flow |
+| **Date** | 2026-07-21 |
+| **Goal** | Detect local session completion, expose Finish Workout, and present a Workout Complete summary |
+| **Files modified** | `WorkoutSessionSummary` type, `buildWorkoutSessionSummary`, `useSessionFinish`, `sessionSummaryHandoff`, `SessionCompleteStats`, `WorkoutSessionCompleteScreen`, `WorkoutSessionScreen`, route `workout/complete`, tests, docs |
+| **Architecture impact** | Summary is a presentation projection from immutable `WorkoutSession` + execution overlay; screen still orchestrates only; no persistence or Training Engine changes |
+| **Status** | Complete |
+| **Notes** | Finish CTA when `interactionStatus === "completed"`; volume = completed load × reps; average reps over completed working sets only |
+
+### Sprint 12.6.0 — Rest Timer & Set Flow
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 12.6.0 |
+| **Title** | Rest Timer & Set Flow |
+| **Date** | 2026-07-21 |
+| **Goal** | Guide the athlete through the session with a local rest timer and automatic set progression |
+| **Files modified** | `useSessionTiming`, `sessionSetFlow`, `SessionRestTimer`, `SessionSetRow`, `SessionExerciseList`, `WorkoutSessionScreen`, `ScreenContainer` (ref forward), tests, docs |
+| **Architecture impact** | Timing state lives in a dedicated local hook beside the execution overlay; immutable `WorkoutSession` unchanged; screen orchestrates hooks + presentation only |
+| **Status** | Complete |
+| **Notes** | Rest after working sets only; pause/resume/skip; active-set highlight + auto-scroll; no persistence, sync, AI, WorkoutSessionBuilder, or Training Engine changes |
+
+### Sprint 12.5.0 — Interactive Workout Session
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 12.5.0 |
+| **Title** | Interactive Workout Session |
+| **Date** | 2026-07-21 |
+| **Goal** | Allow local set interaction (complete/skip/edit) and progress on the executable session screen without persistence |
+| **Files modified** | `useLocalSessionInteraction`, `sessionExecutionState` types/utils, `SessionSetRow`, `SessionExerciseList`, `SessionHero`, `WorkoutSessionScreen`, tests, docs |
+| **Architecture impact** | Immutable application `WorkoutSession` remains prescription-only; mutable execution lives in a separate overlay owned by the interaction hook; screen stays presentation |
+| **Status** | Complete |
+| **Notes** | No persistence, sync, timers, AI, WorkoutSessionBuilder, or Training Engine changes |
+
+### Sprint 12.4.0 — Connect Start Workout Flow
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 12.4.0 |
+| **Title** | Connect Start Workout Flow |
+| **Date** | 2026-07-21 |
+| **Goal** | Wire Start Workout to `WorkoutSessionBuilder` and navigate to an executable session screen |
+| **Files modified** | `app/src/screens/WorkoutScreen.tsx`, `WorkoutSessionScreen.tsx`, `useStartWorkoutSession`, `executableSessionHandoff`, session UI components/formatters, restored `app/app/` routes, tests, docs |
+| **Architecture impact** | Preview day → application `WorkoutSessionBuilder` → immutable `WorkoutSession` → handoff → `WorkoutSessionScreen`; React does not construct sessions; Training Engine untouched |
+| **Status** | Complete |
+| **Notes** | No persistence, timers, logging, AI, or backend in this sprint. Rest days disable the Start CTA. |
