@@ -37,6 +37,8 @@ function createSnapshot(): CoachIntelligenceSnapshot {
     insightCount: 1,
     riskCount: 0,
     recommendationCount: 1,
+    athleteGoal: null,
+    trainingExperience: null,
     generatedAt: "2026-07-21T12:00:00.000Z",
   });
 

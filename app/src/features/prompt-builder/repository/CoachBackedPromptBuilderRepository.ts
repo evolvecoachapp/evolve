@@ -1,12 +1,13 @@
+import type { AthleteContextRepository } from "../../athlete-context/repository";
 import type { CoachIntelligenceRepository } from "../../coach-intelligence/repository";
 import type { PromptContext } from "../models/PromptContext";
 import { buildPromptContext } from "../utils/buildPromptContext";
 import type { PromptBuilderRepository } from "./PromptBuilderRepository";
 
 /**
- * Prompt builder backed exclusively by coach intelligence.
+ * Prompt builder backed by coach intelligence and athlete context.
  *
- * Transforms a coach snapshot into a structured PromptContext — never
+ * Transforms structured domain snapshots into a PromptContext — never
  * markdown, never prompt strings, never direct history/analytics access.
  */
 export class CoachBackedPromptBuilderRepository
@@ -14,14 +15,20 @@ export class CoachBackedPromptBuilderRepository
 {
   constructor(
     private readonly coachIntelligence: CoachIntelligenceRepository,
+    private readonly athleteContext: AthleteContextRepository,
   ) {}
 
   async getPromptContext(
     referenceDate: Date = new Date(),
   ): Promise<PromptContext> {
-    const snapshot = await this.coachIntelligence.getSnapshot(referenceDate);
+    const [snapshot, athleteSnapshot] = await Promise.all([
+      this.coachIntelligence.getSnapshot(referenceDate),
+      this.athleteContext.getSnapshot(referenceDate),
+    ]);
+
     return buildPromptContext(snapshot, {
       generatedAt: referenceDate.toISOString(),
+      profile: athleteSnapshot.profile,
     });
   }
 }

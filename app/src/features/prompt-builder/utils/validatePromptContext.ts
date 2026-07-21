@@ -6,6 +6,7 @@ import { PROMPT_SECTION_IDS } from "./buildSections";
 /** Structured validation issue codes — never prose. */
 export type PromptValidationCode =
   | "invalid_consistency_score"
+  | "missing_athlete_profile"
   | "invalid_schema_version"
   | "metadata_count_mismatch"
   | "missing_required_section"
@@ -27,6 +28,14 @@ export function validatePromptContext(
     context.athlete.consistencyScore > 1
   ) {
     issues.push("invalid_consistency_score");
+  }
+
+  if (
+    context.profile == null ||
+    typeof context.profile.id !== "string" ||
+    context.profile.id.trim().length === 0
+  ) {
+    issues.push("missing_athlete_profile");
   }
 
   if (context.metadata.schemaVersion !== PROMPT_SCHEMA_VERSION) {

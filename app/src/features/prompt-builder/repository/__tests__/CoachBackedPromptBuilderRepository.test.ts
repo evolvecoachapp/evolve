@@ -1,3 +1,5 @@
+import type { AthleteContextRepository } from "../../../athlete-context/repository";
+import { createAthleteProfile } from "../../../athlete-context/testSupport/fixtures";
 import type {
   CoachIntelligenceRepository,
   CoachIntelligenceSnapshot,
@@ -18,19 +20,50 @@ function createCoachRepository(
   };
 }
 
+function createAthleteRepository(
+  profile = createAthleteProfile(),
+): AthleteContextRepository {
+  return {
+    getProfile: jest.fn(async () => profile),
+    getSnapshot: jest.fn(async (referenceDate?: Date) =>
+      Object.freeze({
+        profile,
+        trainingAgeYears: profile.experience.yearsTraining,
+        validation: Object.freeze({
+          valid: true,
+          issues: Object.freeze([]),
+        }),
+        capturedAt: (referenceDate ?? new Date()).toISOString(),
+      }),
+    ),
+    updateProfile: jest.fn(async (next) => next),
+    validateProfile: jest.fn(() =>
+      Object.freeze({
+        valid: true,
+        issues: Object.freeze([]),
+      }),
+    ),
+  };
+}
+
 describe("CoachBackedPromptBuilderRepository", () => {
   const referenceDate = new Date("2026-07-21T15:00:00.000Z");
 
-  it("builds PromptContext from coach intelligence only", async () => {
+  it("builds PromptContext from coach intelligence and athlete context", async () => {
     const coachIntelligence = createCoachRepository();
+    const athleteContext = createAthleteRepository();
     const repository = new CoachBackedPromptBuilderRepository(
       coachIntelligence,
+      athleteContext,
     );
 
     const context = await repository.getPromptContext(referenceDate);
 
     expect(coachIntelligence.getSnapshot).toHaveBeenCalledWith(referenceDate);
+    expect(athleteContext.getSnapshot).toHaveBeenCalledWith(referenceDate);
     expect(context.athlete.consistencyScore).toBe(0.82);
+    expect(context.profile.goal.primary).toBe("hypertrophy");
+    expect(context.profile.experience.level).toBe("intermediate");
     expect(context.training.volumeTrend.metric).toBe("volume");
     expect(context.training.frequencyTrend.metric).toBe("frequency");
     expect(context.performance.personalRecordInsights[0]?.kind).toBe(
@@ -58,6 +91,7 @@ describe("CoachBackedPromptBuilderRepository", () => {
   it("never returns prompt strings or markdown fields", async () => {
     const repository = new CoachBackedPromptBuilderRepository(
       createCoachRepository(),
+      createAthleteRepository(),
     );
 
     const context = await repository.getPromptContext(referenceDate);
@@ -76,6 +110,7 @@ describe("CoachBackedPromptBuilderRepository", () => {
     );
     const repository = new CoachBackedPromptBuilderRepository(
       coachIntelligence,
+      createAthleteRepository(),
     );
 
     await expect(repository.getPromptContext(referenceDate)).rejects.toThrow(

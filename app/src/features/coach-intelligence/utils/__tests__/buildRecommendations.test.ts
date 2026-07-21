@@ -1,3 +1,5 @@
+import type { AthleteGoal } from "../../../athlete-context/models/AthleteGoal";
+import type { TrainingExperience } from "../../../athlete-context/models/TrainingExperience";
 import { buildRecommendations } from "../buildRecommendations";
 import type { CoachInsight } from "../../models/CoachInsight";
 import type { RiskFlag } from "../../models/RiskFlag";
@@ -116,5 +118,74 @@ describe("buildRecommendations", () => {
     });
 
     expect(result.some((item) => item.code === "deload")).toBe(true);
+  });
+
+  it("uses beginner experience to prefer maintain_consistency over increase_volume", () => {
+    const experience: TrainingExperience = Object.freeze({
+      level: "beginner",
+      trainingStartedAt: null,
+      yearsTraining: 0.5,
+    });
+
+    const result = buildRecommendations({
+      insights: Object.freeze([]),
+      risks: Object.freeze([]),
+      volumeTrend,
+      frequencyTrend,
+      recovery,
+      progress,
+      consistencyScore: 0.4,
+      trainingExperience: experience,
+    });
+
+    expect(result.some((item) => item.code === "maintain_consistency")).toBe(
+      true,
+    );
+    expect(result.some((item) => item.code === "increase_volume")).toBe(false);
+  });
+
+  it("raises progress_load priority for advanced athletes with recent PRs", () => {
+    const experience: TrainingExperience = Object.freeze({
+      level: "advanced",
+      trainingStartedAt: "2015-01-01T00:00:00.000Z",
+      yearsTraining: 10,
+    });
+    const goal: AthleteGoal = Object.freeze({
+      primary: "strength",
+      secondary: null,
+      targetDate: null,
+    });
+
+    const result = buildRecommendations({
+      insights: Object.freeze([
+        Object.freeze({
+          id: "insight:recent_pr",
+          kind: "recent_pr" as const,
+          confidence: 0.9,
+          detectedAt: "2026-07-21T12:00:00.000Z",
+          payload: Object.freeze({ ageDays: 2 }),
+        }),
+      ]),
+      risks: Object.freeze([]),
+      volumeTrend: Object.freeze({
+        metric: "volume",
+        direction: "stable",
+        changeRatio: 0.01,
+        windowWeeks: 8,
+      }),
+      frequencyTrend,
+      recovery,
+      progress: Object.freeze({
+        level: "improving",
+        recentPRCount: 1,
+        plateauExerciseCount: 0,
+      }),
+      consistencyScore: 0.8,
+      athleteGoal: goal,
+      trainingExperience: experience,
+    });
+
+    const progressLoad = result.find((item) => item.code === "progress_load");
+    expect(progressLoad?.priority).toBe("high");
   });
 });

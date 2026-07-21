@@ -1,3 +1,4 @@
+import { createAthleteProfile } from "../../athlete-context/testSupport/fixtures";
 import { buildPromptContext } from "../../prompt-builder/utils/buildPromptContext";
 import { createSnapshot } from "../../prompt-builder/testSupport/fixtures";
 import type { PromptContext } from "../../prompt-builder/models/PromptContext";
@@ -14,6 +15,7 @@ export function createPromptContext(
 ): PromptContext {
   return buildPromptContext(createSnapshot(), {
     generatedAt: overrides.generatedAt ?? FIXED_TIMESTAMP,
+    profile: createAthleteProfile(),
   });
 }
 

@@ -1,3 +1,4 @@
+import { createAthleteProfile } from "../../../athlete-context/testSupport/fixtures";
 import {
   createCoachSummary,
   createInsights,
@@ -19,6 +20,7 @@ describe("prompt-builder utilities", () => {
   const insights = createInsights();
   const riskFlags = createRiskFlags();
   const recommendations = createRecommendations();
+  const profile = createAthleteProfile();
 
   it("buildAthleteContext maps recovery and consistency", () => {
     const result = buildAthleteContext(summary);
@@ -83,9 +85,12 @@ describe("prompt-builder utilities", () => {
     const snapshot = createSnapshot();
     const context = buildPromptContext(snapshot, {
       generatedAt: "2026-07-21T15:00:00.000Z",
+      profile,
     });
 
     expect(context.athlete.consistencyScore).toBe(0.82);
+    expect(context.profile.goal.primary).toBe("hypertrophy");
+    expect(context.profile.experience.level).toBe("intermediate");
     expect(context.training.volumeTrend.direction).toBe("increasing");
     expect(context.performance.personalRecordInsights).toHaveLength(1);
     expect(context.coach.recommendations).toHaveLength(1);
@@ -98,6 +103,7 @@ describe("prompt-builder utilities", () => {
     const snapshot = createSnapshot();
     const context = buildPromptContext(snapshot, {
       generatedAt: "2026-07-21T15:00:00.000Z",
+      profile,
     });
 
     const invalid = Object.freeze({
@@ -120,10 +126,29 @@ describe("prompt-builder utilities", () => {
     );
   });
 
+  it("validatePromptContext reports missing athlete profile", () => {
+    const snapshot = createSnapshot();
+    const context = buildPromptContext(snapshot, {
+      generatedAt: "2026-07-21T15:00:00.000Z",
+      profile,
+    });
+
+    const invalid = Object.freeze({
+      ...context,
+      profile: Object.freeze({
+        ...context.profile,
+        id: "  ",
+      }),
+    });
+
+    expect(validatePromptContext(invalid)).toContain("missing_athlete_profile");
+  });
+
   it("validatePromptContext reports missing sections", () => {
     const snapshot = createSnapshot();
     const context = buildPromptContext(snapshot, {
       generatedAt: "2026-07-21T15:00:00.000Z",
+      profile,
     });
 
     const invalid = Object.freeze({

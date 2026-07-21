@@ -1,3 +1,5 @@
+import type { AthleteGoal } from "../../athlete-context/models/AthleteGoal";
+import type { TrainingExperience } from "../../athlete-context/models/TrainingExperience";
 import type { CoachInsight } from "../models/CoachInsight";
 import type { CoachRecommendation } from "../models/CoachRecommendation";
 import type { RiskFlag } from "../models/RiskFlag";
@@ -13,10 +15,16 @@ export interface BuildRecommendationsInput {
   readonly recovery: RecoveryStatus;
   readonly progress: ProgressStatus;
   readonly consistencyScore: number;
+  /** Optional athlete goal from Athlete Context. */
+  readonly athleteGoal?: AthleteGoal | null;
+  /** Optional training experience from Athlete Context. */
+  readonly trainingExperience?: TrainingExperience | null;
 }
 
 /**
  * Map structured signals to deterministic recommendation codes.
+ *
+ * May incorporate AthleteGoal and TrainingExperience when provided.
  */
 export function buildRecommendations(
   input: BuildRecommendationsInput,
@@ -27,6 +35,12 @@ export function buildRecommendations(
 
   const hasRisk = (code: RiskFlag["code"]): boolean =>
     input.risks.some((risk) => risk.code === code);
+
+  const experienceLevel = input.trainingExperience?.level ?? null;
+  const primaryGoal = input.athleteGoal?.primary ?? null;
+  const isBeginner = experienceLevel === "beginner";
+  const isAdvanced =
+    experienceLevel === "advanced" || experienceLevel === "elite";
 
   if (
     hasRisk("long_inactivity") ||
@@ -65,16 +79,36 @@ export function buildRecommendations(
       }),
     );
   } else if (input.volumeTrend.direction === "decreasing") {
-    recommendations.push(
-      Object.freeze({
-        code: "increase_volume" as const,
-        priority: "medium" as const,
-        relatedInsightIds: insightIds("volume_trend"),
-      }),
-    );
+    if (isBeginner) {
+      recommendations.push(
+        Object.freeze({
+          code: "maintain_consistency" as const,
+          priority: "medium" as const,
+          relatedInsightIds: [
+            ...insightIds("volume_trend"),
+            ...insightIds("training_consistency"),
+          ],
+        }),
+      );
+    } else {
+      recommendations.push(
+        Object.freeze({
+          code: "increase_volume" as const,
+          priority:
+            primaryGoal === "hypertrophy" || primaryGoal === "strength"
+              ? ("high" as const)
+              : ("medium" as const),
+          relatedInsightIds: insightIds("volume_trend"),
+        }),
+      );
+    }
   }
 
-  if (input.consistencyScore >= 0.7 && input.frequencyTrend.direction === "stable") {
+  if (
+    input.consistencyScore >= 0.7 &&
+    input.frequencyTrend.direction === "stable" &&
+    !recommendations.some((item) => item.code === "maintain_consistency")
+  ) {
     recommendations.push(
       Object.freeze({
         code: "maintain_consistency" as const,
@@ -88,7 +122,7 @@ export function buildRecommendations(
     recommendations.push(
       Object.freeze({
         code: "progress_load" as const,
-        priority: "medium" as const,
+        priority: isAdvanced ? ("high" as const) : ("medium" as const),
         relatedInsightIds: insightIds("recent_pr"),
       }),
     );

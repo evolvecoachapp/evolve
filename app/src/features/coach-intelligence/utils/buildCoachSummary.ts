@@ -1,3 +1,5 @@
+import type { AthleteGoal } from "../../athlete-context/models/AthleteGoal";
+import type { TrainingExperience } from "../../athlete-context/models/TrainingExperience";
 import type { CoachInsight } from "../models/CoachInsight";
 import type { ProgressStatus } from "../models/ProgressStatus";
 import type { RecoveryStatus } from "../models/RecoveryStatus";
@@ -14,6 +16,8 @@ export interface BuildCoachSummaryInput {
   readonly insights: readonly CoachInsight[];
   readonly risks: readonly RiskFlag[];
   readonly recommendationCount: number;
+  readonly athleteGoal?: AthleteGoal | null;
+  readonly trainingExperience?: TrainingExperience | null;
   readonly generatedAt: string;
 }
 
@@ -30,6 +34,8 @@ export function buildCoachSummary(
     insightCount: input.insights.length,
     riskCount: input.risks.length,
     recommendationCount: input.recommendationCount,
+    athleteGoal: input.athleteGoal ?? null,
+    trainingExperience: input.trainingExperience ?? null,
     generatedAt: input.generatedAt,
   });
 }

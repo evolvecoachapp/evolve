@@ -170,10 +170,10 @@ export function MessageBubble({
           variant="glass"
           glow
           padding="compact"
-          style={[
+          style={StyleSheet.flatten([
             styles.assistantCard,
             status === "pending" || isStreaming ? styles.pendingCard : null,
-          ]}
+          ])}
         >
           {content.length > 0 ? (
             <Text style={styles.assistantContent}>{content}</Text>

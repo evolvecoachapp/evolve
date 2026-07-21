@@ -1,4 +1,5 @@
 import type { WorkoutAnalyticsRepository } from "../../analytics/repository";
+import type { AthleteContextRepository } from "../../athlete-context/repository";
 import type { WorkoutRecordsRepository } from "../../records/repository";
 import type { WorkoutHistoryRepository } from "../../workout/repository";
 import type { CoachInsight } from "../models/CoachInsight";
@@ -28,7 +29,7 @@ import type {
 const DEFAULT_TREND_WEEKS = 8;
 
 /**
- * Coach intelligence backed by analytics, records, and workout history.
+ * Coach intelligence backed by analytics, records, history, and athlete context.
  *
  * Produces structured insights only — no natural language, no AI providers.
  */
@@ -39,6 +40,7 @@ export class HistoryBackedCoachIntelligenceRepository
     private readonly analytics: WorkoutAnalyticsRepository,
     private readonly records: WorkoutRecordsRepository,
     private readonly history: WorkoutHistoryRepository,
+    private readonly athleteContext: AthleteContextRepository,
   ) {}
 
   async getSnapshot(
@@ -76,14 +78,24 @@ export class HistoryBackedCoachIntelligenceRepository
   private async computeSnapshot(
     referenceDate: Date,
   ): Promise<CoachIntelligenceSnapshot> {
-    const [volumeSeries, frequencySeries, workoutRecord, exerciseRecords, sessions] =
-      await Promise.all([
-        this.analytics.getVolumeTrend(DEFAULT_TREND_WEEKS, referenceDate),
-        this.analytics.getWorkoutFrequency(DEFAULT_TREND_WEEKS, referenceDate),
-        this.records.getWorkoutRecord(),
-        this.records.getExerciseRecords(),
-        this.history.getCompletedSessions(),
-      ]);
+    const [
+      volumeSeries,
+      frequencySeries,
+      workoutRecord,
+      exerciseRecords,
+      sessions,
+      athleteSnapshot,
+    ] = await Promise.all([
+      this.analytics.getVolumeTrend(DEFAULT_TREND_WEEKS, referenceDate),
+      this.analytics.getWorkoutFrequency(DEFAULT_TREND_WEEKS, referenceDate),
+      this.records.getWorkoutRecord(),
+      this.records.getExerciseRecords(),
+      this.history.getCompletedSessions(),
+      this.athleteContext.getSnapshot(referenceDate),
+    ]);
+
+    const athleteGoal = athleteSnapshot.profile.goal;
+    const trainingExperience = athleteSnapshot.profile.experience;
 
     const volumeTrend = detectVolumeTrend(volumeSeries);
     const frequencyTrend = detectFrequencyTrend(frequencySeries);
@@ -218,6 +230,8 @@ export class HistoryBackedCoachIntelligenceRepository
       recovery: recoveryResult.recovery,
       progress,
       consistencyScore,
+      athleteGoal,
+      trainingExperience,
     });
 
     const summary = buildCoachSummary({
@@ -229,6 +243,8 @@ export class HistoryBackedCoachIntelligenceRepository
       insights: frozenInsights,
       risks: frozenRisks,
       recommendationCount: recommendations.length,
+      athleteGoal,
+      trainingExperience,
       generatedAt: detectedAt,
     });
 

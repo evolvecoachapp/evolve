@@ -1,6 +1,8 @@
 import type { WorkoutAnalytics } from "../../../analytics/models/WorkoutAnalytics";
 import type { WorkoutTrend } from "../../../analytics/models/WorkoutTrend";
 import type { WorkoutAnalyticsRepository } from "../../../analytics/repository";
+import type { AthleteContextRepository } from "../../../athlete-context/repository";
+import { createAthleteProfile } from "../../../athlete-context/testSupport/fixtures";
 import type { ExerciseRecord } from "../../../records/models/ExerciseRecord";
 import type { WorkoutRecord } from "../../../records/models/WorkoutRecord";
 import type { WorkoutRecordsRepository } from "../../../records/repository";
@@ -13,6 +15,32 @@ import {
   createTrend,
   createWorkout,
 } from "../../testSupport/fixtures";
+
+function createAthleteContext(
+  profile = createAthleteProfile(),
+): AthleteContextRepository {
+  return {
+    getProfile: jest.fn(async () => profile),
+    getSnapshot: jest.fn(async (referenceDate?: Date) =>
+      Object.freeze({
+        profile,
+        trainingAgeYears: profile.experience.yearsTraining,
+        validation: Object.freeze({
+          valid: true,
+          issues: Object.freeze([]),
+        }),
+        capturedAt: (referenceDate ?? new Date()).toISOString(),
+      }),
+    ),
+    updateProfile: jest.fn(async (next) => next),
+    validateProfile: jest.fn(() =>
+      Object.freeze({
+        valid: true,
+        issues: Object.freeze([]),
+      }),
+    ),
+  };
+}
 
 function createHistory(
   sessions: readonly CompletedWorkout[],
@@ -115,21 +143,26 @@ describe("HistoryBackedCoachIntelligenceRepository", () => {
     }),
   ]);
 
-  it("builds a structured snapshot from analytics, records, and history", async () => {
+  it("builds a structured snapshot from analytics, records, history, and athlete context", async () => {
     const volumeTrend = createTrend("volume", [800, 900, 1100, 1300]);
     const frequencyTrend = createTrend("workout_frequency", [2, 2, 3, 3]);
+    const athleteContext = createAthleteContext();
     const repository = new HistoryBackedCoachIntelligenceRepository(
       createAnalytics(volumeTrend, frequencyTrend),
       createRecords(workoutRecord, exerciseRecords),
       createHistory(sessions),
+      athleteContext,
     );
 
     const snapshot = await repository.getSnapshot(referenceDate);
 
+    expect(athleteContext.getSnapshot).toHaveBeenCalledWith(referenceDate);
     expect(snapshot.summary.volumeTrend.direction).toBe("increasing");
     expect(snapshot.summary.frequencyTrend.direction).toBe("increasing");
     expect(snapshot.summary.consistencyScore).toBeGreaterThan(0);
     expect(snapshot.summary.insightCount).toBeGreaterThan(0);
+    expect(snapshot.summary.athleteGoal?.primary).toBe("hypertrophy");
+    expect(snapshot.summary.trainingExperience?.level).toBe("intermediate");
     expect(snapshot.insights.some((insight) => insight.kind === "recent_pr")).toBe(
       true,
     );
@@ -148,10 +181,12 @@ describe("HistoryBackedCoachIntelligenceRepository", () => {
       ),
       createRecords(workoutRecord, exerciseRecords),
       createHistory(sessions),
+      createAthleteContext(),
     );
 
     const summary = await repository.getCoachSummary(referenceDate);
     expect(summary.volumeTrend.direction).toBe("stable");
+    expect(summary.athleteGoal?.primary).toBe("hypertrophy");
     expect(summary.generatedAt).toBe(referenceDate.toISOString());
   });
 
@@ -171,6 +206,7 @@ describe("HistoryBackedCoachIntelligenceRepository", () => {
       ),
       createRecords(emptyRecord, Object.freeze([])),
       createHistory([]),
+      createAthleteContext(),
     );
 
     const snapshot = await repository.getSnapshot(referenceDate);
@@ -210,6 +246,7 @@ describe("HistoryBackedCoachIntelligenceRepository", () => {
         Object.freeze([]),
       ),
       createHistory(staleSessions),
+      createAthleteContext(),
     );
 
     const risks = await repository.getRiskFlags(referenceDate);

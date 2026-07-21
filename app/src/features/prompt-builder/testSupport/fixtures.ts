@@ -34,6 +34,8 @@ export function createCoachSummary(
     insightCount: 2,
     riskCount: 1,
     recommendationCount: 1,
+    athleteGoal: null,
+    trainingExperience: null,
     generatedAt: "2026-07-21T12:00:00.000Z",
     ...overrides,
   });
