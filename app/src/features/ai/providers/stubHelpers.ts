@@ -41,6 +41,7 @@ export function createStubResponse(
       totalTokens: promptTokens + completionTokens,
     }),
     provider: config.type,
+    finishReason: "stop" as const,
     generatedAt,
   });
 }

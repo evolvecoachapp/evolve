@@ -181,7 +181,10 @@ describe("ConversationService", () => {
 
     expect(recovered.status).toBe("active");
     expect(recovered.messages).toHaveLength(2);
-    expect(recovered.messages[1]?.content).toBe("Retry succeeded.");
+    expect(
+      recovered.messages.find((message) => message.role === "assistant")
+        ?.content,
+    ).toBe("Retry succeeded.");
   });
 
   it("rejects send on closed conversations", async () => {

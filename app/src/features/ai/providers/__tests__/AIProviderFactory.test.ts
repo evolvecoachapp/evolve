@@ -1,8 +1,11 @@
+import { AIConfigurationFactory } from "../../../ai-config/factory";
+import { HttpClient } from "../../../http/client/HttpClient";
 import { AI_PROVIDER_TYPES } from "../../models/AIProviderType";
 import { AIProviderFactory } from "../AIProviderFactory";
 import { AnthropicProviderStub } from "../AnthropicProviderStub";
 import { GeminiProviderStub } from "../GeminiProviderStub";
 import { LocalProviderStub } from "../LocalProviderStub";
+import { OpenAIProvider } from "../openai/OpenAIProvider";
 import { OpenAIProviderStub } from "../OpenAIProviderStub";
 import { createAIRequest } from "../../testSupport/fixtures";
 import { AIError } from "../../models/AIError";
@@ -72,5 +75,31 @@ describe("AIProviderFactory", () => {
     const first = AIProviderFactory.create("openai");
     const second = AIProviderFactory.create("openai");
     expect(first).not.toBe(second);
+  });
+
+  it("createConfigured returns real OpenAIProvider for openai", () => {
+    const configuration = AIConfigurationFactory.createDefault({
+      providerType: "openai",
+      apiKey: "sk-test",
+      modelId: "gpt-4o-mini",
+    });
+    const httpClient = new HttpClient({ defaultMaxRetries: 0 });
+    const provider = AIProviderFactory.createConfigured(
+      configuration,
+      httpClient,
+    );
+
+    expect(provider).toBeInstanceOf(OpenAIProvider);
+    expect(provider.getProviderInfo().type).toBe("openai");
+  });
+
+  it("createConfigured keeps stubs for non-openai providers", () => {
+    const anthropic = AIProviderFactory.createConfigured(
+      AIConfigurationFactory.createDefault({
+        providerType: "anthropic",
+        apiKey: "key",
+      }),
+    );
+    expect(anthropic).toBeInstanceOf(AnthropicProviderStub);
   });
 });

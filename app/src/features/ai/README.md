@@ -13,11 +13,12 @@ PromptBuilder (PromptContext)
 AIService
         ↓
 AIProvider
+├── OpenAIProvider  (REST via HttpClient)
 ├── OpenAIProviderStub
 ├── AnthropicProviderStub
 ├── GeminiProviderStub
 └── LocalProviderStub
 ```
 
-`AIService` depends only on an injected `AIProvider`. Stubs are offline and
-deterministic — no networking, SDKs, or API keys.
+`AIService` depends only on an injected `AIProvider` + `AIConfiguration`.
+OpenAI networking uses the shared `features/http` `HttpClient` — no vendor SDK.

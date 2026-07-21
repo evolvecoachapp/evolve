@@ -12,7 +12,8 @@ export type AIResponseValidationCode =
   | "provider_model_mismatch"
   | "invalid_token_usage"
   | "missing_generated_at"
-  | "missing_model_id";
+  | "missing_model_id"
+  | "missing_finish_reason";
 
 function isChatRole(value: string): boolean {
   return (CHAT_ROLES as readonly string[]).includes(value);
@@ -75,6 +76,10 @@ export function validateAIResponse(
 
   if (!response.generatedAt) {
     issues.push("missing_generated_at");
+  }
+
+  if (!response.finishReason) {
+    issues.push("missing_finish_reason");
   }
 
   return Object.freeze(issues);

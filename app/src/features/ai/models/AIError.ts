@@ -6,7 +6,12 @@ export type AIErrorCode =
   | "invalid_response"
   | "provider_unavailable"
   | "unsupported_provider"
-  | "generation_failed";
+  | "generation_failed"
+  | "authentication_failed"
+  | "authorization_failed"
+  | "not_found"
+  | "timeout"
+  | "rate_limited";
 
 /**
  * Single error type for the AI abstraction layer.

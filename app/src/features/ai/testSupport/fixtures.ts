@@ -94,6 +94,7 @@ export function createAIResponse(
       totalTokens: 48,
     }),
     provider: "openai" as const,
+    finishReason: "stop" as const,
     generatedAt: FIXED_TIMESTAMP,
     ...overrides,
   });
