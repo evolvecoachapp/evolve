@@ -1,24 +1,38 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GradientBackground } from "../components/GradientBackground";
-import { coachHeroMock } from "../data/mocks/coach";
-import { CoachHero } from "../features/coach/components";
-import { notificationStore } from "../features/notifications/service";
 import {
-  presentCoachNotification,
-  sortNotificationsNewestFirst,
-} from "../features/notifications/components/CoachPresenter";
-import { CoachTimeline } from "../features/notifications/components/CoachTimeline";
-import { CoachEmptyState } from "../features/notifications/components/CoachEmptyState";
+  ChatInput,
+  ConversationHeader,
+  EmptyConversation,
+  ErrorConversation,
+  LoadingConversation,
+  MessageBubble,
+  ScrollToBottomButton,
+  TypingIndicator,
+} from "../features/coach/components";
+import { createCoachConversationRuntime } from "../features/coach/services/createCoachConversationRuntime";
+import { toFriendlyConversationError } from "../features/coach/utils/toFriendlyConversationError";
+import { useCoachConversation } from "../features/conversation/hooks/useCoachConversation";
+import { useCoachPrompt } from "../features/prompt-builder/hooks/useCoachPrompt";
 import { coachLayout, floatingFooterMetrics, spacing } from "../theme/theme";
 import { useTabSceneBottomReserve } from "../theme/useTabLayout";
 import { useThemedStyles } from "../theme/useThemedStyles";
 
-/** Matches CoachInputBar local sizing — not a spacing token change. */
+/** Matches ChatInput local sizing — not a spacing token change. */
 const COMPOSER_INPUT_FALLBACK = spacing["2xl"] + spacing.sm;
 const COMPOSER_HEIGHT_FALLBACK =
   COMPOSER_INPUT_FALLBACK + spacing.md * 2 + spacing.xs * 2;
+
+const COACH_NAME = "EVOLVE Coach";
+const NEAR_BOTTOM_THRESHOLD = 80;
 
 export function CoachScreen() {
   const insets = useSafeAreaInsets();
@@ -26,10 +40,28 @@ export function CoachScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const [keyboardLift, setKeyboardLift] = useState(0);
   const [composerHeight, setComposerHeight] = useState(COMPOSER_HEIGHT_FALLBACK);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const [online, setOnline] = useState(true);
 
-  const [notifications, setNotifications] = useState(() => notificationStore.getNotifications());
+  const runtime = useMemo(() => createCoachConversationRuntime(), []);
+  const {
+    promptContext,
+    loading: promptLoading,
+    error: promptError,
+  } = useCoachPrompt();
 
-  const unreadCount = notificationStore.getUnreadCount();
+  const {
+    conversation,
+    messages,
+    loading,
+    error,
+    startConversation,
+    sendMessage,
+    retryMessage,
+  } = useCoachConversation({
+    service: runtime.service,
+    promptContext,
+  });
 
   const footerReserve = floatingFooterMetrics.scrollReserve(composerHeight);
   const scrollBottomPadding =
@@ -44,18 +76,39 @@ export function CoachScreen() {
   }, []);
 
   useEffect(() => {
-    scrollToLatest(false);
-  }, [scrollToLatest]);
+    let cancelled = false;
+    void runtime.healthCheck().then((healthy) => {
+      if (!cancelled) {
+        setOnline(healthy);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [runtime]);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
+    if (!conversation && !loading && !promptLoading && !promptError && !error) {
+      void startConversation();
+    }
+  }, [
+    conversation,
+    error,
+    loading,
+    promptError,
+    promptLoading,
+    startConversation,
+  ]);
+
+  useEffect(() => {
+    scrollToLatest(true);
+  }, [messages.length, loading, scrollToLatest]);
+
+  useEffect(() => {
     if (keyboardLift > 0) {
       scrollToLatest(false);
     }
   }, [keyboardLift, scrollToLatest]);
-
-  useEffect(() => {
-    scrollToLatest(true);
-  }, [notifications.length, scrollToLatest]);
 
   const styles = useThemedStyles(() =>
     StyleSheet.create({
@@ -72,24 +125,57 @@ export function CoachScreen() {
         overflow: "hidden",
       },
       conversation: {
-        gap: coachLayout.messageSectionGap,
+        gap: coachLayout.messageGap,
+        position: "relative",
       },
     }),
   );
 
   const handleContentSizeChange = () => {
-    scrollToLatest(false);
+    if (!showScrollToBottom) {
+      scrollToLatest(false);
+    }
   };
 
-  useEffect(() => {
-    const items = sortNotificationsNewestFirst(notificationStore.getNotifications());
-    setNotifications(items);
-  }, []);
-
-  const handleItemPress = (id: string) => {
-    notificationStore.markAsRead(id);
-    setNotifications(sortNotificationsNewestFirst(notificationStore.getNotifications()));
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const distanceFromBottom =
+      contentSize.height - (contentOffset.y + layoutMeasurement.height);
+    setShowScrollToBottom(distanceFromBottom > NEAR_BOTTOM_THRESHOLD);
   };
+
+  const handleSend = useCallback(
+    async (content: string) => {
+      await sendMessage(content);
+      scrollToLatest(true);
+    },
+    [scrollToLatest, sendMessage],
+  );
+
+  const handleExamplePress = useCallback(
+    (example: string) => {
+      void handleSend(example);
+    },
+    [handleSend],
+  );
+
+  const handleRetryConversation = useCallback(() => {
+    void startConversation();
+  }, [startConversation]);
+
+  const visibleMessages = messages.filter((message) => message.role !== "system");
+  const conversationTitle =
+    conversation?.metadata.title ?? "New conversation";
+  const showInitialLoading =
+    (promptLoading || (loading && !conversation)) && !error && !promptError;
+  const showError = Boolean(error || promptError) && visibleMessages.length === 0;
+  const friendlyError = toFriendlyConversationError(error ?? promptError);
+  const showTyping = loading && visibleMessages.length > 0;
+  const showEmpty =
+    !showInitialLoading &&
+    !showError &&
+    visibleMessages.length === 0 &&
+    Boolean(conversation);
 
   return (
     <GradientBackground variant="canvas">
@@ -108,25 +194,90 @@ export function CoachScreen() {
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
           onContentSizeChange={handleContentSizeChange}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
         >
-          <CoachHero
-            aiStatus={coachHeroMock.aiStatus}
-            recoveryScore={coachHeroMock.recoveryScore}
-            readinessDetail={coachHeroMock.readinessDetail}
-            trainingRecommendation={coachHeroMock.trainingRecommendation}
-            trainingDetail={coachHeroMock.trainingDetail}
+          <ConversationHeader
+            coachName={COACH_NAME}
+            providerName={runtime.providerInfo.name}
+            model={runtime.providerInfo.model.name}
+            online={online}
+            conversationTitle={conversationTitle}
           />
 
           <View style={styles.conversation}>
-            {notifications.length === 0 ? (
-              <CoachEmptyState />
-            ) : (
-              <CoachTimeline items={notifications.map(presentCoachNotification)} onItemPress={handleItemPress} />
-            )}
+            {showInitialLoading ? <LoadingConversation /> : null}
+
+            {showError ? (
+              <ErrorConversation
+                message={friendlyError}
+                onRetry={handleRetryConversation}
+              />
+            ) : null}
+
+            {showEmpty ? (
+              <EmptyConversation onExamplePress={handleExamplePress} />
+            ) : null}
+
+            {visibleMessages.map((message) => (
+              <MessageBubble
+                key={message.id}
+                role={message.role}
+                content={message.content}
+                status={message.status}
+                createdAt={message.createdAt}
+                onRetry={
+                  message.status === "failed"
+                    ? () => {
+                        void retryMessage(message.id);
+                      }
+                    : undefined
+                }
+              />
+            ))}
+
+            {showTyping ? <TypingIndicator /> : null}
+
+            {error && visibleMessages.length > 0 ? (
+              <ErrorConversation
+                message={friendlyError}
+                onRetry={() => {
+                  const failed = [...visibleMessages]
+                    .reverse()
+                    .find((message) => message.status === "failed");
+                  if (failed) {
+                    void retryMessage(failed.id);
+                  } else {
+                    void startConversation();
+                  }
+                }}
+              />
+            ) : null}
           </View>
         </ScrollView>
 
-        {/* Coach inbox has no input composer */}
+        <View
+          pointerEvents="box-none"
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: scrollBottomPadding,
+          }}
+        >
+          <ScrollToBottomButton
+            visible={showScrollToBottom}
+            onPress={() => scrollToLatest(true)}
+          />
+        </View>
+
+        <ChatInput
+          onSend={handleSend}
+          disabled={!conversation || !promptContext || showInitialLoading}
+          loading={loading}
+          onKeyboardHeightChange={setKeyboardLift}
+          onComposerLayout={setComposerHeight}
+        />
       </View>
     </GradientBackground>
   );

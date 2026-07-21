@@ -4,3 +4,7 @@ export {
   type SendMessageOptions,
   type RetryMessageOptions,
 } from "./ConversationService";
+export {
+  createConversationService,
+  type CreateConversationServiceOptions,
+} from "./createConversationService";

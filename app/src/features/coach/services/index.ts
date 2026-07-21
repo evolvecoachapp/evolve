@@ -1,5 +1,9 @@
 export { coachService } from "./defaultCoachService";
 export { createCoachService, resolveCoachProviderId } from "./coachServiceFactory";
+export {
+  createCoachConversationRuntime,
+  type CoachConversationRuntime,
+} from "./createCoachConversationRuntime";
 export type {
   CoachProviderId,
   CoachSendMessageRequest,
