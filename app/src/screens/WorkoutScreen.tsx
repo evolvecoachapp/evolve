@@ -69,6 +69,14 @@ export function WorkoutScreen() {
       </Pressable>
       <Pressable
         accessibilityRole="button"
+        accessibilityLabel="Workout records"
+        onPress={() => router.push("/(app)/workout/records")}
+        style={({ pressed }) => [styles.headerButton, pressed && { opacity: 0.7 }]}
+      >
+        <Ionicons name="trophy-outline" size={22} color={colors.ink} />
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
         accessibilityLabel="Workout history"
         onPress={() => router.push("/(app)/workout/history")}
         style={({ pressed }) => [styles.headerButton, pressed && { opacity: 0.7 }]}
