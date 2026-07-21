@@ -31,6 +31,7 @@ function createRepository(options?: {
   workout?: WorkoutAnalytics;
   exercises?: readonly ExerciseAnalytics[];
   weekly?: WeeklyAnalytics;
+  volumeTrend?: WorkoutTrend;
   workoutFrequency?: WorkoutTrend;
   fail?: boolean;
 }): WorkoutAnalyticsRepository {
@@ -68,6 +69,15 @@ function createRepository(options?: {
     metric: "volume",
     points: Object.freeze([]),
   });
+  const volumeTrend: WorkoutTrend = Object.freeze(
+    options?.volumeTrend ?? {
+      metric: "volume",
+      points: Object.freeze([
+        Object.freeze({ periodStart: "2026-07-06", value: 600 }),
+        Object.freeze({ periodStart: "2026-07-13", value: 800 }),
+      ]),
+    },
+  );
   const workoutFrequency: WorkoutTrend = Object.freeze(
     options?.workoutFrequency ?? {
       metric: "workout_frequency",
@@ -85,7 +95,7 @@ function createRepository(options?: {
       }),
       getExerciseAnalytics: jest.fn(async () => exercises),
       getWeeklyAnalytics: jest.fn(async () => weekly),
-      getVolumeTrend: jest.fn(async () => emptyTrend),
+      getVolumeTrend: jest.fn(async () => volumeTrend),
       getWorkoutFrequency: jest.fn(async () => workoutFrequency),
       getExerciseFrequency: jest.fn(async () => emptyTrend),
     };
@@ -95,7 +105,7 @@ function createRepository(options?: {
     getWorkoutAnalytics: jest.fn(async () => workout),
     getExerciseAnalytics: jest.fn(async () => exercises),
     getWeeklyAnalytics: jest.fn(async () => weekly),
-    getVolumeTrend: jest.fn(async () => emptyTrend),
+    getVolumeTrend: jest.fn(async () => volumeTrend),
     getWorkoutFrequency: jest.fn(async () => workoutFrequency),
     getExerciseFrequency: jest.fn(async () => emptyTrend),
   };
@@ -150,10 +160,47 @@ describe("WorkoutAnalyticsScreen", () => {
 
     expect(getByText("Performance overview")).toBeTruthy();
     expect(getByText("Back Squat")).toBeTruthy();
-    expect(getByText("Current Week")).toBeTruthy();
+    expect(getByTestId("weekly-summary-card")).toBeTruthy();
     expect(getByText("3")).toBeTruthy();
     expect(getByText("2")).toBeTruthy();
+    expect(getByTestId("volume-trend-chart")).toBeTruthy();
+    expect(getByTestId("workout-frequency-chart")).toBeTruthy();
+    expect(getByTestId("weekly-volume-chart")).toBeTruthy();
+    expect(getByText("Volume Trend")).toBeTruthy();
+    expect(getByText("Workout Frequency")).toBeTruthy();
+    expect(getByText("Weekly Volume")).toBeTruthy();
     expect(repository.getWorkoutAnalytics).toHaveBeenCalled();
+    expect(repository.getVolumeTrend).toHaveBeenCalled();
+  });
+
+  it("hides charts when analytics are empty", async () => {
+    const repository = createRepository({
+      workout: Object.freeze({
+        totalWorkouts: 0,
+        totalVolumeKg: 0,
+        totalSets: 0,
+        totalReps: 0,
+        averageDurationSeconds: null,
+        averageVolumeKg: null,
+      }),
+      exercises: Object.freeze([]),
+      weekly: Object.freeze({
+        currentWeekVolumeKg: 0,
+        previousWeekVolumeKg: 0,
+        sessionsPerWeek: 0,
+      }),
+    });
+
+    const { getByText, queryByTestId } = renderScreen(
+      <WorkoutAnalyticsScreen repository={repository} />,
+    );
+
+    await waitFor(() => {
+      expect(getByText("No analytics yet")).toBeTruthy();
+    });
+    expect(queryByTestId("volume-trend-chart")).toBeNull();
+    expect(queryByTestId("workout-frequency-chart")).toBeNull();
+    expect(queryByTestId("weekly-volume-chart")).toBeNull();
   });
 
   it("surfaces repository errors", async () => {

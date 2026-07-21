@@ -4,3 +4,8 @@ export { AnalyticsKpiCard } from "./AnalyticsKpiCard";
 export { WeeklySummaryCard } from "./WeeklySummaryCard";
 export { ExerciseHighlightsCard } from "./ExerciseHighlightsCard";
 export { AnalyticsEmptyState } from "./AnalyticsEmptyState";
+export { AnalyticsSection } from "./AnalyticsSection";
+export { AnalyticsChartCard } from "./AnalyticsChartCard";
+export { VolumeTrendChart } from "./VolumeTrendChart";
+export { WorkoutFrequencyChart } from "./WorkoutFrequencyChart";
+export { WeeklyVolumeChart } from "./WeeklyVolumeChart";

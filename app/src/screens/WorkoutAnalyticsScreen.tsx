@@ -1,6 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
 import { GradientBackground } from "../components/GradientBackground";
-import { LoadingSpinner } from "../components/LoadingSpinner";
 import { ScreenContainer } from "../components/ScreenContainer";
 import { SettingsHeader } from "../components/SettingsHeader";
 import {
@@ -8,7 +7,10 @@ import {
   AnalyticsHero,
   AnalyticsKpiGrid,
   ExerciseHighlightsCard,
+  VolumeTrendChart,
   WeeklySummaryCard,
+  WeeklyVolumeChart,
+  WorkoutFrequencyChart,
   useWorkoutAnalytics,
 } from "../features/analytics";
 import type { WorkoutAnalyticsRepository } from "../features/analytics";
@@ -27,8 +29,15 @@ interface WorkoutAnalyticsScreenProps {
 export function WorkoutAnalyticsScreen({
   repository,
 }: WorkoutAnalyticsScreenProps = {}) {
-  const { workout, exercises, weekly, workoutFrequency, loading, error } =
-    useWorkoutAnalytics({ repository });
+  const {
+    workout,
+    exercises,
+    weekly,
+    volumeTrend,
+    workoutFrequency,
+    loading,
+    error,
+  } = useWorkoutAnalytics({ repository });
 
   const styles = useThemedStyles(({ colors, typography }) =>
     StyleSheet.create({
@@ -65,7 +74,11 @@ export function WorkoutAnalyticsScreen({
         <SettingsHeader title="Analytics" />
         <ScreenContainer gradient={false} withHeader={false}>
           {loading ? (
-            <LoadingSpinner />
+            <View style={styles.stack} testID="workout-analytics-loading">
+              <VolumeTrendChart loading />
+              <WorkoutFrequencyChart loading />
+              <WeeklyVolumeChart loading />
+            </View>
           ) : error ? (
             <Text style={styles.message}>{error}</Text>
           ) : isEmpty || workout == null || weekly == null ? (
@@ -79,6 +92,9 @@ export function WorkoutAnalyticsScreen({
                 currentWeekWorkouts={currentWeekWorkouts}
                 previousWeekWorkouts={previousWeekWorkouts}
               />
+              <VolumeTrendChart trend={volumeTrend} />
+              <WorkoutFrequencyChart trend={workoutFrequency} />
+              <WeeklyVolumeChart weekly={weekly} />
               <ExerciseHighlightsCard exercises={exercises} />
             </View>
           )}
