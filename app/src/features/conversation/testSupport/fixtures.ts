@@ -6,7 +6,11 @@ import type { Conversation } from "../models/Conversation";
 import type { ConversationMessage } from "../models/ConversationMessage";
 import type { ConversationMetadata } from "../models/ConversationMetadata";
 import type { ConversationSession } from "../models/ConversationSession";
+import type { ConversationSnapshot } from "../models/ConversationSnapshot";
 import type { ConversationStatus } from "../models/ConversationStatus";
+import type { ConversationStreamStatus } from "../models/ConversationStreamStatus";
+import { CURRENT_CONVERSATION_PERSISTENCE_VERSION } from "../models/ConversationPersistenceVersion";
+import { toConversationSnapshot } from "../utils/toConversationSnapshot";
 
 export const FIXED_TIMESTAMP = "2026-07-22T12:00:00.000Z";
 
@@ -77,5 +81,37 @@ export function createConversation(
     }),
     createdAt,
     updatedAt,
+  });
+}
+
+export function createConversationSnapshot(
+  overrides: {
+    readonly id?: string;
+    readonly status?: ConversationStatus;
+    readonly messages?: readonly ConversationMessage[];
+    readonly metadata?: Partial<ConversationMetadata>;
+    readonly session?: Partial<ConversationSession>;
+    readonly streamStatus?: ConversationStreamStatus;
+    readonly createdAt?: string;
+    readonly updatedAt?: string;
+    readonly schemaVersion?: number;
+  } = {},
+): ConversationSnapshot {
+  const conversation = createConversation(overrides);
+  const snapshot = toConversationSnapshot(
+    conversation,
+    overrides.streamStatus ?? "idle",
+  );
+
+  if (overrides.schemaVersion !== undefined) {
+    return Object.freeze({
+      ...snapshot,
+      schemaVersion: overrides.schemaVersion,
+    });
+  }
+
+  return Object.freeze({
+    ...snapshot,
+    schemaVersion: CURRENT_CONVERSATION_PERSISTENCE_VERSION,
   });
 }

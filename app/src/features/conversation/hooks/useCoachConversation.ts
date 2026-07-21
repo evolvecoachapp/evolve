@@ -35,6 +35,7 @@ export function useCoachConversation({
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [loading, setLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const [currentStream, setCurrentStream] = useState<StreamingSession | null>(
     null,
   );
@@ -190,6 +191,44 @@ export function useCoachConversation({
     });
   }, [conversation, run, service]);
 
+  const restore = useCallback(async () => {
+    setIsRestoring(true);
+    setError(null);
+    try {
+      const restored = await service.restoreConversation(
+        conversation?.id,
+      );
+      setConversation(restored);
+    } catch (caughtError: unknown) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Conversation restore failed.",
+      );
+    } finally {
+      setIsRestoring(false);
+      syncStreamState();
+    }
+  }, [conversation?.id, service, syncStreamState]);
+
+  const clearHistory = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await service.clearConversation(conversation?.id);
+      setConversation(null);
+    } catch (caughtError: unknown) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Conversation clear failed.",
+      );
+    } finally {
+      setLoading(false);
+      syncStreamState();
+    }
+  }, [conversation?.id, service, syncStreamState]);
+
   const messages: readonly ConversationMessage[] =
     conversation?.messages ?? Object.freeze([]);
   const status: ConversationStatus | null = conversation?.status ?? null;
@@ -200,6 +239,7 @@ export function useCoachConversation({
     status,
     loading,
     isStreaming,
+    isRestoring,
     currentStream,
     error,
     startConversation,
@@ -208,5 +248,7 @@ export function useCoachConversation({
     cancelStream,
     closeConversation,
     deleteConversation,
+    restore,
+    clearHistory,
   };
 }

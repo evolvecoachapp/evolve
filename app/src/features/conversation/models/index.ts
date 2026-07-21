@@ -13,3 +13,18 @@ export {
   type ConversationErrorCode,
 } from "./ConversationError";
 export type { ConversationSummary } from "./ConversationSummary";
+export type { ConversationSnapshot } from "./ConversationSnapshot";
+export type {
+  ConversationPersistenceState,
+  ConversationPersistenceLifecycle,
+} from "./ConversationPersistenceState";
+export {
+  CURRENT_CONVERSATION_PERSISTENCE_VERSION,
+  isSupportedConversationPersistenceVersion,
+  type ConversationPersistenceVersion,
+} from "./ConversationPersistenceVersion";
+export type { ConversationMigrationResult } from "./ConversationMigrationResult";
+export {
+  CONVERSATION_STREAM_STATUSES,
+  type ConversationStreamStatus,
+} from "./ConversationStreamStatus";

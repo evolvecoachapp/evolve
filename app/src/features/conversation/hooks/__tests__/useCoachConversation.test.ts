@@ -6,6 +6,8 @@ import type { AIProvider } from "../../../ai/providers/AIProvider";
 import { createStubStream } from "../../../ai/providers/stubHelpers";
 import { AIService } from "../../../ai/services/AIService";
 import { createAIResponse } from "../../../ai/testSupport/fixtures";
+import { InMemoryConversationPersistenceRepository } from "../../persistence/InMemoryConversationPersistenceRepository";
+import { InMemoryStorageAdapter } from "../../persistence/InMemoryStorageAdapter";
 import { InMemoryConversationRepository } from "../../repository/InMemoryConversationRepository";
 import { ConversationService } from "../../services/ConversationService";
 import {
@@ -14,7 +16,9 @@ import {
 } from "../../testSupport/fixtures";
 import { useCoachConversation } from "../useCoachConversation";
 
-function createService(): ConversationService {
+function createService(
+  persistence = new InMemoryConversationPersistenceRepository(),
+): ConversationService {
   const generate = async (): Promise<AIResponse> =>
     createAIResponse({
       message: {
@@ -67,7 +71,7 @@ function createService(): ConversationService {
   };
 
   return new ConversationService(
-    new InMemoryConversationRepository(),
+    new InMemoryConversationRepository(persistence),
     new AIService(provider, AIConfigurationFactory.createDefault()),
   );
 }
@@ -184,6 +188,49 @@ describe("useCoachConversation", () => {
 
     await act(async () => {
       await result.current.deleteConversation();
+    });
+
+    expect(result.current.conversation).toBeNull();
+    expect(result.current.messages).toHaveLength(0);
+  });
+
+  it("restores a persisted conversation and clears history", async () => {
+    const storage = new InMemoryStorageAdapter();
+    const persistence = new InMemoryConversationPersistenceRepository(storage);
+    const writer = createService(persistence);
+
+    const started = await writer.startConversation({ now: FIXED_TIMESTAMP });
+    await writer.sendMessage({
+      conversationId: started.id,
+      content: "Hook restore",
+      promptContext: createPromptContext(),
+      now: FIXED_TIMESTAMP,
+    });
+
+    const reader = createService(persistence);
+    const { result } = renderHook(() =>
+      useCoachConversation({
+        service: reader,
+        promptContext: createPromptContext(),
+      }),
+    );
+
+    expect(result.current.isRestoring).toBe(false);
+
+    await act(async () => {
+      await result.current.restore();
+    });
+
+    await waitFor(() => {
+      expect(result.current.isRestoring).toBe(false);
+    });
+
+    expect(result.current.error).toBeNull();
+    expect(result.current.conversation?.id).toBe(started.id);
+    expect(result.current.messages[0]?.content).toBe("Hook restore");
+
+    await act(async () => {
+      await result.current.clearHistory();
     });
 
     expect(result.current.conversation).toBeNull();

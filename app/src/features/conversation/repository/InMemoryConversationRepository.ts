@@ -1,8 +1,16 @@
 import { ConversationError } from "../models/ConversationError";
 import type { Conversation } from "../models/Conversation";
 import type { ConversationMessage } from "../models/ConversationMessage";
+import type { ConversationSnapshot } from "../models/ConversationSnapshot";
+import type { ConversationStreamStatus } from "../models/ConversationStreamStatus";
 import type { ConversationSummary } from "../models/ConversationSummary";
 import type { MessageStatus } from "../models/MessageStatus";
+import { InMemoryConversationPersistenceRepository } from "../persistence/InMemoryConversationPersistenceRepository";
+import type { ConversationPersistenceRepository } from "../persistence/ConversationPersistenceRepository";
+import {
+  fromConversationSnapshot,
+  toConversationSnapshot,
+} from "../utils/toConversationSnapshot";
 import { sortMessages } from "../utils/sortMessages";
 import type { ConversationRepository } from "./ConversationRepository";
 
@@ -46,12 +54,17 @@ function rebuildMetadata(
 }
 
 /**
- * Ephemeral in-process ConversationRepository.
+ * In-process ConversationRepository with optional durable delegation.
  *
- * Suitable for tests and offline orchestration — not durable storage.
+ * Working state lives in memory; persistSnapshot / restoreFromPersistence /
+ * clearPersisted delegate to ConversationPersistenceRepository.
  */
 export class InMemoryConversationRepository implements ConversationRepository {
   private readonly conversations = new Map<string, Conversation>();
+
+  constructor(
+    private readonly persistence: ConversationPersistenceRepository = new InMemoryConversationPersistenceRepository(),
+  ) {}
 
   async create(conversation: Conversation): Promise<Conversation> {
     if (this.conversations.has(conversation.id)) {
@@ -310,6 +323,17 @@ export class InMemoryConversationRepository implements ConversationRepository {
       });
     }
     this.conversations.delete(id);
+
+    try {
+      await this.persistence.deleteConversation(id);
+    } catch (error: unknown) {
+      if (
+        !(error instanceof ConversationError) ||
+        error.code !== "not_found"
+      ) {
+        throw error;
+      }
+    }
   }
 
   async list(): Promise<readonly ConversationSummary[]> {
@@ -320,7 +344,59 @@ export class InMemoryConversationRepository implements ConversationRepository {
     return Object.freeze(summaries);
   }
 
-  /** Test helper — wipe all stored conversations. */
+  async persistSnapshot(
+    conversation: Conversation,
+    streamStatus: ConversationStreamStatus = "idle",
+  ): Promise<ConversationSnapshot> {
+    const snapshot = toConversationSnapshot(conversation, streamStatus);
+    return this.persistence.saveConversation(snapshot);
+  }
+
+  async restoreFromPersistence(
+    conversationId?: string,
+  ): Promise<Conversation | null> {
+    let snapshot: ConversationSnapshot | null = null;
+
+    if (conversationId) {
+      snapshot = await this.persistence.loadConversation(conversationId);
+    } else {
+      const listed = await this.persistence.listConversations();
+      snapshot = listed[0] ?? null;
+    }
+
+    if (!snapshot) {
+      return null;
+    }
+
+    const conversation = fromConversationSnapshot(snapshot);
+    this.conversations.set(conversation.id, cloneConversation(conversation));
+    return cloneConversation(conversation);
+  }
+
+  async clearPersisted(conversationId?: string): Promise<void> {
+    if (conversationId) {
+      this.conversations.delete(conversationId);
+      try {
+        await this.persistence.deleteConversation(conversationId);
+      } catch (error: unknown) {
+        if (
+          !(error instanceof ConversationError) ||
+          error.code !== "not_found"
+        ) {
+          throw error;
+        }
+      }
+      return;
+    }
+
+    this.conversations.clear();
+    const listed = await this.persistence.listConversations();
+    for (const snapshot of listed) {
+      await this.persistence.deleteConversation(snapshot.id);
+    }
+  }
+
+  /** Test helper — wipe all working conversations (not durable storage). */
   async clear(): Promise<void> {
     this.conversations.clear();
   }

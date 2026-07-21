@@ -1,4 +1,6 @@
 import { ConversationError } from "../../models/ConversationError";
+import { InMemoryConversationPersistenceRepository } from "../../persistence/InMemoryConversationPersistenceRepository";
+import { InMemoryStorageAdapter } from "../../persistence/InMemoryStorageAdapter";
 import {
   createConversation,
   createMessage,
@@ -151,5 +153,32 @@ describe("InMemoryConversationRepository", () => {
     await expect(
       repository.appendMessage("missing", createMessage()),
     ).rejects.toMatchObject({ code: "not_found" });
+  });
+
+  it("delegates persist and restore through ConversationPersistenceRepository", async () => {
+    const storage = new InMemoryStorageAdapter();
+    const persistence = new InMemoryConversationPersistenceRepository(storage);
+    const working = new InMemoryConversationRepository(persistence);
+
+    const conversation = await working.create(
+      createConversation({
+        messages: [createMessage({ id: "msg-1", status: "sent" })],
+      }),
+    );
+
+    const snapshot = await working.persistSnapshot(conversation, "completed");
+    expect(snapshot.streamStatus).toBe("completed");
+
+    const fresh = new InMemoryConversationRepository(persistence);
+    const restored = await fresh.restoreFromPersistence(conversation.id);
+
+    expect(restored?.id).toBe(conversation.id);
+    expect(restored?.messages).toHaveLength(1);
+
+    await fresh.clearPersisted(conversation.id);
+    await expect(fresh.getById(conversation.id)).resolves.toBeNull();
+    await expect(
+      persistence.loadConversation(conversation.id),
+    ).resolves.toBeNull();
   });
 });

@@ -1,12 +1,16 @@
 import {
   createConversation,
+  createConversationSnapshot,
   createMessage,
   FIXED_TIMESTAMP,
 } from "../../testSupport/fixtures";
 import { buildConversationContext } from "../buildConversationContext";
+import { calculateConversationSize } from "../calculateConversationSize";
+import { deepCloneConversation } from "../deepCloneConversation";
 import { generateConversationTitle } from "../generateConversationTitle";
 import { sortMessages } from "../sortMessages";
 import { validateConversation } from "../validateConversation";
+import { validateConversationSnapshot } from "../validateConversationSnapshot";
 import { validateMessage } from "../validateMessage";
 
 describe("conversation utilities", () => {
@@ -151,6 +155,58 @@ describe("conversation utilities", () => {
 
     it("keeps short titles intact", () => {
       expect(generateConversationTitle("Train today?")).toBe("Train today?");
+    });
+  });
+
+  describe("deepCloneConversation", () => {
+    it("returns an independent frozen clone", () => {
+      const original = createConversation({
+        messages: [createMessage({ id: "msg-1", status: "sent" })],
+      });
+      const clone = deepCloneConversation(original);
+
+      expect(clone).toEqual(original);
+      expect(clone).not.toBe(original);
+      expect(clone.messages).not.toBe(original.messages);
+      expect(Object.isFrozen(clone)).toBe(true);
+    });
+  });
+
+  describe("calculateConversationSize", () => {
+    it("returns a positive size for conversations and snapshots", () => {
+      const conversation = createConversation({
+        messages: [createMessage({ id: "msg-1", status: "sent" })],
+      });
+      const snapshot = createConversationSnapshot({
+        messages: [createMessage({ id: "msg-1", status: "sent" })],
+      });
+
+      expect(calculateConversationSize(conversation)).toBeGreaterThan(0);
+      expect(calculateConversationSize(snapshot)).toBeGreaterThan(0);
+    });
+  });
+
+  describe("validateConversationSnapshot", () => {
+    it("returns no issues for a valid snapshot", () => {
+      expect(validateConversationSnapshot(createConversationSnapshot())).toEqual(
+        [],
+      );
+    });
+
+    it("flags invalid schema version and stream status", () => {
+      const issues = validateConversationSnapshot(
+        createConversationSnapshot({
+          schemaVersion: 0,
+          streamStatus: "not-a-status" as never,
+        }),
+      );
+
+      expect(issues).toEqual(
+        expect.arrayContaining([
+          "invalid_schema_version",
+          "invalid_stream_status",
+        ]),
+      );
     });
   });
 });

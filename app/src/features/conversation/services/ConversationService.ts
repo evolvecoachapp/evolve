@@ -7,6 +7,8 @@ import type { PromptContext } from "../../prompt-builder/models/PromptContext";
 import { ConversationError } from "../models/ConversationError";
 import type { Conversation } from "../models/Conversation";
 import type { ConversationMessage } from "../models/ConversationMessage";
+import type { ConversationSnapshot } from "../models/ConversationSnapshot";
+import type { ConversationStreamStatus } from "../models/ConversationStreamStatus";
 import type { ConversationRepository } from "../repository/ConversationRepository";
 import { buildConversationContext } from "../utils/buildConversationContext";
 import { generateConversationTitle } from "../utils/generateConversationTitle";
@@ -44,11 +46,10 @@ interface ActiveStreamState {
 }
 
 /**
- * Orchestrates conversation state and AI generation.
+ * Orchestrates conversation state, AI generation, and persistence lifecycle.
  *
- * Owns the streaming lifecycle: partial assistant messages, status, cancel,
- * finish, provider failure, and retry. Depends only on ConversationRepository
- * and AIService — no networking, no provider SDKs, no UI.
+ * Owns streaming and durable restore/persist/clear. Depends only on
+ * ConversationRepository and AIService — never on a concrete StorageAdapter.
  */
 export class ConversationService {
   private activeStream: ActiveStreamState | null = null;
@@ -141,6 +142,7 @@ export class ConversationService {
       "sent",
     );
     options.onConversationUpdate?.(current);
+    await this.autoPersist(current, "idle");
 
     return this.streamAssistantReply({
       conversation: current,
@@ -250,6 +252,68 @@ export class ConversationService {
 
   async listConversations() {
     return this.repository.list();
+  }
+
+  /**
+   * Restore a conversation from durable storage into the working store.
+   * When conversationId is omitted, restores the most recently updated snapshot.
+   */
+  async restoreConversation(
+    conversationId?: string,
+  ): Promise<Conversation | null> {
+    return this.repository.restoreFromPersistence(conversationId);
+  }
+
+  /** Persist the current working conversation as a durable snapshot. */
+  async persistConversation(
+    conversationId: string,
+  ): Promise<ConversationSnapshot> {
+    const conversation = await this.requireConversation(conversationId);
+    const streamStatus = this.resolveStreamStatus();
+    return this.repository.persistSnapshot(conversation, streamStatus);
+  }
+
+  /**
+   * Clear conversation history from working store and durable persistence.
+   * When conversationId is omitted, clears all conversations.
+   */
+  async clearConversation(conversationId?: string): Promise<void> {
+    if (this.activeStream) {
+      if (
+        conversationId === undefined ||
+        this.activeStream.conversationId === conversationId
+      ) {
+        this.activeStream.abortController.abort();
+        this.activeStream = null;
+      }
+    }
+
+    await this.repository.clearPersisted(conversationId);
+  }
+
+  private resolveStreamStatus(): ConversationStreamStatus {
+    const status = this.activeStream?.session.status;
+    if (
+      status === "starting" ||
+      status === "streaming" ||
+      status === "completed" ||
+      status === "cancelled" ||
+      status === "failed"
+    ) {
+      return status;
+    }
+    return "idle";
+  }
+
+  private async autoPersist(
+    conversation: Conversation,
+    streamStatus: ConversationStreamStatus,
+  ): Promise<void> {
+    try {
+      await this.repository.persistSnapshot(conversation, streamStatus);
+    } catch {
+      // Automatic persistence must not break the conversation lifecycle.
+    }
   }
 
   private async streamAssistantReply(input: {
@@ -420,6 +484,7 @@ export class ConversationService {
       }
 
       input.onConversationUpdate?.(current);
+      await this.autoPersist(current, "completed");
       return current;
     } catch (error: unknown) {
       if (

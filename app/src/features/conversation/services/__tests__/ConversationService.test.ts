@@ -7,6 +7,8 @@ import { createStubStream } from "../../../ai/providers/stubHelpers";
 import { AIService } from "../../../ai/services/AIService";
 import { createAIResponse } from "../../../ai/testSupport/fixtures";
 import { ConversationError } from "../../models/ConversationError";
+import { InMemoryConversationPersistenceRepository } from "../../persistence/InMemoryConversationPersistenceRepository";
+import { InMemoryStorageAdapter } from "../../persistence/InMemoryStorageAdapter";
 import { InMemoryConversationRepository } from "../../repository/InMemoryConversationRepository";
 import {
   createPromptContext,
@@ -250,5 +252,75 @@ describe("ConversationService", () => {
 
     await service.deleteConversation(started.id);
     await expect(repository.getById(started.id)).resolves.toBeNull();
+  });
+
+  it("auto-persists after a new message and stream completion", async () => {
+    const storage = new InMemoryStorageAdapter();
+    const persistence = new InMemoryConversationPersistenceRepository(storage);
+    const repository = new InMemoryConversationRepository(persistence);
+    const service = new ConversationService(
+      repository,
+      new AIService(createProvider(), testConfiguration),
+    );
+
+    const started = await service.startConversation({ now: FIXED_TIMESTAMP });
+    await service.sendMessage({
+      conversationId: started.id,
+      content: "Persist me",
+      promptContext: createPromptContext(),
+      now: FIXED_TIMESTAMP,
+    });
+
+    const persisted = await persistence.loadConversation(started.id);
+    expect(persisted).not.toBeNull();
+    expect(persisted?.messages).toHaveLength(2);
+    expect(persisted?.streamStatus).toBe("completed");
+  });
+
+  it("restores a conversation from durable persistence", async () => {
+    const storage = new InMemoryStorageAdapter();
+    const persistence = new InMemoryConversationPersistenceRepository(storage);
+    const firstRepository = new InMemoryConversationRepository(persistence);
+    const firstService = new ConversationService(
+      firstRepository,
+      new AIService(createProvider(), testConfiguration),
+    );
+
+    const started = await firstService.startConversation({
+      now: FIXED_TIMESTAMP,
+    });
+    await firstService.sendMessage({
+      conversationId: started.id,
+      content: "Remember this",
+      promptContext: createPromptContext(),
+      now: FIXED_TIMESTAMP,
+    });
+
+    const secondRepository = new InMemoryConversationRepository(persistence);
+    const secondService = new ConversationService(
+      secondRepository,
+      new AIService(createProvider(), testConfiguration),
+    );
+
+    const restored = await secondService.restoreConversation(started.id);
+    expect(restored?.id).toBe(started.id);
+    expect(restored?.messages[0]?.content).toBe("Remember this");
+  });
+
+  it("clears conversation history from working store and persistence", async () => {
+    const storage = new InMemoryStorageAdapter();
+    const persistence = new InMemoryConversationPersistenceRepository(storage);
+    const repository = new InMemoryConversationRepository(persistence);
+    const service = new ConversationService(
+      repository,
+      new AIService(createProvider(), testConfiguration),
+    );
+
+    const started = await service.startConversation({ now: FIXED_TIMESTAMP });
+    await service.persistConversation(started.id);
+    await service.clearConversation(started.id);
+
+    await expect(repository.getById(started.id)).resolves.toBeNull();
+    await expect(persistence.loadConversation(started.id)).resolves.toBeNull();
   });
 });
