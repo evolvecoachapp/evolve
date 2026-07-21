@@ -151,8 +151,8 @@ Not started. Planned: managed PostgreSQL, secrets management, full CI/CD, monito
 | Mobile ↔ Backend integration | Auth, user profile, workout resolution/session; other feature providers are stubs |
 | Production readiness | Not started |
 
-**Last completed sprint:** 13.2.0 — Workout Detail Experience  
-**Next sprint:** Progress enrichment / analytics (TBD)
+**Last completed sprint:** 14.0.0 — Workout Analytics Foundation
+**Next sprint:** Progress charts / analytics UI (TBD)
 
 ---
 

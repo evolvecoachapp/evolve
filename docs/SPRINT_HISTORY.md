@@ -404,6 +404,19 @@
 
 ## Phase — Training Engine (Mobile Application Layer)
 
+### Sprint 14.0.0 — Workout Analytics Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 14.0.0 |
+| **Title** | Workout Analytics Foundation |
+| **Date** | 2026-07-21 |
+| **Goal** | Introduce a dedicated analytics domain that computes workout statistics from `WorkoutHistoryRepository` without UI |
+| **Files modified** | `features/analytics` models (`WorkoutAnalytics`, `ExerciseAnalytics`, `WeeklyAnalytics`, `WorkoutTrend`), pure compute utils, `WorkoutAnalyticsRepository` / `HistoryBackedWorkoutAnalyticsRepository`, application use-cases, `useWorkoutAnalytics`, unit tests, docs |
+| **Architecture impact** | Hook → Application → `WorkoutAnalyticsRepository` → `WorkoutHistoryRepository`; all aggregates outside UI; trend APIs prepared for future charts; no screens/dashboards/AI |
+| **Status** | Complete |
+| **Notes** | UTC Monday–Sunday weeks; legacy history without exercise snapshots contributes session totals but not per-exercise stats |
+
 ### Sprint 13.2.0 — Workout Detail Experience
 
 | Field | Detail |

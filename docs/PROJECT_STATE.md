@@ -18,11 +18,11 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Auth | Connected — login, register, refresh, secure-store tokens |
 | Navigation | 6-tab bottom bar (Home, Workout, Nutrition, Coach, Progress, Profile) |
 | Design system | Token-based theme with light/dark/system preference (`ThemeContext`) |
-| Feature modules | coach, workout, nutrition, progress, home, dashboard, profile, shared |
-| Data layer | Service factory pattern; user/workout backend providers; on-device workout history via `WorkoutHistoryRepository` + `StorageAdapter` (Sprint 13.0) |
+| Feature modules | coach, workout, nutrition, progress, analytics, home, dashboard, profile, shared |
+| Data layer | Service factory pattern; user/workout backend providers; on-device workout history via `WorkoutHistoryRepository` + `StorageAdapter` (Sprint 13.0); analytics via `WorkoutAnalyticsRepository` (Sprint 14.0) |
 | Backend providers | `BackendUserService`, `BackendWorkoutService` live; other `Backend*Service` classes throw `notConfigured()` |
 | Tests | Jest + jest-expo |
-| Sprint status | Interactive session finish persists locally; history timeline + workout detail shipped (13.1–13.2); analytics deferred |
+| Sprint status | History + detail shipped (13.1–13.2); workout analytics foundation (14.0) — domain/hook only, no charts UI |
 
 ---
 
@@ -117,19 +117,18 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 
 ## Last Completed Sprint
 
-**13.2.0 — Workout Detail Experience** (2026-07-21)
+**14.0.0 — Workout Analytics Foundation** (2026-07-21)
 
-- `WorkoutDetailScreen` loads via `useWorkoutDetail` → `getCompletedSession` → `WorkoutHistoryRepository.getCompletedSession`
-- Reusable hero, metrics grid, exercise cards, set rows, footer; empty/not-found state
-- Persisted exercise/set snapshots on `CompletedWorkout`; no editing, analytics, or AI
+- `features/analytics` computes totals, exercise stats, weekly volume, and trend series from `WorkoutHistoryRepository`
+- `useWorkoutAnalytics` → application → `WorkoutAnalyticsRepository` (history-backed); no screens or charts
 
-Previous: **13.1.0 — Workout History Timeline** (2026-07-21), **13.0.0 — Workout History Persistence Foundation** (2026-07-21)
+Previous: **13.2.0 — Workout Detail Experience**, **13.1.0 — Workout History Timeline**, **13.0.0 — Workout History Persistence Foundation** (2026-07-21)
 
 ---
 
 ## Next Sprint
 
-**Progress enrichment / analytics (TBD)** — charts and deeper history insights remain out of scope until explicitly planned.
+**Progress charts / analytics UI (TBD)** — wire analytics domain into Progress surfaces; still no AI.
 
 ---
 

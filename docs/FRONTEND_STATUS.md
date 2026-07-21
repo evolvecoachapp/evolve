@@ -52,6 +52,7 @@ app/
 |--------|------|-------|-----------|--------|
 | **coach** | `features/coach/` | `useCoachChat` | mock, backend (stub), OpenAI/Anthropic/local (stub) | UI complete; mock data |
 | **workout** | `features/workout/` | `useWorkout`, `useWorkoutProgramPreview`, `useStartWorkoutSession`, `useLocalSessionInteraction`, `useSessionTiming`, `useSessionFinish`, `useWorkoutHistory`, `useWorkoutDetail`, `useWorkoutSession` | mock, **backend (live, Sprint 6.3)**, local + training application preview/session | Preview → Start → session → local Finish → persist `CompletedWorkout` (Sprint 13.0) → complete screen (Sprint 12.7) → history (13.1) → detail (13.2); legacy logging service still present |
+| **analytics** | `features/analytics/` | `useWorkoutAnalytics` | history-backed `WorkoutAnalyticsRepository` | Domain + hook only (Sprint 14.0) — totals, exercise/weekly stats, volume & frequency trends; no UI |
 | **nutrition** | `features/nutrition/` | `useNutrition` | mock, backend (stub) | UI complete; mock data |
 | **progress** | `features/progress/` | via `progressService` | mock, backend (stub) | UI complete; mock data |
 | **home** | `features/home/` | `useHome` | mock, backend (stub), local | Dashboard aggregation |
@@ -91,6 +92,7 @@ app/
 - Sprint 13.0: `useSessionFinish` auto-persists a `CompletedWorkout` through `persistCompletedSession` → `WorkoutHistoryRepository` → `StorageAdapter` → AsyncStorage after the summary is built
 - Sprint 13.1: `WorkoutHistoryScreen` loads via `useWorkoutHistory` → `listCompletedSessions` → repository; `WorkoutHistoryCard` shows date, duration, exercises, sets, volume, optional program name; empty state + detail navigation; no analytics/charts/filters
 - Sprint 13.2: `WorkoutDetailScreen` loads via `useWorkoutDetail` → `getCompletedSession` → repository; hero, metrics, exercise/set detail, not-found state; no edit/delete/analytics/AI
+- Sprint 14.0: `features/analytics` — `useWorkoutAnalytics` → application → `WorkoutAnalyticsRepository` → `WorkoutHistoryRepository`; computes totals, exercise analytics, weekly volume, volume/workout/exercise frequency trends; no screens, charts, or dashboards
 
 ### Service Factory Pattern (Sprint 5.2b+)
 - Per-domain `*ServiceFactory.ts` resolves provider from env
@@ -144,7 +146,7 @@ Default provider for all domains is **mock**. Mock providers serve static fixtur
 |------|--------|
 | Implement all `Backend*Service` providers | 5.3 |
 | Profile completion onboarding (height/weight/activity/goal) | 5.3+ |
-| Real progress charts (replace ChartPlaceholder) | 5.4 |
+| Wire analytics domain into Progress charts (replace ChartPlaceholder) | TBD (post-14.0) |
 | Push notifications | 5.4 |
 | Offline workout logging with sync | 5.4 |
 | Wire feature flags to actual features | TBD |
@@ -159,7 +161,7 @@ Default provider for all domains is **mock**. Mock providers serve static fixtur
 |------|-------|
 | Auth/API | `api/__tests__/`, `auth/__tests__/` |
 | Screens | `screens/__tests__/LoginScreen`, `RegisterScreen`, `ProfileScreen`, `WorkoutHistoryScreen`, `WorkoutDetailScreen` |
-| Features | `features/*/__tests__/` — architecture and service tests (incl. workout history + detail) |
+| Features | `features/*/__tests__/` — architecture and service tests (incl. workout history + detail + analytics foundation) |
 | Components | Selected component tests (incl. `WorkoutHistoryCard`, `WorkoutMetricsGrid`, `WorkoutExerciseCard`) |
 
 Run: `npm test` from `app/`
