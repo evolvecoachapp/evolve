@@ -1,0 +1,1 @@
+export { useCoachInsights } from "./useCoachInsights";
