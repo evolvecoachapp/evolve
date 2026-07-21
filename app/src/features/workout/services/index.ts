@@ -16,3 +16,7 @@ export {
   consumePendingExecutableSession,
   setPendingExecutableSession,
 } from "./executableSessionHandoff";
+export {
+  consumePendingSessionSummary,
+  setPendingSessionSummary,
+} from "./sessionSummaryHandoff";

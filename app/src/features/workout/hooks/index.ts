@@ -12,4 +12,6 @@ export { useLocalSessionInteraction } from "./useLocalSessionInteraction";
 export type { UseLocalSessionInteractionResult } from "./useLocalSessionInteraction";
 export { useSessionTiming } from "./useSessionTiming";
 export type { UseSessionTimingResult } from "./useSessionTiming";
+export { useSessionFinish } from "./useSessionFinish";
+export type { UseSessionFinishResult } from "./useSessionFinish";
 export { useWorkoutSession } from "./useWorkoutSession";

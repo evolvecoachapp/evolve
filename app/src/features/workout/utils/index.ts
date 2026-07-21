@@ -91,3 +91,9 @@ export {
   shouldStartRestAfterComplete,
   withProvisionalSetStatus,
 } from "./sessionSetFlow";
+export { buildWorkoutSessionSummary } from "./buildWorkoutSessionSummary";
+export type { BuildWorkoutSessionSummaryOptions } from "./buildWorkoutSessionSummary";
+export {
+  formatSessionDuration,
+  formatSessionVolumeKg,
+} from "./sessionSummaryFormatters";

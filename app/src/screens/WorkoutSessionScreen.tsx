@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { useCallback, useRef } from "react";
 import {
   ScrollView,
@@ -15,9 +16,12 @@ import {
   SessionHero,
   SessionProgressionReferences,
   SessionRestTimer,
+  WorkoutSessionFooter,
 } from "../features/workout/components";
 import { useLocalSessionInteraction } from "../features/workout/hooks/useLocalSessionInteraction";
+import { useSessionFinish } from "../features/workout/hooks/useSessionFinish";
 import { useSessionTiming } from "../features/workout/hooks/useSessionTiming";
+import { setPendingSessionSummary } from "../features/workout/services";
 import {
   findSessionSetRef,
   formatUpcomingSetLabel,
@@ -26,7 +30,7 @@ import {
   countSessionSets,
   estimateSessionDurationMinutes,
 } from "../features/workout/utils/sessionPresentationFormatters";
-import { spacing } from "../theme/theme";
+import { floatingFooterMetrics, spacing } from "../theme/theme";
 import { useThemedStyles } from "../theme/useThemedStyles";
 
 interface WorkoutSessionScreenProps {
@@ -94,6 +98,11 @@ function WorkoutSessionScreenContent({ session }: { session: WorkoutSession }) {
 
   const interaction = useLocalSessionInteraction(session);
   const timing = useSessionTiming(session, interaction.execution);
+  const finish = useSessionFinish(
+    session,
+    interaction.execution,
+    interaction.interactionStatus,
+  );
 
   const scrollRef = useRef<ScrollView>(null);
   const contentOffsetYRef = useRef(0);
@@ -101,6 +110,9 @@ function WorkoutSessionScreenContent({ session }: { session: WorkoutSession }) {
 
   const setCount = countSessionSets(session.exercises);
   const durationMinutes = estimateSessionDurationMinutes(session);
+  const footerReserve = finish.canFinish
+    ? floatingFooterMetrics.scrollReserve(floatingFooterMetrics.workoutContentHeight)
+    : 0;
 
   const upcomingRef =
     timing.rest.upcomingSetId !== null
@@ -150,6 +162,20 @@ function WorkoutSessionScreenContent({ session }: { session: WorkoutSession }) {
     });
   }, []);
 
+  const handleFinishWorkout = useCallback(() => {
+    if (!finish.canFinish) {
+      return;
+    }
+    const summary = finish.buildSummary();
+    setPendingSessionSummary(summary);
+    router.push({
+      pathname: "/(app)/workout/complete",
+      params: { sessionId: summary.sessionId },
+    });
+  }, [finish]);
+
+  const finishSummaryLabel = `${interaction.sessionProgress.completedSets} logged · ${interaction.sessionProgress.skippedSets} skipped`;
+
   return (
     <GradientBackground variant="canvas">
       <View style={styles.screen}>
@@ -157,6 +183,7 @@ function WorkoutSessionScreenContent({ session }: { session: WorkoutSession }) {
         <ScreenContainer
           gradient={false}
           withHeader={false}
+          footerReserve={footerReserve}
           ref={scrollRef}
           onScroll={(event) => {
             contentOffsetYRef.current = event.nativeEvent.contentOffset.y;
@@ -212,6 +239,15 @@ function WorkoutSessionScreenContent({ session }: { session: WorkoutSession }) {
             <SessionProgressionReferences references={session.progressionReferences} />
           </View>
         </ScreenContainer>
+
+        {finish.canFinish ? (
+          <WorkoutSessionFooter
+            label="Finish Workout"
+            summary={finishSummaryLabel}
+            onPress={handleFinishWorkout}
+            aboveTabBar={false}
+          />
+        ) : null}
       </View>
     </GradientBackground>
   );

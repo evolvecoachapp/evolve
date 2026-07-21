@@ -12,6 +12,8 @@ interface WorkoutSessionFooterProps {
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
+  /** Reserve tab-bar space (default). Disable on stack screens without a tab bar. */
+  aboveTabBar?: boolean;
 }
 
 /** Floating primary CTA for the active session — mirrors `WorkoutStartFooter`'s chrome for visual continuity with the preview screen. */
@@ -21,6 +23,7 @@ export function WorkoutSessionFooter({
   onPress,
   loading = false,
   disabled = false,
+  aboveTabBar = true,
 }: WorkoutSessionFooterProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(({ colors, typography, radius }) =>
@@ -52,7 +55,7 @@ export function WorkoutSessionFooter({
   );
 
   return (
-    <FloatingFooterAnchor>
+    <FloatingFooterAnchor aboveTabBar={aboveTabBar}>
       <FloatingSurface variant="footer">
         <View style={styles.summaryRow}>
           <View style={styles.summaryIcon}>

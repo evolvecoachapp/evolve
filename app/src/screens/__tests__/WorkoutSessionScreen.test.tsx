@@ -1,7 +1,9 @@
 import { fireEvent, render } from "@testing-library/react-native";
 import React from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import type { WorkoutSession } from "../../features/training/application";
+import { consumePendingSessionSummary } from "../../features/workout/services";
 import { ThemeProvider } from "../../theme/ThemeContext";
 import { WorkoutSessionScreen } from "../WorkoutSessionScreen";
 
@@ -182,5 +184,39 @@ describe("WorkoutSessionScreen", () => {
     );
 
     expect(getByText(/Workout session not found/i)).toBeTruthy();
+  });
+
+  it("exposes Finish Workout when all sets are accounted and hands off a summary", () => {
+    const session = createSession();
+    const { getByLabelText, getByText, queryByText } = renderScreen(
+      <WorkoutSessionScreen sessionId={session.id} session={session} />,
+    );
+
+    expect(queryByText("Finish Workout")).toBeNull();
+
+    fireEvent.press(getByLabelText("Complete set 1"));
+    fireEvent.changeText(getByLabelText("Completed load for set 1"), "60");
+    fireEvent.press(getByLabelText("Skip set 2"));
+
+    expect(getByText("Complete")).toBeTruthy();
+    expect(getByText("Finish Workout")).toBeTruthy();
+    expect(getByText(/1 logged · 1 skipped/)).toBeTruthy();
+
+    fireEvent.press(getByText("Finish Workout"));
+
+    expect(router.push).toHaveBeenCalledWith({
+      pathname: "/(app)/workout/complete",
+      params: { sessionId: session.id },
+    });
+
+    const summary = consumePendingSessionSummary(session.id);
+    expect(summary).not.toBeNull();
+    expect(summary?.title).toBe("Upper A");
+    expect(summary?.completedSets).toBe(1);
+    expect(summary?.skippedSets).toBe(1);
+    expect(summary?.completionPercent).toBe(100);
+    expect(summary?.estimatedVolumeKg).toBe(480);
+    expect(session.status).toBe("ready");
+    expect(session.completedAt).toBeNull();
   });
 });

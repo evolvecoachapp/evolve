@@ -32,3 +32,4 @@ export type {
   SetExecutionStatus,
 } from "./sessionExecutionState";
 export { EMPTY_SESSION_EXECUTION, EMPTY_SET_EXECUTION } from "./sessionExecutionState";
+export type { WorkoutSessionSummary } from "./workoutSessionSummary";

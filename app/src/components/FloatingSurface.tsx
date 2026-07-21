@@ -126,6 +126,7 @@ export function FloatingFooterAnchor({
   style,
   keyboardAware = false,
   onKeyboardHeightChange,
+  aboveTabBar = true,
 }: {
   children: React.ReactNode;
   style?: ViewStyle;
@@ -133,9 +134,17 @@ export function FloatingFooterAnchor({
   keyboardAware?: boolean;
   /** Reports keyboard lift used for bottom offset — 0 when hidden. Use for chat scroll insets. */
   onKeyboardHeightChange?: (lift: number) => void;
+  /**
+   * When true (default), sit above the floating tab bar.
+   * Set false on stack screens that hide the tab bar.
+   */
+  aboveTabBar?: boolean;
 }) {
   const insets = useSafeAreaInsets();
-  const baseBottom = useFloatingFooterBottomOffset();
+  const tabAwareBottom = useFloatingFooterBottomOffset();
+  const stackBottom =
+    Math.max(insets.bottom, spacing.sm) + floatingFooterMetrics.bottomGap;
+  const baseBottom = aboveTabBar ? tabAwareBottom : stackBottom;
   const [keyboardLift, setKeyboardLift] = useState(0);
 
   useEffect(() => {

@@ -2,6 +2,7 @@ export { ProgramDayExerciseList } from "./ProgramDayExerciseList";
 export { ProgramPreviewHero } from "./ProgramPreviewHero";
 export { ProgramProgressionSection } from "./ProgramProgressionSection";
 export { ProgramWeeklySchedule } from "./ProgramWeeklySchedule";
+export { SessionCompleteStats } from "./SessionCompleteStats";
 export { SessionExerciseList } from "./SessionExerciseList";
 export { SessionHero } from "./SessionHero";
 export { SessionProgressionReferences } from "./SessionProgressionReferences";
