@@ -1,0 +1,138 @@
+import { AIError } from "../../models/AIError";
+import { AIProviderFactory } from "../../providers/AIProviderFactory";
+import { OpenAIProviderStub } from "../../providers/OpenAIProviderStub";
+import { AIService } from "../AIService";
+import {
+  createConversation,
+  createPromptContext,
+  FIXED_TIMESTAMP,
+} from "../../testSupport/fixtures";
+import type { AIProvider } from "../../providers/AIProvider";
+import type { AIRequest } from "../../models/AIRequest";
+import type { AIResponse } from "../../models/AIResponse";
+import { createAIResponse } from "../../testSupport/fixtures";
+
+describe("AIService", () => {
+  it("injects provider via constructor and returns AIResponse", async () => {
+    const provider = new OpenAIProviderStub();
+    const service = new AIService(provider);
+    const promptContext = createPromptContext();
+
+    const response = await service.generateResponse(promptContext);
+
+    expect(response.provider).toBe("openai");
+    expect(response.message.role).toBe("assistant");
+    expect(response.generatedAt).toBe(FIXED_TIMESTAMP);
+    expect(await service.healthCheck()).toBe(true);
+  });
+
+  it("forwards conversation messages into the provider request", async () => {
+    let captured: AIRequest | undefined;
+
+    const provider: AIProvider = {
+      async generateResponse(request) {
+        captured = request;
+        return createAIResponse({
+          generatedAt: request.promptGeneratedAt,
+          message: {
+            id: "msg-stub-openai",
+            role: "assistant",
+            content: "ok",
+            createdAt: request.promptGeneratedAt,
+          },
+        });
+      },
+      async healthCheck() {
+        return true;
+      },
+      getProviderInfo() {
+        return {
+          type: "openai",
+          name: "OpenAI Stub",
+          model: {
+            id: "gpt-stub-4o",
+            name: "GPT Stub 4o",
+            provider: "openai",
+          },
+        };
+      },
+    };
+
+    const service = new AIService(provider);
+    const conversation = createConversation();
+    await service.generateResponse(createPromptContext(), conversation);
+
+    expect(captured?.conversation?.conversationId).toBe("conv-test-1");
+    expect(captured?.messages.some((m) => m.role === "user")).toBe(true);
+    expect(captured?.messages[0]?.role).toBe("system");
+    expect(captured?.sectionIds.length).toBeGreaterThan(0);
+  });
+
+  it("works with every factory stub provider", async () => {
+    const promptContext = createPromptContext();
+
+    for (const type of ["openai", "anthropic", "gemini", "local"] as const) {
+      const service = new AIService(AIProviderFactory.create(type));
+      const response = await service.generateResponse(promptContext);
+      expect(response.provider).toBe(type);
+    }
+  });
+
+  it("throws AIError for invalid prompt context conversion", async () => {
+    const service = new AIService(new OpenAIProviderStub());
+    const promptContext = createPromptContext();
+    const invalid = {
+      ...promptContext,
+      athlete: {
+        ...promptContext.athlete,
+        consistencyScore: 2,
+      },
+    };
+
+    await expect(service.generateResponse(invalid)).rejects.toBeInstanceOf(
+      AIError,
+    );
+  });
+
+  it("throws AIError when provider returns an invalid response", async () => {
+    const provider: AIProvider = {
+      async generateResponse(): Promise<AIResponse> {
+        return createAIResponse({
+          usage: {
+            promptTokens: 10,
+            completionTokens: 5,
+            totalTokens: 99,
+          },
+        });
+      },
+      async healthCheck() {
+        return true;
+      },
+      getProviderInfo() {
+        return {
+          type: "openai",
+          name: "Broken Stub",
+          model: {
+            id: "broken",
+            name: "Broken",
+            provider: "openai",
+          },
+        };
+      },
+    };
+
+    const service = new AIService(provider);
+
+    await expect(
+      service.generateResponse(createPromptContext()),
+    ).rejects.toMatchObject({
+      code: "invalid_response",
+    });
+  });
+
+  it("does not expose a singleton — each construction is independent", () => {
+    const first = new AIService(new OpenAIProviderStub());
+    const second = new AIService(new OpenAIProviderStub());
+    expect(first).not.toBe(second);
+  });
+});

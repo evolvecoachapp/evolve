@@ -1,3 +1,4 @@
 # Utils
 
-Utilities used by the AI domain.
+AI request/response conversion and structural validation helpers.
+No formatting, serialization, or networking.
