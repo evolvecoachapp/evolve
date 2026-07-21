@@ -5,6 +5,26 @@
  * Identity is the session id; later sprints may enrich this shape without
  * changing the repository contract.
  */
+
+/** A single completed set snapshot for history detail. */
+export interface CompletedWorkoutSet {
+  readonly id: string;
+  /** 1-based set number within the exercise (from prescription order). */
+  readonly setNumber: number;
+  /** Completed load in kilograms. */
+  readonly weightKg: number;
+  readonly reps: number;
+}
+
+/** An exercise snapshot with its completed sets only. */
+export interface CompletedWorkoutExercise {
+  readonly id: string;
+  readonly name: string;
+  /** 0-based order within the session. */
+  readonly order: number;
+  readonly sets: readonly CompletedWorkoutSet[];
+}
+
 export interface CompletedWorkout {
   /** Stable identity — equals `sessionId`. */
   readonly id: string;
@@ -33,4 +53,9 @@ export interface CompletedWorkout {
   readonly averageCompletedReps: number | null;
   /** ISO-8601 timestamp when the athlete finished. */
   readonly completedAt: string;
+  /**
+   * Ordered exercises with completed sets for detail rendering.
+   * Empty for legacy history entries persisted before Sprint 13.2.
+   */
+  readonly exercises: readonly CompletedWorkoutExercise[];
 }

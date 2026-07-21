@@ -127,6 +127,33 @@ describe("buildWorkoutSessionSummary", () => {
       estimatedVolumeKg: 920,
       averageCompletedReps: 10,
       completedAt: "2026-07-21T10:45:30.000Z",
+      exercises: [
+        {
+          id: "ex:1",
+          name: "Bench Press",
+          order: 0,
+          sets: [
+            {
+              id: "set:1",
+              setNumber: 1,
+              weightKg: 60,
+              reps: 10,
+            },
+            {
+              id: "set:2",
+              setNumber: 2,
+              weightKg: 40,
+              reps: 8,
+            },
+          ],
+        },
+        {
+          id: "ex:2",
+          name: "Row",
+          order: 1,
+          sets: [],
+        },
+      ],
     });
 
     // Immutable prescription must remain untouched.

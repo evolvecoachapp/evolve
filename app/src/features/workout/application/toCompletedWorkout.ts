@@ -23,5 +23,24 @@ export function toCompletedWorkout(
     estimatedVolumeKg: summary.estimatedVolumeKg,
     averageCompletedReps: summary.averageCompletedReps,
     completedAt: summary.completedAt,
+    exercises: Object.freeze(
+      summary.exercises.map((exercise) =>
+        Object.freeze({
+          id: exercise.id,
+          name: exercise.name,
+          order: exercise.order,
+          sets: Object.freeze(
+            exercise.sets.map((set) =>
+              Object.freeze({
+                id: set.id,
+                setNumber: set.setNumber,
+                weightKg: set.weightKg,
+                reps: set.reps,
+              }),
+            ),
+          ),
+        }),
+      ),
+    ),
   });
 }

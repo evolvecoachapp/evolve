@@ -18,6 +18,7 @@ const sampleSummary: WorkoutSessionSummary = Object.freeze({
   estimatedVolumeKg: 2400,
   averageCompletedReps: 9.5,
   completedAt: "2026-07-21T11:00:00.000Z",
+  exercises: Object.freeze([]),
 });
 
 describe("sessionSummaryHandoff", () => {

@@ -21,6 +21,7 @@ function createSummary(
     estimatedVolumeKg: 980.5,
     averageCompletedReps: 9.2,
     completedAt: "2026-07-21T12:00:00.000Z",
+    exercises: Object.freeze([]),
     ...overrides,
   });
 }
@@ -45,6 +46,7 @@ describe("toCompletedWorkout", () => {
       estimatedVolumeKg: 980.5,
       averageCompletedReps: 9.2,
       completedAt: "2026-07-21T12:00:00.000Z",
+      exercises: [],
     });
     expect(Object.isFrozen(completed)).toBe(true);
   });

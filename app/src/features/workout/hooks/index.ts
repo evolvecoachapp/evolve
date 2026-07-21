@@ -15,4 +15,5 @@ export type { UseSessionTimingResult } from "./useSessionTiming";
 export { useSessionFinish } from "./useSessionFinish";
 export type { UseSessionFinishResult } from "./useSessionFinish";
 export { useWorkoutHistory } from "./useWorkoutHistory";
+export { useWorkoutDetail } from "./useWorkoutDetail";
 export { useWorkoutSession } from "./useWorkoutSession";

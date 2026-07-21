@@ -1,6 +1,6 @@
 import type { CompletedWorkout } from "../../models/CompletedWorkout";
 import type { WorkoutHistoryRepository } from "../../repository";
-import { listCompletedSessions } from "../listCompletedSessions";
+import { getCompletedSession } from "../getCompletedSession";
 
 function createWorkout(
   overrides: Partial<CompletedWorkout> & Pick<CompletedWorkout, "id" | "completedAt">,
@@ -23,21 +23,33 @@ function createWorkout(
   });
 }
 
-describe("listCompletedSessions", () => {
-  it("returns sessions from the injected repository", async () => {
-    const sessions = [
-      createWorkout({ id: "newer", completedAt: "2026-07-21T12:00:00.000Z" }),
-      createWorkout({ id: "older", completedAt: "2026-07-20T12:00:00.000Z" }),
-    ];
+describe("getCompletedSession", () => {
+  it("returns a workout from the mocked repository", async () => {
+    const workout = createWorkout({
+      id: "session:1",
+      completedAt: "2026-07-21T12:00:00.000Z",
+    });
     const repository: WorkoutHistoryRepository = {
       saveCompletedSession: jest.fn(),
-      getCompletedSessions: jest.fn(async () => sessions),
-      getCompletedSession: jest.fn(),
+      getCompletedSessions: jest.fn(),
+      getCompletedSession: jest.fn(async () => workout),
       getRecentSessions: jest.fn(),
       clearHistory: jest.fn(),
     };
 
-    await expect(listCompletedSessions(repository)).resolves.toEqual(sessions);
-    expect(repository.getCompletedSessions).toHaveBeenCalledTimes(1);
+    await expect(getCompletedSession("session:1", repository)).resolves.toEqual(workout);
+    expect(repository.getCompletedSession).toHaveBeenCalledWith("session:1");
+  });
+
+  it("returns null when the repository has no matching workout", async () => {
+    const repository: WorkoutHistoryRepository = {
+      saveCompletedSession: jest.fn(),
+      getCompletedSessions: jest.fn(),
+      getCompletedSession: jest.fn(async () => null),
+      getRecentSessions: jest.fn(),
+      clearHistory: jest.fn(),
+    };
+
+    await expect(getCompletedSession("missing", repository)).resolves.toBeNull();
   });
 });

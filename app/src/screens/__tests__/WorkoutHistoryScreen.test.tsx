@@ -40,6 +40,7 @@ function createWorkout(
     completionPercent: overrides.completionPercent ?? 100,
     estimatedVolumeKg: overrides.estimatedVolumeKg ?? 920,
     averageCompletedReps: overrides.averageCompletedReps ?? 10,
+    exercises: overrides.exercises ?? Object.freeze([]),
     ...overrides,
   });
 }

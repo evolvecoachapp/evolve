@@ -7,6 +7,15 @@
  * itself remains a presentation projection.
  */
 
+import type {
+  CompletedWorkoutExercise,
+  CompletedWorkoutSet,
+} from "../models/CompletedWorkout";
+
+/** Re-export set/exercise snapshots used when projecting finish → persistence. */
+export type WorkoutSessionSummarySet = CompletedWorkoutSet;
+export type WorkoutSessionSummaryExercise = CompletedWorkoutExercise;
+
 /** Completion metrics projected for the Workout Complete experience. */
 export interface WorkoutSessionSummary {
   readonly sessionId: string;
@@ -36,4 +45,6 @@ export interface WorkoutSessionSummary {
   readonly averageCompletedReps: number | null;
   /** ISO-8601 timestamp when the athlete finished. */
   readonly completedAt: string;
+  /** Ordered exercises with completed sets for history detail. */
+  readonly exercises: readonly WorkoutSessionSummaryExercise[];
 }

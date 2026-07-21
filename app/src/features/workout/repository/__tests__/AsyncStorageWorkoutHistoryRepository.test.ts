@@ -21,6 +21,7 @@ function createWorkout(
     completionPercent: overrides.completionPercent ?? 90,
     estimatedVolumeKg: overrides.estimatedVolumeKg ?? 1200,
     averageCompletedReps: overrides.averageCompletedReps ?? 9.5,
+    exercises: overrides.exercises ?? Object.freeze([]),
     ...overrides,
   });
 }
@@ -169,5 +170,34 @@ describe("AsyncStorageWorkoutHistoryRepository", () => {
     const sessions = await repository.getCompletedSessions();
     expect(sessions).toHaveLength(1);
     expect(sessions[0]?.programName).toBeNull();
+    expect(sessions[0]?.exercises).toEqual([]);
+  });
+
+  it("persists and restores exercise set details", async () => {
+    const workout = createWorkout({
+      id: "session:detail",
+      completedAt: "2026-07-21T12:00:00.000Z",
+      exercises: Object.freeze([
+        Object.freeze({
+          id: "ex:1",
+          name: "Bench Press",
+          order: 0,
+          sets: Object.freeze([
+            Object.freeze({
+              id: "set:1",
+              setNumber: 1,
+              weightKg: 60,
+              reps: 10,
+            }),
+          ]),
+        }),
+      ]),
+    });
+
+    await repository.saveCompletedSession(workout);
+
+    await expect(repository.getCompletedSession("session:detail")).resolves.toEqual(
+      workout,
+    );
   });
 });

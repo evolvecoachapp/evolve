@@ -38,6 +38,7 @@ const summary: WorkoutSessionSummary = Object.freeze({
   estimatedVolumeKg: 920,
   averageCompletedReps: 10,
   completedAt: "2026-07-21T10:45:30.000Z",
+  exercises: Object.freeze([]),
 });
 
 function renderScreen(ui: React.ReactElement) {

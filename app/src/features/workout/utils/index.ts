@@ -98,3 +98,4 @@ export {
   formatSessionDuration,
   formatSessionVolumeKg,
 } from "./sessionSummaryFormatters";
+export { calculateSetVolume } from "./setVolume";

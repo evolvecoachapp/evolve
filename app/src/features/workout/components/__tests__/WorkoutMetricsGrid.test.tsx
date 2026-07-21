@@ -1,9 +1,9 @@
-import { fireEvent, render } from "@testing-library/react-native";
+import { render } from "@testing-library/react-native";
 import React from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import type { CompletedWorkout } from "../../models/CompletedWorkout";
 import { ThemeProvider } from "../../../../theme/ThemeContext";
-import { WorkoutHistoryCard } from "../WorkoutHistoryCard";
+import { WorkoutMetricsGrid } from "../WorkoutMetricsGrid";
 
 jest.mock("../../../../theme/themeStorage", () => ({
   getStoredThemePreference: jest.fn().mockResolvedValue(null),
@@ -20,8 +20,8 @@ const safeAreaMetrics = {
 };
 
 const workout: CompletedWorkout = Object.freeze({
-  id: "session:day:1",
-  sessionId: "session:day:1",
+  id: "session:1",
+  sessionId: "session:1",
   title: "Upper A",
   programName: "Hypertrophy Block",
   durationSeconds: 2700,
@@ -31,13 +31,13 @@ const workout: CompletedWorkout = Object.freeze({
   skippedSets: 1,
   totalSets: 10,
   completionPercent: 90,
-  estimatedVolumeKg: 1200,
+  estimatedVolumeKg: 1500,
   averageCompletedReps: 9.5,
   completedAt: "2026-07-21T10:45:30.000Z",
   exercises: Object.freeze([]),
 });
 
-function renderCard(ui: React.ReactElement) {
+function renderGrid(ui: React.ReactElement) {
   return render(
     <SafeAreaProvider initialMetrics={safeAreaMetrics}>
       <ThemeProvider>{ui}</ThemeProvider>
@@ -45,34 +45,22 @@ function renderCard(ui: React.ReactElement) {
   );
 }
 
-describe("WorkoutHistoryCard", () => {
-  it("renders workout metrics and optional program name", () => {
-    const { getByText } = renderCard(<WorkoutHistoryCard workout={workout} />);
+describe("WorkoutMetricsGrid", () => {
+  it("renders duration, volume, exercise count, and set metrics", () => {
+    const { getByText, getByTestId } = renderGrid(
+      <WorkoutMetricsGrid workout={workout} />,
+    );
 
-    expect(getByText("Upper A")).toBeTruthy();
-    expect(getByText("Hypertrophy Block")).toBeTruthy();
+    expect(getByTestId("workout-metrics-grid")).toBeTruthy();
+    expect(getByText("Duration")).toBeTruthy();
     expect(getByText("45 min")).toBeTruthy();
+    expect(getByText("Volume")).toBeTruthy();
+    expect(getByText("1.5k kg")).toBeTruthy();
+    expect(getByText("Exercises")).toBeTruthy();
     expect(getByText("2 / 3")).toBeTruthy();
+    expect(getByText("Completed sets")).toBeTruthy();
     expect(getByText("8")).toBeTruthy();
-    expect(getByText("1.2k kg")).toBeTruthy();
-  });
-
-  it("omits program name when null", () => {
-    const withoutProgram = Object.freeze({ ...workout, programName: null });
-    const { queryByText } = renderCard(
-      <WorkoutHistoryCard workout={withoutProgram} />,
-    );
-
-    expect(queryByText("Hypertrophy Block")).toBeNull();
-  });
-
-  it("invokes onPress with the workout", () => {
-    const onPress = jest.fn();
-    const { getByText } = renderCard(
-      <WorkoutHistoryCard workout={workout} onPress={onPress} />,
-    );
-
-    fireEvent.press(getByText("Upper A"));
-    expect(onPress).toHaveBeenCalledWith(workout);
+    expect(getByText("Skipped sets")).toBeTruthy();
+    expect(getByText("1")).toBeTruthy();
   });
 });

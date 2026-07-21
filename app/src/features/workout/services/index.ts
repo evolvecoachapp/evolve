@@ -22,6 +22,7 @@ export {
 } from "./sessionSummaryHandoff";
 export {
   listCompletedSessions,
+  getCompletedSession,
   persistCompletedSession,
   toCompletedWorkout,
 } from "../application";
@@ -31,4 +32,8 @@ export {
   WORKOUT_HISTORY_STORAGE_KEY,
 } from "../repository";
 export type { WorkoutHistoryRepository } from "../repository";
-export type { CompletedWorkout } from "../models/CompletedWorkout";
+export type {
+  CompletedWorkout,
+  CompletedWorkoutExercise,
+  CompletedWorkoutSet,
+} from "../models/CompletedWorkout";

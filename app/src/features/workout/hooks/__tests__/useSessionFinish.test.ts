@@ -105,6 +105,7 @@ describe("useSessionFinish", () => {
       estimatedVolumeKg: 0,
       averageCompletedReps: null,
       completedAt: "2026-07-21T12:00:00.000Z",
+      exercises: Object.freeze([]),
     });
   });
 

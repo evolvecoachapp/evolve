@@ -1,4 +1,5 @@
 import type { WorkoutSession } from "../../training/application";
+import type { CompletedWorkoutExercise } from "../models/CompletedWorkout";
 import type { SessionExecutionState } from "../types/sessionExecutionState";
 import type { WorkoutSessionSummary } from "../types/workoutSessionSummary";
 import {
@@ -40,8 +41,11 @@ export function buildWorkoutSessionSummary(
   let estimatedVolumeKg = 0;
   let workingRepsSum = 0;
   let workingRepsCount = 0;
+  const exercises: CompletedWorkoutExercise[] = [];
 
   for (const exercise of session.exercises) {
+    const completedSets: CompletedWorkoutExercise["sets"][number][] = [];
+
     for (const set of exercise.sets) {
       const state = getSetExecution(execution, set.id);
       if (state.status !== "completed") {
@@ -56,7 +60,25 @@ export function buildWorkoutSessionSummary(
         workingRepsSum += state.completedReps;
         workingRepsCount += 1;
       }
+
+      completedSets.push(
+        Object.freeze({
+          id: set.id,
+          setNumber: set.order + 1,
+          weightKg: load,
+          reps,
+        }),
+      );
     }
+
+    exercises.push(
+      Object.freeze({
+        id: exercise.id,
+        name: exercise.name,
+        order: exercise.order,
+        sets: Object.freeze(completedSets),
+      }),
+    );
   }
 
   const averageCompletedReps =
@@ -78,6 +100,7 @@ export function buildWorkoutSessionSummary(
     estimatedVolumeKg: roundVolume(estimatedVolumeKg),
     averageCompletedReps,
     completedAt,
+    exercises: Object.freeze(exercises),
   });
 }
 

@@ -1,5 +1,9 @@
 import type { StorageAdapter } from "../../../core/storage";
-import type { CompletedWorkout } from "../models/CompletedWorkout";
+import type {
+  CompletedWorkout,
+  CompletedWorkoutExercise,
+  CompletedWorkoutSet,
+} from "../models/CompletedWorkout";
 import type { WorkoutHistoryRepository } from "./WorkoutHistoryRepository";
 
 /** AsyncStorage key for the serialized completed-session list. */
@@ -70,7 +74,17 @@ export class AsyncStorageWorkoutHistoryRepository implements WorkoutHistoryRepos
 }
 
 function freezeSession(session: CompletedWorkout): CompletedWorkout {
-  return Object.freeze({ ...session });
+  return Object.freeze({
+    ...session,
+    exercises: Object.freeze(
+      session.exercises.map((exercise) =>
+        Object.freeze({
+          ...exercise,
+          sets: Object.freeze(exercise.sets.map((set) => Object.freeze({ ...set }))),
+        }),
+      ),
+    ),
+  });
 }
 
 function sortByCompletedAtDesc(
@@ -146,6 +160,83 @@ function parseCompletedWorkout(value: unknown): CompletedWorkout | null {
     estimatedVolumeKg,
     averageCompletedReps,
     completedAt,
+    exercises: parseExercises(record.exercises),
+  });
+}
+
+function parseExercises(value: unknown): readonly CompletedWorkoutExercise[] {
+  if (value === undefined || value === null) {
+    return Object.freeze([]);
+  }
+  if (!Array.isArray(value)) {
+    return Object.freeze([]);
+  }
+
+  const exercises = value
+    .map(parseExercise)
+    .filter((entry): entry is CompletedWorkoutExercise => entry !== null)
+    .sort((a, b) => a.order - b.order);
+
+  return Object.freeze(exercises);
+}
+
+function parseExercise(value: unknown): CompletedWorkoutExercise | null {
+  if (typeof value !== "object" || value === null) {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  const id = asString(record.id);
+  const name = asString(record.name);
+  const order = asFiniteNumber(record.order);
+
+  if (!id || !name || order === null) {
+    return null;
+  }
+
+  const sets = parseSets(record.sets);
+
+  return Object.freeze({
+    id,
+    name,
+    order,
+    sets,
+  });
+}
+
+function parseSets(value: unknown): readonly CompletedWorkoutSet[] {
+  if (!Array.isArray(value)) {
+    return Object.freeze([]);
+  }
+
+  const sets = value
+    .map(parseSet)
+    .filter((entry): entry is CompletedWorkoutSet => entry !== null)
+    .sort((a, b) => a.setNumber - b.setNumber);
+
+  return Object.freeze(sets);
+}
+
+function parseSet(value: unknown): CompletedWorkoutSet | null {
+  if (typeof value !== "object" || value === null) {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  const id = asString(record.id);
+  const setNumber = asFiniteNumber(record.setNumber);
+  const weightKg = asFiniteNumber(record.weightKg);
+  const reps = asFiniteNumber(record.reps);
+
+  if (!id || setNumber === null || weightKg === null || reps === null) {
+    return null;
+  }
+
+  return Object.freeze({
+    id,
+    setNumber,
+    weightKg,
+    reps,
   });
 }
 
