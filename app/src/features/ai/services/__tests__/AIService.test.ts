@@ -1,3 +1,4 @@
+import { AIConfigurationFactory } from "../../../ai-config/factory";
 import { AIError } from "../../models/AIError";
 import { AIProviderFactory } from "../../providers/AIProviderFactory";
 import { OpenAIProviderStub } from "../../providers/OpenAIProviderStub";
@@ -12,10 +13,12 @@ import type { AIRequest } from "../../models/AIRequest";
 import type { AIResponse } from "../../models/AIResponse";
 import { createAIResponse } from "../../testSupport/fixtures";
 
+const testConfiguration = AIConfigurationFactory.createDefault();
+
 describe("AIService", () => {
-  it("injects provider via constructor and returns AIResponse", async () => {
+  it("injects provider and configuration via constructor and returns AIResponse", async () => {
     const provider = new OpenAIProviderStub();
-    const service = new AIService(provider);
+    const service = new AIService(provider, testConfiguration);
     const promptContext = createPromptContext();
 
     const response = await service.generateResponse(promptContext);
@@ -24,6 +27,7 @@ describe("AIService", () => {
     expect(response.message.role).toBe("assistant");
     expect(response.generatedAt).toBe(FIXED_TIMESTAMP);
     expect(await service.healthCheck()).toBe(true);
+    expect(service.getConfiguration()).toBe(testConfiguration);
   });
 
   it("forwards conversation messages into the provider request", async () => {
@@ -58,7 +62,7 @@ describe("AIService", () => {
       },
     };
 
-    const service = new AIService(provider);
+    const service = new AIService(provider, testConfiguration);
     const conversation = createConversation();
     await service.generateResponse(createPromptContext(), conversation);
 
@@ -72,14 +76,17 @@ describe("AIService", () => {
     const promptContext = createPromptContext();
 
     for (const type of ["openai", "anthropic", "gemini", "local"] as const) {
-      const service = new AIService(AIProviderFactory.create(type));
+      const service = new AIService(
+        AIProviderFactory.create(type),
+        testConfiguration,
+      );
       const response = await service.generateResponse(promptContext);
       expect(response.provider).toBe(type);
     }
   });
 
   it("throws AIError for invalid prompt context conversion", async () => {
-    const service = new AIService(new OpenAIProviderStub());
+    const service = new AIService(new OpenAIProviderStub(), testConfiguration);
     const promptContext = createPromptContext();
     const invalid = {
       ...promptContext,
@@ -121,7 +128,7 @@ describe("AIService", () => {
       },
     };
 
-    const service = new AIService(provider);
+    const service = new AIService(provider, testConfiguration);
 
     await expect(
       service.generateResponse(createPromptContext()),
@@ -131,8 +138,18 @@ describe("AIService", () => {
   });
 
   it("does not expose a singleton — each construction is independent", () => {
-    const first = new AIService(new OpenAIProviderStub());
-    const second = new AIService(new OpenAIProviderStub());
+    const first = new AIService(new OpenAIProviderStub(), testConfiguration);
+    const second = new AIService(new OpenAIProviderStub(), testConfiguration);
     expect(first).not.toBe(second);
+  });
+
+  it("does not instantiate configuration internally", () => {
+    const configuration = AIConfigurationFactory.createDefault({
+      providerType: "anthropic",
+      apiKey: "test-key",
+    });
+    const service = new AIService(new OpenAIProviderStub(), configuration);
+    expect(service.getConfiguration()).toBe(configuration);
+    expect(service.getConfiguration().provider.type).toBe("anthropic");
   });
 });

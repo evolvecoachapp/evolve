@@ -1,3 +1,4 @@
+import { AIConfigurationFactory } from "../../../ai-config/factory";
 import { AIError } from "../../../ai/models/AIError";
 import type { AIProvider } from "../../../ai/providers/AIProvider";
 import { AIService } from "../../../ai/services/AIService";
@@ -9,6 +10,8 @@ import {
   FIXED_TIMESTAMP,
 } from "../../testSupport/fixtures";
 import { ConversationService } from "../ConversationService";
+
+const testConfiguration = AIConfigurationFactory.createDefault();
 
 function createProvider(
   generate: AIProvider["generateResponse"] = async () =>
@@ -45,11 +48,11 @@ describe("ConversationService", () => {
   it("injects repository and AIService via constructor", () => {
     const first = new ConversationService(
       new InMemoryConversationRepository(),
-      new AIService(createProvider()),
+      new AIService(createProvider(), testConfiguration),
     );
     const second = new ConversationService(
       new InMemoryConversationRepository(),
-      new AIService(createProvider()),
+      new AIService(createProvider(), testConfiguration),
     );
 
     expect(first).not.toBe(second);
@@ -58,7 +61,7 @@ describe("ConversationService", () => {
   it("starts an empty active conversation", async () => {
     const service = new ConversationService(
       new InMemoryConversationRepository(),
-      new AIService(createProvider()),
+      new AIService(createProvider(), testConfiguration),
     );
 
     const conversation = await service.startConversation({
@@ -73,6 +76,7 @@ describe("ConversationService", () => {
 
   it("sends a user message, calls AIService, and appends assistant reply", async () => {
     let capturedConversationId: string | undefined;
+    const assistantAt = "2026-07-22T12:00:01.000Z";
     const provider = createProvider(async (request) => {
       capturedConversationId = request.conversation?.conversationId;
       return createAIResponse({
@@ -80,14 +84,14 @@ describe("ConversationService", () => {
           id: "msg-assistant-1",
           role: "assistant",
           content: "Train upper body today.",
-          createdAt: FIXED_TIMESTAMP,
+          createdAt: assistantAt,
         },
       });
     });
 
     const service = new ConversationService(
       new InMemoryConversationRepository(),
-      new AIService(provider),
+      new AIService(provider, testConfiguration),
     );
     const started = await service.startConversation({ now: FIXED_TIMESTAMP });
 
@@ -114,7 +118,7 @@ describe("ConversationService", () => {
     const repository = new InMemoryConversationRepository();
     const service = new ConversationService(
       repository,
-      new AIService(provider),
+      new AIService(provider, testConfiguration),
     );
     const started = await service.startConversation({ now: FIXED_TIMESTAMP });
 
@@ -152,7 +156,7 @@ describe("ConversationService", () => {
 
     const service = new ConversationService(
       new InMemoryConversationRepository(),
-      new AIService(provider),
+      new AIService(provider, testConfiguration),
     );
     const started = await service.startConversation({ now: FIXED_TIMESTAMP });
 
@@ -183,7 +187,7 @@ describe("ConversationService", () => {
   it("rejects send on closed conversations", async () => {
     const service = new ConversationService(
       new InMemoryConversationRepository(),
-      new AIService(createProvider()),
+      new AIService(createProvider(), testConfiguration),
     );
     const started = await service.startConversation({ now: FIXED_TIMESTAMP });
     await service.closeConversation(started.id);
@@ -201,7 +205,7 @@ describe("ConversationService", () => {
     const repository = new InMemoryConversationRepository();
     const service = new ConversationService(
       repository,
-      new AIService(createProvider()),
+      new AIService(createProvider(), testConfiguration),
     );
     const started = await service.startConversation({ now: FIXED_TIMESTAMP });
 

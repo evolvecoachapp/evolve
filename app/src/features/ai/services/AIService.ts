@@ -1,3 +1,4 @@
+import type { AIConfiguration } from "../../ai-config/models/AIConfiguration";
 import type { PromptContext } from "../../prompt-builder/models/PromptContext";
 import { AIError } from "../models/AIError";
 import type { AIResponse } from "../models/AIResponse";
@@ -13,10 +14,20 @@ import { validateAIResponse } from "../utils/validateAIResponse";
  * Consumes PromptBuilder output (PromptContext), converts it to AIRequest,
  * and delegates generation to the injected AIProvider.
  *
- * Depends only on AIProvider — no provider-specific logic, no networking.
+ * AIConfiguration is injected — never loaded from the environment here.
+ * Depends only on AIProvider + AIConfiguration — no provider-specific logic,
+ * no networking.
  */
 export class AIService {
-  constructor(private readonly provider: AIProvider) {}
+  constructor(
+    private readonly provider: AIProvider,
+    private readonly configuration: AIConfiguration,
+  ) {}
+
+  /** Injected configuration (immutable). */
+  getConfiguration(): AIConfiguration {
+    return this.configuration;
+  }
 
   /**
    * Generate an assistant response from a structured prompt context.

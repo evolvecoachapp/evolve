@@ -1,4 +1,5 @@
 import { act, renderHook, waitFor } from "@testing-library/react-native";
+import { AIConfigurationFactory } from "../../../ai-config/factory";
 import type { AIProvider } from "../../../ai/providers/AIProvider";
 import { AIService } from "../../../ai/services/AIService";
 import { createAIResponse } from "../../../ai/testSupport/fixtures";
@@ -41,7 +42,7 @@ function createService(): ConversationService {
 
   return new ConversationService(
     new InMemoryConversationRepository(),
-    new AIService(provider),
+    new AIService(provider, AIConfigurationFactory.createDefault()),
   );
 }
 
