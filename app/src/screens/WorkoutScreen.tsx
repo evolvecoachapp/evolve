@@ -41,7 +41,12 @@ export function WorkoutScreen() {
       stack: {
         gap: theme.spacing.xl,
       },
-      historyButton: {
+      headerActions: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: theme.spacing.sm,
+      },
+      headerButton: {
         width: theme.spacing["2xl"],
         height: theme.spacing["2xl"],
         borderRadius: theme.spacing.md,
@@ -52,15 +57,25 @@ export function WorkoutScreen() {
     }),
   );
 
-  const historyAction = (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="Workout history"
-      onPress={() => router.push("/(app)/workout/history")}
-      style={({ pressed }) => [styles.historyButton, pressed && { opacity: 0.7 }]}
-    >
-      <Ionicons name="time-outline" size={22} color={colors.ink} />
-    </Pressable>
+  const headerActions = (
+    <View style={styles.headerActions}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Workout analytics"
+        onPress={() => router.push("/(app)/workout/analytics")}
+        style={({ pressed }) => [styles.headerButton, pressed && { opacity: 0.7 }]}
+      >
+        <Ionicons name="analytics-outline" size={22} color={colors.ink} />
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Workout history"
+        onPress={() => router.push("/(app)/workout/history")}
+        style={({ pressed }) => [styles.headerButton, pressed && { opacity: 0.7 }]}
+      >
+        <Ionicons name="time-outline" size={22} color={colors.ink} />
+      </Pressable>
+    </View>
   );
 
   if (error || !preview || !selectedDay) {
@@ -70,7 +85,7 @@ export function WorkoutScreen() {
           <AppHeader
             title="Workout"
             subtitle="Your training program"
-            rightAction={historyAction}
+            rightAction={headerActions}
           />
           <TabScreenContainer gradient={false}>
             <Text style={styles.message}>
@@ -119,7 +134,7 @@ export function WorkoutScreen() {
         <AppHeader
           title="Workout"
           subtitle="Your training program"
-          rightAction={historyAction}
+          rightAction={headerActions}
         />
         <TabScreenContainer gradient={false} footerReserve={footerReserve}>
           <View style={styles.stack}>
