@@ -46,6 +46,9 @@ describe("AIService", () => {
           },
         });
       },
+      async *streamResponse() {
+        // unused in this test
+      },
       async healthCheck() {
         return true;
       },
@@ -111,6 +114,9 @@ describe("AIService", () => {
             totalTokens: 99,
           },
         });
+      },
+      async *streamResponse() {
+        // unused in this test
       },
       async healthCheck() {
         return true;

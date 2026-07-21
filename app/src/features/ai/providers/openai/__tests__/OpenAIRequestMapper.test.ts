@@ -46,12 +46,22 @@ describe("OpenAIRequestMapper", () => {
     expect(payload.temperature).toBe(0.7);
   });
 
-  it("never enables streaming", () => {
+  it("defaults streaming to false", () => {
     const payload = OpenAIRequestMapper.map(createAIRequest(), {
       model: "gpt-4o-mini",
       maxOutputTokens: 100,
     });
 
     expect(payload.stream).toBe(false);
+  });
+
+  it("can enable streaming when requested", () => {
+    const payload = OpenAIRequestMapper.map(createAIRequest(), {
+      model: "gpt-4o-mini",
+      maxOutputTokens: 100,
+      stream: true,
+    });
+
+    expect(payload.stream).toBe(true);
   });
 });

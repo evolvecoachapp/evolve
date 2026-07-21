@@ -1,6 +1,9 @@
 import { AIConfigurationFactory } from "../../../ai-config/factory";
 import { AIError } from "../../../ai/models/AIError";
+import type { AIRequest } from "../../../ai/models/AIRequest";
+import type { AIResponse } from "../../../ai/models/AIResponse";
 import type { AIProvider } from "../../../ai/providers/AIProvider";
+import { createStubStream } from "../../../ai/providers/stubHelpers";
 import { AIService } from "../../../ai/services/AIService";
 import { createAIResponse } from "../../../ai/testSupport/fixtures";
 import { ConversationError } from "../../models/ConversationError";
@@ -27,6 +30,22 @@ function createProvider(
 ): AIProvider {
   return {
     generateResponse: generate,
+    async *streamResponse(request: AIRequest, options) {
+      const response: AIResponse = await generate(request);
+      yield* createStubStream(
+        {
+          type: response.provider,
+          name: "Test Provider",
+          model: response.model,
+          sampleContent: response.message.content,
+        },
+        {
+          ...request,
+          promptGeneratedAt: response.message.createdAt || response.generatedAt,
+        },
+        options,
+      );
+    },
     async healthCheck() {
       return true;
     },
@@ -74,7 +93,7 @@ describe("ConversationService", () => {
     expect(conversation.session.endedAt).toBeNull();
   });
 
-  it("sends a user message, calls AIService, and appends assistant reply", async () => {
+  it("sends a user message, streams AIService, and appends assistant reply", async () => {
     let capturedConversationId: string | undefined;
     const assistantAt = "2026-07-22T12:00:01.000Z";
     const provider = createProvider(async (request) => {
@@ -95,11 +114,20 @@ describe("ConversationService", () => {
     );
     const started = await service.startConversation({ now: FIXED_TIMESTAMP });
 
+    const snapshots: string[] = [];
     const next = await service.sendMessage({
       conversationId: started.id,
       content: "What should I train?",
       promptContext: createPromptContext(),
       now: FIXED_TIMESTAMP,
+      onConversationUpdate: (conversation) => {
+        const assistant = conversation.messages.find(
+          (message) => message.role === "assistant",
+        );
+        if (assistant) {
+          snapshots.push(assistant.content);
+        }
+      },
     });
 
     expect(capturedConversationId).toBe(started.id);
@@ -108,7 +136,10 @@ describe("ConversationService", () => {
     expect(next.messages[0]?.status).toBe("sent");
     expect(next.messages[1]?.role).toBe("assistant");
     expect(next.messages[1]?.content).toBe("Train upper body today.");
+    expect(next.messages[1]?.status).toBe("sent");
     expect(next.metadata.title).toBe("What should I train?");
+    expect(snapshots.some((content) => content.length > 0)).toBe(true);
+    expect(service.getCurrentStream()).toBeNull();
   });
 
   it("marks the user message failed and throws ConversationError on provider failure", async () => {
@@ -135,6 +166,8 @@ describe("ConversationService", () => {
     expect(stored?.status).toBe("error");
     expect(stored?.messages[0]?.status).toBe("failed");
     expect(stored?.messages[0]?.errorCode).toBe("provider_unavailable");
+    expect(stored?.messages[1]?.role).toBe("assistant");
+    expect(stored?.messages[1]?.status).toBe("failed");
   });
 
   it("retries a failed user message", async () => {

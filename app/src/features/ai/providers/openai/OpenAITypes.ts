@@ -14,7 +14,7 @@ export interface OpenAIChatCompletionsRequest {
   readonly messages: readonly OpenAIChatMessage[];
   readonly temperature?: number;
   readonly max_tokens?: number;
-  readonly stream: false;
+  readonly stream: boolean;
 }
 
 export interface OpenAIChatCompletionsChoice {
@@ -36,6 +36,21 @@ export interface OpenAIChatCompletionsResponse {
   readonly id?: string;
   readonly model?: string;
   readonly choices?: readonly OpenAIChatCompletionsChoice[];
+  readonly usage?: OpenAIChatCompletionsUsage;
+}
+
+/** Vendor SSE chunk shape for Chat Completions streaming. */
+export interface OpenAIChatCompletionsStreamChunk {
+  readonly id?: string;
+  readonly model?: string;
+  readonly choices?: readonly {
+    readonly index?: number;
+    readonly delta?: {
+      readonly role?: string;
+      readonly content?: string | null;
+    };
+    readonly finish_reason?: string | null;
+  }[];
   readonly usage?: OpenAIChatCompletionsUsage;
 }
 

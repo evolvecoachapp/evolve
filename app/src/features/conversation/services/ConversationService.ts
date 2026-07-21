@@ -1,5 +1,7 @@
 import { AIError } from "../../ai/models/AIError";
-import type { AIResponse } from "../../ai/models/AIResponse";
+import type { AIStreamEvent } from "../../ai/models/AIStreamEvent";
+import type { StreamingMetadata } from "../../ai/models/StreamingMetadata";
+import type { StreamingSession } from "../../ai/models/StreamingSession";
 import type { AIService } from "../../ai/services/AIService";
 import type { PromptContext } from "../../prompt-builder/models/PromptContext";
 import { ConversationError } from "../models/ConversationError";
@@ -21,6 +23,8 @@ export interface SendMessageOptions {
   readonly content: string;
   readonly promptContext: PromptContext;
   readonly now?: string;
+  /** Incremental conversation snapshots while the assistant streams. */
+  readonly onConversationUpdate?: (conversation: Conversation) => void;
 }
 
 export interface RetryMessageOptions {
@@ -28,15 +32,27 @@ export interface RetryMessageOptions {
   readonly messageId: string;
   readonly promptContext: PromptContext;
   readonly now?: string;
+  readonly onConversationUpdate?: (conversation: Conversation) => void;
+}
+
+interface ActiveStreamState {
+  readonly conversationId: string;
+  readonly userMessageId: string;
+  readonly assistantMessageId: string;
+  readonly abortController: AbortController;
+  session: StreamingSession;
 }
 
 /**
  * Orchestrates conversation state and AI generation.
  *
- * Depends only on ConversationRepository and AIService — no networking,
- * no provider SDKs, no UI, no persistence adapters beyond the repository.
+ * Owns the streaming lifecycle: partial assistant messages, status, cancel,
+ * finish, provider failure, and retry. Depends only on ConversationRepository
+ * and AIService — no networking, no provider SDKs, no UI.
  */
 export class ConversationService {
+  private activeStream: ActiveStreamState | null = null;
+
   constructor(
     private readonly repository: ConversationRepository,
     private readonly aiService: AIService,
@@ -84,10 +100,13 @@ export class ConversationService {
   }
 
   /**
-   * Append a user message, call AIService, and append the assistant reply.
+   * Append a user message, stream an assistant reply, and update history
+   * incrementally.
    */
   async sendMessage(options: SendMessageOptions): Promise<Conversation> {
     const now = options.now ?? new Date().toISOString();
+    this.assertNoActiveStream(options.conversationId);
+
     const conversation = await this.requireActiveConversation(
       options.conversationId,
     );
@@ -106,12 +125,14 @@ export class ConversationService {
       conversation.id,
       userMessage,
     );
+    options.onConversationUpdate?.(current);
 
     if (current.messages.length === 1) {
       current = await this.repository.updateTitle(
         current.id,
         generateConversationTitle(options.content),
       );
+      options.onConversationUpdate?.(current);
     }
 
     current = await this.repository.updateMessageStatus(
@@ -119,12 +140,14 @@ export class ConversationService {
       userMessage.id,
       "sent",
     );
+    options.onConversationUpdate?.(current);
 
-    return this.generateAssistantReply({
+    return this.streamAssistantReply({
       conversation: current,
       promptContext: options.promptContext,
       failedMessageId: userMessage.id,
       now,
+      onConversationUpdate: options.onConversationUpdate,
     });
   }
 
@@ -133,6 +156,8 @@ export class ConversationService {
    */
   async retryMessage(options: RetryMessageOptions): Promise<Conversation> {
     const now = options.now ?? new Date().toISOString();
+    this.assertNoActiveStream(options.conversationId);
+
     const conversation = await this.requireActiveOrErrorConversation(
       options.conversationId,
     );
@@ -168,13 +193,45 @@ export class ConversationService {
       target.id,
       "sent",
     );
+    options.onConversationUpdate?.(current);
 
-    return this.generateAssistantReply({
+    return this.streamAssistantReply({
       conversation: current,
       promptContext: options.promptContext,
       failedMessageId: target.id,
       now,
+      onConversationUpdate: options.onConversationUpdate,
     });
+  }
+
+  /** Cancel the active stream, if any. Keeps partial assistant content. */
+  async cancelStream(): Promise<Conversation | null> {
+    const active = this.activeStream;
+    if (!active) {
+      return null;
+    }
+
+    active.abortController.abort();
+    active.session = Object.freeze({
+      ...active.session,
+      status: "cancelled",
+      metadata: Object.freeze({
+        ...active.session.metadata,
+        completedAt: new Date().toISOString(),
+      }),
+    });
+
+    try {
+      const conversation = await this.repository.getById(active.conversationId);
+      return conversation;
+    } finally {
+      // Active stream cleared when streamAssistantReply settles.
+    }
+  }
+
+  /** Current streaming session snapshot, or null when idle. */
+  getCurrentStream(): StreamingSession | null {
+    return this.activeStream?.session ?? null;
   }
 
   async closeConversation(conversationId: string): Promise<Conversation> {
@@ -195,27 +252,223 @@ export class ConversationService {
     return this.repository.list();
   }
 
-  private async generateAssistantReply(input: {
+  private async streamAssistantReply(input: {
     readonly conversation: Conversation;
     readonly promptContext: PromptContext;
     readonly failedMessageId: string;
     readonly now: string;
+    readonly onConversationUpdate?: (conversation: Conversation) => void;
   }): Promise<Conversation> {
     const context = buildConversationContext(input.conversation);
+    const reusableAssistant = findReusableAssistantMessage(
+      input.conversation,
+      input.failedMessageId,
+    );
+    const assistantMessageId = reusableAssistant?.id ?? createId("msg");
+    const sessionId = createId("stream");
+    const startedAt = input.now;
+    const abortController = new AbortController();
 
-    let response: AIResponse;
+    const initialMetadata: StreamingMetadata = Object.freeze({
+      provider: "local",
+      model: Object.freeze({
+        id: "unknown",
+        name: "unknown",
+        provider: "local" as const,
+      }),
+      startedAt,
+      completedAt: null,
+      chunkCount: 0,
+    });
+
+    let session: StreamingSession = Object.freeze({
+      id: sessionId,
+      conversationId: input.conversation.id,
+      messageId: assistantMessageId,
+      status: "starting",
+      content: "",
+      metadata: initialMetadata,
+    });
+
+    this.activeStream = {
+      conversationId: input.conversation.id,
+      userMessageId: input.failedMessageId,
+      assistantMessageId,
+      abortController,
+      session,
+    };
+
+    // Keep assistant after the user turn when timestamps would otherwise tie.
+    const assistantAt = new Date(Date.parse(input.now) + 1).toISOString();
+
+    let current = input.conversation;
+    if (reusableAssistant) {
+      current = await this.repository.updateMessageContent(
+        input.conversation.id,
+        assistantMessageId,
+        "",
+      );
+      current = await this.repository.updateMessageStatus(
+        input.conversation.id,
+        assistantMessageId,
+        "pending",
+      );
+    } else {
+      current = await this.repository.appendMessage(
+        input.conversation.id,
+        createMessage({
+          conversationId: input.conversation.id,
+          role: "assistant",
+          content: "",
+          status: "pending",
+          now: assistantAt,
+          id: assistantMessageId,
+        }),
+      );
+    }
+    input.onConversationUpdate?.(current);
+
+    const configuration = this.aiService.getConfiguration();
+    session = Object.freeze({
+      ...session,
+      status: "streaming",
+      metadata: Object.freeze({
+        provider: configuration.provider.type,
+        model: Object.freeze({
+          id: configuration.model.id,
+          name: configuration.model.id,
+          provider: configuration.provider.type,
+        }),
+        startedAt,
+        completedAt: null,
+        chunkCount: 0,
+      }),
+    });
+    this.activeStream.session = session;
+
+    let aggregatedContent = "";
+
     try {
-      response = await this.aiService.generateResponse(
+      const response = await this.aiService.streamResponse(
         input.promptContext,
         context,
+        {
+          signal: abortController.signal,
+          onEvent: async (event: AIStreamEvent) => {
+            if (!this.activeStream) {
+              return;
+            }
+
+            if (event.type === "chunk") {
+              aggregatedContent += event.chunk.delta;
+              current = await this.repository.updateMessageContent(
+                input.conversation.id,
+                assistantMessageId,
+                aggregatedContent,
+              );
+              session = Object.freeze({
+                ...session,
+                status: "streaming",
+                content: aggregatedContent,
+                metadata: Object.freeze({
+                  ...session.metadata,
+                  chunkCount: session.metadata.chunkCount + 1,
+                }),
+              });
+              this.activeStream.session = session;
+              input.onConversationUpdate?.(current);
+              return;
+            }
+
+            if (event.type === "status") {
+              session = Object.freeze({
+                ...session,
+                status: event.status,
+                content: aggregatedContent,
+              });
+              this.activeStream.session = session;
+            }
+          },
+        },
       );
+
+      aggregatedContent = response.message.content || aggregatedContent;
+      current = await this.repository.updateMessageContent(
+        input.conversation.id,
+        assistantMessageId,
+        aggregatedContent,
+      );
+      current = await this.repository.updateMessageStatus(
+        input.conversation.id,
+        assistantMessageId,
+        "sent",
+      );
+
+      session = Object.freeze({
+        ...session,
+        status: "completed",
+        content: aggregatedContent,
+        metadata: Object.freeze({
+          ...session.metadata,
+          provider: response.provider,
+          model: response.model,
+          completedAt: response.generatedAt,
+        }),
+      });
+      if (this.activeStream) {
+        this.activeStream.session = session;
+      }
+
+      input.onConversationUpdate?.(current);
+      return current;
     } catch (error: unknown) {
+      if (
+        error instanceof AIError &&
+        error.code === "stream_cancelled"
+      ) {
+        current = await this.finishCancelledStream({
+          conversationId: input.conversation.id,
+          assistantMessageId,
+          content: aggregatedContent,
+          now: input.now,
+        });
+        input.onConversationUpdate?.(current);
+
+        throw new ConversationError(
+          "stream_cancelled",
+          "Assistant stream was cancelled.",
+          {
+            conversationId: input.conversation.id,
+            messageId: assistantMessageId,
+          },
+        );
+      }
+
       await this.repository.updateMessageStatus(
         input.conversation.id,
         input.failedMessageId,
         "failed",
         error instanceof AIError ? error.code : "generation_failed",
       );
+
+      await this.repository.updateMessageStatus(
+        input.conversation.id,
+        assistantMessageId,
+        "failed",
+        error instanceof AIError ? error.code : "generation_failed",
+      );
+
+      if (this.activeStream) {
+        this.activeStream.session = Object.freeze({
+          ...session,
+          status: "failed",
+          content: aggregatedContent,
+          metadata: Object.freeze({
+            ...session.metadata,
+            completedAt: new Date().toISOString(),
+          }),
+        });
+      }
 
       if (error instanceof AIError) {
         throw new ConversationError(
@@ -236,23 +489,49 @@ export class ConversationService {
           messageId: input.failedMessageId,
         },
       );
+    } finally {
+      this.activeStream = null;
+    }
+  }
+
+  private async finishCancelledStream(input: {
+    readonly conversationId: string;
+    readonly assistantMessageId: string;
+    readonly content: string;
+    readonly now: string;
+  }): Promise<Conversation> {
+    let current = await this.repository.updateMessageContent(
+      input.conversationId,
+      input.assistantMessageId,
+      input.content,
+    );
+
+    if (input.content.trim().length > 0) {
+      current = await this.repository.updateMessageStatus(
+        input.conversationId,
+        input.assistantMessageId,
+        "sent",
+      );
+    } else {
+      current = await this.repository.updateMessageStatus(
+        input.conversationId,
+        input.assistantMessageId,
+        "failed",
+        "stream_cancelled",
+      );
     }
 
-    const assistantMessage = createMessage({
-      conversationId: input.conversation.id,
-      role: "assistant",
-      content: response.message.content,
-      status: "sent",
-      now: response.message.createdAt || input.now,
-      id: response.message.id || createId("msg"),
-    });
+    return current;
+  }
 
-    assertValidMessage(assistantMessage);
-
-    return this.repository.appendMessage(
-      input.conversation.id,
-      assistantMessage,
-    );
+  private assertNoActiveStream(conversationId: string): void {
+    if (this.activeStream) {
+      throw new ConversationError(
+        "stream_in_progress",
+        "A stream is already in progress.",
+        { conversationId },
+      );
+    }
   }
 
   private async requireConversation(
@@ -296,6 +575,24 @@ export class ConversationService {
     }
     return conversation;
   }
+}
+
+function findReusableAssistantMessage(
+  conversation: Conversation,
+  userMessageId: string,
+): ConversationMessage | null {
+  const userIndex = conversation.messages.findIndex(
+    (message) => message.id === userMessageId,
+  );
+  if (userIndex < 0) {
+    return null;
+  }
+
+  const following = conversation.messages.slice(userIndex + 1);
+  const failedAssistant = following.find(
+    (message) => message.role === "assistant" && message.status === "failed",
+  );
+  return failedAssistant ?? null;
 }
 
 function createId(prefix: string): string {

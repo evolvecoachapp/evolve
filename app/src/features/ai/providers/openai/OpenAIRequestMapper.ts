@@ -9,13 +9,15 @@ export interface OpenAIRequestMapperOptions {
   readonly model: string;
   readonly maxOutputTokens: number;
   readonly temperature?: number;
+  /** Defaults to false — streaming is opt-in at the provider layer. */
+  readonly stream?: boolean;
 }
 
 /**
  * Maps provider-agnostic AIRequest → OpenAI Chat Completions payload.
  *
  * Supports system / user / assistant history, temperature, max tokens, model.
- * Streaming is never enabled.
+ * Streaming is disabled unless explicitly requested.
  */
 export class OpenAIRequestMapper {
   static map(
@@ -34,7 +36,7 @@ export class OpenAIRequestMapper {
       messages: Object.freeze(messages),
       temperature: options.temperature ?? OPENAI_DEFAULT_TEMPERATURE,
       max_tokens: options.maxOutputTokens,
-      stream: false as const,
+      stream: options.stream ?? false,
     });
   }
 }

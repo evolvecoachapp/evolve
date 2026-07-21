@@ -1,10 +1,12 @@
 import type { AIProviderInfo } from "../models/AIProviderInfo";
 import type { AIRequest } from "../models/AIRequest";
 import type { AIResponse } from "../models/AIResponse";
-import type { AIProvider } from "./AIProvider";
+import type { AIStreamEvent } from "../models/AIStreamEvent";
+import type { AIProvider, AIProviderStreamOptions } from "./AIProvider";
 import {
   createStubProviderInfo,
   createStubResponse,
+  createStubStream,
   type StubProviderConfig,
 } from "./stubHelpers";
 
@@ -24,6 +26,13 @@ const CONFIG: StubProviderConfig = Object.freeze({
 export class OpenAIProviderStub implements AIProvider {
   async generateResponse(request: AIRequest): Promise<AIResponse> {
     return createStubResponse(CONFIG, request);
+  }
+
+  streamResponse(
+    request: AIRequest,
+    options?: AIProviderStreamOptions,
+  ): AsyncIterable<AIStreamEvent> {
+    return createStubStream(CONFIG, request, options);
   }
 
   async healthCheck(): Promise<boolean> {

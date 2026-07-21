@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import type { StreamingSession } from "../../ai/models/StreamingSession";
 import type { PromptContext } from "../../prompt-builder/models/PromptContext";
 import {
   closeConversation as closeConversationUseCase,
@@ -33,7 +34,20 @@ export function useCoachConversation({
 }: UseCoachConversationOptions) {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [currentStream, setCurrentStream] = useState<StreamingSession | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
+
+  const syncStreamState = useCallback(() => {
+    const next = service.getCurrentStream();
+    setCurrentStream(next);
+    setIsStreaming(
+      next !== null &&
+        (next.status === "starting" || next.status === "streaming"),
+    );
+  }, [service]);
 
   const refreshConversation = useCallback(
     async (conversationId: string): Promise<void> => {
@@ -51,9 +65,13 @@ export function useCoachConversation({
     async (
       action: () => Promise<Conversation | void>,
       conversationIdForRefresh?: string,
+      options: { readonly streaming?: boolean } = {},
     ): Promise<void> => {
       setLoading(true);
       setError(null);
+      if (options.streaming) {
+        setIsStreaming(true);
+      }
       try {
         const next = await action();
         if (next) {
@@ -72,9 +90,11 @@ export function useCoachConversation({
         );
       } finally {
         setLoading(false);
+        syncStreamState();
+        setIsStreaming(false);
       }
     },
-    [refreshConversation],
+    [refreshConversation, syncStreamState],
   );
 
   const startConversation = useCallback(async () => {
@@ -99,11 +119,16 @@ export function useCoachConversation({
             conversationId,
             content,
             promptContext,
+            onConversationUpdate: (next) => {
+              setConversation(next);
+              syncStreamState();
+            },
           }),
         conversationId,
+        { streaming: true },
       );
     },
-    [conversation, promptContext, run, service],
+    [conversation, promptContext, run, service, syncStreamState],
   );
 
   const retryMessage = useCallback(
@@ -124,12 +149,25 @@ export function useCoachConversation({
             conversationId,
             messageId,
             promptContext,
+            onConversationUpdate: (next) => {
+              setConversation(next);
+              syncStreamState();
+            },
           }),
         conversationId,
+        { streaming: true },
       );
     },
-    [conversation, promptContext, run, service],
+    [conversation, promptContext, run, service, syncStreamState],
   );
+
+  const cancelStream = useCallback(async () => {
+    const next = await service.cancelStream();
+    syncStreamState();
+    if (next) {
+      setConversation(next);
+    }
+  }, [service, syncStreamState]);
 
   const closeConversation = useCallback(async () => {
     if (!conversation) {
@@ -161,10 +199,13 @@ export function useCoachConversation({
     messages,
     status,
     loading,
+    isStreaming,
+    currentStream,
     error,
     startConversation,
     sendMessage,
     retryMessage,
+    cancelStream,
     closeConversation,
     deleteConversation,
   };

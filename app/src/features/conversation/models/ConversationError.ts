@@ -6,7 +6,9 @@ export type ConversationErrorCode =
   | "conversation_closed"
   | "message_not_retryable"
   | "provider_failed"
-  | "generation_failed";
+  | "generation_failed"
+  | "stream_cancelled"
+  | "stream_in_progress";
 
 /**
  * Single error type for the Conversation engine.

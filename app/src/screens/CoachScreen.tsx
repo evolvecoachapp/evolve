@@ -54,6 +54,8 @@ export function CoachScreen() {
     conversation,
     messages,
     loading,
+    isStreaming,
+    currentStream,
     error,
     startConversation,
     sendMessage,
@@ -100,9 +102,11 @@ export function CoachScreen() {
     startConversation,
   ]);
 
+  const streamingContent = currentStream?.content ?? "";
+
   useEffect(() => {
     scrollToLatest(true);
-  }, [messages.length, loading, scrollToLatest]);
+  }, [messages.length, loading, isStreaming, streamingContent, scrollToLatest]);
 
   useEffect(() => {
     if (keyboardLift > 0) {
@@ -170,7 +174,19 @@ export function CoachScreen() {
     (promptLoading || (loading && !conversation)) && !error && !promptError;
   const showError = Boolean(error || promptError) && visibleMessages.length === 0;
   const friendlyError = toFriendlyConversationError(error ?? promptError);
-  const showTyping = loading && visibleMessages.length > 0;
+  const streamingMessageId = currentStream?.messageId ?? null;
+  const streamingBubbleVisible =
+    isStreaming &&
+    Boolean(
+      visibleMessages.find(
+        (message) =>
+          message.id === streamingMessageId && message.content.length > 0,
+      ),
+    );
+  const showTyping =
+    (isStreaming || loading) &&
+    visibleMessages.length > 0 &&
+    !streamingBubbleVisible;
   const showEmpty =
     !showInitialLoading &&
     !showError &&
@@ -219,24 +235,37 @@ export function CoachScreen() {
               <EmptyConversation onExamplePress={handleExamplePress} />
             ) : null}
 
-            {visibleMessages.map((message) => (
-              <MessageBubble
-                key={message.id}
-                role={message.role}
-                content={message.content}
-                status={message.status}
-                createdAt={message.createdAt}
-                onRetry={
-                  message.status === "failed"
-                    ? () => {
-                        void retryMessage(message.id);
-                      }
-                    : undefined
-                }
-              />
-            ))}
+            {visibleMessages.map((message) => {
+              const messageStreaming =
+                isStreaming && message.id === streamingMessageId;
+              if (
+                messageStreaming &&
+                message.role === "assistant" &&
+                message.content.length === 0
+              ) {
+                return null;
+              }
 
-            {showTyping ? <TypingIndicator /> : null}
+              return (
+                <MessageBubble
+                  key={message.id}
+                  role={message.role}
+                  content={message.content}
+                  status={message.status}
+                  createdAt={message.createdAt}
+                  isStreaming={messageStreaming}
+                  onRetry={
+                    message.status === "failed"
+                      ? () => {
+                          void retryMessage(message.id);
+                        }
+                      : undefined
+                  }
+                />
+              );
+            })}
+
+            {showTyping ? <TypingIndicator streaming={isStreaming} /> : null}
 
             {error && visibleMessages.length > 0 ? (
               <ErrorConversation
@@ -273,8 +302,10 @@ export function CoachScreen() {
 
         <ChatInput
           onSend={handleSend}
-          disabled={!conversation || !promptContext || showInitialLoading}
-          loading={loading}
+          disabled={
+            !conversation || !promptContext || showInitialLoading || isStreaming
+          }
+          loading={loading || isStreaming}
           onKeyboardHeightChange={setKeyboardLift}
           onComposerLayout={setComposerHeight}
         />

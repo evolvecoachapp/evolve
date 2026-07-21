@@ -53,8 +53,13 @@ function TypingDot({ delayMs, color }: { delayMs: number; color: string }) {
   );
 }
 
-/** Animated “coach is typing” placeholder — no streaming. */
-export function TypingIndicator() {
+export interface TypingIndicatorProps {
+  /** When true, indicates a live stream is starting (same visual treatment). */
+  streaming?: boolean;
+}
+
+/** Animated “coach is typing / streaming” placeholder — no markdown. */
+export function TypingIndicator({ streaming = false }: TypingIndicatorProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(() =>
     StyleSheet.create({
@@ -91,7 +96,7 @@ export function TypingIndicator() {
   return (
     <View
       style={styles.row}
-      accessibilityLabel="Coach is typing"
+      accessibilityLabel={streaming ? "Coach is responding" : "Coach is typing"}
       accessibilityRole="text"
     >
       <View style={styles.avatarColumn}>

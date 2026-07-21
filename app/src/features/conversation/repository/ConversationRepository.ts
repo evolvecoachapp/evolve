@@ -30,6 +30,13 @@ export interface ConversationRepository {
     errorCode?: string,
   ): Promise<Conversation>;
 
+  /** Replace message content in place (streaming partial updates). */
+  updateMessageContent(
+    conversationId: string,
+    messageId: string,
+    content: string,
+  ): Promise<Conversation>;
+
   /** Update the conversation display title. */
   updateTitle(conversationId: string, title: string): Promise<Conversation>;
 

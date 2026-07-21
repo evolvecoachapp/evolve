@@ -7,6 +7,7 @@ export type AIErrorCode =
   | "provider_unavailable"
   | "unsupported_provider"
   | "generation_failed"
+  | "stream_cancelled"
   | "authentication_failed"
   | "authorization_failed"
   | "not_found"

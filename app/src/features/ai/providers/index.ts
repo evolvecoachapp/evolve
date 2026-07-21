@@ -9,4 +9,6 @@ export {
   OpenAIRequestMapper,
   OpenAIResponseMapper,
   OpenAIErrorMapper,
+  OpenAIStreamMapper,
 } from "./openai";
+export type { AIProviderStreamOptions } from "./AIProvider";

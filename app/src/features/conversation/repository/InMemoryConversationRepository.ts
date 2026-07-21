@@ -193,6 +193,61 @@ export class InMemoryConversationRepository implements ConversationRepository {
     return cloneConversation(next);
   }
 
+  async updateMessageContent(
+    conversationId: string,
+    messageId: string,
+    content: string,
+  ): Promise<Conversation> {
+    const existing = this.conversations.get(conversationId);
+    if (!existing) {
+      throw new ConversationError(
+        "not_found",
+        `Conversation not found: ${conversationId}`,
+        { conversationId },
+      );
+    }
+
+    const index = existing.messages.findIndex(
+      (message) => message.id === messageId,
+    );
+    if (index < 0) {
+      throw new ConversationError(
+        "not_found",
+        `Message not found: ${messageId}`,
+        { conversationId, messageId },
+      );
+    }
+
+    const updatedAt = new Date().toISOString();
+    const current = existing.messages[index]!;
+    const nextMessage: ConversationMessage = Object.freeze({
+      id: current.id,
+      conversationId: current.conversationId,
+      role: current.role,
+      content,
+      status: current.status,
+      createdAt: current.createdAt,
+      updatedAt,
+      ...(current.errorCode ? { errorCode: current.errorCode } : {}),
+    });
+
+    const messages = Object.freeze(
+      existing.messages.map((message, messageIndex) =>
+        messageIndex === index ? nextMessage : message,
+      ),
+    );
+
+    const next = cloneConversation({
+      ...existing,
+      messages,
+      metadata: rebuildMetadata(existing, messages, updatedAt),
+      updatedAt,
+    });
+
+    this.conversations.set(conversationId, next);
+    return cloneConversation(next);
+  }
+
   async updateTitle(
     conversationId: string,
     title: string,

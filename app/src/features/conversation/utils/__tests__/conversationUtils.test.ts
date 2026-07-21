@@ -91,6 +91,18 @@ describe("conversation utilities", () => {
         expect.arrayContaining(["invalid_content", "invalid_role"]),
       );
     });
+
+    it("allows empty content for pending streaming messages", () => {
+      expect(
+        validateMessage(
+          createMessage({
+            content: "",
+            status: "pending",
+            role: "assistant",
+          }),
+        ),
+      ).toEqual([]);
+    });
   });
 
   describe("validateConversation", () => {

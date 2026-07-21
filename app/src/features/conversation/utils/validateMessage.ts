@@ -33,7 +33,11 @@ export function validateMessage(
     issues.push("invalid_role");
   }
 
-  if (typeof message.content !== "string" || message.content.trim().length === 0) {
+  // Pending messages may be empty while a stream is in progress.
+  if (
+    typeof message.content !== "string" ||
+    (message.status !== "pending" && message.content.trim().length === 0)
+  ) {
     issues.push("invalid_content");
   }
 

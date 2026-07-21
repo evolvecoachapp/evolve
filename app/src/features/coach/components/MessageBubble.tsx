@@ -14,6 +14,8 @@ export interface MessageBubbleProps {
   status: MessageStatus;
   /** ISO-8601 timestamp. */
   createdAt: string;
+  /** True while this assistant bubble is receiving stream deltas. */
+  isStreaming?: boolean;
   onRetry?: () => void;
 }
 
@@ -23,6 +25,7 @@ export function MessageBubble({
   content,
   status,
   createdAt,
+  isStreaming = false,
   onRetry,
 }: MessageBubbleProps) {
   const styles = useThemedStyles(({ colors, typography, shadows }) =>
@@ -47,7 +50,9 @@ export function MessageBubble({
         borderTopLeftRadius: coachLayout.assistantBubbleRadius,
         borderTopRightRadius: coachLayout.assistantBubbleRadius,
         borderBottomRightRadius: coachLayout.assistantBubbleRadius,
-        opacity: status === "pending" ? 0.72 : 1,
+      },
+      pendingCard: {
+        opacity: 0.72,
       },
       assistantContent: {
         ...typography.bodyRelaxed,
@@ -152,7 +157,11 @@ export function MessageBubble({
   }
 
   return (
-    <View style={styles.assistantRow} accessibilityRole="text">
+    <View
+      style={styles.assistantRow}
+      accessibilityRole="text"
+      accessibilityLabel={isStreaming ? "Coach is responding" : undefined}
+    >
       <View style={styles.avatarColumn}>
         <CoachAvatar size="sm" />
       </View>
@@ -161,11 +170,16 @@ export function MessageBubble({
           variant="glass"
           glow
           padding="compact"
-          style={styles.assistantCard}
+          style={[
+            styles.assistantCard,
+            status === "pending" || isStreaming ? styles.pendingCard : null,
+          ]}
         >
-          <Text style={styles.assistantContent}>{content}</Text>
+          {content.length > 0 ? (
+            <Text style={styles.assistantContent}>{content}</Text>
+          ) : null}
           <View style={styles.assistantMeta}>
-            <MessageTimestamp value={createdAt} />
+            {!isStreaming ? <MessageTimestamp value={createdAt} /> : null}
             {status === "failed" ? (
               <View>
                 <Text style={styles.failedLabel}>Response failed</Text>
