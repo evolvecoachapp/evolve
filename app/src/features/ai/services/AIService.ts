@@ -3,6 +3,9 @@ import type { PromptContext } from "../../prompt-builder/models/PromptContext";
 import type { ToolRequest } from "../../tool-calling/models/ToolRequest";
 import { isToolRequest } from "../../tool-calling/utils/isToolRequest";
 import { validateRequest as validateToolRequest } from "../../tool-calling/validators/validateRequest";
+import type { WorkflowRequest } from "../../workflow/models/WorkflowRequest";
+import { isWorkflowRequest } from "../../workflow/utils/isWorkflowRequest";
+import { validateWorkflowRequest } from "../../workflow/validators/validateWorkflowRequest";
 import { AIError } from "../models/AIError";
 import type { AIFinishReason } from "../models/AIFinishReason";
 import type { AIProviderResult } from "../models/AIProviderResult";
@@ -46,7 +49,8 @@ export class AIService {
   }
 
   /**
-   * Generate an assistant response or a domain ToolRequest.
+   * Generate an assistant response, a domain ToolRequest, or a domain
+   * WorkflowRequest.
    *
    * Never executes tools — ConversationService owns that lifecycle.
    */
@@ -71,10 +75,11 @@ export class AIService {
 
   /**
    * Stream an assistant response, emit chunks, aggregate, and return
-   * AIResponse — or return a ToolRequest when the provider requests a tool.
+   * AIResponse — or return a ToolRequest / WorkflowRequest when the
+   * provider requests domain execution.
    *
    * No UI logic — callers receive events via onEvent and the final outcome.
-   * Never executes tools.
+   * Never executes tools or workflows.
    */
   async streamResponse(
     promptContext: PromptContext,
@@ -105,6 +110,7 @@ export class AIService {
     let sawDone = false;
     let cancelled = false;
     let toolRequest: ToolRequest | null = null;
+    let workflowRequest: WorkflowRequest | null = null;
 
     try {
       for await (const event of this.provider.streamResponse(request, {
@@ -135,6 +141,9 @@ export class AIService {
           }
           case "tool_request":
             toolRequest = event.request;
+            break;
+          case "workflow_request":
+            workflowRequest = event.request;
             break;
           case "done":
             finishReason = event.finishReason;
@@ -180,6 +189,10 @@ export class AIService {
       );
     }
 
+    if (workflowRequest) {
+      return this.validateProviderResult(workflowRequest);
+    }
+
     if (toolRequest) {
       return this.validateProviderResult(toolRequest);
     }
@@ -207,6 +220,18 @@ export class AIService {
 
   private validateProviderResult(result: AIProviderResult): AIProviderResult {
     const providerType = this.provider.getProviderInfo().type;
+
+    if (isWorkflowRequest(result)) {
+      const workflowIssues = validateWorkflowRequest(result);
+      if (workflowIssues.length > 0) {
+        throw new AIError(
+          "invalid_response",
+          `Invalid workflow request: ${workflowIssues.join(",")}`,
+          providerType,
+        );
+      }
+      return result;
+    }
 
     if (isToolRequest(result)) {
       const toolIssues = validateToolRequest(result);

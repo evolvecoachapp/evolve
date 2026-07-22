@@ -9,7 +9,8 @@ export type ConversationErrorCode =
   | "generation_failed"
   | "stream_cancelled"
   | "stream_in_progress"
-  | "tool_execution_unavailable";
+  | "tool_execution_unavailable"
+  | "workflow_execution_unavailable";
 
 /**
  * Single error type for the Conversation engine.

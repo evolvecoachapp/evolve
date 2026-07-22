@@ -13,6 +13,10 @@ import type { ToolContext } from "../../tool-calling/models/ToolContext";
 import type { ToolResult } from "../../tool-calling/models/ToolResult";
 import type { ToolExecutor } from "../../tool-calling/services/ToolExecutor";
 import { isToolRequest } from "../../tool-calling/utils/isToolRequest";
+import type { WorkflowContext } from "../../workflow/models/WorkflowContext";
+import type { WorkflowResult } from "../../workflow/models/WorkflowResult";
+import type { WorkflowExecutor } from "../../workflow/services/WorkflowExecutor";
+import { isWorkflowRequest } from "../../workflow/utils/isWorkflowRequest";
 import type { WorkoutSummary } from "../../workout/models/WorkoutSummary";
 import { ConversationError } from "../models/ConversationError";
 import type { Conversation } from "../models/Conversation";
@@ -66,8 +70,8 @@ interface ActiveStreamState {
 }
 
 /**
- * Orchestrates conversation state, AI generation, tool execution, and
- * persistence lifecycle.
+ * Orchestrates conversation state, AI generation, tool/workflow execution,
+ * and persistence lifecycle.
  *
  * Owns streaming and durable restore/persist/clear. Depends on
  * ConversationRepository and AIService — never on a concrete StorageAdapter.
@@ -75,6 +79,8 @@ interface ActiveStreamState {
  * Prompt Builder acceptance and AIService generation.
  * When ToolExecutor is injected, executes provider ToolRequests in-domain —
  * AI providers never execute tools.
+ * When WorkflowExecutor is injected, executes provider WorkflowRequests
+ * in-domain — AI providers never execute workflows.
  */
 export class ConversationService {
   private activeStream: ActiveStreamState | null = null;
@@ -84,6 +90,7 @@ export class ConversationService {
     private readonly aiService: AIService,
     private readonly promptOrchestrator: PromptOrchestrator | null = null,
     private readonly toolExecutor: ToolExecutor | null = null,
+    private readonly workflowExecutor: WorkflowExecutor | null = null,
   ) {}
 
   /** Create an empty active conversation with a fresh session. */
@@ -496,6 +503,56 @@ export class ConversationService {
         },
       );
 
+      if (isWorkflowRequest(outcome)) {
+        if (!this.workflowExecutor) {
+          throw new ConversationError(
+            "workflow_execution_unavailable",
+            "Provider requested a workflow but no WorkflowExecutor is configured.",
+            {
+              conversationId: input.conversation.id,
+              messageId: assistantMessageId,
+            },
+          );
+        }
+
+        const workflowContext: WorkflowContext = Object.freeze({
+          conversationId: input.conversation.id,
+          now: input.now,
+        });
+        const workflowResult = await this.workflowExecutor.execute(
+          outcome,
+          workflowContext,
+        );
+        aggregatedContent = serializeWorkflowResult(workflowResult);
+        current = await this.repository.updateMessageContent(
+          input.conversation.id,
+          assistantMessageId,
+          aggregatedContent,
+        );
+        current = await this.repository.updateMessageStatus(
+          input.conversation.id,
+          assistantMessageId,
+          "sent",
+        );
+
+        session = Object.freeze({
+          ...session,
+          status: "completed",
+          content: aggregatedContent,
+          metadata: Object.freeze({
+            ...session.metadata,
+            completedAt: workflowResult.completedAt,
+          }),
+        });
+        if (this.activeStream) {
+          this.activeStream.session = session;
+        }
+
+        input.onConversationUpdate?.(current);
+        await this.autoPersist(current, "completed");
+        return current;
+      }
+
       if (isToolRequest(outcome)) {
         if (!this.toolExecutor) {
           throw new ConversationError(
@@ -832,6 +889,16 @@ function assertValidMessage(message: ConversationMessage): void {
 function serializeToolResult(result: ToolResult): string {
   return JSON.stringify({
     toolName: result.toolName,
+    status: result.status,
+    data: result.data,
+    errorCode: result.error?.code ?? null,
+  });
+}
+
+/** Minimal assistant content for a completed workflow turn — no prompt formatting. */
+function serializeWorkflowResult(result: WorkflowResult): string {
+  return JSON.stringify({
+    workflowName: result.workflowName,
     status: result.status,
     data: result.data,
     errorCode: result.error?.code ?? null,

@@ -1,6 +1,7 @@
 import { AIConfigurationFactory } from "../../../ai-config/factory";
 import { isToolRequest } from "../../../tool-calling/utils/isToolRequest";
 import { createToolRequest } from "../../../tool-calling/testSupport/fixtures";
+import { isWorkflowRequest } from "../../../workflow/utils/isWorkflowRequest";
 import { AIError } from "../../models/AIError";
 import type { AIStreamEvent } from "../../models/AIStreamEvent";
 import type { AIProvider } from "../../providers/AIProvider";
@@ -33,7 +34,8 @@ describe("AIService.streamResponse", () => {
     expect(events.some((event) => event.type === "chunk")).toBe(true);
     expect(events.some((event) => event.type === "done")).toBe(true);
     expect(isToolRequest(response)).toBe(false);
-    if (isToolRequest(response)) {
+    expect(isWorkflowRequest(response)).toBe(false);
+    if (isToolRequest(response) || isWorkflowRequest(response)) {
       return;
     }
     expect(response.message.role).toBe("assistant");
@@ -46,7 +48,8 @@ describe("AIService.streamResponse", () => {
     const service = new AIService(new LocalProviderStub(), testConfiguration);
     const response = await service.streamResponse(createPromptContext());
     expect(isToolRequest(response)).toBe(false);
-    if (isToolRequest(response)) {
+    expect(isWorkflowRequest(response)).toBe(false);
+    if (isToolRequest(response) || isWorkflowRequest(response)) {
       return;
     }
     expect(response.provider).toBe("local");

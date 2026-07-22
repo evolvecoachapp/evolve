@@ -13,6 +13,9 @@ import { PromptOrchestrator } from "../../../prompt-orchestrator/services/Prompt
 import { createToolRequest } from "../../../tool-calling/testSupport/fixtures";
 import { createToolExecutor } from "../../../tool-calling/services/createToolExecutor";
 import { isToolRequest } from "../../../tool-calling/utils/isToolRequest";
+import { createWorkflowRequest } from "../../../workflow/testSupport/fixtures";
+import { createWorkflowExecutor } from "../../../workflow/services/createWorkflowExecutor";
+import { isWorkflowRequest } from "../../../workflow/utils/isWorkflowRequest";
 import { ConversationError } from "../../models/ConversationError";
 import { InMemoryConversationPersistenceRepository } from "../../persistence/InMemoryConversationPersistenceRepository";
 import { InMemoryStorageAdapter } from "../../persistence/InMemoryStorageAdapter";
@@ -41,6 +44,32 @@ function createProvider(
     generateResponse: generate,
     async *streamResponse(request: AIRequest, options) {
       const outcome = await generate(request);
+      if (isWorkflowRequest(outcome)) {
+        yield {
+          type: "start",
+          sessionId: "stream-workflow",
+          messageId: "msg-workflow",
+          createdAt: FIXED_TIMESTAMP,
+        };
+        yield {
+          type: "workflow_request",
+          sessionId: "stream-workflow",
+          request: outcome,
+        };
+        yield {
+          type: "done",
+          sessionId: "stream-workflow",
+          finishReason: "stop",
+          usage: Object.freeze({
+            promptTokens: 0,
+            completionTokens: 0,
+            totalTokens: 0,
+          }),
+          createdAt: FIXED_TIMESTAMP,
+        };
+        return;
+      }
+
       if (isToolRequest(outcome)) {
         yield {
           type: "start",
@@ -444,5 +473,56 @@ describe("ConversationService", () => {
         now: FIXED_TIMESTAMP,
       }),
     ).rejects.toMatchObject({ code: "tool_execution_unavailable" });
+  });
+
+  it("executes WorkflowRequest via WorkflowExecutor and continues the conversation", async () => {
+    const provider = createProvider(async () =>
+      createWorkflowRequest({ workflowName: "generate_workout" }),
+    );
+    const service = new ConversationService(
+      new InMemoryConversationRepository(),
+      new AIService(provider, testConfiguration),
+      null,
+      createToolExecutor(),
+      createWorkflowExecutor(),
+    );
+
+    const started = await service.startConversation({ now: FIXED_TIMESTAMP });
+    const next = await service.sendMessage({
+      conversationId: started.id,
+      content: "Generate a workout plan",
+      promptContext: createPromptContext(),
+      now: FIXED_TIMESTAMP,
+    });
+
+    expect(next.messages).toHaveLength(2);
+    expect(next.messages[1]?.role).toBe("assistant");
+    expect(next.messages[1]?.status).toBe("sent");
+    expect(next.messages[1]?.content).toContain("generate_workout");
+    expect(next.messages[1]?.content).toContain("succeeded");
+  });
+
+  it("throws when provider requests a workflow without WorkflowExecutor", async () => {
+    const provider = createProvider(async () =>
+      createWorkflowRequest({ workflowName: "generate_workout" }),
+    );
+    const service = new ConversationService(
+      new InMemoryConversationRepository(),
+      new AIService(provider, testConfiguration),
+      null,
+      createToolExecutor(),
+      null,
+    );
+
+    const started = await service.startConversation({ now: FIXED_TIMESTAMP });
+
+    await expect(
+      service.sendMessage({
+        conversationId: started.id,
+        content: "Generate a workout plan",
+        promptContext: createPromptContext(),
+        now: FIXED_TIMESTAMP,
+      }),
+    ).rejects.toMatchObject({ code: "workflow_execution_unavailable" });
   });
 });

@@ -1,9 +1,9 @@
-import type { ToolRequest } from "../models/ToolRequest";
+import type { WorkflowRequest } from "../models/WorkflowRequest";
 
 /**
- * Type guard distinguishing ToolRequest from AIResponse / other outcomes.
+ * Type guard distinguishing WorkflowRequest from ToolRequest / AIResponse.
  */
-export function isToolRequest(value: unknown): value is ToolRequest {
+export function isWorkflowRequest(value: unknown): value is WorkflowRequest {
   if (value === null || typeof value !== "object") {
     return false;
   }
@@ -11,10 +11,10 @@ export function isToolRequest(value: unknown): value is ToolRequest {
   const candidate = value as Record<string, unknown>;
   return (
     typeof candidate.id === "string" &&
-    typeof candidate.toolName === "string" &&
+    typeof candidate.workflowName === "string" &&
     Array.isArray(candidate.arguments) &&
     typeof candidate.requestedAt === "string" &&
-    !("workflowName" in candidate) &&
+    !("toolName" in candidate) &&
     !("finishReason" in candidate) &&
     !("message" in candidate)
   );

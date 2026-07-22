@@ -1,4 +1,5 @@
 import type { ToolRequest } from "../../tool-calling/models/ToolRequest";
+import type { WorkflowRequest } from "../../workflow/models/WorkflowRequest";
 import type { AIFinishReason } from "./AIFinishReason";
 import type { AIStreamChunk } from "./AIStreamChunk";
 import type { AIStreamStatus } from "./AIStreamStatus";
@@ -8,7 +9,8 @@ import type { TokenUsage } from "./TokenUsage";
  * Provider-agnostic streaming events.
  *
  * Emitted by AIProvider.streamResponse and consumed by AIService.
- * tool_request events carry a domain ToolRequest — never executed here.
+ * tool_request / workflow_request events carry domain requests —
+ * never executed here.
  */
 export type AIStreamEvent =
   | {
@@ -26,6 +28,11 @@ export type AIStreamEvent =
       readonly type: "tool_request";
       readonly sessionId: string;
       readonly request: ToolRequest;
+    }
+  | {
+      readonly type: "workflow_request";
+      readonly sessionId: string;
+      readonly request: WorkflowRequest;
     }
   | {
       readonly type: "status";

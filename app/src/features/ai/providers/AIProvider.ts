@@ -11,7 +11,8 @@ export interface AIProviderStreamOptions {
 /**
  * Provider-agnostic LLM interface.
  *
- * Implementations return AIResponse, ToolRequest, or AIStreamEvent only —
+ * Implementations return AIResponse, ToolRequest, WorkflowRequest, or
+ * AIStreamEvent only —
  * never vendor shapes. Providers never execute tools and never know
  * available tool implementations.
  * Networking, when used, goes through the shared HttpClient.

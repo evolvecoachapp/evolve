@@ -1,5 +1,6 @@
 import { AIConfigurationFactory } from "../../../ai-config/factory";
 import { isToolRequest } from "../../../tool-calling/utils/isToolRequest";
+import { isWorkflowRequest } from "../../../workflow/utils/isWorkflowRequest";
 import { AIError } from "../../models/AIError";
 import { AIProviderFactory } from "../../providers/AIProviderFactory";
 import { OpenAIProviderStub } from "../../providers/OpenAIProviderStub";
@@ -25,7 +26,8 @@ describe("AIService", () => {
     const response = await service.generateResponse(promptContext);
 
     expect(isToolRequest(response)).toBe(false);
-    if (isToolRequest(response)) {
+    expect(isWorkflowRequest(response)).toBe(false);
+    if (isToolRequest(response) || isWorkflowRequest(response)) {
       return;
     }
     expect(response.provider).toBe("openai");
@@ -90,7 +92,8 @@ describe("AIService", () => {
       );
       const response = await service.generateResponse(promptContext);
       expect(isToolRequest(response)).toBe(false);
-      if (isToolRequest(response)) {
+      expect(isWorkflowRequest(response)).toBe(false);
+      if (isToolRequest(response) || isWorkflowRequest(response)) {
         return;
       }
       expect(response.provider).toBe(type);

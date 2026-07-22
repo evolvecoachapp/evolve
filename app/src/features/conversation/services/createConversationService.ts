@@ -7,6 +7,8 @@ import { InMemoryPromptOrchestratorRepository } from "../../prompt-orchestrator/
 import { PromptOrchestrator } from "../../prompt-orchestrator/services/PromptOrchestrator";
 import { createToolExecutor } from "../../tool-calling/services/createToolExecutor";
 import type { ToolExecutor } from "../../tool-calling/services/ToolExecutor";
+import { createWorkflowExecutor } from "../../workflow/services/createWorkflowExecutor";
+import type { WorkflowExecutor } from "../../workflow/services/WorkflowExecutor";
 import { InMemoryConversationPersistenceRepository } from "../persistence/InMemoryConversationPersistenceRepository";
 import type { ConversationPersistenceRepository } from "../persistence/ConversationPersistenceRepository";
 import { InMemoryConversationRepository } from "../repository/InMemoryConversationRepository";
@@ -20,16 +22,17 @@ export interface CreateConversationServiceOptions {
   readonly persistence?: ConversationPersistenceRepository;
   readonly promptOrchestrator?: PromptOrchestrator | null;
   readonly toolExecutor?: ToolExecutor | null;
+  readonly workflowExecutor?: WorkflowExecutor | null;
 }
 
 /**
  * Composes ConversationService → ConversationRepository →
  * ConversationPersistenceRepository → PromptOrchestrator →
- * ToolExecutor → AIService → AIProvider.
+ * ToolExecutor → WorkflowExecutor → AIService → AIProvider.
  *
  * Defaults to the local stub provider (no networking), in-memory
- * persistence, and a frozen placeholder ToolExecutor — suitable for
- * presentation / offline Coach chat.
+ * persistence, and frozen placeholder ToolExecutor / WorkflowExecutor —
+ * suitable for presentation / offline Coach chat.
  * No singleton — each call returns a fresh graph.
  */
 export function createConversationService(
@@ -53,11 +56,16 @@ export function createConversationService(
     options.toolExecutor === undefined
       ? createToolExecutor()
       : options.toolExecutor;
+  const workflowExecutor =
+    options.workflowExecutor === undefined
+      ? createWorkflowExecutor()
+      : options.workflowExecutor;
 
   return new ConversationService(
     repository,
     aiService,
     promptOrchestrator,
     toolExecutor,
+    workflowExecutor,
   );
 }
