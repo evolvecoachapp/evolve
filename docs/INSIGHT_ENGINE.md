@@ -145,23 +145,20 @@ Snapshots are **in-memory domain objects only** — not persistence.
 
 ## Future Coach Integration
 
-Coach / conversational consumption of insights is **reserved in architecture only**.
+Coach Intelligence (Sprint 18.8) now consumes `InsightSnapshot` as structured input and produces immutable `CoachingContext`. Prompt / AI provider consumption remains reserved beyond that layer.
 
-Future sprints may:
-
-1. Consume `InsightSnapshot` as structured context for Coach  
-2. Map selected insights into Coach memory / prompt inputs **outside** this engine  
-3. Keep generation of insights deterministic here; keep language generation in Coach layers  
+1. Coach Intelligence consumes `InsightSnapshot` as structured context  
+2. Future Prompt Builder maps `CoachingContext` into prompts **outside** Insight Engine  
+3. Keep generation of insights deterministic here; keep language generation in Coach / Prompt / Provider layers  
 
 This foundation intentionally provides **no AI prompts, LLM calls, recommendations, or conversation logic**.
 
-Placeholder contract (not implemented):
-
-| Concern | Future |
+| Concern | Status |
 |---------|--------|
 | Input | `InsightSnapshot` (read-only) |
-| Consumer | Coach Intelligence / Conversation layers |
-| Rules | Insight Engine remains deterministic and non-AI; Coach owns language |
+| Consumer | Coach Intelligence (`features/coach-intelligence`) — implemented (18.8) |
+| Downstream | Future Prompt Builder → Future AI Provider (placeholders) |
+| Rules | Insight Engine remains deterministic and non-AI; Coach Intelligence prepares context only; language/providers stay downstream |
 
 ---
 

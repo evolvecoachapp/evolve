@@ -58,6 +58,8 @@ Athlete History  (immutable chronological domain record — no AI)
 Recovery Intelligence  (deterministic Recovery Snapshots — no AI)
         ↓
 Insight Engine  (deterministic Insight Snapshots — no AI)
+        ↓
+Coach Intelligence  (immutable Coaching Context — no AI / no prompts)
 ```
 
 ### Layer responsibilities
@@ -85,6 +87,7 @@ Insight Engine  (deterministic Insight Snapshots — no AI)
 | Athlete History | `features/athlete-history` | Implemented (18.5) | Immutable chronological athlete journey from workout/performance/achievement facts |
 | Recovery Intelligence | `features/recovery-intelligence` | Implemented (18.6) | Deterministic recovery metrics/snapshots from history + performance |
 | Insight Engine | `features/insight-engine` | Implemented (18.7) | Deterministic domain insights from performance/achievement/recovery/history |
+| Coach Intelligence | `features/coach-intelligence` | Implemented (18.8) | Immutable Coaching Context from Insight Snapshot for future prompt/AI layers |
 | Prompt Orchestrator | `features/prompt-orchestrator` | Implemented | Composes prompts for AI-assisted blueprint steps |
 | Tool Engine | `features/tool-calling` | Implemented | Tool registry/execution boundary for workflows |
 | Athlete Context | `features/athlete-context` | Implemented | Structured athlete context for orchestration inputs |
@@ -112,6 +115,7 @@ Supporting orchestration pieces also present: Memory (conversation persistence a
 - Athlete History (18.5) organizes immutable chronological domain facts from `WorkoutResult` + `PerformanceSnapshot` + `AchievementResult` into `AthleteHistory` / `HistorySnapshot` — **no AI**, persistence, networking, storage, querying/filtering, timeline UI, or calendar; never mutates upstream engines.
 - Recovery Intelligence (18.6) analyzes `AthleteHistory` + `PerformanceSnapshot` (+ optional `WorkoutResult`) into immutable `RecoverySnapshot` metrics — **no AI**, recommendations, persistence, networking, predictions, sleep, or wearables; never mutates upstream engines.
 - Insight Engine (18.7) aggregates `PerformanceSnapshot` + `AchievementResult` + `RecoverySnapshot` + `AthleteHistory` into immutable `InsightSnapshot` facts — **no AI**, recommendations, persistence, networking, prompts, LLM, or conversation; never mutates upstream engines.
+- Coach Intelligence (18.8) prepares immutable `CoachingContext` from `InsightSnapshot` (+ optional recovery/history/performance/achievement references) — **no AI**, prompts, LLM providers, networking, HTTP, persistence, or conversation; never mutates upstream engines. Future Prompt Builder / Future AI Provider remain architecture placeholders.
 
 ---
 

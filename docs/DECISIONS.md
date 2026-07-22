@@ -1433,4 +1433,33 @@ Implement `app/src/features/insight-engine/` with immutable insight models (`Ins
 
 ---
 
-*New decisions are appended as Decision 046, 047, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 046: Coach Intelligence Foundation (Sprint 18.8)
+
+**Date:** 2026-07-23
+
+**Status:** Accepted
+
+**Context:**
+Sprint 18.8 must introduce Coach Intelligence that transforms deterministic domain knowledge (primarily `InsightSnapshot`) into an immutable Coaching Context for future Prompt Builder / AI Provider layers. This domain must not be an AI provider, must not generate prompts, must not call LLMs, and must not create conversational responses.
+
+**Decision:**
+Extend `app/src/features/coach-intelligence/` with immutable Coaching Context preparation models (`CoachingContext`, `CoachSession`, `CoachObjective`, `CoachIntent`, `CoachPriority`, `CoachConstraint`, `CoachInstruction`, `CoachFocus`, `CoachEvidence`, `CoachMetadata`, `CoachingContextSummary`, `CoachContextSnapshot`, `CoachEngineResult`, `CoachPreparation`, `CoachAudience`, `CoachCommunicationStyle`, `CoachKnowledge`, `CoachReason`), isolated selectors (Insight/Priority/Evidence/Recovery/History/Objective), validators, builders, utilities, `CoachIntelligenceEngine`, a service facade, and a narrow application API (`prepareCoachingContext`, `createCoachSnapshot`, `summarizeCoachingContext`), while preserving the existing history-backed insights API (`CoachSummary`, repository, hooks). Future Prompt Builder and Future AI Provider remain architecture placeholders only.
+
+**Why:**
+- **Dedicated coaching-context boundary** keeps Insight Engine free of prompt/AI preparation concerns.
+- **Isolated selectors** keep each knowledge source testable and single-responsibility.
+- **Frozen Coaching Context** gives future Prompt Builder / AI Provider consumers a stable contract without owning language or provider calls here.
+
+**Alternatives considered:**
+- **Fold coaching context into Insight Engine** — rejected: Insight Engine owns deterministic facts; Coach Intelligence owns preparation for future language layers.
+- **Generate prompts or call LLMs now** — rejected: sprint explicitly forbids AI, prompts, providers, and conversation generation.
+- **Persist coaching context** — rejected: out of scope; foundation remains in-memory.
+
+**Consequences:**
+- Documentation references [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md) (Coaching Context + Future Prompt Builder + Future AI Provider).
+- Future Prompt Builder / AI Provider layers can read `CoachingContext` without redesigning this foundation.
+- Coach Intelligence remains in-memory, non-AI, and non-prompting until a later consumer sprint.
+
+---
+
+*New decisions are appended as Decision 047, 048, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

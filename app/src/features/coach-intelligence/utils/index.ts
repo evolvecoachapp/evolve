@@ -37,3 +37,39 @@ export {
   buildHighFrequencyRisk,
   type BuildProgressStatusInput,
 } from "./buildSignals";
+
+export { aggregateKnowledge } from "./aggregateKnowledge";
+export {
+  freezeConstraint,
+  freezeContext,
+  freezeCoachingContextSummary,
+  freezeEngineResult,
+  freezeEvidence,
+  freezeFocus,
+  freezeInstruction,
+  freezeKnowledge,
+  freezeObjective,
+  freezePreparation,
+  freezeSession,
+  freezeSnapshot,
+} from "./freezeContext";
+export { formatCountPhrase, formatIntentLabel } from "./formatting";
+export {
+  normalizeConstraintPriorities,
+  normalizeEvidencePriorities,
+  normalizeFocusPriorities,
+  normalizeInstructionPriorities,
+  normalizeObjectivePriorities,
+  normalizePriority,
+} from "./normalizePriorities";
+export {
+  sortConstraints,
+  sortEvidence,
+  sortFocus,
+  sortInstructions,
+  sortObjectives,
+} from "./sortEvidence";
+export {
+  buildCoachingContextSummary,
+  summarizeFromContext,
+} from "./summarizeContext";

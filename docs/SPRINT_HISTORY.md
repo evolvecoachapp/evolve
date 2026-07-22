@@ -778,4 +778,18 @@
 | **Status** | Complete |
 | **Notes** | Deterministic domain insights only. No AI, recommendations, persistence, networking, prompts, LLM, or conversation |
 
+### Sprint 18.8 — Coach Intelligence Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 18.8.0 |
+| **Title** | Coach Intelligence Foundation |
+| **Date** | 2026-07-23 |
+| **Goal** | Dedicated Coach Intelligence producing immutable Coaching Context from Insight Snapshots |
+| **Architecture** | Insight Snapshot → **Coach Intelligence** → Coaching Context → Future Prompt Builder → Future AI Provider. Module: `app/src/features/coach-intelligence/`. |
+| **Main components** | **Models:** CoachingContext, CoachSession, CoachObjective, CoachIntent, CoachPriority, CoachConstraint, CoachInstruction, CoachFocus, CoachEvidence, CoachMetadata, CoachSummary, CoachContextSnapshot, CoachEngineResult, CoachPreparation, CoachAudience, CoachCommunicationStyle, CoachKnowledge, CoachReason. **Engine:** `CoachIntelligenceEngine`. **Selectors:** Insight/Priority/Evidence/Recovery/History/Objective. **Builders / validators / utils.** **Application API:** `prepareCoachingContext`, `createCoachSnapshot`, `summarizeCoachingContext`. |
+| **Tests** | Engine, selectors, builders, validators, application helpers, Insight Snapshot integration, regression |
+| **Results** | Dedicated Coach Intelligence foundation. ADR-046 recorded. Docs: COACH_INTELLIGENCE.md (Coaching Context, Future Prompt Builder, Future AI Provider). |
+| **Status** | Complete |
+| **Notes** | Immutable coaching context preparation only. No AI, prompts, LLM providers, networking, HTTP, persistence, or conversation |
 
