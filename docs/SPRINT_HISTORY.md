@@ -763,4 +763,19 @@
 | **Status** | Complete |
 | **Notes** | Deterministic recovery metrics only. No AI, recommendations, persistence, networking, predictions, sleep, or wearables |
 
+### Sprint 18.7 — Insight Engine Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 18.7.0 |
+| **Title** | Insight Engine Foundation |
+| **Date** | 2026-07-23 |
+| **Goal** | Dedicated Insight Engine producing immutable Insight Snapshots from Performance, Achievement, Recovery, and Athlete History |
+| **Architecture** | Performance Snapshot → Achievement Result → Recovery Snapshot → Athlete History → **Insight Engine** → Insight Snapshot → Future Consumers. Module: `app/src/features/insight-engine/`. |
+| **Main components** | **Models:** InsightSnapshot, Insight, InsightType, InsightCategory, InsightSeverity, InsightPriority, InsightStatus, InsightContext, InsightEvidence, InsightReason, InsightMetadata, InsightCollection, InsightSummary, InsightEngineResult. **Engine:** `InsightEngine`. **Generators:** Performance/Achievement/Recovery/History/Summary. **Builders / validators / utils.** **Application API:** `generateInsights`, `createInsightSnapshot`, `summarizeInsights`. |
+| **Tests** | Engine, generators, builders, validators, application helpers, Performance/Achievement/Recovery/History integration, regression |
+| **Results** | Dedicated Insight Engine foundation. ADR-045 recorded. Docs: INSIGHT_ENGINE.md (Insight Model, Future Coach Integration). |
+| **Status** | Complete |
+| **Notes** | Deterministic domain insights only. No AI, recommendations, persistence, networking, prompts, LLM, or conversation |
+
 

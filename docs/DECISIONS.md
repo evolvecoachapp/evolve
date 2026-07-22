@@ -1404,4 +1404,33 @@ Implement `app/src/features/recovery-intelligence/` with immutable recovery mode
 
 ---
 
-*New decisions are appended as Decision 045, 046, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 045: Insight Engine Foundation (Sprint 18.7)
+
+**Date:** 2026-07-23
+
+**Status:** Accepted
+
+**Context:**
+Sprint 18.7 must introduce an Insight Engine that aggregates domain knowledge from Performance, Achievement, Recovery, and Athlete History into immutable Insight Snapshots. Insights must be deterministic domain facts — not AI-generated, not recommendations, and not conversational responses. The engine must not add persistence, networking, prompt generation, or LLM usage, and must not modify upstream engines.
+
+**Decision:**
+Implement `app/src/features/insight-engine/` with immutable insight models (`InsightSnapshot`, `Insight`, `InsightType`, `InsightCategory`, `InsightSeverity`, `InsightPriority`, `InsightStatus`, `InsightContext`, `InsightEvidence`, `InsightReason`, `InsightMetadata`, `InsightCollection`, `InsightSummary`, `InsightEngineResult`), isolated generators (Performance/Achievement/Recovery/History/Summary), validators, builders, utilities, `InsightEngine`, a service facade, and a narrow application API (`generateInsights`, `createInsightSnapshot`, `summarizeInsights`). Future Coach Integration remains an architecture placeholder only. Reserved insight types (`nutrition`, `sleep`, `bodyweight`, `goal`, `coach`) are modeled for extensibility without redesign.
+
+**Why:**
+- **Dedicated insight boundary** keeps upstream engines free of cross-domain aggregation concerns.
+- **Isolated generators** keep each source domain’s facts testable and single-responsibility.
+- **Frozen snapshots** give future Coach / Timeline consumers a stable contract without owning language or recommendations here.
+
+**Alternatives considered:**
+- **Fold insights into Coach Intelligence** — rejected: Coach owns conversation/language; this sprint requires deterministic domain facts only.
+- **Emit recommendations or LLM narratives now** — rejected: sprint explicitly forbids AI, recommendations, and conversation logic.
+- **Persist insights** — rejected: out of scope; foundation remains in-memory.
+
+**Consequences:**
+- Documentation references [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md) (Insight Model + Future Coach Integration).
+- Future Coach consumers can read `InsightSnapshot` without redesigning this foundation.
+- Insight Engine remains in-memory, non-AI, and non-recommendational until a later consumer sprint.
+
+---
+
+*New decisions are appended as Decision 046, 047, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

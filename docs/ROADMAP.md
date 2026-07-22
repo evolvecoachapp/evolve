@@ -67,6 +67,7 @@ Product vision and users: [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Phase arch
 | 18.4 Achievement Engine Foundation (Personal Records) | Done |
 | 18.5 Athlete History Foundation | Done |
 | 18.6 Recovery Intelligence Foundation | Done |
+| 18.7 Insight Engine Foundation | Done |
 
 ---
 

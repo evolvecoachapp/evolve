@@ -9,7 +9,7 @@
 
 ## Primary diagrams
 
-- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline + Composition Root + Decision Intelligence + Workout/Rest Runtime + Domain Events + Performance Engine + Achievement Engine + Athlete History + Recovery Intelligence dependency flow
+- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline + Composition Root + Decision Intelligence + Workout/Rest Runtime + Domain Events + Performance Engine + Achievement Engine + Athlete History + Recovery Intelligence + Insight Engine dependency flow
 - [COMPOSITION_ROOT.md](../COMPOSITION_ROOT.md) — Composition Root, Dependency Graph, Factories, DI, Service Lifecycle
 - [DECISION_INTELLIGENCE.md](../DECISION_INTELLIGENCE.md) — Decision graph, explainability, execution reports, Coach AI preparation
 - [WORKOUT_RUNTIME.md](../WORKOUT_RUNTIME.md) — Live WorkoutSession execution state, session lifecycle, runtime state model
@@ -19,6 +19,7 @@
 - [ACHIEVEMENT_ENGINE.md](../ACHIEVEMENT_ENGINE.md) — Achievement Engine, Personal Records, future milestones/gamification placeholders
 - [ATHLETE_HISTORY.md](../ATHLETE_HISTORY.md) — Athlete History domain, History Model, offline sync + Timeline UI placeholders
 - [RECOVERY_INTELLIGENCE.md](../RECOVERY_INTELLIGENCE.md) — Recovery Intelligence domain, Recovery Metrics, Future Readiness Model placeholder
+- [INSIGHT_ENGINE.md](../INSIGHT_ENGINE.md) — Insight Engine domain, Insight Model, Future Coach Integration placeholder
 - [AI_SYSTEM.md](../AI_SYSTEM.md) — Coach + mobile AI runtime pipeline
 - [INTEGRATION_TESTING.md](../INTEGRATION_TESTING.md) — Integration framework (fixtures, builders, assertions, scenarios, goldens)
 

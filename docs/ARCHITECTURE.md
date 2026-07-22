@@ -31,6 +31,7 @@ See [TECH_STACK.md](./TECH_STACK.md) for versions. Onboarding: [PROJECT_CONTEXT.
 │  → Achievement Engine (Personal Records from snapshots)         │
 │  → Athlete History (immutable chronological domain record)      │
 │  → Recovery Intelligence (deterministic recovery snapshots)     │
+│  → Insight Engine (deterministic domain insight snapshots)      │
 └────────────────────────────┬────────────────────────────────────┘
                              │ HTTPS + JWT
                              ▼
@@ -106,9 +107,12 @@ Athlete History                  ← Sprint 18.5 (implemented) — immutable chr
   ↓
 Recovery Intelligence            ← Sprint 18.6 (implemented) — deterministic recovery snapshots
   (`app/src/features/recovery-intelligence/`)
+  ↓
+Insight Engine                   ← Sprint 18.7 (implemented) — deterministic domain insight snapshots
+  (`app/src/features/insight-engine/`)
 ```
 
-Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md).
+Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md). Insight Engine: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md).
 
 ### Exercise Knowledge Base (`features/exercise-kb`)
 
@@ -371,6 +375,22 @@ Full detail: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md).
 | **Design** | **Deterministic recovery metrics only.** No AI, recommendations, persistence, networking, predictions, sleep, or wearables. Never mutates upstream engines |
 
 Full detail: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md).
+
+### Insight Engine (`features/insight-engine`) — Sprint 18.7
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Aggregate deterministic domain facts into immutable Insight Snapshots |
+| **Flow** | Performance Snapshot → Achievement Result → Recovery Snapshot → Athlete History → Insight Engine → Insight Snapshot → Future Consumers |
+| **Models** | `InsightSnapshot`, `Insight`, `InsightType`, `InsightCategory`, `InsightSeverity`, `InsightPriority`, `InsightStatus`, `InsightContext`, `InsightEvidence`, `InsightReason`, `InsightMetadata`, `InsightCollection`, `InsightSummary`, `InsightEngineResult` |
+| **Engine** | `InsightEngine` — modular generators + aggregation + snapshot generation |
+| **Generators** | Isolated Performance / Achievement / Recovery / History / Summary generators |
+| **Validators** | Consistency, duplicates, priorities, severity, evidence, snapshot integrity |
+| **Application API** | `generateInsights`, `createInsightSnapshot`, `summarizeInsights` |
+| **Integration** | Consumes `PerformanceSnapshot` + `AchievementResult` + `RecoverySnapshot` + `AthleteHistory` |
+| **Design** | **Deterministic domain insights only.** No AI, recommendations, persistence, networking, prompts, LLM, or conversation. Never mutates upstream engines |
+
+Full detail: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md) (Insight Model + Future Coach Integration).
 
 ---
 
