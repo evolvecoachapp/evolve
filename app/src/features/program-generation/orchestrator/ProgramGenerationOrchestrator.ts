@@ -1,3 +1,7 @@
+import {
+  createDecisionIntelligenceService,
+  type ExecutionReport,
+} from "../../../core/decision-intelligence";
 import type { ExerciseSelectionService } from "../../exercise-selection/services/ExerciseSelectionService";
 import type { ProgrammingService } from "../../programming/services/ProgrammingService";
 import type { ProgressionService } from "../../progression/services/ProgressionService";
@@ -335,6 +339,18 @@ export class ProgramGenerationOrchestrator {
       return result.explanations;
     }
     return this.buildExplanations(result.context, result.trace.steps);
+  }
+
+  /**
+   * Build a Decision Intelligence execution report from pipeline outputs.
+   * Does not alter engine logic — records structured domain decisions only.
+   */
+  buildDecisionIntelligence(
+    result: WorkoutGenerationResult,
+  ): ExecutionReport {
+    return createDecisionIntelligenceService().createExecutionReportFromGeneration(
+      result,
+    );
   }
 
   private buildExplanations(

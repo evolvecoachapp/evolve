@@ -1171,4 +1171,33 @@ Implement `app/src/core/composition/` with `CompositionRoot`, `ApplicationContai
 
 ---
 
-*New decisions are appended as Decision 037, 038, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 037 — Decision Intelligence Is a Structured Domain Explanation Layer
+
+**Status:** Accepted
+
+**Context:**
+Sprint 17.10 must introduce a Decision Intelligence foundation so every important workout-generation decision can be recorded and explained for future Coach AI, analytics, debugging, and recommendations. Production engine behavior must remain unchanged. The layer must not become a logging, telemetry, analytics, networking, or persistence system, and must not call AI.
+
+**Decision:**
+Implement `app/src/core/decision-intelligence/` with immutable decision models (`DecisionNode`, `DecisionEdge`, `DecisionGraph`, `DecisionTimeline`, `DecisionReport`, `ExecutionReport`, `DecisionExplanation`), a `DecisionRecorder`, template-based `ExplanationBuilder`, validators, utilities, and a narrow application API (`createDecisionReport`, `createExecutionReport`, `explainWorkoutDecision`, `summarizeDecisionGraph`). Pipeline integration extracts structured domain decisions from existing engine explanations/reasons and `PipelineExecutionTrace` / `PipelineExecutionSummary` without modifying engine logic. `ProgramGenerationOrchestrator.buildDecisionIntelligence` exposes execution reports from in-hand generation results.
+
+**Why:**
+- **Domain explanations** give Coach AI and future dashboards a stable substrate without coupling to engine internals.
+- **Immutability + validation** keep reports deterministic and debuggable.
+- **Template-based explainability** avoids premature AI while still producing human and developer narratives.
+- **Additive integration** preserves ADR-028–036 engine, orchestration, and DI contracts.
+
+**Alternatives considered:**
+- **Emit ad-hoc logs/telemetry from engines** — rejected: not a structured domain graph, and out of sprint scope.
+- **Call an LLM to narrate decisions now** — rejected: sprint forbids AI; templates are sufficient.
+- **Persist decision graphs** — rejected: no persistence in this foundation.
+- **Change engine scoring APIs to return DecisionNodes** — rejected: would modify production business contracts; extraction from existing structured explanations is enough.
+
+**Consequences:**
+- Documentation references [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md).
+- Decision Intelligence remains explanation-only until a later Coach/analytics consumer sprint.
+- Engine modules stay free of Decision Intelligence dependencies.
+
+---
+
+*New decisions are appended as Decision 038, 039, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

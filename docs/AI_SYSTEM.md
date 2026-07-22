@@ -40,6 +40,8 @@ Training Adaptation Engine
 Workout Assembly Engine
         ↓
 Program Generation Orchestrator  (coordinates the stages above)
+        ↓
+Decision Intelligence  (records/explains domain decisions — no AI)
 ```
 
 ### Layer responsibilities
@@ -58,6 +60,7 @@ Program Generation Orchestrator  (coordinates the stages above)
 | Program Generation | `features/program-generation` | Implemented (17.7) | Orchestrates Blueprint→…→Assembly; single public generation API |
 | Integration Testing Framework | `app/tests/integration/` | Implemented (17.8) | Fixtures, builders, assertions, scenarios, golden snapshots — tests only |
 | Composition Root & DI | `core/composition` | Implemented (17.9) | Container, registry, factories, providers — wiring only |
+| Decision Intelligence | `core/decision-intelligence` | Implemented (17.10) | Decision graph, execution/explanation reports — domain explainability only |
 | Prompt Orchestrator | `features/prompt-orchestrator` | Implemented | Composes prompts for AI-assisted blueprint steps |
 | Tool Engine | `features/tool-calling` | Implemented | Tool registry/execution boundary for workflows |
 | Athlete Context | `features/athlete-context` | Implemented | Structured athlete context for orchestration inputs |
@@ -76,6 +79,7 @@ Supporting orchestration pieces also present: Memory (conversation persistence a
 - Program Generation does **not** duplicate engine logic, call AI, persist, or cache — it only orchestrates existing engines and freezes the result.
 - Integration Testing Framework (17.8) validates the complete pipeline via fixtures/builders/assertions/scenarios/goldens — **no production behavior changes**.
 - Composition Root (17.9) is the sole DI wiring site for pipeline service defaults — **no engine/business logic changes**.
+- Decision Intelligence (17.10) records structured domain decisions from pipeline outputs into an immutable decision graph / execution report — **no engine/business logic changes**, no AI, networking, persistence, telemetry, or logging framework.
 
 ---
 

@@ -1,3 +1,4 @@
+import type { ExecutionReport } from "../../../core/decision-intelligence";
 import type { ProgramGenerationOrchestrator } from "../orchestrator/ProgramGenerationOrchestrator";
 import type { WorkoutGenerationExplanation } from "../models/WorkoutGenerationExplanation";
 import type { WorkoutGenerationRequest } from "../models/WorkoutGenerationRequest";
@@ -27,5 +28,14 @@ export class ProgramGenerationService {
     result: WorkoutGenerationResult,
   ): Promise<readonly WorkoutGenerationExplanation[]> {
     return this.orchestrator.explain(result);
+  }
+
+  /**
+   * Decision Intelligence report from an in-hand generation result.
+   */
+  buildDecisionIntelligence(
+    result: WorkoutGenerationResult,
+  ): ExecutionReport {
+    return this.orchestrator.buildDecisionIntelligence(result);
   }
 }

@@ -23,6 +23,7 @@ See [TECH_STACK.md](./TECH_STACK.md) for versions. Onboarding: [PROJECT_CONTEXT.
 │  Factories → Feature Services → Program Generation Orchestrator │
 │  → Blueprint → Knowledge → Selection → Programming →            │
 │  Progression → Adaptation → Assembly → WorkoutSession           │
+│  → Decision Intelligence (decision graph / execution reports)   │
 └────────────────────────────┬────────────────────────────────────┘
                              │ HTTPS + JWT
                              ▼
@@ -74,9 +75,12 @@ Integration Testing Framework    ← Sprint 17.8 (implemented) — tests only
 
 Composition Root & DI            ← Sprint 17.9 (implemented) — wiring only
   (`app/src/core/composition/`)
+  ↓
+Decision Intelligence            ← Sprint 17.10 (implemented) — explanations only
+  (`app/src/core/decision-intelligence/`)
 ```
 
-Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
+Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md).
 
 ### Exercise Knowledge Base (`features/exercise-kb`)
 
@@ -211,6 +215,22 @@ Full detail: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md).
 | **Design** | **Wiring only.** No AI, networking, persistence, UI, caching layer, analytics, or engine/business logic changes |
 
 Full detail: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
+
+### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Structured domain explanation of workout-generation decisions |
+| **Flow** | Program Generation → Decision Recorder → Decision Graph → Execution Report → Explanation Report → (future) Coach AI |
+| **Models** | Immutable `DecisionNode` / `DecisionEdge` / `DecisionGraph` / `DecisionTimeline` / `DecisionReport` / `ExecutionReport` / `DecisionExplanation` |
+| **Recorder** | `DecisionRecorder` — domain decisions only (no implementation details) |
+| **Explainability** | Template-based `ExplanationBuilder` (human / developer / compact / detailed) — **no AI** |
+| **Validators** | Graph consistency, missing parents, orphans, invalid edges, duplicates, confidence range, timeline consistency |
+| **Application API** | `createDecisionReport`, `createExecutionReport`, `explainWorkoutDecision`, `summarizeDecisionGraph` |
+| **Integration** | Reads `PipelineExecutionTrace` / `PipelineExecutionSummary` / engine explanations; orchestrator exposes `buildDecisionIntelligence` |
+| **Design** | **Explanation substrate only.** No engine/business logic changes, AI, networking, persistence, telemetry, logging framework, analytics platform, or UI |
+
+Full detail: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md).
 
 ---
 
@@ -409,6 +429,7 @@ theme context ← screens (styling)
 
 # Training Intelligence pipeline (application layer)
 application use-cases → Composition Root → container/registry → factories → feature services → orchestrator → engines
+orchestrator / generation result → Decision Intelligence (recorder → graph → execution/explanation reports)
 ```
 
 **Forbidden:** providers → screens directly, api client → screens directly, application use-cases → `new` feature services (resolve via Composition Root)
@@ -453,5 +474,6 @@ AIOrchestrator.process_message (async)
 | 034 | Program Generation Orchestrator coordinates the pipeline |
 | 035 | Integration Testing Framework is isolated test infrastructure |
 | 036 | Composition Root owns mobile pipeline DI |
+| 037 | Decision Intelligence is a structured domain explanation layer |
 
 Full list: [DECISIONS.md](./DECISIONS.md)

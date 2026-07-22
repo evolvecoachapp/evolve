@@ -36,6 +36,7 @@
 |----------|-------------|
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Layers, patterns, dependency flow (summary) |
 | [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md) | Composition Root, DI container, factories, service lifecycle |
+| [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md) | Decision graph, explainability, execution reports |
 | [TECH_STACK.md](./TECH_STACK.md) | Languages, frameworks, versions, future tech |
 | [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-036 (append-only) |
 | [AI_SYSTEM.md](./AI_SYSTEM.md) | Coach, LLM, engines, memory, mobile workout pipeline |

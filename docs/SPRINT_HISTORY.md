@@ -643,3 +643,19 @@
 | **Status** | Complete |
 | **Notes** | Wiring only. No AI, networking, persistence, analytics, caching, UI, or engine/business logic modifications |
 
+### Sprint 17.10.0 — Decision Intelligence Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 17.10.0 |
+| **Title** | Decision Intelligence Foundation (Observability & Explainability) |
+| **Date** | 2026-07-22 |
+| **Goal** | Structured domain explanation layer for workout-generation decisions — not logging/telemetry/AI |
+| **Architecture** | Program Generation → **Decision Recorder** → Decision Graph → Execution Report → Explanation Report → (future) Coach AI. Module: `app/src/core/decision-intelligence/`. |
+| **Main components** | **Models:** immutable decision/graph/timeline/report types. **Recorder:** `DecisionRecorder`. **Builders:** `ExplanationBuilder`, `DecisionReportBuilder`, `ExecutionReportBuilder`. **Validators / utils.** **Application API:** `createDecisionReport`, `createExecutionReport`, `explainWorkoutDecision`, `summarizeDecisionGraph`. **Integration:** extract from engine explanations + pipeline trace/summary; orchestrator `buildDecisionIntelligence`. |
+| **Tests** | Recorder/graph, explanation builder, validators/reports, application API, pipeline integration, regression of generation outputs |
+| **Results** | Dedicated Decision Intelligence foundation. ADR-037 recorded. Docs: DECISION_INTELLIGENCE.md. |
+| **Status** | Complete |
+| **Notes** | Explanation substrate only. No engine/business logic changes, AI, networking, persistence, telemetry, logging framework, analytics platform, or UI |
+
+
