@@ -1,3 +1,4 @@
+import type { RestRuntime } from "../../rest-runtime/models/RestRuntime";
 import type { WorkoutSession } from "../../workout-assembly/models/WorkoutSession";
 import type { ExerciseRuntime } from "./ExerciseRuntime";
 import type { WorkoutProgress } from "./WorkoutProgress";
@@ -26,6 +27,11 @@ export interface WorkoutRuntime {
   readonly metrics: WorkoutRuntimeMetrics;
   readonly configuration: WorkoutRuntimeConfiguration;
   readonly events: readonly WorkoutRuntimeEvent[];
+  /**
+   * Optional owned RestRuntime (Sprint 18.1).
+   * Workout Runtime may own Rest Runtime; Rest Runtime never imports Workout Runtime.
+   */
+  readonly restRuntime: RestRuntime | null;
   readonly startedAt: string | null;
   readonly pausedAt: string | null;
   readonly completedAt: string | null;

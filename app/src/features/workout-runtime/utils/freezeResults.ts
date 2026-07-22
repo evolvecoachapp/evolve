@@ -32,6 +32,7 @@ export function freezeRuntime(runtime: WorkoutRuntime): WorkoutRuntime {
     events: Object.freeze(
       runtime.events.map((event) => Object.freeze({ ...event })),
     ),
+    restRuntime: runtime.restRuntime,
   });
 }
 

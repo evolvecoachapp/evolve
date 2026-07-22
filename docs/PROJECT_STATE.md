@@ -19,7 +19,7 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Navigation | 6-tab bottom bar (Home, Workout, Nutrition, Coach, Progress, Profile) |
 | Design system | Token-based theme with light/dark/system preference (`ThemeContext`) |
 | Feature modules | coach, workout, nutrition, progress, analytics, home, dashboard, profile, shared; plus AI/training domains below |
-| Data layer | Service factory pattern; Composition Root DI for Training Intelligence pipeline (`core/composition`, Sprint 17.9); Decision Intelligence explanations (`core/decision-intelligence`, Sprint 17.10); Workout Runtime execution state (`features/workout-runtime`, Sprint 18.0); user/workout backend providers; on-device workout history via `WorkoutHistoryRepository` + `StorageAdapter` (Sprint 13.0); analytics via `WorkoutAnalyticsRepository` (Sprint 14.0) |
+| Data layer | Service factory pattern; Composition Root DI for Training Intelligence pipeline (`core/composition`, Sprint 17.9); Decision Intelligence explanations (`core/decision-intelligence`, Sprint 17.10); Workout Runtime execution state (`features/workout-runtime`, Sprint 18.0); Rest Runtime rest periods (`features/rest-runtime`, Sprint 18.1); user/workout backend providers; on-device workout history via `WorkoutHistoryRepository` + `StorageAdapter` (Sprint 13.0); analytics via `WorkoutAnalyticsRepository` (Sprint 14.0) |
 | Backend providers | `BackendUserService`, `BackendWorkoutService` live; other `Backend*Service` classes throw `notConfigured()` |
 | Tests | Jest + jest-expo |
 | Sprint status | History + detail shipped (13.1–13.2); workout analytics foundation (14.0); AI workout pipeline foundations through Training Adaptation (17.1–17.5) |
@@ -48,8 +48,9 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Composition Root & DI | `core/composition` | Foundation complete (17.9) — wiring only |
 | Decision Intelligence | `core/decision-intelligence` | Foundation complete (17.10) — domain explainability only |
 | Workout Runtime | `features/workout-runtime` | Foundation complete (18.0) — live session execution state only |
+| Rest Runtime | `features/rest-runtime` | Foundation complete (18.1) — deterministic rest periods (injected elapsed) |
 
-These domains are TypeScript application modules with in-memory repositories. They are **not** backend HTTP APIs and do **not** write to PostgreSQL. The integration framework exercises the full pipeline without modifying engine behavior. Pipeline services are composed through `core/composition`. Decision Intelligence explains pipeline decisions without changing engine behavior. Workout Runtime consumes immutable `WorkoutSession` outputs without modifying Program Generation.
+These domains are TypeScript application modules with in-memory repositories. They are **not** backend HTTP APIs and do **not** write to PostgreSQL. The integration framework exercises the full pipeline without modifying engine behavior. Pipeline services are composed through `core/composition`. Decision Intelligence explains pipeline decisions without changing engine behavior. Workout Runtime consumes immutable `WorkoutSession` outputs without modifying Program Generation. Rest Runtime manages rest periods with injected elapsed time and may be owned by Workout Runtime.
 
 ---
 
@@ -79,7 +80,7 @@ These domains are TypeScript application modules with in-memory repositories. Th
 | Intent classification | LLM-primary with keyword fallback |
 | Memory | Windowed conversation context; summarization deferred |
 | Mobile AI | MockCoachService working; OpenAI/Anthropic/Local LLM are placeholders |
-| Mobile workout pipeline | Composition Root wires Blueprint → Knowledge → Selection → Programming → Progression → Adaptation → Assembly → Program Generation; Decision Intelligence explains domain decisions (17.1–17.10); Workout Runtime performs assembled sessions (18.0) |
+| Mobile workout pipeline | Composition Root wires Blueprint → Knowledge → Selection → Programming → Progression → Adaptation → Assembly → Program Generation; Decision Intelligence explains domain decisions (17.1–17.10); Workout Runtime performs assembled sessions (18.0); Rest Runtime owns rest periods (18.1) |
 
 ---
 

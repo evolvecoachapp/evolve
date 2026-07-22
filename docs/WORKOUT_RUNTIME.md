@@ -34,11 +34,13 @@ It is **not**:
 - Program Generation or any pipeline engine
 - UI
 - Persistence / networking
-- Timers / rest countdowns
+- Platform timers / rest countdowns (rest state lives in [REST_RUNTIME.md](./REST_RUNTIME.md))
 - Analytics / history
 - AI
 
 Module: `app/src/features/workout-runtime/`.
+
+`WorkoutRuntime` may own an optional `RestRuntime` (`restRuntime` field / `withRestRuntime`). Rest Runtime never imports this module.
 
 ---
 

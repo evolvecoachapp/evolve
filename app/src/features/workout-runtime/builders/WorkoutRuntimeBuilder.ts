@@ -1,3 +1,4 @@
+import type { RestRuntime } from "../../rest-runtime/models/RestRuntime";
 import type { WorkoutSession } from "../../workout-assembly/models/WorkoutSession";
 import type { ExerciseRuntime } from "../models/ExerciseRuntime";
 import type { WorkoutRuntime } from "../models/WorkoutRuntime";
@@ -65,6 +66,7 @@ export class WorkoutRuntimeBuilder {
       skippedExerciseIds: Object.freeze([]),
       configuration,
       events: Object.freeze([]),
+      restRuntime: null,
       startedAt: null,
       pausedAt: null,
       completedAt: null,
@@ -85,6 +87,7 @@ export class WorkoutRuntimeBuilder {
     readonly skippedExerciseIds: readonly string[];
     readonly configuration: WorkoutRuntimeConfiguration;
     readonly events: readonly WorkoutRuntimeEvent[];
+    readonly restRuntime?: RestRuntime | null;
     readonly startedAt: string | null;
     readonly pausedAt: string | null;
     readonly completedAt: string | null;
@@ -113,10 +116,39 @@ export class WorkoutRuntimeBuilder {
       metrics,
       configuration: input.configuration,
       events: Object.freeze([...input.events]),
+      restRuntime: input.restRuntime ?? null,
       startedAt: input.startedAt,
       pausedAt: input.pausedAt,
       completedAt: input.completedAt,
       cancelledAt: input.cancelledAt,
+    });
+  }
+
+  /**
+   * Attach (or clear) an owned RestRuntime without altering workout progression.
+   */
+  withRestRuntime(
+    runtime: WorkoutRuntime,
+    restRuntime: RestRuntime | null,
+  ): WorkoutRuntime {
+    return this.fromParts({
+      id: runtime.id,
+      session: runtime.session,
+      state: runtime.state,
+      exercises: runtime.exercises,
+      currentExerciseIndex: runtime.currentExerciseIndex,
+      currentExerciseId: runtime.currentExerciseId,
+      currentSetId: runtime.currentSetId,
+      completedExerciseIds: runtime.completedExerciseIds,
+      skippedExerciseIds: runtime.skippedExerciseIds,
+      configuration: runtime.configuration,
+      events: runtime.events,
+      restRuntime,
+      startedAt: runtime.startedAt,
+      pausedAt: runtime.pausedAt,
+      completedAt: runtime.completedAt,
+      cancelledAt: runtime.cancelledAt,
+      pauseCount: runtime.metrics.pauseCount,
     });
   }
 }

@@ -673,4 +673,19 @@
 | **Status** | Complete |
 | **Notes** | Execution state only. No Program Generation changes, UI, persistence, networking, timers, analytics, history, or AI |
 
+### Sprint 18.1 — Rest & Time Runtime Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 18.1.0 |
+| **Title** | Rest & Time Runtime Foundation |
+| **Date** | 2026-07-22 |
+| **Goal** | Dedicated deterministic domain for workout rest periods with injected elapsed time |
+| **Architecture** | WorkoutRuntime → **RestRuntime** → RestSession → RestResult. Module: `app/src/features/rest-runtime/`. |
+| **Main components** | **Models:** session/runtime/state/status/progress/summary/result/event/metrics/configuration/reason/target/duration. **Engine:** `RestRuntimeEngine`. **Builders / validators / utils.** **Application API:** `startRest`, `pauseRest`, `resumeRest`, `cancelRest`, `completeRest`, `updateElapsedTime` via opaque `ActiveRest`. **Integration:** optional `WorkoutRuntime.restRuntime` ownership. |
+| **Tests** | Lifecycle, state transitions, progress, remaining time, overtime, validators, application API, regression |
+| **Results** | Dedicated Rest Runtime foundation. ADR-039 recorded. Docs: REST_RUNTIME.md. |
+| **Status** | Complete |
+| **Notes** | No UI, platform timers, persistence, networking, AI, notifications, or analytics |
+
 

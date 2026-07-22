@@ -61,6 +61,7 @@ Product vision and users: [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Phase arch
 | 17.9 Composition Root & DI | Done |
 | 17.10 Decision Intelligence | Done |
 | 18.0 Workout Runtime Foundation | Done |
+| 18.1 Rest & Time Runtime Foundation | Done |
 
 ---
 
@@ -254,8 +255,9 @@ Live execution state for assembled sessions. Consumes immutable `WorkoutSession`
 | Sprint | Focus | Status |
 |--------|-------|--------|
 | 18.0 | Workout Runtime Foundation — lifecycle, exercise/set progression, validated state machine, public API | **Done** |
+| 18.1 | Rest & Time Runtime Foundation — deterministic rest domain, injected elapsed, validated state machine, public API | **Done** |
 
-**Out of scope until later sprints:** UI binding, rest timers, persistence, networking, analytics, history.
+**Out of scope until later sprints:** UI binding, platform timers/notifications, persistence, networking, analytics, history.
 
 ---
 

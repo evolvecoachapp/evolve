@@ -25,6 +25,7 @@ See [TECH_STACK.md](./TECH_STACK.md) for versions. Onboarding: [PROJECT_CONTEXT.
 │  Progression → Adaptation → Assembly → WorkoutSession           │
 │  → Decision Intelligence (decision graph / execution reports)   │
 │  → Workout Runtime (live execution state of WorkoutSession)     │
+│  → Rest Runtime (deterministic rest periods; injected elapsed)  │
 └────────────────────────────┬────────────────────────────────────┘
                              │ HTTPS + JWT
                              ▼
@@ -82,9 +83,12 @@ Decision Intelligence            ← Sprint 17.10 (implemented) — explanations
   ↓
 Workout Runtime                  ← Sprint 18.0 (implemented) — live session state
   (`app/src/features/workout-runtime/`)
+  ↓
+Rest Runtime                     ← Sprint 18.1 (implemented) — rest periods (injected elapsed)
+  (`app/src/features/rest-runtime/`)
 ```
 
-Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md).
+Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md).
 
 ### Exercise Knowledge Base (`features/exercise-kb`)
 
@@ -247,9 +251,25 @@ Full detail: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md).
 | **Models** | Runtime + state + progress/summary/result/event/metrics/configuration |
 | **Validators** | State transitions, set/exercise progression, completion, invalid operations |
 | **Application API** | `startWorkout`, `pauseWorkout`, `resumeWorkout`, `completeWorkout`, `skipExercise`, `completeSet` |
-| **Design** | **Execution state only.** Consumes immutable `WorkoutSession`. **No Program Generation changes**, UI, persistence, networking, timers, analytics, history, or AI |
+| **Design** | **Execution state only.** Consumes immutable `WorkoutSession`. May own optional `RestRuntime`. **No Program Generation changes**, UI, persistence, networking, timers, analytics, history, or AI |
 
 Full detail: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md).
+
+### Rest Runtime (`features/rest-runtime`) — Sprint 18.1
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Deterministic rest-period domain for live workouts |
+| **Flow** | `WorkoutRuntime` → `RestRuntime` → `RestSession` → `RestResult` |
+| **Lifecycle** | `Idle` → `Running` ↔ `Paused` → `Completed` / `Cancelled` / `Expired` (validated) |
+| **Time model** | Elapsed injected via `updateElapsedTime`; no `setTimeout` / `setInterval` |
+| **Engine** | `RestRuntimeEngine` — start/pause/resume/cancel/complete, elapsed/remaining/overtime/% |
+| **Models** | Session/runtime/state/status/progress/summary/result/event/metrics/configuration |
+| **Validators** | State transitions, duration consistency, completion, expiration, invalid operations |
+| **Application API** | `startRest`, `pauseRest`, `resumeRest`, `cancelRest`, `completeRest`, `updateElapsedTime` |
+| **Design** | **Rest state only.** Foundation for future timers/notifications/Live Activities/Coach AI. **No UI**, platform timers, persistence, networking, AI, analytics, or notifications |
+
+Full detail: [REST_RUNTIME.md](./REST_RUNTIME.md).
 
 ---
 

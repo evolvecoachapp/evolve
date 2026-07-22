@@ -653,6 +653,7 @@ export class WorkoutRuntimeEngine {
         patch.skippedExerciseIds ?? runtime.skippedExerciseIds,
       configuration: runtime.configuration,
       events: patch.events ?? runtime.events,
+      restRuntime: runtime.restRuntime,
       startedAt:
         patch.startedAt !== undefined ? patch.startedAt : runtime.startedAt,
       pausedAt:

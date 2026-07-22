@@ -44,6 +44,8 @@ Program Generation Orchestrator  (coordinates the stages above)
 Decision Intelligence  (records/explains domain decisions — no AI)
         ↓
 Workout Runtime  (live execution state of WorkoutSession — no AI)
+        ↓
+Rest Runtime  (deterministic rest periods; injected elapsed — no AI)
 ```
 
 ### Layer responsibilities
@@ -64,6 +66,7 @@ Workout Runtime  (live execution state of WorkoutSession — no AI)
 | Composition Root & DI | `core/composition` | Implemented (17.9) | Container, registry, factories, providers — wiring only |
 | Decision Intelligence | `core/decision-intelligence` | Implemented (17.10) | Decision graph, execution/explanation reports — domain explainability only |
 | Workout Runtime | `features/workout-runtime` | Implemented (18.0) | Live execution state of `WorkoutSession` — lifecycle + set/exercise progression |
+| Rest Runtime | `features/rest-runtime` | Implemented (18.1) | Deterministic rest periods — injected elapsed, validated state machine |
 | Prompt Orchestrator | `features/prompt-orchestrator` | Implemented | Composes prompts for AI-assisted blueprint steps |
 | Tool Engine | `features/tool-calling` | Implemented | Tool registry/execution boundary for workflows |
 | Athlete Context | `features/athlete-context` | Implemented | Structured athlete context for orchestration inputs |
@@ -84,6 +87,7 @@ Supporting orchestration pieces also present: Memory (conversation persistence a
 - Composition Root (17.9) is the sole DI wiring site for pipeline service defaults — **no engine/business logic changes**.
 - Decision Intelligence (17.10) records structured domain decisions from pipeline outputs into an immutable decision graph / execution report — **no engine/business logic changes**, no AI, networking, persistence, telemetry, or logging framework.
 - Workout Runtime (18.0) consumes an immutable `WorkoutSession` and owns live execution state (lifecycle, exercise/set progression) — **no Program Generation changes**, UI, persistence, networking, timers, analytics, history, or AI.
+- Rest Runtime (18.1) owns deterministic rest-period state with injected elapsed time — **no platform timers**, UI, persistence, networking, AI, notifications, or analytics; Workout Runtime may own Rest Runtime (no circular imports).
 
 ---
 

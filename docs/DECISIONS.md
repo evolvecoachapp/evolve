@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-22  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-038). Append only — never renumber.  
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-039). Append only — never renumber.  
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -1228,4 +1228,32 @@ Implement `app/src/features/workout-runtime/` with runtime models (`WorkoutRunti
 
 ---
 
-*New decisions are appended as Decision 039, 040, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 039 — Rest Runtime Is a Dedicated Deterministic Timing Domain
+
+**Status:** Accepted
+
+**Context:**
+Sprint 18.1 must introduce a Rest Runtime foundation so workout rest periods have validated lifecycle and timing metrics independent of UI. The engine must remain deterministic and testable without platform timers. Workout Runtime may own Rest Runtime; circular dependencies are forbidden. The domain must not add UI, persistence, networking, AI, notifications, analytics, or `setTimeout`/`setInterval`.
+
+**Decision:**
+Implement `app/src/features/rest-runtime/` with runtime models (`RestRuntime`, `RestSession`, `RestState`/`RestStatus`, progress/summary/result/event/metrics/configuration, reason/target/duration), `RestRuntimeEngine` (start/pause/resume/cancel/complete, injected elapsed, remaining/overtime/completion %), builders, validators (state transitions + duration + completion/expiration), utilities, and a narrow application API (`startRest`, `pauseRest`, `resumeRest`, `cancelRest`, `completeRest`, `updateElapsedTime`) that returns opaque `ActiveRest` handles and public summaries/results only. Elapsed time is always injected from outside. `WorkoutRuntime` may hold an optional `restRuntime` reference; Rest Runtime never imports Workout Runtime.
+
+**Why:**
+- **Separation of concerns** — rest timing is independent of set/exercise progression and of UI countdowns.
+- **Deterministic time model** keeps the domain fully unit-testable without flaky timers.
+- **Ownership direction** Workout → Rest avoids circular modules and matches the product architecture.
+- **Opaque public API** prevents consumers from depending on engine internals.
+
+**Alternatives considered:**
+- **Embed rest countdown inside WorkoutRuntimeEngine** — rejected: couples progression with timing; harder to test and evolve.
+- **Use platform `setInterval` inside the domain** — rejected: non-deterministic and out of scope.
+- **Reuse Sprint 12.6 UI `useSessionTiming` as the domain** — rejected: screen-oriented; Sprint 18.1 requires a dedicated foundation.
+
+**Consequences:**
+- Documentation references [REST_RUNTIME.md](./REST_RUNTIME.md).
+- Future timer/notification/Live Activity/Coach AI sprints adapt external clocks to `updateElapsedTime`.
+- Workout Runtime progression logic remains unchanged aside from optional ownership wiring.
+
+---
+
+*New decisions are appended as Decision 040, 041, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
