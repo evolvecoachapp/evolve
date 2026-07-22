@@ -1,0 +1,66 @@
+import type { ToolResult } from "../models/ToolResult";
+import { TOOL_STATUSES } from "../models/ToolStatus";
+
+/** Structured validation issue codes — never prose. */
+export type ToolResultValidationCode =
+  | "missing_execution_id"
+  | "missing_request_id"
+  | "missing_tool_name"
+  | "invalid_status"
+  | "missing_completed_at"
+  | "error_status_mismatch";
+
+/**
+ * Validate a ToolResult structural integrity.
+ */
+export function validateResult(
+  result: ToolResult,
+): readonly ToolResultValidationCode[] {
+  const issues: ToolResultValidationCode[] = [];
+
+  if (
+    typeof result.executionId !== "string" ||
+    result.executionId.trim().length === 0
+  ) {
+    issues.push("missing_execution_id");
+  }
+
+  if (
+    typeof result.requestId !== "string" ||
+    result.requestId.trim().length === 0
+  ) {
+    issues.push("missing_request_id");
+  }
+
+  if (
+    typeof result.toolName !== "string" ||
+    result.toolName.trim().length === 0
+  ) {
+    issues.push("missing_tool_name");
+  }
+
+  if (result.status !== "succeeded" && result.status !== "failed") {
+    issues.push("invalid_status");
+  } else if (
+    !(TOOL_STATUSES as readonly string[]).includes(result.status)
+  ) {
+    issues.push("invalid_status");
+  }
+
+  if (
+    typeof result.completedAt !== "string" ||
+    result.completedAt.trim().length === 0
+  ) {
+    issues.push("missing_completed_at");
+  }
+
+  if (result.status === "failed" && result.error === null) {
+    issues.push("error_status_mismatch");
+  }
+
+  if (result.status === "succeeded" && result.error !== null) {
+    issues.push("error_status_mismatch");
+  }
+
+  return Object.freeze([...new Set(issues)]);
+}

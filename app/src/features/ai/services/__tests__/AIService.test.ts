@@ -1,4 +1,5 @@
 import { AIConfigurationFactory } from "../../../ai-config/factory";
+import { isToolRequest } from "../../../tool-calling/utils/isToolRequest";
 import { AIError } from "../../models/AIError";
 import { AIProviderFactory } from "../../providers/AIProviderFactory";
 import { OpenAIProviderStub } from "../../providers/OpenAIProviderStub";
@@ -23,6 +24,10 @@ describe("AIService", () => {
 
     const response = await service.generateResponse(promptContext);
 
+    expect(isToolRequest(response)).toBe(false);
+    if (isToolRequest(response)) {
+      return;
+    }
     expect(response.provider).toBe("openai");
     expect(response.message.role).toBe("assistant");
     expect(response.generatedAt).toBe(FIXED_TIMESTAMP);
@@ -84,8 +89,53 @@ describe("AIService", () => {
         testConfiguration,
       );
       const response = await service.generateResponse(promptContext);
+      expect(isToolRequest(response)).toBe(false);
+      if (isToolRequest(response)) {
+        return;
+      }
       expect(response.provider).toBe(type);
     }
+  });
+
+  it("passes through ToolRequest without executing tools", async () => {
+    const toolRequest = Object.freeze({
+      id: "tool-req-1",
+      toolName: "get_athlete_profile",
+      arguments: Object.freeze([]),
+      requestedAt: FIXED_TIMESTAMP,
+    });
+
+    const provider: AIProvider = {
+      async generateResponse() {
+        return toolRequest;
+      },
+      async *streamResponse() {
+        // unused
+      },
+      async healthCheck() {
+        return true;
+      },
+      getProviderInfo() {
+        return {
+          type: "local",
+          name: "Local Stub",
+          model: {
+            id: "local-stub-v1",
+            name: "Local Stub v1",
+            provider: "local",
+          },
+        };
+      },
+    };
+
+    const service = new AIService(provider, testConfiguration);
+    const result = await service.generateResponse(createPromptContext());
+
+    expect(isToolRequest(result)).toBe(true);
+    if (!isToolRequest(result)) {
+      return;
+    }
+    expect(result.toolName).toBe("get_athlete_profile");
   });
 
   it("throws AIError for invalid prompt context conversion", async () => {

@@ -1,6 +1,6 @@
 import type { AIProviderInfo } from "../models/AIProviderInfo";
+import type { AIProviderResult } from "../models/AIProviderResult";
 import type { AIRequest } from "../models/AIRequest";
-import type { AIResponse } from "../models/AIResponse";
 import type { AIStreamEvent } from "../models/AIStreamEvent";
 
 export interface AIProviderStreamOptions {
@@ -11,12 +11,14 @@ export interface AIProviderStreamOptions {
 /**
  * Provider-agnostic LLM interface.
  *
- * Implementations return AIResponse / AIStreamEvent only — never vendor shapes.
+ * Implementations return AIResponse, ToolRequest, or AIStreamEvent only —
+ * never vendor shapes. Providers never execute tools and never know
+ * available tool implementations.
  * Networking, when used, goes through the shared HttpClient.
  * Providers without native streaming must still expose streamResponse().
  */
 export interface AIProvider {
-  generateResponse(request: AIRequest): Promise<AIResponse>;
+  generateResponse(request: AIRequest): Promise<AIProviderResult>;
   streamResponse(
     request: AIRequest,
     options?: AIProviderStreamOptions,

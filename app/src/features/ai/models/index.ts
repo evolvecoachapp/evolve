@@ -2,6 +2,7 @@ export { AIError, type AIErrorCode } from "./AIError";
 export type { AIFinishReason } from "./AIFinishReason";
 export type { AIModel } from "./AIModel";
 export type { AIProviderInfo } from "./AIProviderInfo";
+export type { AIProviderResult } from "./AIProviderResult";
 export type { AIProviderType } from "./AIProviderType";
 export { AI_PROVIDER_TYPES } from "./AIProviderType";
 export type { AIRequest } from "./AIRequest";

@@ -8,7 +8,8 @@ export type ConversationErrorCode =
   | "provider_failed"
   | "generation_failed"
   | "stream_cancelled"
-  | "stream_in_progress";
+  | "stream_in_progress"
+  | "tool_execution_unavailable";
 
 /**
  * Single error type for the Conversation engine.

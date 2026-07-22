@@ -1,4 +1,6 @@
 import { AIConfigurationFactory } from "../../../ai-config/factory";
+import { isToolRequest } from "../../../tool-calling/utils/isToolRequest";
+import { createToolRequest } from "../../../tool-calling/testSupport/fixtures";
 import { AIError } from "../../models/AIError";
 import type { AIStreamEvent } from "../../models/AIStreamEvent";
 import type { AIProvider } from "../../providers/AIProvider";
@@ -30,6 +32,10 @@ describe("AIService.streamResponse", () => {
     expect(events.some((event) => event.type === "start")).toBe(true);
     expect(events.some((event) => event.type === "chunk")).toBe(true);
     expect(events.some((event) => event.type === "done")).toBe(true);
+    expect(isToolRequest(response)).toBe(false);
+    if (isToolRequest(response)) {
+      return;
+    }
     expect(response.message.role).toBe("assistant");
     expect(response.message.content.length).toBeGreaterThan(0);
     expect(response.provider).toBe("openai");
@@ -39,8 +45,68 @@ describe("AIService.streamResponse", () => {
   it("works with the local stub provider", async () => {
     const service = new AIService(new LocalProviderStub(), testConfiguration);
     const response = await service.streamResponse(createPromptContext());
+    expect(isToolRequest(response)).toBe(false);
+    if (isToolRequest(response)) {
+      return;
+    }
     expect(response.provider).toBe("local");
     expect(response.message.content).toContain("[Local Stub]");
+  });
+
+  it("returns ToolRequest when provider emits tool_request", async () => {
+    const toolRequest = createToolRequest();
+    const provider: AIProvider = {
+      async generateResponse() {
+        return toolRequest;
+      },
+      async *streamResponse() {
+        yield {
+          type: "start",
+          sessionId: "s1",
+          messageId: "m1",
+          createdAt: FIXED_TIMESTAMP,
+        };
+        yield {
+          type: "tool_request",
+          sessionId: "s1",
+          request: toolRequest,
+        };
+        yield {
+          type: "done",
+          sessionId: "s1",
+          finishReason: "stop",
+          usage: Object.freeze({
+            promptTokens: 0,
+            completionTokens: 0,
+            totalTokens: 0,
+          }),
+          createdAt: FIXED_TIMESTAMP,
+        };
+      },
+      async healthCheck() {
+        return true;
+      },
+      getProviderInfo() {
+        return {
+          type: "local",
+          name: "Tool Stub",
+          model: {
+            id: "local-stub-v1",
+            name: "Local Stub v1",
+            provider: "local",
+          },
+        };
+      },
+    };
+
+    const service = new AIService(provider, testConfiguration);
+    const result = await service.streamResponse(createPromptContext());
+
+    expect(isToolRequest(result)).toBe(true);
+    if (!isToolRequest(result)) {
+      return;
+    }
+    expect(result.toolName).toBe("get_athlete_profile");
   });
 
   it("throws stream_cancelled when aborted", async () => {
@@ -91,19 +157,39 @@ describe("AIService.streamResponse", () => {
     });
   });
 
-  it("throws AIError for invalid prompt context", async () => {
-    const service = new AIService(new OpenAIProviderStub(), testConfiguration);
-    const promptContext = createPromptContext();
-    const invalid = {
-      ...promptContext,
-      athlete: {
-        ...promptContext.athlete,
-        consistencyScore: 2,
+  it("throws AIError when stream ends without done", async () => {
+    const provider: AIProvider = {
+      async generateResponse() {
+        return createAIResponse();
+      },
+      async *streamResponse() {
+        yield {
+          type: "start",
+          sessionId: "s1",
+          messageId: "m1",
+          createdAt: FIXED_TIMESTAMP,
+        };
+      },
+      async healthCheck() {
+        return true;
+      },
+      getProviderInfo() {
+        return {
+          type: "openai",
+          name: "OpenAI Stub",
+          model: {
+            id: "gpt-stub-4o",
+            name: "GPT Stub 4o",
+            provider: "openai",
+          },
+        };
       },
     };
 
-    await expect(service.streamResponse(invalid)).rejects.toBeInstanceOf(
-      AIError,
-    );
+    const service = new AIService(provider, testConfiguration);
+
+    await expect(
+      service.streamResponse(createPromptContext()),
+    ).rejects.toBeInstanceOf(AIError);
   });
 });

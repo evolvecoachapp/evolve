@@ -9,6 +9,10 @@ import type { MemoryContext } from "../../prompt-orchestrator/models/MemoryConte
 import type { PromptOrchestrator } from "../../prompt-orchestrator/services/PromptOrchestrator";
 import type { PromptContext } from "../../prompt-builder/models/PromptContext";
 import { receiveComposedPromptContext } from "../../prompt-builder/utils/receiveComposedPromptContext";
+import type { ToolContext } from "../../tool-calling/models/ToolContext";
+import type { ToolResult } from "../../tool-calling/models/ToolResult";
+import type { ToolExecutor } from "../../tool-calling/services/ToolExecutor";
+import { isToolRequest } from "../../tool-calling/utils/isToolRequest";
 import type { WorkoutSummary } from "../../workout/models/WorkoutSummary";
 import { ConversationError } from "../models/ConversationError";
 import type { Conversation } from "../models/Conversation";
@@ -62,12 +66,15 @@ interface ActiveStreamState {
 }
 
 /**
- * Orchestrates conversation state, AI generation, and persistence lifecycle.
+ * Orchestrates conversation state, AI generation, tool execution, and
+ * persistence lifecycle.
  *
  * Owns streaming and durable restore/persist/clear. Depends on
  * ConversationRepository and AIService — never on a concrete StorageAdapter.
  * When PromptOrchestrator is injected, delegates prompt composition before
  * Prompt Builder acceptance and AIService generation.
+ * When ToolExecutor is injected, executes provider ToolRequests in-domain —
+ * AI providers never execute tools.
  */
 export class ConversationService {
   private activeStream: ActiveStreamState | null = null;
@@ -76,6 +83,7 @@ export class ConversationService {
     private readonly repository: ConversationRepository,
     private readonly aiService: AIService,
     private readonly promptOrchestrator: PromptOrchestrator | null = null,
+    private readonly toolExecutor: ToolExecutor | null = null,
   ) {}
 
   /** Create an empty active conversation with a fresh session. */
@@ -445,7 +453,7 @@ export class ConversationService {
     let aggregatedContent = "";
 
     try {
-      const response = await this.aiService.streamResponse(
+      const outcome = await this.aiService.streamResponse(
         promptContext,
         context,
         {
@@ -488,7 +496,57 @@ export class ConversationService {
         },
       );
 
-      aggregatedContent = response.message.content || aggregatedContent;
+      if (isToolRequest(outcome)) {
+        if (!this.toolExecutor) {
+          throw new ConversationError(
+            "tool_execution_unavailable",
+            "Provider requested a tool but no ToolExecutor is configured.",
+            {
+              conversationId: input.conversation.id,
+              messageId: assistantMessageId,
+            },
+          );
+        }
+
+        const toolContext: ToolContext = Object.freeze({
+          conversationId: input.conversation.id,
+          now: input.now,
+        });
+        const toolResult = await this.toolExecutor.execute(
+          outcome,
+          toolContext,
+        );
+        aggregatedContent = serializeToolResult(toolResult);
+        current = await this.repository.updateMessageContent(
+          input.conversation.id,
+          assistantMessageId,
+          aggregatedContent,
+        );
+        current = await this.repository.updateMessageStatus(
+          input.conversation.id,
+          assistantMessageId,
+          "sent",
+        );
+
+        session = Object.freeze({
+          ...session,
+          status: "completed",
+          content: aggregatedContent,
+          metadata: Object.freeze({
+            ...session.metadata,
+            completedAt: toolResult.completedAt,
+          }),
+        });
+        if (this.activeStream) {
+          this.activeStream.session = session;
+        }
+
+        input.onConversationUpdate?.(current);
+        await this.autoPersist(current, "completed");
+        return current;
+      }
+
+      aggregatedContent = outcome.message.content || aggregatedContent;
       current = await this.repository.updateMessageContent(
         input.conversation.id,
         assistantMessageId,
@@ -506,9 +564,9 @@ export class ConversationService {
         content: aggregatedContent,
         metadata: Object.freeze({
           ...session.metadata,
-          provider: response.provider,
-          model: response.model,
-          completedAt: response.generatedAt,
+          provider: outcome.provider,
+          model: outcome.model,
+          completedAt: outcome.generatedAt,
         }),
       });
       if (this.activeStream) {
@@ -519,6 +577,10 @@ export class ConversationService {
       await this.autoPersist(current, "completed");
       return current;
     } catch (error: unknown) {
+      if (error instanceof ConversationError) {
+        throw error;
+      }
+
       if (
         error instanceof AIError &&
         error.code === "stream_cancelled"
@@ -764,4 +826,14 @@ function assertValidMessage(message: ConversationMessage): void {
       },
     );
   }
+}
+
+/** Minimal assistant content for a completed tool turn — no prompt formatting. */
+function serializeToolResult(result: ToolResult): string {
+  return JSON.stringify({
+    toolName: result.toolName,
+    status: result.status,
+    data: result.data,
+    errorCode: result.error?.code ?? null,
+  });
 }

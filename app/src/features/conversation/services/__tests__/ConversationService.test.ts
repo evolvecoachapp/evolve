@@ -10,6 +10,9 @@ import { createAthleteProfile } from "../../../athlete-context/testSupport/fixtu
 import { createCoachSummary } from "../../../prompt-builder/testSupport/fixtures";
 import { InMemoryPromptOrchestratorRepository } from "../../../prompt-orchestrator/repository/InMemoryPromptOrchestratorRepository";
 import { PromptOrchestrator } from "../../../prompt-orchestrator/services/PromptOrchestrator";
+import { createToolRequest } from "../../../tool-calling/testSupport/fixtures";
+import { createToolExecutor } from "../../../tool-calling/services/createToolExecutor";
+import { isToolRequest } from "../../../tool-calling/utils/isToolRequest";
 import { ConversationError } from "../../models/ConversationError";
 import { InMemoryConversationPersistenceRepository } from "../../persistence/InMemoryConversationPersistenceRepository";
 import { InMemoryStorageAdapter } from "../../persistence/InMemoryStorageAdapter";
@@ -37,7 +40,34 @@ function createProvider(
   return {
     generateResponse: generate,
     async *streamResponse(request: AIRequest, options) {
-      const response: AIResponse = await generate(request);
+      const outcome = await generate(request);
+      if (isToolRequest(outcome)) {
+        yield {
+          type: "start",
+          sessionId: "stream-tool",
+          messageId: "msg-tool",
+          createdAt: FIXED_TIMESTAMP,
+        };
+        yield {
+          type: "tool_request",
+          sessionId: "stream-tool",
+          request: outcome,
+        };
+        yield {
+          type: "done",
+          sessionId: "stream-tool",
+          finishReason: "stop",
+          usage: Object.freeze({
+            promptTokens: 0,
+            completionTokens: 0,
+            totalTokens: 0,
+          }),
+          createdAt: FIXED_TIMESTAMP,
+        };
+        return;
+      }
+
+      const response: AIResponse = outcome;
       yield* createStubStream(
         {
           type: response.provider,
@@ -365,5 +395,54 @@ describe("ConversationService", () => {
 
     // GENERAL_CHAT excludes coach — composed prompt clears coach evidence.
     expect(capturedInsightCount).toBe(0);
+  });
+
+  it("executes ToolRequest via ToolExecutor and continues the conversation", async () => {
+    const provider = createProvider(async () =>
+      createToolRequest({ toolName: "get_athlete_profile" }),
+    );
+    const service = new ConversationService(
+      new InMemoryConversationRepository(),
+      new AIService(provider, testConfiguration),
+      null,
+      createToolExecutor(),
+    );
+
+    const started = await service.startConversation({ now: FIXED_TIMESTAMP });
+    const next = await service.sendMessage({
+      conversationId: started.id,
+      content: "Load my profile",
+      promptContext: createPromptContext(),
+      now: FIXED_TIMESTAMP,
+    });
+
+    expect(next.messages).toHaveLength(2);
+    expect(next.messages[1]?.role).toBe("assistant");
+    expect(next.messages[1]?.status).toBe("sent");
+    expect(next.messages[1]?.content).toContain("get_athlete_profile");
+    expect(next.messages[1]?.content).toContain("succeeded");
+  });
+
+  it("throws when provider requests a tool without ToolExecutor", async () => {
+    const provider = createProvider(async () =>
+      createToolRequest({ toolName: "get_athlete_profile" }),
+    );
+    const service = new ConversationService(
+      new InMemoryConversationRepository(),
+      new AIService(provider, testConfiguration),
+      null,
+      null,
+    );
+
+    const started = await service.startConversation({ now: FIXED_TIMESTAMP });
+
+    await expect(
+      service.sendMessage({
+        conversationId: started.id,
+        content: "Load my profile",
+        promptContext: createPromptContext(),
+        now: FIXED_TIMESTAMP,
+      }),
+    ).rejects.toMatchObject({ code: "tool_execution_unavailable" });
   });
 });

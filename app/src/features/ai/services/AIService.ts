@@ -1,8 +1,11 @@
 import type { AIConfiguration } from "../../ai-config/models/AIConfiguration";
 import type { PromptContext } from "../../prompt-builder/models/PromptContext";
+import type { ToolRequest } from "../../tool-calling/models/ToolRequest";
+import { isToolRequest } from "../../tool-calling/utils/isToolRequest";
+import { validateRequest as validateToolRequest } from "../../tool-calling/validators/validateRequest";
 import { AIError } from "../models/AIError";
 import type { AIFinishReason } from "../models/AIFinishReason";
-import type { AIResponse } from "../models/AIResponse";
+import type { AIProviderResult } from "../models/AIProviderResult";
 import type { AIStreamChunk } from "../models/AIStreamChunk";
 import type { AIStreamEvent } from "../models/AIStreamEvent";
 import type { ConversationContext } from "../models/ConversationContext";
@@ -43,12 +46,14 @@ export class AIService {
   }
 
   /**
-   * Generate an assistant response from a structured prompt context.
+   * Generate an assistant response or a domain ToolRequest.
+   *
+   * Never executes tools — ConversationService owns that lifecycle.
    */
   async generateResponse(
     promptContext: PromptContext,
     conversation?: ConversationContext,
-  ): Promise<AIResponse> {
+  ): Promise<AIProviderResult> {
     const request = toAIRequest(promptContext, conversation);
     const requestIssues = validateAIRequest(request);
 
@@ -60,30 +65,22 @@ export class AIService {
       );
     }
 
-    const response = await this.provider.generateResponse(request);
-    const responseIssues = validateAIResponse(response);
-
-    if (responseIssues.length > 0) {
-      throw new AIError(
-        "invalid_response",
-        `Invalid AI response: ${responseIssues.join(",")}`,
-        this.provider.getProviderInfo().type,
-      );
-    }
-
-    return response;
+    const result = await this.provider.generateResponse(request);
+    return this.validateProviderResult(result);
   }
 
   /**
-   * Stream an assistant response, emit chunks, aggregate, and return AIResponse.
+   * Stream an assistant response, emit chunks, aggregate, and return
+   * AIResponse — or return a ToolRequest when the provider requests a tool.
    *
-   * No UI logic — callers receive events via onEvent and the final AIResponse.
+   * No UI logic — callers receive events via onEvent and the final outcome.
+   * Never executes tools.
    */
   async streamResponse(
     promptContext: PromptContext,
     conversation?: ConversationContext,
     options: AIServiceStreamOptions = {},
-  ): Promise<AIResponse> {
+  ): Promise<AIProviderResult> {
     const request = toAIRequest(promptContext, conversation);
     const requestIssues = validateAIRequest(request);
 
@@ -107,6 +104,7 @@ export class AIService {
     let generatedAt = request.promptGeneratedAt;
     let sawDone = false;
     let cancelled = false;
+    let toolRequest: ToolRequest | null = null;
 
     try {
       for await (const event of this.provider.streamResponse(request, {
@@ -135,6 +133,9 @@ export class AIService {
             chunks.push(event.chunk);
             break;
           }
+          case "tool_request":
+            toolRequest = event.request;
+            break;
           case "done":
             finishReason = event.finishReason;
             usage = event.usage;
@@ -179,6 +180,10 @@ export class AIService {
       );
     }
 
+    if (toolRequest) {
+      return this.validateProviderResult(toolRequest);
+    }
+
     if (!sawDone) {
       throw new AIError(
         "invalid_response",
@@ -197,16 +202,34 @@ export class AIService {
       generatedAt,
     });
 
-    const responseIssues = validateAIResponse(response);
+    return this.validateProviderResult(response);
+  }
+
+  private validateProviderResult(result: AIProviderResult): AIProviderResult {
+    const providerType = this.provider.getProviderInfo().type;
+
+    if (isToolRequest(result)) {
+      const toolIssues = validateToolRequest(result);
+      if (toolIssues.length > 0) {
+        throw new AIError(
+          "invalid_response",
+          `Invalid tool request: ${toolIssues.join(",")}`,
+          providerType,
+        );
+      }
+      return result;
+    }
+
+    const responseIssues = validateAIResponse(result);
     if (responseIssues.length > 0) {
       throw new AIError(
         "invalid_response",
         `Invalid AI response: ${responseIssues.join(",")}`,
-        providerInfo.type,
+        providerType,
       );
     }
 
-    return response;
+    return result;
   }
 
   /** Proxy health check to the injected provider. */
