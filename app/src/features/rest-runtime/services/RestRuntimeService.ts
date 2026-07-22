@@ -1,3 +1,4 @@
+import type { DomainEventSystem } from "../../../core/domain-events";
 import type { RestConfiguration } from "../models/RestConfiguration";
 import type { RestProgress } from "../models/RestProgress";
 import type { RestResult } from "../models/RestResult";
@@ -37,6 +38,11 @@ export class ActiveRest {
   isTerminal(): boolean {
     return resolveEngine(this).isTerminal();
   }
+
+  /** Domain event system for this rest (Sprint 18.2). */
+  getDomainEventSystem(): DomainEventSystem {
+    return resolveEngine(this).getDomainEventSystem();
+  }
 }
 
 function resolveEngine(rest: ActiveRest): RestRuntimeEngine {
@@ -54,8 +60,9 @@ export class RestRuntimeService {
   start(
     session: RestSession,
     configuration: Partial<RestConfiguration> = {},
+    domainEventSystem?: DomainEventSystem,
   ): ActiveRest {
-    const engine = new RestRuntimeEngine();
+    const engine = new RestRuntimeEngine(undefined, domainEventSystem);
     engine.start(session, configuration);
     return new ActiveRest(engine);
   }

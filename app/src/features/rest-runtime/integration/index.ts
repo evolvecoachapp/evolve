@@ -1,0 +1,1 @@
+export { RestDomainEventEmitter } from "./RestDomainEventEmitter";

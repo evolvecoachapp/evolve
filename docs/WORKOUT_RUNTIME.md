@@ -7,7 +7,7 @@
 **Purpose:** Document the Workout Runtime domain — live execution state of a generated WorkoutSession (Sprint 18.0).  
 **Source of Truth:** Yes — for Workout Runtime layout and rules on mobile.
 
-Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [AI_SYSTEM.md](./AI_SYSTEM.md), [DECISIONS.md](./DECISIONS.md) (ADR-038), [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md).
+Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [AI_SYSTEM.md](./AI_SYSTEM.md), [DECISIONS.md](./DECISIONS.md) (ADR-038), [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md), [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md), [REST_RUNTIME.md](./REST_RUNTIME.md).
 
 ---
 
@@ -41,6 +41,8 @@ It is **not**:
 Module: `app/src/features/workout-runtime/`.
 
 `WorkoutRuntime` may own an optional `RestRuntime` (`restRuntime` field / `withRestRuntime`). Rest Runtime never imports this module.
+
+Lifecycle actions emit immutable [Domain Events](./DOMAIN_EVENTS.md) (Sprint 18.2) via an optional/session `DomainEventSystem` — emission only; progression rules unchanged.
 
 ---
 

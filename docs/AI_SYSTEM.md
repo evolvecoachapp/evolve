@@ -46,6 +46,8 @@ Decision Intelligence  (records/explains domain decisions — no AI)
 Workout Runtime  (live execution state of WorkoutSession — no AI)
         ↓
 Rest Runtime  (deterministic rest periods; injected elapsed — no AI)
+        ↓
+Domain Events  (immutable execution events → Event Stream — no AI)
 ```
 
 ### Layer responsibilities
@@ -67,6 +69,7 @@ Rest Runtime  (deterministic rest periods; injected elapsed — no AI)
 | Decision Intelligence | `core/decision-intelligence` | Implemented (17.10) | Decision graph, execution/explanation reports — domain explainability only |
 | Workout Runtime | `features/workout-runtime` | Implemented (18.0) | Live execution state of `WorkoutSession` — lifecycle + set/exercise progression |
 | Rest Runtime | `features/rest-runtime` | Implemented (18.1) | Deterministic rest periods — injected elapsed, validated state machine |
+| Domain Events | `core/domain-events` | Implemented (18.2) | Immutable domain events + Event Stream for workout execution — subscriber interfaces only |
 | Prompt Orchestrator | `features/prompt-orchestrator` | Implemented | Composes prompts for AI-assisted blueprint steps |
 | Tool Engine | `features/tool-calling` | Implemented | Tool registry/execution boundary for workflows |
 | Athlete Context | `features/athlete-context` | Implemented | Structured athlete context for orchestration inputs |
@@ -88,6 +91,7 @@ Supporting orchestration pieces also present: Memory (conversation persistence a
 - Decision Intelligence (17.10) records structured domain decisions from pipeline outputs into an immutable decision graph / execution report — **no engine/business logic changes**, no AI, networking, persistence, telemetry, or logging framework.
 - Workout Runtime (18.0) consumes an immutable `WorkoutSession` and owns live execution state (lifecycle, exercise/set progression) — **no Program Generation changes**, UI, persistence, networking, timers, analytics, history, or AI.
 - Rest Runtime (18.1) owns deterministic rest-period state with injected elapsed time — **no platform timers**, UI, persistence, networking, AI, notifications, or analytics; Workout Runtime may own Rest Runtime (no circular imports).
+- Domain Events (18.2) records immutable execution events from Workout/Rest Runtime into an ordered Event Stream — **not an event bus**; no persistence, networking, async queues, brokers, analytics implementations, or subscriber implementations.
 
 ---
 

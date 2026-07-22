@@ -1,7 +1,12 @@
+import {
+  createDomainEventSystem,
+  type DomainEventSystem,
+} from "../../../core/domain-events";
 import type { WorkoutSession } from "../../workout-assembly/models/WorkoutSession";
 import { ExerciseRuntimeBuilder } from "../builders/ExerciseRuntimeBuilder";
 import { SetRuntimeBuilder } from "../builders/SetRuntimeBuilder";
 import { WorkoutRuntimeBuilder } from "../builders/WorkoutRuntimeBuilder";
+import { WorkoutDomainEventEmitter } from "../integration/WorkoutDomainEventEmitter";
 import type { CompleteSetInput } from "../models/CompleteSetInput";
 import type { ExerciseRuntime } from "../models/ExerciseRuntime";
 import type { SetRuntime } from "../models/SetRuntime";
@@ -43,17 +48,33 @@ const DEFAULT_TIMESTAMP = "2026-07-22T00:00:00.000Z";
  *
  * Consumes an immutable WorkoutSession and maintains mutable runtime state.
  * No timers. No persistence. No networking. No program-generation changes.
+ * Emits domain events for lifecycle actions (Sprint 18.2).
  */
 export class WorkoutRuntimeEngine {
   private runtime: WorkoutRuntime | null = null;
   private pauseCount = 0;
   private eventSequence = 0;
+  private readonly domainEvents: DomainEventSystem;
+  private readonly domainEmitter: WorkoutDomainEventEmitter;
 
   constructor(
     private readonly workoutBuilder: WorkoutRuntimeBuilder = new WorkoutRuntimeBuilder(),
     private readonly exerciseBuilder: ExerciseRuntimeBuilder = new ExerciseRuntimeBuilder(),
     private readonly setBuilder: SetRuntimeBuilder = new SetRuntimeBuilder(),
-  ) {}
+    domainEventSystem?: DomainEventSystem,
+  ) {
+    this.domainEvents =
+      domainEventSystem ??
+      createDomainEventSystem({ sessionId: "workout-runtime" });
+    this.domainEmitter = new WorkoutDomainEventEmitter(this.domainEvents);
+  }
+
+  /**
+   * Domain event system used for this runtime instance (Sprint 18.2).
+   */
+  getDomainEventSystem(): DomainEventSystem {
+    return this.domainEvents;
+  }
 
   /**
    * Seed runtime from session and transition NotStarted → Running.
@@ -100,6 +121,8 @@ export class WorkoutRuntimeEngine {
       timestamp,
     });
 
+    this.domainEmitter.emitWorkoutStarted(this.runtime, timestamp);
+
     return this.summary();
   }
 
@@ -114,6 +137,7 @@ export class WorkoutRuntimeEngine {
       message: "Workout paused",
       timestamp,
     });
+    this.domainEmitter.emitWorkoutPaused(this.runtime, timestamp);
     return this.summary();
   }
 
@@ -127,6 +151,7 @@ export class WorkoutRuntimeEngine {
       message: "Workout resumed",
       timestamp,
     });
+    this.domainEmitter.emitWorkoutResumed(this.runtime, timestamp);
     return this.summary();
   }
 
@@ -160,6 +185,7 @@ export class WorkoutRuntimeEngine {
       timestamp,
     });
 
+    this.domainEmitter.emitWorkoutCompleted(this.runtime, timestamp);
     return freezeResult(this.runtime, timestamp);
   }
 
@@ -176,6 +202,7 @@ export class WorkoutRuntimeEngine {
       message: "Workout cancelled",
       timestamp,
     });
+    this.domainEmitter.emitWorkoutCancelled(this.runtime, timestamp);
     return freezeResult(this.runtime, timestamp);
   }
 
@@ -216,6 +243,11 @@ export class WorkoutRuntimeEngine {
       }),
     );
 
+    let activatedSet: SetRuntime | null = null;
+    let completedExercise: ExerciseRuntime | null = null;
+    let advancedExercise: ExerciseRuntime | null = null;
+    let advancedSet: SetRuntime | null = null;
+
     const nextPending = updatedExercise.sets.find(
       (set) => set.state === "Pending",
     );
@@ -234,6 +266,7 @@ export class WorkoutRuntimeEngine {
       );
       nextExercises = this.replaceExercise(nextExercises, updatedExercise);
       currentSetId = activated.id;
+      activatedSet = activated;
       events.push(
         this.createEvent({
           type: "set_advanced",
@@ -252,6 +285,7 @@ export class WorkoutRuntimeEngine {
       nextExercises = this.replaceExercise(nextExercises, updatedExercise);
       completedExerciseIds = [...completedExerciseIds, updatedExercise.id];
       currentSetId = null;
+      completedExercise = updatedExercise;
 
       events.push(
         this.createEvent({
@@ -275,6 +309,16 @@ export class WorkoutRuntimeEngine {
       currentExerciseId = advanced.currentExerciseId;
       currentSetId = advanced.currentSetId;
       events = [...advanced.events];
+
+      if (advanced.currentExerciseId) {
+        advancedExercise =
+          nextExercises.find((item) => item.id === advanced.currentExerciseId) ??
+          null;
+        advancedSet =
+          advancedExercise?.sets.find(
+            (set) => set.id === advanced.currentSetId,
+          ) ?? null;
+      }
     }
 
     this.runtime = this.rebuild(runtime, {
@@ -285,6 +329,43 @@ export class WorkoutRuntimeEngine {
       completedExerciseIds,
       events,
     });
+
+    this.domainEmitter.emitSetCompleted(
+      this.runtime,
+      exercise,
+      completedSet,
+      timestamp,
+    );
+    if (activatedSet) {
+      this.domainEmitter.emitSetStarted(
+        this.runtime,
+        updatedExercise,
+        activatedSet,
+        timestamp,
+      );
+    }
+    if (completedExercise) {
+      this.domainEmitter.emitExerciseCompleted(
+        this.runtime,
+        completedExercise,
+        timestamp,
+      );
+    }
+    if (advancedExercise) {
+      this.domainEmitter.emitExerciseStarted(
+        this.runtime,
+        advancedExercise,
+        timestamp,
+      );
+      if (advancedSet) {
+        this.domainEmitter.emitSetStarted(
+          this.runtime,
+          advancedExercise,
+          advancedSet,
+          timestamp,
+        );
+      }
+    }
 
     if (
       runtime.configuration.autoCompleteOnLastSet &&
@@ -358,6 +439,37 @@ export class WorkoutRuntimeEngine {
       skippedExerciseIds: [...runtime.skippedExerciseIds, updatedExercise.id],
       events: advanced.events,
     });
+
+    this.domainEmitter.emitExerciseSkipped(
+      this.runtime,
+      updatedExercise,
+      timestamp,
+    );
+
+    if (advanced.currentExerciseId) {
+      const nextExercise =
+        this.runtime.exercises.find(
+          (item) => item.id === advanced.currentExerciseId,
+        ) ?? null;
+      if (nextExercise) {
+        this.domainEmitter.emitExerciseStarted(
+          this.runtime,
+          nextExercise,
+          timestamp,
+        );
+        const nextSet =
+          nextExercise.sets.find((set) => set.id === advanced.currentSetId) ??
+          null;
+        if (nextSet) {
+          this.domainEmitter.emitSetStarted(
+            this.runtime,
+            nextExercise,
+            nextSet,
+            timestamp,
+          );
+        }
+      }
+    }
 
     if (
       runtime.configuration.autoCompleteOnLastExerciseSkip &&

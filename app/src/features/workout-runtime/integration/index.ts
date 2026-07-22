@@ -1,0 +1,1 @@
+export { WorkoutDomainEventEmitter } from "./WorkoutDomainEventEmitter";

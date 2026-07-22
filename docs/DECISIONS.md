@@ -1256,4 +1256,33 @@ Implement `app/src/features/rest-runtime/` with runtime models (`RestRuntime`, `
 
 ---
 
-*New decisions are appended as Decision 040, 041, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 040 — Domain Events Are a Dedicated Immutable Execution-Event Substrate
+
+**Status:** Accepted
+
+**Context:**
+Sprint 18.2 must introduce a Domain Event System so every meaningful workout-execution action produces strongly typed immutable events for future consumers (Performance Engine, Timeline, Coach AI, Recovery, Achievements, Analytics). The system must not be an event bus, message broker, async queue, or networking layer. No UI, persistence, analytics implementations, or subscriber implementations.
+
+**Decision:**
+Implement `app/src/core/domain-events/` with immutable event models (`DomainEvent` + lifecycle variants, `EventMetadata`, `EventContext`, `EventCategory`, `EventSeverity`, `EventSource`, `EventSequence`, `EventStream`), an append-only `EventStreamStore`, a synchronous `DomainEventDispatcher`, subscriber **interfaces only**, builders/validators/utilities, and a narrow application API (`publishEvent`, `subscribe`, `unsubscribe`, `getEventStream`, `summarizeEvents`) that does not expose the dispatcher. Workout Runtime and Rest Runtime emit domain events on lifecycle actions without changing business logic.
+
+**Why:**
+- **Typed substrate** gives future modules a stable event contract without coupling to engine internals.
+- **Synchronous in-memory dispatch** keeps the foundation deterministic and free of messaging infrastructure.
+- **Subscriber interfaces only** reserve consumer slots without premature analytics/AI implementations.
+- **Additive emission** preserves ADR-038/039 runtime behavior.
+
+**Alternatives considered:**
+- **Adopt an event bus / broker (Kafka, RabbitMQ, in-process bus)** — rejected: sprint explicitly forbids messaging infrastructure.
+- **Async queues for subscribers** — rejected: ordering and testability require synchronous dispatch.
+- **Persist events now** — rejected: no persistence in this foundation.
+- **Implement analytics/Coach subscribers now** — rejected: interfaces only; consumers are future sprints.
+
+**Consequences:**
+- Documentation references [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md).
+- Future consumer modules subscribe to the Event Stream without modifying runtime business logic.
+- Domain Events remain an in-memory execution substrate until a later persistence/consumer sprint.
+
+---
+
+*New decisions are appended as Decision 041, 042, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

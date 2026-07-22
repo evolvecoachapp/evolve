@@ -688,4 +688,19 @@
 | **Status** | Complete |
 | **Notes** | No UI, platform timers, persistence, networking, AI, notifications, or analytics |
 
+### Sprint 18.2 — Session Events Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 18.2.0 |
+| **Title** | Session Events Foundation |
+| **Date** | 2026-07-22 |
+| **Goal** | Strongly typed immutable domain event system for workout execution — not an event bus |
+| **Architecture** | Workout Runtime → Rest Runtime → **Domain Events** → Event Stream → Future Subscribers. Module: `app/src/core/domain-events/`. |
+| **Main components** | **Models:** `DomainEvent` lifecycle variants, metadata/context/category/severity/source/sequence, `EventStream`. **Stream:** append-only ordered store + filters. **Dispatcher:** synchronous publish/notify. **Subscribers:** interfaces only. **Builders / validators / utils.** **Application API:** `publishEvent`, `subscribe`, `unsubscribe`, `getEventStream`, `summarizeEvents`. **Integration:** Workout + Rest emission on lifecycle actions. |
+| **Tests** | Dispatcher, ordering, stream, builders, validators, workout/rest integration, application API, regression |
+| **Results** | Dedicated Domain Events foundation. ADR-040 recorded. Docs: DOMAIN_EVENTS.md. |
+| **Status** | Complete |
+| **Notes** | Domain events only. No persistence, networking, async queues, brokers, Kafka/RabbitMQ, analytics implementations, or subscriber implementations |
+
 

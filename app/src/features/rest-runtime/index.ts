@@ -15,6 +15,7 @@ export * from "./validators";
 export * from "./utils";
 export * from "./runtime";
 export * from "./services";
+export * from "./integration";
 export {
   startRest,
   pauseRest,

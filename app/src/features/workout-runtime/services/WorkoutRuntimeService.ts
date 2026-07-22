@@ -1,3 +1,4 @@
+import type { DomainEventSystem } from "../../../core/domain-events";
 import type { WorkoutSession } from "../../workout-assembly/models/WorkoutSession";
 import type { CompleteSetInput } from "../models/CompleteSetInput";
 import type { WorkoutProgress } from "../models/WorkoutProgress";
@@ -34,6 +35,11 @@ export class ActiveWorkout {
   isTerminal(): boolean {
     return resolveEngine(this).isTerminal();
   }
+
+  /** Domain event system for this workout (Sprint 18.2). */
+  getDomainEventSystem(): DomainEventSystem {
+    return resolveEngine(this).getDomainEventSystem();
+  }
 }
 
 function resolveEngine(workout: ActiveWorkout): WorkoutRuntimeEngine {
@@ -51,8 +57,14 @@ export class WorkoutRuntimeService {
   start(
     session: WorkoutSession,
     configuration: Partial<WorkoutRuntimeConfiguration> = {},
+    domainEventSystem?: DomainEventSystem,
   ): ActiveWorkout {
-    const engine = new WorkoutRuntimeEngine();
+    const engine = new WorkoutRuntimeEngine(
+      undefined,
+      undefined,
+      undefined,
+      domainEventSystem,
+    );
     engine.start(session, configuration);
     return new ActiveWorkout(engine);
   }

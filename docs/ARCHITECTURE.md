@@ -26,6 +26,7 @@ See [TECH_STACK.md](./TECH_STACK.md) for versions. Onboarding: [PROJECT_CONTEXT.
 │  → Decision Intelligence (decision graph / execution reports)   │
 │  → Workout Runtime (live execution state of WorkoutSession)     │
 │  → Rest Runtime (deterministic rest periods; injected elapsed)  │
+│  → Domain Events (immutable execution events → Event Stream)    │
 └────────────────────────────┬────────────────────────────────────┘
                              │ HTTPS + JWT
                              ▼
@@ -86,9 +87,12 @@ Workout Runtime                  ← Sprint 18.0 (implemented) — live session 
   ↓
 Rest Runtime                     ← Sprint 18.1 (implemented) — rest periods (injected elapsed)
   (`app/src/features/rest-runtime/`)
+  ↓
+Domain Events                    ← Sprint 18.2 (implemented) — immutable execution events
+  (`app/src/core/domain-events/`)
 ```
 
-Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md).
+Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md).
 
 ### Exercise Knowledge Base (`features/exercise-kb`)
 
@@ -270,6 +274,22 @@ Full detail: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md).
 | **Design** | **Rest state only.** Foundation for future timers/notifications/Live Activities/Coach AI. **No UI**, platform timers, persistence, networking, AI, analytics, or notifications |
 
 Full detail: [REST_RUNTIME.md](./REST_RUNTIME.md).
+
+### Domain Events (`core/domain-events`) — Sprint 18.2
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Strongly typed immutable domain events for workout execution |
+| **Flow** | Workout Runtime → Rest Runtime → Domain Events → Event Stream → Future Subscribers |
+| **Models** | `DomainEvent` (+ lifecycle variants), `EventMetadata`, `EventContext`, `EventCategory`, `EventSeverity`, `EventSource`, `EventSequence`, `EventStream` |
+| **Stream** | Append-only ordered `EventStreamStore`; filter by category/source/type; no persistence |
+| **Dispatcher** | Synchronous `DomainEventDispatcher` — freeze → validate → append → notify (no queues/async) |
+| **Subscribers** | Interfaces only: Performance / Timeline / Coach / Analytics / Achievement / Recovery |
+| **Application API** | `publishEvent`, `subscribe`, `unsubscribe`, `getEventStream`, `summarizeEvents` |
+| **Integration** | Workout + Rest engines emit events on lifecycle actions; business logic unchanged |
+| **Design** | **Domain events only.** Not an event bus/broker. No persistence, networking, async queues, Kafka/RabbitMQ, analytics implementations, or subscriber implementations |
+
+Full detail: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md).
 
 ---
 

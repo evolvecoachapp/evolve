@@ -7,7 +7,7 @@
 **Purpose:** Document the Rest Runtime domain — deterministic rest-period state for live workouts (Sprint 18.1).  
 **Source of Truth:** Yes — for Rest Runtime layout, time model, and state machine on mobile.
 
-Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md), [DECISIONS.md](./DECISIONS.md) (ADR-039).
+Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md), [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md), [DECISIONS.md](./DECISIONS.md) (ADR-039).
 
 ---
 
@@ -37,6 +37,8 @@ It is **not**:
 Module: `app/src/features/rest-runtime/`.
 
 `WorkoutRuntime` may own an optional `RestRuntime` instance. Rest Runtime never imports Workout Runtime (no circular dependencies).
+
+Lifecycle actions emit immutable [Domain Events](./DOMAIN_EVENTS.md) (Sprint 18.2) via an optional/session `DomainEventSystem` — emission only; timing rules unchanged. Expire maps to `rest_completed` in the domain-event model.
 
 ---
 

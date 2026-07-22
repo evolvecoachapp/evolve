@@ -39,8 +39,9 @@
 | [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md) | Decision graph, explainability, execution reports |
 | [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md) | Live workout execution state, session lifecycle, runtime models |
 | [REST_RUNTIME.md](./REST_RUNTIME.md) | Deterministic rest periods, time model, state machine |
+| [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md) | Immutable domain events, Event Stream, subscriber interfaces |
 | [TECH_STACK.md](./TECH_STACK.md) | Languages, frameworks, versions, future tech |
-| [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-039 (append-only) |
+| [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-040 (append-only) |
 | [AI_SYSTEM.md](./AI_SYSTEM.md) | Coach, LLM, engines, memory, mobile workout pipeline |
 | [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md) | Integration framework for the workout pipeline |
 | [../.cursor/rules/EVOLVE_ARCHITECTURE.md](../.cursor/rules/EVOLVE_ARCHITECTURE.md) | Deep-dive architecture reference |

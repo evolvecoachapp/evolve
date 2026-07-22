@@ -62,6 +62,7 @@ Product vision and users: [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Phase arch
 | 17.10 Decision Intelligence | Done |
 | 18.0 Workout Runtime Foundation | Done |
 | 18.1 Rest & Time Runtime Foundation | Done |
+| 18.2 Session Events Foundation | Done |
 
 ---
 

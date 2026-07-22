@@ -1,4 +1,9 @@
+import {
+  createDomainEventSystem,
+  type DomainEventSystem,
+} from "../../../core/domain-events";
 import { RestRuntimeBuilder } from "../builders/RestRuntimeBuilder";
+import { RestDomainEventEmitter } from "../integration/RestDomainEventEmitter";
 import type { RestConfiguration } from "../models/RestConfiguration";
 import type {
   RestEvent,
@@ -34,6 +39,7 @@ const DEFAULT_TIMESTAMP = "2026-07-22T00:00:00.000Z";
  *
  * Elapsed time is injected — never calls setTimeout / setInterval.
  * No UI. No persistence. No networking. No platform timers.
+ * Emits domain events for lifecycle actions (Sprint 18.2).
  */
 export class RestRuntimeEngine {
   private runtime: RestRuntime | null = null;
@@ -41,10 +47,25 @@ export class RestRuntimeEngine {
   private updateCount = 0;
   private eventSequence = 0;
   private elapsedMs = 0;
+  private readonly domainEvents: DomainEventSystem;
+  private readonly domainEmitter: RestDomainEventEmitter;
 
   constructor(
     private readonly runtimeBuilder: RestRuntimeBuilder = new RestRuntimeBuilder(),
-  ) {}
+    domainEventSystem?: DomainEventSystem,
+  ) {
+    this.domainEvents =
+      domainEventSystem ??
+      createDomainEventSystem({ sessionId: "rest-runtime" });
+    this.domainEmitter = new RestDomainEventEmitter(this.domainEvents);
+  }
+
+  /**
+   * Domain event system used for this runtime instance (Sprint 18.2).
+   */
+  getDomainEventSystem(): DomainEventSystem {
+    return this.domainEvents;
+  }
 
   /**
    * Seed runtime from session and transition Idle → Running.
@@ -95,6 +116,12 @@ export class RestRuntimeEngine {
       timestamp,
     });
 
+    this.domainEmitter.emitRestStarted(
+      this.runtime,
+      this.elapsedMs,
+      timestamp,
+    );
+
     return this.summary();
   }
 
@@ -109,6 +136,11 @@ export class RestRuntimeEngine {
       message: "Rest paused",
       timestamp,
     });
+    this.domainEmitter.emitRestPaused(
+      this.runtime,
+      this.elapsedMs,
+      timestamp,
+    );
     return this.summary();
   }
 
@@ -122,6 +154,11 @@ export class RestRuntimeEngine {
       message: "Rest resumed",
       timestamp,
     });
+    this.domainEmitter.emitRestResumed(
+      this.runtime,
+      this.elapsedMs,
+      timestamp,
+    );
     return this.summary();
   }
 
@@ -138,6 +175,11 @@ export class RestRuntimeEngine {
       timestamp,
     });
 
+    this.domainEmitter.emitRestCompleted(
+      this.runtime,
+      this.elapsedMs,
+      timestamp,
+    );
     return freezeResult(this.runtime, timestamp);
   }
 
@@ -151,6 +193,11 @@ export class RestRuntimeEngine {
       message: "Rest cancelled",
       timestamp,
     });
+    this.domainEmitter.emitRestCancelled(
+      this.runtime,
+      this.elapsedMs,
+      timestamp,
+    );
     return freezeResult(this.runtime, timestamp);
   }
 
@@ -175,6 +222,12 @@ export class RestRuntimeEngine {
         message: "Rest expired at target",
         timestamp,
       });
+      // Expired maps to rest_completed domain event (terminal success path).
+      this.domainEmitter.emitRestCompleted(
+        this.runtime,
+        this.elapsedMs,
+        timestamp,
+      );
       return this.summary();
     }
 
@@ -210,6 +263,11 @@ export class RestRuntimeEngine {
       timestamp,
     });
 
+    this.domainEmitter.emitRestCompleted(
+      this.runtime,
+      this.elapsedMs,
+      timestamp,
+    );
     return freezeResult(this.runtime, timestamp);
   }
 
