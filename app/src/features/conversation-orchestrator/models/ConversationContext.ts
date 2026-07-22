@@ -18,7 +18,7 @@ import type { ConversationTurn } from "./ConversationTurn";
 /**
  * Immutable Conversation Context — primary Conversation Orchestrator output.
  *
- * Structured orchestration facts for Future Prompt Builder / AI Provider layers.
+ * Structured orchestration facts for Prompt Composition / Future Provider layers.
  * Not a prompt. Not AI-generated. Not a conversational reply.
  */
 export interface ConversationContext {

@@ -5,9 +5,9 @@
 **Status:** Living Document  
 **Last Updated:** 2026-07-23  
 **Purpose:** Document the Conversation Orchestrator domain foundation (Sprint 19.0).  
-**Source of Truth:** Yes — for Conversation Orchestrator layout, Conversation Context, and Future Prompt Builder placeholder on mobile.
+**Source of Truth:** Yes — for Conversation Orchestrator layout, Conversation Context, and handoff to Prompt Composition on mobile.
 
-Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md), [AI_SYSTEM.md](./AI_SYSTEM.md), [DECISIONS.md](./DECISIONS.md) (ADR-047).
+Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md), [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md), [AI_SYSTEM.md](./AI_SYSTEM.md), [DECISIONS.md](./DECISIONS.md) (ADR-047).
 
 ---
 
@@ -20,9 +20,13 @@ Conversation Orchestrator
       ↓
 Conversation Context
       ↓
-Future Prompt Builder
+Prompt Composition Engine
       ↓
-Future AI Provider
+Prompt Package
+      ↓
+Future Provider Abstraction
+      ↓
+Future AI Providers
 ```
 
 This layer coordinates flow between **Coach Intelligence** and future AI components by preparing an immutable **Conversation Context**.
@@ -82,7 +86,7 @@ Deterministic orchestration preparation facts only:
 | **ConversationState** | Orchestration state (`idle` / `preparing` / `ready` / `awaiting_response` / `closed`) |
 | **ConversationStage** | Pipeline stage (`intake` / `context_ready` / `request_ready` / `handoff`) |
 | **ConversationKnowledge** | Aggregated selected knowledge references |
-| **ConversationRequest** | Structured handoff for Future Prompt Builder (not a prompt string) |
+| **ConversationRequest** | Structured handoff for Prompt Composition Engine (not a prompt string) |
 | **ConversationResponsePlaceholder** | Reserved empty slot for Future AI Provider (`provider`/`content` always null here) |
 | **ConversationReason** | Deterministic reason code + factual statement |
 
@@ -131,34 +135,26 @@ Engine internals are not part of the public API surface.
 
 ---
 
-## Future Prompt Builder
+## Downstream: Prompt Composition Engine
 
-Prompt composition from `ConversationContext` is **reserved in architecture only**.
+Prompt composition from `ConversationContext` is implemented in Sprint 19.1 — see [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md).
 
-Future sprints may:
-
-1. Consume `ConversationContext` / `ConversationSnapshot` as structured input  
-2. Map goals, constraints, request metadata, and knowledge refs into prompts **outside** this domain  
-3. Keep Conversation Orchestrator free of prompt strings and provider SDKs  
-
-Placeholder contract (not implemented):
-
-| Concern | Future |
+| Concern | Status |
 |---------|--------|
 | Input | `ConversationContext` / `ConversationRequest` (read-only) |
-| Consumer | Prompt Builder |
-| Rules | Conversation Orchestrator remains non-AI; Prompt Builder owns prompt text |
+| Consumer | Prompt Composition Engine → immutable `PromptPackage` |
+| Rules | Conversation Orchestrator remains non-AI; Prompt Composition owns structured blocks only (no provider strings) |
 
 ---
 
-## Future AI Provider
+## Future Provider Abstraction / AI Providers
 
-LLM / provider calls are **reserved in architecture only**.
+LLM / provider calls remain **reserved in architecture only** (after Prompt Package).
 
 | Concern | Future |
 |---------|--------|
-| Input | Prompt artifacts from Future Prompt Builder |
-| Consumer | AI Provider adapters (OpenAI / Anthropic / Gemini / Ollama / etc.) |
+| Input | `PromptPackage` / `PromptSnapshot` from Prompt Composition Engine |
+| Consumer | Future Provider Abstraction → AI Provider adapters (OpenAI / Anthropic / Gemini / Ollama / etc.) |
 | Rules | Conversation Orchestrator never calls providers, never opens HTTP, never fills `ConversationResponsePlaceholder` |
 
 ---

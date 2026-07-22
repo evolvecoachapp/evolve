@@ -115,7 +115,9 @@ Supporting orchestration pieces also present: Memory (conversation persistence a
 - Athlete History (18.5) organizes immutable chronological domain facts from `WorkoutResult` + `PerformanceSnapshot` + `AchievementResult` into `AthleteHistory` / `HistorySnapshot` — **no AI**, persistence, networking, storage, querying/filtering, timeline UI, or calendar; never mutates upstream engines.
 - Recovery Intelligence (18.6) analyzes `AthleteHistory` + `PerformanceSnapshot` (+ optional `WorkoutResult`) into immutable `RecoverySnapshot` metrics — **no AI**, recommendations, persistence, networking, predictions, sleep, or wearables; never mutates upstream engines.
 - Insight Engine (18.7) aggregates `PerformanceSnapshot` + `AchievementResult` + `RecoverySnapshot` + `AthleteHistory` into immutable `InsightSnapshot` facts — **no AI**, recommendations, persistence, networking, prompts, LLM, or conversation; never mutates upstream engines.
-- Coach Intelligence (18.8) prepares immutable `CoachingContext` from `InsightSnapshot` (+ optional recovery/history/performance/achievement references) — **no AI**, prompts, LLM providers, networking, HTTP, persistence, or conversation; never mutates upstream engines. Future Prompt Builder / Future AI Provider remain architecture placeholders.
+- Coach Intelligence (18.8) prepares immutable `CoachingContext` from `InsightSnapshot` (+ optional recovery/history/performance/achievement references) — **no AI**, prompts, LLM providers, networking, HTTP, persistence, or conversation; never mutates upstream engines.
+- Conversation Orchestrator (19.0) prepares immutable `ConversationContext` from `CoachingContext` (+ optional upstream references) — **no AI**, prompts, LLM providers, networking, HTTP, persistence, or conversation generation; never mutates upstream engines.
+- Prompt Composition Engine (19.1) transforms `ConversationContext` into an immutable `PromptPackage` of structured blocks — **no AI**, networking, HTTP, OpenAI/Anthropic/Gemini/Ollama, or provider-specific string prompt generation; Future Provider Abstraction / Future AI Providers remain architecture placeholders.
 
 ---
 

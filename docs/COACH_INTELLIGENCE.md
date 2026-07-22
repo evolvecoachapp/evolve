@@ -5,9 +5,9 @@
 **Status:** Living Document  
 **Last Updated:** 2026-07-23  
 **Purpose:** Document the Coach Intelligence domain foundation (Sprint 18.8).  
-**Source of Truth:** Yes — for Coach Intelligence layout, Coaching Context, Future Prompt Builder, and Future AI Provider placeholders on mobile.
+**Source of Truth:** Yes — for Coach Intelligence layout, Coaching Context, and downstream Conversation / Prompt Composition handoff on mobile.
 
-Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md), [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md), [AI_SYSTEM.md](./AI_SYSTEM.md), [DECISIONS.md](./DECISIONS.md) (ADR-046).
+Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md), [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md), [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md), [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md), [AI_SYSTEM.md](./AI_SYSTEM.md), [DECISIONS.md](./DECISIONS.md) (ADR-046).
 
 ---
 
@@ -24,9 +24,13 @@ Conversation Orchestrator
       ↓
 Conversation Context
       ↓
-Future Prompt Builder
+Prompt Composition Engine
       ↓
-Future AI Provider
+Prompt Package
+      ↓
+Future Provider Abstraction
+      ↓
+Future AI Providers
 ```
 
 This layer transforms **deterministic domain knowledge** into an immutable **Coaching Context**.
@@ -130,34 +134,26 @@ Engine internals are not part of the public API surface.
 
 ---
 
-## Future Prompt Builder
+## Downstream: Conversation + Prompt Composition
 
-Prompt composition is **reserved in architecture only**. Conversation Orchestrator (Sprint 19.0) now sits between Coaching Context and Future Prompt Builder; see [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md).
+Conversation Orchestrator (Sprint 19.0) and Prompt Composition Engine (Sprint 19.1) sit between Coaching Context and Future Provider Abstraction; see [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md) and [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md).
 
-Future sprints may:
-
-1. Consume `ConversationContext` (preferred) or `CoachingContext` / `CoachContextSnapshot` as structured input  
-2. Map objectives, constraints, instructions, and style metadata into prompts **outside** this domain  
-3. Keep Coach Intelligence free of prompt strings and provider SDKs  
-
-Placeholder contract (not implemented):
-
-| Concern | Future |
+| Concern | Status |
 |---------|--------|
-| Input | `ConversationContext` / `CoachingContext` (read-only) |
-| Consumer | Prompt Builder |
-| Rules | Coach Intelligence remains non-AI; Prompt Builder owns prompt text |
+| Input | `CoachingContext` (read-only) → Conversation Context → Prompt Package |
+| Consumer | Conversation Orchestrator → Prompt Composition Engine |
+| Rules | Coach Intelligence remains non-AI; Prompt Composition owns structured blocks only |
 
 ---
 
-## Future AI Provider
+## Future Provider Abstraction / AI Providers
 
-LLM / provider calls are **reserved in architecture only**.
+LLM / provider calls remain **reserved in architecture only** (after Prompt Package).
 
 | Concern | Future |
 |---------|--------|
-| Input | Prompt artifacts from Future Prompt Builder |
-| Consumer | AI Provider adapters (OpenAI / Anthropic / Gemini / Ollama / etc.) |
+| Input | `PromptPackage` from Prompt Composition Engine |
+| Consumer | Future Provider Abstraction → AI Provider adapters (OpenAI / Anthropic / Gemini / Ollama / etc.) |
 | Rules | Coach Intelligence never calls providers, never opens HTTP, never generates conversation |
 
 ---

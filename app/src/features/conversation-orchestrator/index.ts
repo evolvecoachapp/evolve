@@ -4,7 +4,8 @@
  * Sprint 19.0 — Conversation Context preparation foundation.
  *
  * Coaching Context → Conversation Orchestrator → Conversation Context
- * → Future Prompt Builder → Future AI Provider
+ * → Prompt Composition Engine → Prompt Package → Future Provider Abstraction
+ * → Future AI Providers
  *
  * No AI providers. No prompt generation. No LLM calls. No networking.
  * No conversation generation. Immutable orchestration only.

@@ -1491,4 +1491,34 @@ Create `app/src/features/conversation-orchestrator/` with immutable Conversation
 
 ---
 
-*New decisions are appended as Decision 048, 049, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 048: Prompt Composition Engine Foundation (Sprint 19.1)
+
+**Date:** 2026-07-23
+
+**Status:** Accepted
+
+**Context:**
+Sprint 19.1 must introduce Prompt Composition Engine that transforms immutable Conversation Context into an immutable Prompt Package of structured blocks. This domain must not generate provider-specific prompt strings, must not call AI providers, and must not perform networking.
+
+**Decision:**
+Create `app/src/features/prompt-composition/` with immutable Prompt Package composition models (`PromptPackage`, `PromptBlock`, `PromptBlockType`, `PromptSection`, `PromptPriority`, `PromptMetadata`, `PromptContext`, `PromptConstraints`, `PromptInstruction`, `PromptKnowledge`, `PromptConversation`, `PromptMemory`, `PromptSafety`, `PromptIdentity`, `PromptUserInput`, `PromptSummary`, `PromptSnapshot`, `PromptEngineResult`, `PromptCompositionInput`, `PromptEngineError`), isolated composers (System/Identity/Knowledge/Conversation/Memory/Constraint/Safety/UserInput/Summary), validators, builders, utilities, `PromptCompositionEngine`, a service facade, and a narrow application API (`composePromptPackage`, `createPromptSnapshot`, `summarizePromptPackage`). Future Provider Abstraction and Future AI Providers remain architecture placeholders only. Existing Conversation Orchestrator and upstream domains are consumed by reference only and must not be modified.
+
+**Why:**
+- **Dedicated composition boundary** keeps Conversation Orchestrator free of prompt-block concerns.
+- **Isolated composers** keep each block mapping testable and single-responsibility.
+- **Frozen Prompt Package** gives Future Provider Abstraction a stable structured contract without owning provider strings or SDKs here.
+- **Extensible block types** allow Tools/Images/Files/Vision/Audio/Reasoning without redesign.
+
+**Alternatives considered:**
+- **Fold prompt composition into Conversation Orchestrator** — rejected: Conversation Orchestrator owns handoff context; Prompt Composition owns structured prompt blocks.
+- **Generate provider prompt strings or call LLMs now** — rejected: sprint explicitly forbids AI, networking, and provider-specific string prompt generation.
+- **Reuse legacy `prompt-orchestrator` as the Sprint 19.1 foundation** — rejected: Prompt Composition Engine is the Conversation Context → Prompt Package path for the Coach Intelligence pipeline; legacy prompt-orchestrator remains a separate earlier foundation.
+
+**Consequences:**
+- Documentation references [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md) (Prompt Package + Future Provider Mapping).
+- Future Provider Abstraction / AI Provider layers can read `PromptPackage` without redesigning this foundation.
+- Prompt Composition Engine remains in-memory, non-AI, and non-networking until a later provider sprint.
+
+---
+
+*New decisions are appended as Decision 049, 050, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

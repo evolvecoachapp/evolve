@@ -118,9 +118,12 @@ Coach Intelligence               ← Sprint 18.8 (implemented) — immutable Coa
   ↓
 Conversation Orchestrator        ← Sprint 19.0 (implemented) — immutable Conversation Context preparation
   (`app/src/features/conversation-orchestrator/`)
+  ↓
+Prompt Composition Engine        ← Sprint 19.1 (implemented) — immutable Prompt Package composition
+  (`app/src/features/prompt-composition/`)
 ```
 
-Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md). Insight Engine: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md). Coach Intelligence: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md). Conversation Orchestrator: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md).
+Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md). Insight Engine: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md). Coach Intelligence: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md). Conversation Orchestrator: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md). Prompt Composition: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md).
 
 ### Exercise Knowledge Base (`features/exercise-kb`)
 
@@ -405,7 +408,7 @@ Full detail: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md) (Insight Model + Future Co
 | Aspect | Implementation |
 |--------|----------------|
 | **Purpose** | Transform deterministic domain knowledge into immutable Coaching Context |
-| **Flow** | Insight Snapshot → Coach Intelligence → Coaching Context → Conversation Orchestrator → Conversation Context → Future Prompt Builder → Future AI Provider |
+| **Flow** | Insight Snapshot → Coach Intelligence → Coaching Context → Conversation Orchestrator → Conversation Context → Prompt Composition Engine → Prompt Package → Future Provider Abstraction → Future AI Providers |
 | **Models** | `CoachingContext`, `CoachSession`, `CoachObjective`, `CoachIntent`, `CoachPriority`, `CoachConstraint`, `CoachInstruction`, `CoachFocus`, `CoachEvidence`, `CoachMetadata`, `CoachingContextSummary`, `CoachContextSnapshot`, `CoachEngineResult`, `CoachPreparation`, `CoachAudience`, `CoachCommunicationStyle`, `CoachKnowledge`, `CoachReason` (legacy history-backed `CoachSummary` retained) |
 | **Engine** | `CoachIntelligenceEngine` — modular selectors + context preparation |
 | **Selectors** | Isolated Insight / Priority / Evidence / Recovery / History / Objective selectors |
@@ -414,14 +417,14 @@ Full detail: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md) (Insight Model + Future Co
 | **Integration** | Consumes `InsightSnapshot`; optionally references Recovery / History / Performance / Achievement |
 | **Design** | **Immutable coaching context only.** No AI, prompts, LLM, networking, HTTP, persistence, or conversation. Never mutates upstream engines |
 
-Full detail: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md) (Coaching Context + Future Prompt Builder + Future AI Provider).
+Full detail: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md) (Coaching Context + Conversation / Prompt Composition handoff).
 
 ### Conversation Orchestrator (`features/conversation-orchestrator`) — Sprint 19.0
 
 | Aspect | Implementation |
 |--------|----------------|
 | **Purpose** | Coordinate Coach Intelligence → future AI by preparing immutable Conversation Context |
-| **Flow** | Coaching Context → Conversation Orchestrator → Conversation Context → Future Prompt Builder → Future AI Provider |
+| **Flow** | Coaching Context → Conversation Orchestrator → Conversation Context → Prompt Composition Engine → Prompt Package → Future Provider Abstraction → Future AI Providers |
 | **Models** | `ConversationContext`, `ConversationSession`, `ConversationMessage`, `ConversationTurn`, `ConversationIntent`, `ConversationGoal`, `ConversationAudience`, `ConversationPriority`, `ConversationConstraint`, `ConversationMetadata`, `ConversationKnowledge`, `ConversationEvidence`, `ConversationSummary`, `ConversationSnapshot`, `ConversationEngineResult`, `ConversationPreparation`, `ConversationState`, `ConversationStage`, `ConversationRequest`, `ConversationResponsePlaceholder` |
 | **Engine** | `ConversationOrchestratorEngine` — modular selectors + context preparation |
 | **Selectors** | Isolated Knowledge / Priority / Goal / Evidence / Constraint / Session selectors |
@@ -430,7 +433,23 @@ Full detail: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md) (Coaching Context 
 | **Integration** | Consumes `CoachingContext`; optionally references Insight / Recovery / History / Performance / Achievement |
 | **Design** | **Immutable conversation orchestration only.** No AI, prompts, LLM, networking, HTTP, persistence, or conversation generation. Never mutates upstream engines |
 
-Full detail: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md) (Conversation Context + Future Prompt Builder).
+Full detail: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md) (Conversation Context + handoff to Prompt Composition).
+
+### Prompt Composition Engine (`features/prompt-composition`) — Sprint 19.1
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Transform immutable Conversation Context into immutable Prompt Package of structured blocks |
+| **Flow** | Conversation Context → Prompt Composition Engine → Prompt Package → Future Provider Abstraction → Future AI Providers |
+| **Models** | `PromptPackage`, `PromptBlock`, `PromptBlockType`, `PromptSection`, `PromptPriority`, `PromptMetadata`, `PromptContext`, `PromptConstraints`, `PromptInstruction`, `PromptKnowledge`, `PromptConversation`, `PromptMemory`, `PromptSafety`, `PromptIdentity`, `PromptUserInput`, `PromptSummary`, `PromptSnapshot`, `PromptEngineResult`, `PromptCompositionInput`, `PromptEngineError` |
+| **Engine** | `PromptCompositionEngine` — modular composers + package composition |
+| **Composers** | Isolated System / Identity / Knowledge / Conversation / Memory / Constraint / Safety / UserInput / Summary composers |
+| **Validators** | Block consistency, duplicates, mandatory blocks, ordering, priorities, package consistency, snapshot integrity |
+| **Application API** | `composePromptPackage`, `createPromptSnapshot`, `summarizePromptPackage` |
+| **Integration** | Consumes `ConversationContext`; optionally references CoachingContext / InsightSnapshot |
+| **Design** | **Immutable prompt composition only.** No AI, networking, HTTP, OpenAI/Anthropic/Gemini/Ollama, or provider-specific string prompt generation. Never mutates upstream domains |
+
+Full detail: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md) (Prompt Package + Future Provider Mapping).
 
 ---
 

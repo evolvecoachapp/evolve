@@ -808,3 +808,18 @@
 | **Status** | Complete |
 | **Notes** | Immutable conversation orchestration only. No AI, prompts, LLM providers, networking, HTTP, persistence, or conversation generation |
 
+### Sprint 19.1 — Prompt Composition Engine Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 19.1.0 |
+| **Title** | Prompt Composition Engine Foundation |
+| **Date** | 2026-07-23 |
+| **Goal** | Dedicated Prompt Composition Engine producing immutable Prompt Package from Conversation Context |
+| **Architecture** | Conversation Context → **Prompt Composition Engine** → Prompt Package → Future Provider Abstraction → Future AI Providers. Module: `app/src/features/prompt-composition/`. |
+| **Main components** | **Models:** PromptPackage, PromptBlock, PromptBlockType, PromptSection, PromptPriority, PromptMetadata, PromptContext, PromptConstraints, PromptInstruction, PromptKnowledge, PromptConversation, PromptMemory, PromptSafety, PromptIdentity, PromptUserInput, PromptSummary, PromptSnapshot, PromptEngineResult, PromptCompositionInput, PromptEngineError. **Engine:** `PromptCompositionEngine`. **Composers:** System/Identity/Knowledge/Conversation/Memory/Constraint/Safety/UserInput/Summary. **Builders / validators / utils.** **Application API:** `composePromptPackage`, `createPromptSnapshot`, `summarizePromptPackage`. |
+| **Tests** | Engine, composers, builders, validators, application helpers, Conversation Context integration, regression |
+| **Results** | Dedicated Prompt Composition Engine foundation. ADR-048 recorded. Docs: PROMPT_COMPOSITION.md (Prompt Package, Future Provider Mapping). |
+| **Status** | Complete |
+| **Notes** | Immutable structured prompt composition only. No AI, networking, HTTP, OpenAI/Anthropic/Gemini/Ollama, or provider-specific string prompt generation |
+
