@@ -793,3 +793,18 @@
 | **Status** | Complete |
 | **Notes** | Immutable coaching context preparation only. No AI, prompts, LLM providers, networking, HTTP, persistence, or conversation |
 
+### Sprint 19.0 — Conversation Orchestrator Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 19.0.0 |
+| **Title** | Conversation Orchestrator Foundation |
+| **Date** | 2026-07-23 |
+| **Goal** | Dedicated Conversation Orchestrator producing immutable Conversation Context from Coaching Context |
+| **Architecture** | Coaching Context → **Conversation Orchestrator** → Conversation Context → Future Prompt Builder → Future AI Provider. Module: `app/src/features/conversation-orchestrator/`. |
+| **Main components** | **Models:** ConversationContext, ConversationSession, ConversationMessage, ConversationTurn, ConversationIntent, ConversationGoal, ConversationAudience, ConversationPriority, ConversationConstraint, ConversationMetadata, ConversationKnowledge, ConversationEvidence, ConversationSummary, ConversationSnapshot, ConversationEngineResult, ConversationPreparation, ConversationState, ConversationStage, ConversationRequest, ConversationResponsePlaceholder. **Engine:** `ConversationOrchestratorEngine`. **Selectors:** Knowledge/Priority/Goal/Evidence/Constraint/Session. **Builders / validators / utils.** **Application API:** `prepareConversation`, `createConversationSnapshot`, `summarizeConversation`. |
+| **Tests** | Engine, selectors, builders, validators, application helpers, Coaching Context integration, regression |
+| **Results** | Dedicated Conversation Orchestrator foundation. ADR-047 recorded. Docs: CONVERSATION_ORCHESTRATOR.md (Conversation Context, Future Prompt Builder). |
+| **Status** | Complete |
+| **Notes** | Immutable conversation orchestration only. No AI, prompts, LLM providers, networking, HTTP, persistence, or conversation generation |
+

@@ -1462,4 +1462,33 @@ Extend `app/src/features/coach-intelligence/` with immutable Coaching Context pr
 
 ---
 
-*New decisions are appended as Decision 047, 048, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 047: Conversation Orchestrator Foundation (Sprint 19.0)
+
+**Date:** 2026-07-23
+
+**Status:** Accepted
+
+**Context:**
+Sprint 19.0 must introduce Conversation Orchestrator that coordinates flow between Coach Intelligence and future AI components by preparing an immutable Conversation Context. This domain must not generate prompts, must not call AI providers, and must not create conversational responses.
+
+**Decision:**
+Create `app/src/features/conversation-orchestrator/` with immutable Conversation Context preparation models (`ConversationContext`, `ConversationSession`, `ConversationMessage`, `ConversationTurn`, `ConversationIntent`, `ConversationGoal`, `ConversationAudience`, `ConversationPriority`, `ConversationConstraint`, `ConversationMetadata`, `ConversationKnowledge`, `ConversationEvidence`, `ConversationSummary`, `ConversationSnapshot`, `ConversationEngineResult`, `ConversationPreparation`, `ConversationState`, `ConversationStage`, `ConversationRequest`, `ConversationResponsePlaceholder`), isolated selectors (Knowledge/Priority/Goal/Evidence/Constraint/Session), validators, builders, utilities, `ConversationOrchestratorEngine`, a service facade, and a narrow application API (`prepareConversation`, `createConversationSnapshot`, `summarizeConversation`). Future Prompt Builder and Future AI Provider remain architecture placeholders only. Existing Coach Intelligence and upstream domains are consumed by reference only and must not be modified.
+
+**Why:**
+- **Dedicated orchestration boundary** keeps Coach Intelligence free of conversation handoff concerns.
+- **Isolated selectors** keep each knowledge mapping testable and single-responsibility.
+- **Frozen Conversation Context** gives Future Prompt Builder / AI Provider consumers a stable contract without owning language or provider calls here.
+
+**Alternatives considered:**
+- **Fold conversation orchestration into Coach Intelligence** — rejected: Coach Intelligence owns coaching preparation; Conversation Orchestrator owns handoff preparation for future language layers.
+- **Generate prompts or call LLMs now** — rejected: sprint explicitly forbids AI, prompts, providers, and conversation generation.
+- **Persist conversation context** — rejected: out of scope; foundation remains in-memory.
+
+**Consequences:**
+- Documentation references [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md) (Conversation Context + Future Prompt Builder).
+- Future Prompt Builder / AI Provider layers can read `ConversationContext` without redesigning this foundation.
+- Conversation Orchestrator remains in-memory, non-AI, and non-prompting until a later consumer sprint.
+
+---
+
+*New decisions are appended as Decision 048, 049, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

@@ -20,6 +20,10 @@ Coach Intelligence
       ↓
 Coaching Context
       ↓
+Conversation Orchestrator
+      ↓
+Conversation Context
+      ↓
 Future Prompt Builder
       ↓
 Future AI Provider
@@ -128,11 +132,11 @@ Engine internals are not part of the public API surface.
 
 ## Future Prompt Builder
 
-Prompt composition from `CoachingContext` is **reserved in architecture only**.
+Prompt composition is **reserved in architecture only**. Conversation Orchestrator (Sprint 19.0) now sits between Coaching Context and Future Prompt Builder; see [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md).
 
 Future sprints may:
 
-1. Consume `CoachingContext` / `CoachContextSnapshot` as structured input  
+1. Consume `ConversationContext` (preferred) or `CoachingContext` / `CoachContextSnapshot` as structured input  
 2. Map objectives, constraints, instructions, and style metadata into prompts **outside** this domain  
 3. Keep Coach Intelligence free of prompt strings and provider SDKs  
 
@@ -140,7 +144,7 @@ Placeholder contract (not implemented):
 
 | Concern | Future |
 |---------|--------|
-| Input | `CoachingContext` (read-only) |
+| Input | `ConversationContext` / `CoachingContext` (read-only) |
 | Consumer | Prompt Builder |
 | Rules | Coach Intelligence remains non-AI; Prompt Builder owns prompt text |
 

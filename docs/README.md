@@ -46,6 +46,7 @@
 | [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md) | Recovery Intelligence domain, Recovery Metrics, Future Readiness Model placeholder |
 | [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md) | Insight Engine domain, Insight Model, Future Coach Integration placeholder |
 | [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md) | Coach Intelligence domain, Coaching Context, Future Prompt Builder / AI Provider placeholders |
+| [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md) | Conversation Orchestrator domain, Conversation Context, Future Prompt Builder placeholder |
 | [TECH_STACK.md](./TECH_STACK.md) | Languages, frameworks, versions, future tech |
 | [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-046 (append-only) |
 | [AI_SYSTEM.md](./AI_SYSTEM.md) | Coach, LLM, engines, memory, mobile workout pipeline |

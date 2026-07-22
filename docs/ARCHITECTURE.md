@@ -33,6 +33,7 @@ See [TECH_STACK.md](./TECH_STACK.md) for versions. Onboarding: [PROJECT_CONTEXT.
 │  → Recovery Intelligence (deterministic recovery snapshots)     │
 │  → Insight Engine (deterministic domain insight snapshots)      │
 │  → Coach Intelligence (immutable Coaching Context preparation)  │
+│  → Conversation Orchestrator (immutable Conversation Context)   │
 └────────────────────────────┬────────────────────────────────────┘
                              │ HTTPS + JWT
                              ▼
@@ -114,9 +115,12 @@ Insight Engine                   ← Sprint 18.7 (implemented) — deterministic
   ↓
 Coach Intelligence               ← Sprint 18.8 (implemented) — immutable Coaching Context preparation
   (`app/src/features/coach-intelligence/`)
+  ↓
+Conversation Orchestrator        ← Sprint 19.0 (implemented) — immutable Conversation Context preparation
+  (`app/src/features/conversation-orchestrator/`)
 ```
 
-Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md). Insight Engine: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md). Coach Intelligence: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md).
+Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md). Insight Engine: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md). Coach Intelligence: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md). Conversation Orchestrator: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md).
 
 ### Exercise Knowledge Base (`features/exercise-kb`)
 
@@ -401,7 +405,7 @@ Full detail: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md) (Insight Model + Future Co
 | Aspect | Implementation |
 |--------|----------------|
 | **Purpose** | Transform deterministic domain knowledge into immutable Coaching Context |
-| **Flow** | Insight Snapshot → Coach Intelligence → Coaching Context → Future Prompt Builder → Future AI Provider |
+| **Flow** | Insight Snapshot → Coach Intelligence → Coaching Context → Conversation Orchestrator → Conversation Context → Future Prompt Builder → Future AI Provider |
 | **Models** | `CoachingContext`, `CoachSession`, `CoachObjective`, `CoachIntent`, `CoachPriority`, `CoachConstraint`, `CoachInstruction`, `CoachFocus`, `CoachEvidence`, `CoachMetadata`, `CoachingContextSummary`, `CoachContextSnapshot`, `CoachEngineResult`, `CoachPreparation`, `CoachAudience`, `CoachCommunicationStyle`, `CoachKnowledge`, `CoachReason` (legacy history-backed `CoachSummary` retained) |
 | **Engine** | `CoachIntelligenceEngine` — modular selectors + context preparation |
 | **Selectors** | Isolated Insight / Priority / Evidence / Recovery / History / Objective selectors |
@@ -411,6 +415,22 @@ Full detail: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md) (Insight Model + Future Co
 | **Design** | **Immutable coaching context only.** No AI, prompts, LLM, networking, HTTP, persistence, or conversation. Never mutates upstream engines |
 
 Full detail: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md) (Coaching Context + Future Prompt Builder + Future AI Provider).
+
+### Conversation Orchestrator (`features/conversation-orchestrator`) — Sprint 19.0
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Coordinate Coach Intelligence → future AI by preparing immutable Conversation Context |
+| **Flow** | Coaching Context → Conversation Orchestrator → Conversation Context → Future Prompt Builder → Future AI Provider |
+| **Models** | `ConversationContext`, `ConversationSession`, `ConversationMessage`, `ConversationTurn`, `ConversationIntent`, `ConversationGoal`, `ConversationAudience`, `ConversationPriority`, `ConversationConstraint`, `ConversationMetadata`, `ConversationKnowledge`, `ConversationEvidence`, `ConversationSummary`, `ConversationSnapshot`, `ConversationEngineResult`, `ConversationPreparation`, `ConversationState`, `ConversationStage`, `ConversationRequest`, `ConversationResponsePlaceholder` |
+| **Engine** | `ConversationOrchestratorEngine` — modular selectors + context preparation |
+| **Selectors** | Isolated Knowledge / Priority / Goal / Evidence / Constraint / Session selectors |
+| **Validators** | Context consistency, goals, priorities, knowledge, constraints, snapshot integrity, missing information |
+| **Application API** | `prepareConversation`, `createConversationSnapshot`, `summarizeConversation` |
+| **Integration** | Consumes `CoachingContext`; optionally references Insight / Recovery / History / Performance / Achievement |
+| **Design** | **Immutable conversation orchestration only.** No AI, prompts, LLM, networking, HTTP, persistence, or conversation generation. Never mutates upstream engines |
+
+Full detail: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md) (Conversation Context + Future Prompt Builder).
 
 ---
 
