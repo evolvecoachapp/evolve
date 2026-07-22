@@ -3,6 +3,7 @@ import type { ToolExecutor } from "../../tool-calling/services/ToolExecutor";
 import { InMemoryWorkflowRegistry } from "../registry/InMemoryWorkflowRegistry";
 import type { WorkflowRegistry } from "../registry/WorkflowRegistry";
 import { freezeWorkflowRegistry } from "../utils/freezeWorkflowRegistry";
+import { GenerateWorkoutBlueprintWorkflow } from "../../workout-blueprint/workflows/GenerateWorkoutBlueprintWorkflow";
 import {
   AnalyzeProgressWorkflow,
   BuildNutritionOverviewWorkflow,
@@ -19,6 +20,7 @@ import { WorkflowPlanner } from "./WorkflowPlanner";
 export function createDefaultWorkflowRegistry(): WorkflowRegistry {
   const registry = new InMemoryWorkflowRegistry();
   registry.register(new GenerateWorkoutWorkflow());
+  registry.register(new GenerateWorkoutBlueprintWorkflow());
   registry.register(new AnalyzeProgressWorkflow());
   registry.register(new RecommendRecoveryWorkflow());
   registry.register(new PlanDeloadWorkflow());

@@ -71,6 +71,7 @@ describe("placeholder workflows", () => {
       "analyze_progress",
       "build_nutrition_overview",
       "generate_workout",
+      "generate_workout_blueprint",
       "plan_deload",
       "recommend_recovery",
     ]);

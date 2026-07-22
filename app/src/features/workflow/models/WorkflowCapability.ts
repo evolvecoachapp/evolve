@@ -5,6 +5,7 @@
  */
 export type WorkflowCapability =
   | "generate_workout"
+  | "generate_workout_blueprint"
   | "analyze_progress"
   | "recommend_recovery"
   | "plan_deload"
@@ -12,6 +13,7 @@ export type WorkflowCapability =
 
 export const WORKFLOW_CAPABILITIES = Object.freeze([
   "generate_workout",
+  "generate_workout_blueprint",
   "analyze_progress",
   "recommend_recovery",
   "plan_deload",
