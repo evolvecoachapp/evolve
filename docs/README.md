@@ -41,8 +41,9 @@
 | [REST_RUNTIME.md](./REST_RUNTIME.md) | Deterministic rest periods, time model, state machine |
 | [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md) | Immutable domain events, Event Stream, subscriber interfaces |
 | [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md) | Single-session performance snapshots, metric model, trend placeholder |
+| [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md) | Achievement Engine, Personal Records, future milestones/gamification |
 | [TECH_STACK.md](./TECH_STACK.md) | Languages, frameworks, versions, future tech |
-| [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-041 (append-only) |
+| [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-042 (append-only) |
 | [AI_SYSTEM.md](./AI_SYSTEM.md) | Coach, LLM, engines, memory, mobile workout pipeline |
 | [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md) | Integration framework for the workout pipeline |
 | [../.cursor/rules/EVOLVE_ARCHITECTURE.md](../.cursor/rules/EVOLVE_ARCHITECTURE.md) | Deep-dive architecture reference |

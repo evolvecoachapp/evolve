@@ -718,4 +718,19 @@
 | **Status** | Complete |
 | **Notes** | Single-session only. No AI, persistence, networking, history, PRs, recovery, or recommendations |
 
+### Sprint 18.4 — Achievement Engine Foundation (Personal Records)
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 18.4.0 |
+| **Title** | Achievement Engine Foundation (Personal Records) |
+| **Date** | 2026-07-22 |
+| **Goal** | Dedicated Achievement Engine detecting immutable Personal Records from Performance Snapshots, with extensible architecture for future achievement categories |
+| **Architecture** | Performance Snapshot → **Achievement Engine** → Achievement Result → Achievement Events → Future Consumers. Module: `app/src/features/achievement-engine/`. |
+| **Main components** | **Models:** Achievement (+ type/category/level/status/reason/rule/evidence/context/metadata), PersonalRecord (+ types/evidence/result), result/summary/engine result/events, injected baseline provider. **Engine:** `AchievementEngine`. **Detectors:** Weight/Volume/Tonnage/Repetition/CompletedSets/Density/SessionVolume/ExerciseVolume. **Builders / validators / utils / events.** **Application API:** `evaluateAchievements`, `detectPersonalRecords`, `summarizeAchievements`. |
+| **Tests** | Engine, detectors, validators, builders, events, Performance Engine integration, regression |
+| **Results** | Dedicated Achievement Engine foundation. ADR-042 recorded. Docs: ACHIEVEMENT_ENGINE.md. |
+| **Status** | Complete |
+| **Notes** | Personal Records only. No AI, persistence, networking, history store, badges/streaks/goals/challenges implementation |
+
 

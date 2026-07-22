@@ -1315,4 +1315,34 @@ Implement `app/src/features/performance-engine/` with immutable models (`Perform
 
 ---
 
-*New decisions are appended as Decision 042, 043, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 042: Achievement Engine Foundation — Personal Records (Sprint 18.4)
+
+**Date:** 2026-07-22
+
+**Status:** Accepted
+
+**Context:**
+Sprint 18.4 must introduce an Achievement Engine that detects immutable achievements from Performance Snapshots and Workout Results. The first supported category is Personal Records. The architecture must remain extensible for milestones, badges, goals, challenges, and streaks without redesigning core models. History storage, gamification implementations, AI, persistence, and networking are out of scope.
+
+**Decision:**
+Implement `app/src/features/achievement-engine/` with immutable achievement models (open type/category strings + Personal Record specialization), isolated PR detectors, validators, builders, utilities, engine-emitted achievement events (no subscribers), a service facade, and a narrow application API (`evaluateAchievements`, `detectPersonalRecords`, `summarizeAchievements`). Personal Record comparison uses an injected `PersonalRecordBaselineProvider` only — no history implementation inside the engine.
+
+**Why:**
+- **Dedicated achievement boundary** keeps analytics (Performance Engine) free of PR/gamification concerns.
+- **Open type/category identifiers** allow future categories without modifying core Achievement fields.
+- **Injected baselines** enable deterministic PR detection without owning persistence.
+- **Frozen results + events** give future consumers a stable contract.
+
+**Alternatives considered:**
+- **Fold PRs into Performance Engine** — rejected: Performance Engine is single-session analytics only (ADR-041).
+- **Implement history/badges/streaks now** — rejected: sprint explicitly limits scope to Personal Records + architecture support.
+- **Require DomainEventStream at runtime** — rejected: stream remains an architecture reference; snapshot + workout result are sufficient inputs.
+
+**Consequences:**
+- Documentation references [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md).
+- Future milestone/gamification detectors can register beside PR detectors without redesign.
+- Achievement Engine remains in-memory and non-persistent until a later consumer/persistence sprint.
+
+---
+
+*New decisions are appended as Decision 043, 044, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

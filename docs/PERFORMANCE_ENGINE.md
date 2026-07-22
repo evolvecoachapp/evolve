@@ -120,7 +120,9 @@ Engine internals are not part of the public API surface.
 { available: false, sessionCount: 1, message: "single_session_only" }
 ```
 
-Future sprints may introduce multi-session trends, personal records, and recovery-aware scoring — **out of scope** for Sprint 18.3.
+Future sprints may introduce multi-session trends and recovery-aware scoring — **out of scope** for Sprint 18.3.
+
+Personal Records are handled by the [Achievement Engine](./ACHIEVEMENT_ENGINE.md) (Sprint 18.4), which consumes Performance Snapshots without modifying this engine.
 
 ---
 

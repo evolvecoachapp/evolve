@@ -132,10 +132,10 @@ Base contract: `DomainEventSubscriber` with synchronous `onEvent(event)`.
 Downstream modules will subscribe without changing runtime engines:
 
 - Performance Engine ← Sprint 18.3 (implemented as consumer of Event Stream + WorkoutResult)
+- Achievement Engine ← Sprint 18.4 (consumes PerformanceSnapshot + WorkoutResult; DomainEventStream reference only)
 - Timeline  
 - Coach AI  
 - Recovery  
-- Achievements  
 - Analytics  
 
 ---
