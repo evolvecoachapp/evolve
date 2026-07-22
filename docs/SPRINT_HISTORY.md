@@ -612,3 +612,19 @@
 | **Results** | Immutable WorkoutGenerationResult with full pipeline summary/trace. ADR-034 recorded. |
 | **Status** | Complete |
 | **Notes** | Coordination only. No engine duplication, AI, networking, persistence, caching, execution state, analytics, history, or UI |
+
+### Sprint 17.8.0 — Integration Framework Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 17.8.0 |
+| **Title** | Integration Framework Foundation |
+| **Date** | 2026-07-22 |
+| **Goal** | Reusable integration testing infrastructure for the complete workout generation pipeline — no production behavior changes |
+| **Architecture** | `WorkoutGenerationRequest` → Program Generation Orchestrator → `WorkoutGenerationResult` → Integration Assertions → Golden Validation. Package: `app/tests/integration/`. |
+| **Main components** | **Fixtures:** immutable athlete profiles. **Builders:** Athlete / WorkoutRequest / Conversation / Workflow. **Assertions:** `expectWorkout`. **Scenarios:** complete-pipeline e2e cases. **Snapshots / Goldens:** normalized deterministic regression files. **Utils:** executePipeline, loadFixture, compareSnapshots. |
+| **Tests** | Framework self-tests, builder/assertion suites, scenario suites, golden suites, regression validation |
+| **Results** | Dedicated integration harness with golden regression surface. ADR-035 recorded. Docs: INTEGRATION_TESTING.md. |
+| **Status** | Complete |
+| **Notes** | Testing infrastructure only. No AI, networking, persistence, analytics, caching, UI, or engine modifications |
+

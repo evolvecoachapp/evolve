@@ -57,6 +57,7 @@ Product vision and users: [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Phase arch
 | 17.5 Fatigue & Recovery Engine | Done |
 | 17.6 Workout Assembly | Done |
 | 17.7 Program Generation | Done |
+| 17.8 Integration Framework Foundation | Done |
 
 ---
 

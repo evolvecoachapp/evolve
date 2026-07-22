@@ -1115,4 +1115,32 @@ Implement `app/src/features/program-generation` such that `ProgramGenerationOrch
 
 ---
 
-*New decisions are appended as Decision 035, 036, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 035 — Integration Testing Framework Is Isolated Test Infrastructure
+
+**Status:** Accepted
+
+**Context:**
+Sprint 17.8 must provide a reusable Integration Testing Framework for the complete workout generation pipeline so future Training Intelligence evolutions can be regression-tested. Production engines and orchestration behavior must remain unchanged.
+
+**Decision:**
+Introduce `app/tests/integration/` as dedicated testing infrastructure with immutable fixtures, fluent builders, domain assertions, scenario tests, and normalized golden snapshots. The framework invokes the existing Program Generation Orchestrator through testSupport wiring only. No production modules, engines, or application use-cases are modified. Goldens store deterministic structural snapshots (ids/timestamps normalized) under `golden/`.
+
+**Why:**
+- **Isolation** keeps test harness concerns out of `features/*` production packages.
+- **Fixtures + builders** make expressive, reusable athlete/request construction without copy-paste.
+- **Assertions + goldens** detect pipeline regressions without re-implementing engine logic.
+- **Determinism** (fixed timestamps, frozen fixtures, normalized snapshots) keeps CI stable.
+
+**Alternatives considered:**
+- **Colocate only under `program-generation/__tests__`** — rejected: framework must serve the whole pipeline and future engines, not one feature folder.
+- **Move existing unit tests into `tests/integration/`** — rejected: unit tests remain feature-local; this sprint adds infrastructure only.
+- **Change orchestrator for test hooks** — rejected: no production behavior changes.
+
+**Consequences:**
+- Pipeline documentation references [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md).
+- Scenario/golden suites become the primary complete-pipeline regression surface.
+- ADR-034 orchestration contracts remain the production source of truth.
+
+---
+
+*New decisions are appended as Decision 036, 037, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

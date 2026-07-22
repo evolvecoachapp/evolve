@@ -68,9 +68,11 @@ Training Adaptation Engine       ← Sprint 17.5 (implemented)
 Workout Assembly Engine          ← Sprint 17.6 (implemented)
   ↓
 Program Generation Orchestrator  ← Sprint 17.7 (implemented)
+  ↓
+Integration Testing Framework    ← Sprint 17.8 (implemented) — tests only
 ```
 
-Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md).
+Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md).
 
 ### Exercise Knowledge Base (`features/exercise-kb`)
 
@@ -175,6 +177,21 @@ Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md).
 | **Service** | `ProgramGenerationService` — thin wrapper over `ProgramGenerationOrchestrator` (no cache/persistence) |
 | **Application** | `generateWorkoutProgram`, `previewWorkoutProgram`, `explainWorkoutGeneration` |
 | **Design** | Coordination only. **No engine duplication**, **no business logic**, **no AI**, **no networking**, **no persistence**, **no execution state**, **no analytics**, **no history**, **no caching** |
+
+### Integration Testing Framework (`app/tests/integration/`) — Sprint 17.8
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Reusable infrastructure to validate every future evolution of the Training Intelligence Engine |
+| **Flow** | `WorkoutGenerationRequest` → Orchestrator → `WorkoutGenerationResult` → Domain Assertions → Golden Validation |
+| **Fixtures** | Immutable athlete fixtures (beginner BB, advanced PL, powerbuilding, home gym, cutting, bulking, …) |
+| **Builders** | Fluent `AthleteBuilder`, `WorkoutRequestBuilder`, `ConversationBuilder`, `WorkflowBuilder` |
+| **Assertions** | `expectWorkout(result)` domain matchers (validity, engines present, order, duplicates, immutability) |
+| **Scenarios** | End-to-end complete-pipeline scenarios (powerlifting, bodybuilding, powerbuilding, cutting, bulking, general fitness) |
+| **Goldens** | Normalized deterministic snapshots under `golden/*.golden.json` |
+| **Design** | **Testing infrastructure only.** No production behavior changes, no AI, networking, persistence, analytics, caching, UI, or engine modifications |
+
+Full detail: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md).
 
 ---
 

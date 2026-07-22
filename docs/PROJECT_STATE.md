@@ -44,8 +44,9 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Training Adaptation | `features/training-adaptation` | Foundation complete (17.5) — readiness + recommendations only |
 | Workout Assembly | `features/workout-assembly` | Foundation complete (17.6) — immutable session assembly only |
 | Program Generation | `features/program-generation` | Foundation complete (17.7) — orchestration only |
+| Integration Testing Framework | `app/tests/integration/` | Foundation complete (17.8) — testing infrastructure only |
 
-These domains are TypeScript application modules with in-memory repositories. They are **not** backend HTTP APIs and do **not** write to PostgreSQL.
+These domains are TypeScript application modules with in-memory repositories. They are **not** backend HTTP APIs and do **not** write to PostgreSQL. The integration framework exercises the full pipeline without modifying engine behavior.
 
 ---
 

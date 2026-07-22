@@ -1,0 +1,56 @@
+{
+  "frameworkVersion": "17.8.0",
+  "scenarioId": "general-fitness",
+  "status": "succeeded",
+  "completedSteps": [
+    "validate",
+    "create_context",
+    "blueprint",
+    "selection",
+    "programming",
+    "progression",
+    "training_adaptation",
+    "workout_assembly",
+    "freeze_result"
+  ],
+  "failedStep": null,
+  "stepOrder": [
+    "validate",
+    "create_context",
+    "blueprint",
+    "selection",
+    "programming",
+    "progression",
+    "training_adaptation",
+    "workout_assembly",
+    "freeze_result"
+  ],
+  "validationIssues": [],
+  "exerciseIds": [
+    "dumbbell-bench-press",
+    "leg-extension",
+    "tricep-pushdown"
+  ],
+  "exerciseOrder": [
+    1,
+    2,
+    3
+  ],
+  "prescriptionCount": 3,
+  "progressionTimelineCount": 12,
+  "recommendationCount": 2,
+  "sessionExerciseCount": 3,
+  "hasProgramming": true,
+  "hasProgression": true,
+  "hasAdaptation": true,
+  "hasAssembly": true,
+  "hasSession": true,
+  "hasTrace": true,
+  "hasSummary": true,
+  "explanationCount": 9,
+  "metrics": {
+    "stepCount": 9,
+    "succeededStepCount": 9,
+    "failedStepCount": 0
+  }
+}
