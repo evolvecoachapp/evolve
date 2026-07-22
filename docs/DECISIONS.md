@@ -1285,4 +1285,34 @@ Implement `app/src/core/domain-events/` with immutable event models (`DomainEven
 
 ---
 
-*New decisions are appended as Decision 041, 042, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 041: Performance Engine Foundation (Sprint 18.3)
+
+**Date:** 2026-07-22
+
+**Status:** Accepted
+
+**Context:**
+Sprint 18.3 must introduce a Performance Engine that analyzes completed workout execution into immutable Performance Snapshots. It must consume Domain Events / Workout Results (and may reference DecisionReport ids only). It must not modify workout execution or program generation, and must not add AI, persistence, networking, multi-session history, personal records, recovery, or recommendations.
+
+**Decision:**
+Implement `app/src/features/performance-engine/` with immutable models (`PerformanceSnapshot`, metric groups, exercise/session/movement performance, grade/summary/context/result, single-session `PerformanceTrend` placeholder), isolated calculators (`Volume` / `Intensity` / `Density` / `Completion` / `Duration`), validators, builders, utilities, `PerformanceEngine`, a service facade, and a narrow application API (`analyzeWorkoutPerformance`, `summarizePerformance`, `gradePerformance`). Analysis is single-session only.
+
+**Why:**
+- **Dedicated analytics boundary** keeps execution runtimes free of performance math.
+- **EventStream + WorkoutResult inputs** reuse Sprint 18.0–18.2 substrates without coupling to Coach AI or Timeline.
+- **Modular calculators** keep metric responsibilities isolated and testable.
+- **Frozen snapshots** give future consumers a stable, immutable contract.
+
+**Alternatives considered:**
+- **Fold analytics into Workout Runtime** — rejected: runtime must stay execution-state only (ADR-038).
+- **Multi-session trends / PRs now** — rejected: sprint explicitly limits scope to single-session.
+- **AI grading / recommendations** — rejected: no AI in this foundation.
+
+**Consequences:**
+- Documentation references [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md).
+- Future trend analysis can extend `PerformanceTrend` without changing runtime engines.
+- Performance Engine remains in-memory and non-persistent until a later consumer/persistence sprint.
+
+---
+
+*New decisions are appended as Decision 042, 043, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

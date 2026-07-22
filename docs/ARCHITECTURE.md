@@ -27,6 +27,7 @@ See [TECH_STACK.md](./TECH_STACK.md) for versions. Onboarding: [PROJECT_CONTEXT.
 │  → Workout Runtime (live execution state of WorkoutSession)     │
 │  → Rest Runtime (deterministic rest periods; injected elapsed)  │
 │  → Domain Events (immutable execution events → Event Stream)    │
+│  → Performance Engine (single-session snapshots from results)   │
 └────────────────────────────┬────────────────────────────────────┘
                              │ HTTPS + JWT
                              ▼
@@ -90,9 +91,12 @@ Rest Runtime                     ← Sprint 18.1 (implemented) — rest periods 
   ↓
 Domain Events                    ← Sprint 18.2 (implemented) — immutable execution events
   (`app/src/core/domain-events/`)
+  ↓
+Performance Engine               ← Sprint 18.3 (implemented) — single-session snapshots
+  (`app/src/features/performance-engine/`)
 ```
 
-Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md).
+Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md).
 
 ### Exercise Knowledge Base (`features/exercise-kb`)
 
@@ -290,6 +294,22 @@ Full detail: [REST_RUNTIME.md](./REST_RUNTIME.md).
 | **Design** | **Domain events only.** Not an event bus/broker. No persistence, networking, async queues, Kafka/RabbitMQ, analytics implementations, or subscriber implementations |
 
 Full detail: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md).
+
+### Performance Engine (`features/performance-engine`) — Sprint 18.3
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Single-session analytics from completed workout execution |
+| **Flow** | Domain Events → Workout Result → Performance Engine → Performance Snapshot → Future Consumers |
+| **Models** | `PerformanceSnapshot`, metrics (volume/intensity/density/completion), exercise/session/movement performance, grade/summary/context/result, trend placeholder |
+| **Engine** | `PerformanceEngine` — volume/tonnage/sets/reps/completion/density/duration; no multi-session trends |
+| **Calculators** | Isolated `Volume` / `Intensity` / `Density` / `Completion` / `Duration` calculators |
+| **Validators** | Completed workout, metric consistency, negatives, division-by-zero, missing execution data |
+| **Application API** | `analyzeWorkoutPerformance`, `summarizePerformance`, `gradePerformance` |
+| **Integration** | Consumes `WorkoutResult` + `EventStream`; optional `DecisionReport` id reference only |
+| **Design** | **Single-session analytics only.** No AI, persistence, networking, history, PRs, recovery, or recommendations. Never mutates execution or program generation |
+
+Full detail: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md).
 
 ---
 

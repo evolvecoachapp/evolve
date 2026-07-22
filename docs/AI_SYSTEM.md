@@ -48,6 +48,8 @@ Workout Runtime  (live execution state of WorkoutSession — no AI)
 Rest Runtime  (deterministic rest periods; injected elapsed — no AI)
         ↓
 Domain Events  (immutable execution events → Event Stream — no AI)
+        ↓
+Performance Engine  (single-session Performance Snapshots — no AI)
 ```
 
 ### Layer responsibilities
@@ -70,6 +72,7 @@ Domain Events  (immutable execution events → Event Stream — no AI)
 | Workout Runtime | `features/workout-runtime` | Implemented (18.0) | Live execution state of `WorkoutSession` — lifecycle + set/exercise progression |
 | Rest Runtime | `features/rest-runtime` | Implemented (18.1) | Deterministic rest periods — injected elapsed, validated state machine |
 | Domain Events | `core/domain-events` | Implemented (18.2) | Immutable domain events + Event Stream for workout execution — subscriber interfaces only |
+| Performance Engine | `features/performance-engine` | Implemented (18.3) | Single-session analytics from WorkoutResult + EventStream — immutable snapshots only |
 | Prompt Orchestrator | `features/prompt-orchestrator` | Implemented | Composes prompts for AI-assisted blueprint steps |
 | Tool Engine | `features/tool-calling` | Implemented | Tool registry/execution boundary for workflows |
 | Athlete Context | `features/athlete-context` | Implemented | Structured athlete context for orchestration inputs |
@@ -92,6 +95,7 @@ Supporting orchestration pieces also present: Memory (conversation persistence a
 - Workout Runtime (18.0) consumes an immutable `WorkoutSession` and owns live execution state (lifecycle, exercise/set progression) — **no Program Generation changes**, UI, persistence, networking, timers, analytics, history, or AI.
 - Rest Runtime (18.1) owns deterministic rest-period state with injected elapsed time — **no platform timers**, UI, persistence, networking, AI, notifications, or analytics; Workout Runtime may own Rest Runtime (no circular imports).
 - Domain Events (18.2) records immutable execution events from Workout/Rest Runtime into an ordered Event Stream — **not an event bus**; no persistence, networking, async queues, brokers, analytics implementations, or subscriber implementations.
+- Performance Engine (18.3) analyzes completed `WorkoutResult` + `EventStream` into immutable single-session Performance Snapshots — **no AI**, persistence, networking, history, PRs, recovery, or recommendations; never mutates execution or program generation.
 
 ---
 

@@ -63,6 +63,7 @@ Product vision and users: [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Phase arch
 | 18.0 Workout Runtime Foundation | Done |
 | 18.1 Rest & Time Runtime Foundation | Done |
 | 18.2 Session Events Foundation | Done |
+| 18.3 Performance Engine Foundation | Done |
 
 ---
 

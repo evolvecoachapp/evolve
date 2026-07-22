@@ -703,4 +703,19 @@
 | **Status** | Complete |
 | **Notes** | Domain events only. No persistence, networking, async queues, brokers, Kafka/RabbitMQ, analytics implementations, or subscriber implementations |
 
+### Sprint 18.3 — Performance Engine Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 18.3.0 |
+| **Title** | Performance Engine Foundation |
+| **Date** | 2026-07-22 |
+| **Goal** | Dedicated single-session analytics engine producing immutable Performance Snapshots from completed workouts |
+| **Architecture** | Domain Events → Workout Result → **Performance Engine** → Performance Snapshot → Future Consumers. Module: `app/src/features/performance-engine/`. |
+| **Main components** | **Models:** snapshot/metrics/volume/intensity/density/completion/exercise/session/movement/grade/summary/context/result + trend placeholder. **Engine:** `PerformanceEngine`. **Calculators:** Volume/Intensity/Density/Completion/Duration. **Builders / validators / utils.** **Application API:** `analyzeWorkoutPerformance`, `summarizePerformance`, `gradePerformance`. |
+| **Tests** | Engine, calculators, validators, application API, Workout Runtime + Domain Events integration, regression |
+| **Results** | Dedicated Performance Engine foundation. ADR-041 recorded. Docs: PERFORMANCE_ENGINE.md. |
+| **Status** | Complete |
+| **Notes** | Single-session only. No AI, persistence, networking, history, PRs, recovery, or recommendations |
+
 

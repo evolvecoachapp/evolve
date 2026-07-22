@@ -42,7 +42,7 @@ Module: `app/src/features/workout-runtime/`.
 
 `WorkoutRuntime` may own an optional `RestRuntime` (`restRuntime` field / `withRestRuntime`). Rest Runtime never imports this module.
 
-Lifecycle actions emit immutable [Domain Events](./DOMAIN_EVENTS.md) (Sprint 18.2) via an optional/session `DomainEventSystem` — emission only; progression rules unchanged.
+Lifecycle actions emit immutable [Domain Events](./DOMAIN_EVENTS.md) (Sprint 18.2) via an optional/session `DomainEventSystem` — emission only; progression rules unchanged. Completed `WorkoutResult` + Event Stream feed the [Performance Engine](./PERFORMANCE_ENGINE.md) (Sprint 18.3) for single-session analytics.
 
 ---
 
