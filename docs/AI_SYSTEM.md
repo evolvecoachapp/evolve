@@ -12,7 +12,7 @@
 
 Users interact with **one Coach** — a unified conversational interface. Multiple specialized engines operate behind the scenes; the user never selects engines or receives fragmented responses.
 
-On mobile, the Coach conversation path can drive a **deterministic workout pipeline** (blueprint → knowledge → selection → programming → progression → adaptation). Workout assembly and program generation remain **planned**.
+On mobile, the Coach conversation path can drive a **deterministic workout pipeline** coordinated by the Program Generation Orchestrator (blueprint → knowledge → selection → programming → progression → adaptation → assembly).
 
 ---
 
@@ -39,10 +39,7 @@ Training Adaptation Engine
         ↓
 Workout Assembly Engine
         ↓
-┌───────────────────────────────┐
-│ Future (not implemented)      │
-│ Program Generation            │
-└───────────────────────────────┘
+Program Generation Orchestrator  (coordinates the stages above)
 ```
 
 ### Layer responsibilities
@@ -58,10 +55,10 @@ Workout Assembly Engine
 | Progression | `features/progression` | Implemented (17.4) | Multi-week prescription evolution timeline (no loads/fatigue) |
 | Training Adaptation | `features/training-adaptation` | Implemented (17.5) | Readiness assessment + adaptation recommendations only |
 | Workout Assembly | `features/workout-assembly` | Implemented (17.6) | Assemble immutable executable `WorkoutSession` from prior outputs |
+| Program Generation | `features/program-generation` | Implemented (17.7) | Orchestrates Blueprint→…→Assembly; single public generation API |
 | Prompt Orchestrator | `features/prompt-orchestrator` | Implemented | Composes prompts for AI-assisted blueprint steps |
 | Tool Engine | `features/tool-calling` | Implemented | Tool registry/execution boundary for workflows |
 | Athlete Context | `features/athlete-context` | Implemented | Structured athlete context for orchestration inputs |
-| Program Generation | — | **Planned** (17.7) | Multi-week program construction |
 
 Supporting orchestration pieces also present: Memory (conversation persistence adapters), Prompt Builder, AIService / AI providers — see feature modules under `app/src/features/`.
 
@@ -74,6 +71,7 @@ Supporting orchestration pieces also present: Memory (conversation persistence a
 - Progression does **not** adapt to athlete feedback, calculate loads, autoregulate, manage fatigue, or apply deloads.
 - Training Adaptation does **not** modify workouts, integrate wearables, use athlete history, or replace Programming/Progression.
 - Workout Assembly does **not** generate strategy, programming, progression, or readiness — it only assembles the final workout.
+- Program Generation does **not** duplicate engine logic, call AI, persist, or cache — it only orchestrates existing engines and freezes the result.
 
 ---
 

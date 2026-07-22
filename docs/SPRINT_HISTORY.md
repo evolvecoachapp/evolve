@@ -591,9 +591,24 @@
 | **Title** | Workout Assembly Engine Foundation |
 | **Date** | 2026-07-22 |
 | **Goal** | Assemble the final executable WorkoutSession from prior pipeline outputs — no strategy, programming, progression, or readiness evaluation |
-| **Architecture** | Workout Blueprint → Exercise Selection → Programming → Progression → Training Adaptation → **Workout Assembly Engine** → Workout Session. Program Generation remains future (17.7). Module: `app/src/features/workout-assembly/`. |
+| **Architecture** | Workout Blueprint → Exercise Selection → Programming → Progression → Training Adaptation → **Workout Assembly Engine** → Workout Session. Program Generation Orchestrator follows in 17.7. Module: `app/src/features/workout-assembly/`. |
 | **Main components** | **Models:** `WorkoutAssemblyRequest`, `WorkoutAssemblyResult`, `WorkoutSession`, `WorkoutExercise`, `WorkoutBlock`, `WorkoutSummary`, `WorkoutExecutionOrder`, context, constraints, score, reasons, explanations, errors. **Engine:** `WorkoutAssemblyEngine` (`assemble` / `preview` / `explain`). **Validators:** exercise ordering, prescription consistency, adaptation consistency, duplicate prevention, session integrity. **Utils:** context build, resolve recommendations, assemble exercises, group blocks, freeze/normalize, duration/workload estimates, summary. **Repository:** `WorkoutAssemblyRepository` + `InMemoryWorkoutAssemblyRepository` (result cache). **Service / Application:** `assembleWorkout`, `previewWorkout`, `explainWorkout`. |
 | **Tests** | 6 suites — application, engine, repository, service, utilities, validators |
 | **Results** | Deterministic immutable WorkoutSession assembly. ADR-033 recorded. |
 | **Status** | Complete |
 | **Notes** | No strategy generation, programming, progression, readiness, execution state, timers, analytics, persistence, UI, or networking |
+
+### Sprint 17.7.0 — Program Generation Orchestrator Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 17.7.0 |
+| **Title** | Program Generation Orchestrator Foundation |
+| **Date** | 2026-07-22 |
+| **Goal** | Single public entry point coordinating the complete workout generation pipeline — no engine duplication, AI, persistence, or business logic |
+| **Architecture** | Conversation → Workflow → **Program Generation Orchestrator** → Blueprint → Selection → Programming → Progression → Training Adaptation → Workout Assembly → Workout Session. Module: `app/src/features/program-generation/`. |
+| **Main components** | **Models:** `WorkoutGenerationRequest`, `WorkoutGenerationResult`, `PipelineExecutionSummary`, `PipelineExecutionTrace`, `PipelineExecutionStep`, `PipelineExecutionContext`, status/error/metrics, explanations. **Orchestrator:** `ProgramGenerationOrchestrator` (`generate` / `preview` / `explain`). **Validators:** pipeline integrity, execution order, required outputs, missing dependencies, pipeline consistency. **Utils:** freeze result, normalize pipeline, build trace, structural metrics, aggregate summaries. **Service / Application:** `generateWorkoutProgram`, `previewWorkoutProgram`, `explainWorkoutGeneration`. |
+| **Tests** | 6 suites — application, orchestrator, service, utilities, validators, pipeline integration |
+| **Results** | Immutable WorkoutGenerationResult with full pipeline summary/trace. ADR-034 recorded. |
+| **Status** | Complete |
+| **Notes** | Coordination only. No engine duplication, AI, networking, persistence, caching, execution state, analytics, history, or UI |

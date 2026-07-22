@@ -19,9 +19,9 @@ See [TECH_STACK.md](./TECH_STACK.md) for versions. Onboarding: [PROJECT_CONTEXT.
 │  Expo Router → Screens → Features → Service Factory → Provider  │
 │                                                                 │
 │  AI runtime (application layer, in-memory):                     │
-│  Conversation → Workflow → Blueprint → Knowledge → Selection    │
-│  → Programming → Progression → Adaptation → Assembly            │
-│  (Program Generation — planned)                                 │
+│  Conversation → Workflow → Program Generation Orchestrator →    │
+│  Blueprint → Knowledge → Selection → Programming → Progression  │
+│  → Adaptation → Assembly → WorkoutSession                       │
 └────────────────────────────┬────────────────────────────────────┘
                              │ HTTPS + JWT
                              ▼
@@ -67,7 +67,7 @@ Training Adaptation Engine       ← Sprint 17.5 (implemented)
   ↓
 Workout Assembly Engine          ← Sprint 17.6 (implemented)
   ↓
-Program Generation               ← planned (Sprint 17.7)
+Program Generation Orchestrator  ← Sprint 17.7 (implemented)
 ```
 
 Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md).
@@ -161,6 +161,20 @@ Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md).
 | **Repository** | `WorkoutAssemblyRepository` + `InMemoryWorkoutAssemblyRepository` (result cache only) |
 | **Application** | `assembleWorkout`, `previewWorkout`, `explainWorkout` |
 | **Design** | Deterministic. **No strategy generation**, **no programming**, **no progression**, **no readiness evaluation**, **no execution state**, **no timers**, **no analytics**, **no persistence** |
+
+### Program Generation Orchestrator (`features/program-generation`)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Single public entry point that coordinates the complete workout generation pipeline |
+| **Input** | `WorkoutGenerationRequest` (+ `AthleteContext`, optional `ConversationContext` / `WorkflowContext`, pre-supplied `blueprintSource`) |
+| **Output** | Immutable `WorkoutGenerationResult` — `WorkoutSession`, engine outputs, `PipelineExecutionSummary`, `PipelineExecutionTrace` |
+| **Orchestration** | Validate → Context → Blueprint → Selection → Programming → Progression → Adaptation → Assembly → Freeze |
+| **Validators** | Pipeline integrity, execution order, required outputs, missing dependencies, pipeline consistency |
+| **Utilities** | Freeze result, normalize pipeline, build execution trace, structural metrics, aggregate summaries |
+| **Service** | `ProgramGenerationService` — thin wrapper over `ProgramGenerationOrchestrator` (no cache/persistence) |
+| **Application** | `generateWorkoutProgram`, `previewWorkoutProgram`, `explainWorkoutGeneration` |
+| **Design** | Coordination only. **No engine duplication**, **no business logic**, **no AI**, **no networking**, **no persistence**, **no execution state**, **no analytics**, **no history**, **no caching** |
 
 ---
 

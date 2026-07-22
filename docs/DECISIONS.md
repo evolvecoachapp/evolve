@@ -1088,4 +1088,31 @@ Implement `app/src/features/workout-assembly` such that `WorkoutAssemblyEngine` 
 
 ---
 
-*New decisions are appended as Decision 034, 035, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 034 — Program Generation Orchestrator Coordinates the Pipeline
+
+**Status:** Accepted
+
+**Context:**
+Sprint 17.7 must provide a single public entry point for workout generation that coordinates existing engines (`WorkoutBlueprint`, `ExerciseSelection`, `Programming`, `Progression`, `TrainingAdaptation`, `WorkoutAssembly`). It must not duplicate engine business logic, invoke AI, persist state, cache results, or introduce execution/analytics concerns.
+
+**Decision:**
+Implement `app/src/features/program-generation` such that `ProgramGenerationOrchestrator` validates a `WorkoutGenerationRequest`, builds `PipelineExecutionContext`, invokes each engine in fixed order, aggregates `PipelineExecutionSummary` / `PipelineExecutionTrace`, and returns an immutable `WorkoutGenerationResult` containing the assembled `WorkoutSession` plus all upstream engine outputs. Engines never call each other — only the orchestrator coordinates. The domain has no repository, no networking, and no AI prompts (`blueprintSource` is pre-supplied).
+
+**Why:**
+- **Single entry point** keeps Conversation/Workflow callers from wiring six engines ad hoc.
+- **Orchestration-only** preserves Clean Architecture boundaries established in 17.0–17.6.
+- **Immutable result + structural metrics** mirrors prior deterministic pipeline contracts without timers or side effects.
+
+**Alternatives considered:**
+- **Embed chaining inside Workout Assembly** — rejected: assembly must remain a pure finalization stage.
+- **Replace engines with a monolithic generator** — rejected: contradicts the engine separation ADRs.
+- **Add persistence/cache now** — rejected: sprint scope forbids history, caching, and durable storage.
+
+**Consequences:**
+- Consumers call `generateWorkoutProgram` / `previewWorkoutProgram` / `explainWorkoutGeneration` only.
+- Pipeline documentation marks Program Generation Orchestrator as implemented (17.7).
+- Future multi-week program construction can extend this foundation without rewriting engine coordination.
+
+---
+
+*New decisions are appended as Decision 035, 036, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

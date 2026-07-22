@@ -27,6 +27,7 @@ Each release section groups changes under: `Added`, `Changed`, `Deprecated`, `Re
 ## [Unreleased]
 
 ### Added
+- Sprint 17.7.0 — Program Generation Orchestrator Foundation: `features/program-generation` with immutable `WorkoutGenerationResult` / `PipelineExecutionSummary` / `PipelineExecutionTrace`, `ProgramGenerationOrchestrator` (validate → context → blueprint → selection → programming → progression → adaptation → assembly → freeze), validators, structural utilities, thin `ProgramGenerationService`, application use-cases (`generateWorkoutProgram`, `previewWorkoutProgram`, `explainWorkoutGeneration`) — coordination only; no engine duplication, AI, networking, persistence, caching, execution state, analytics, UI
 - Sprint 17.6.0 — Workout Assembly Engine Foundation: `features/workout-assembly` with immutable `WorkoutSession` / `WorkoutExercise` / `WorkoutBlock` / `WorkoutSummary`, `WorkoutAssemblyEngine` (context → resolve recommendations → assemble exercises → blocks → summary → freeze), validators, utilities, in-memory result cache, application use-cases (`assembleWorkout`, `previewWorkout`, `explainWorkout`) — assembly only; no strategy, programming, progression, readiness, execution state, timers, analytics, UI, or networking
 - Sprint 17.5.0 — Training Adaptation Engine Foundation: `features/training-adaptation` with immutable `TrainingAdaptationResult` / `ReadinessAssessment` / `AdaptationRecommendation`, `TrainingAdaptationEngine` (recovery/fatigue/constraint/execution assessments + volume/intensity/swap/recovery-day/schedule strategies), validators, utilities, in-memory result cache, application use-cases (`evaluateTrainingReadiness`, `previewAdaptations`, `explainAdaptations`) — recommendations only; no wearables, athlete history, physiological APIs, workout modification, UI, or networking
 - Sprint 17.4.0 — Progression Engine Foundation: `features/progression` with immutable `ProgressionPlan` / `ExerciseProgression` / `ProgressionStep`, `ProgressionEngine` (linear/volume/intensity/frequency/rotation strategies), validators, timeline utilities, in-memory plan cache, application use-cases (`generateProgression`, `previewProgression`, `explainProgression`) — no athlete feedback, load calculation, autoregulation, fatigue, deload, UI, or networking
@@ -70,7 +71,7 @@ Each release section groups changes under: `Added`, `Changed`, `Deprecated`, `Re
 - Documentation Maintenance Policy in [README.md](./README.md)
 
 ### Changed
-- Architecture docs now describe the mobile AI workout pipeline through Workout Assembly (17.1–17.6); Program Generation remains planned (17.7)
+- Architecture docs now describe the mobile AI workout pipeline through Program Generation Orchestrator (17.1–17.7)
 - `CompletedWorkout` / `WorkoutSessionSummary` now carry ordered exercise snapshots with completed sets (weight, reps, set number) for detail rendering; legacy history entries parse with empty `exercises` (Sprint 13.2.0)
 - Optional `programName` on `WorkoutSessionSummary` / `CompletedWorkout` (from session `programTitle`); history entry from Workout tab; card press → detail stub (Sprint 13.1.0)
 - `useSessionFinish.buildSummary()` persists a `CompletedWorkout` via the application layer after mapping (fire-and-forget; finish navigation unchanged) (Sprint 13.0.0)

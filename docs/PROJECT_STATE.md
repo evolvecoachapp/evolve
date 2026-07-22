@@ -43,7 +43,7 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Progression | `features/progression` | Foundation complete (17.4) — multi-week timeline only |
 | Training Adaptation | `features/training-adaptation` | Foundation complete (17.5) — readiness + recommendations only |
 | Workout Assembly | `features/workout-assembly` | Foundation complete (17.6) — immutable session assembly only |
-| Program Generation | — | **Not started** (17.7) |
+| Program Generation | `features/program-generation` | Foundation complete (17.7) — orchestration only |
 
 These domains are TypeScript application modules with in-memory repositories. They are **not** backend HTTP APIs and do **not** write to PostgreSQL.
 
@@ -154,7 +154,7 @@ Previous: **17.5.0 — Training Adaptation Engine Foundation**, **17.4.0 — Pro
 
 ## Next Sprint
 
-**17.7.0 — Program Generation** — multi-week program construction from assembled sessions.
+**17.7.0 — Program Generation Orchestrator** — single public entry point coordinating Blueprint→…→Assembly; immutable `WorkoutGenerationResult` with pipeline summary/trace.
 
 ---
 
