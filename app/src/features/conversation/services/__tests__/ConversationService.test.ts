@@ -6,6 +6,10 @@ import type { AIProvider } from "../../../ai/providers/AIProvider";
 import { createStubStream } from "../../../ai/providers/stubHelpers";
 import { AIService } from "../../../ai/services/AIService";
 import { createAIResponse } from "../../../ai/testSupport/fixtures";
+import { createAthleteProfile } from "../../../athlete-context/testSupport/fixtures";
+import { createCoachSummary } from "../../../prompt-builder/testSupport/fixtures";
+import { InMemoryPromptOrchestratorRepository } from "../../../prompt-orchestrator/repository/InMemoryPromptOrchestratorRepository";
+import { PromptOrchestrator } from "../../../prompt-orchestrator/services/PromptOrchestrator";
 import { ConversationError } from "../../models/ConversationError";
 import { InMemoryConversationPersistenceRepository } from "../../persistence/InMemoryConversationPersistenceRepository";
 import { InMemoryStorageAdapter } from "../../persistence/InMemoryStorageAdapter";
@@ -322,5 +326,44 @@ describe("ConversationService", () => {
 
     await expect(repository.getById(started.id)).resolves.toBeNull();
     await expect(persistence.loadConversation(started.id)).resolves.toBeNull();
+  });
+
+  it("delegates prompt composition through PromptOrchestrator before AIService", async () => {
+    let capturedInsightCount: number | undefined;
+    const provider = createProvider(async (request) => {
+      capturedInsightCount = request.insightCount;
+      return createAIResponse({
+        message: {
+          id: "msg-assistant-1",
+          role: "assistant",
+          content: "Focus on recovery.",
+          createdAt: FIXED_TIMESTAMP,
+        },
+      });
+    });
+
+    const orchestrator = new PromptOrchestrator(
+      new InMemoryPromptOrchestratorRepository(),
+    );
+    const service = new ConversationService(
+      new InMemoryConversationRepository(),
+      new AIService(provider, testConfiguration),
+      orchestrator,
+    );
+
+    const started = await service.startConversation({ now: FIXED_TIMESTAMP });
+    await service.sendMessage({
+      conversationId: started.id,
+      content: "Hello coach",
+      promptContext: createPromptContext(),
+      orchestrationSources: {
+        athleteProfile: createAthleteProfile(),
+        coachSummary: createCoachSummary(),
+      },
+      now: FIXED_TIMESTAMP,
+    });
+
+    // GENERAL_CHAT excludes coach — composed prompt clears coach evidence.
+    expect(capturedInsightCount).toBe(0);
   });
 });

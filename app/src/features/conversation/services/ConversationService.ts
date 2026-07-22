@@ -1,9 +1,15 @@
+import type { AthleteProfile } from "../../athlete-context/models/AthleteProfile";
 import { AIError } from "../../ai/models/AIError";
 import type { AIStreamEvent } from "../../ai/models/AIStreamEvent";
 import type { StreamingMetadata } from "../../ai/models/StreamingMetadata";
 import type { StreamingSession } from "../../ai/models/StreamingSession";
 import type { AIService } from "../../ai/services/AIService";
+import type { CoachSummary } from "../../coach-intelligence/models/CoachSummary";
+import type { MemoryContext } from "../../prompt-orchestrator/models/MemoryContext";
+import type { PromptOrchestrator } from "../../prompt-orchestrator/services/PromptOrchestrator";
 import type { PromptContext } from "../../prompt-builder/models/PromptContext";
+import { receiveComposedPromptContext } from "../../prompt-builder/utils/receiveComposedPromptContext";
+import type { WorkoutSummary } from "../../workout/models/WorkoutSummary";
 import { ConversationError } from "../models/ConversationError";
 import type { Conversation } from "../models/Conversation";
 import type { ConversationMessage } from "../models/ConversationMessage";
@@ -20,10 +26,19 @@ export interface StartConversationOptions {
   readonly title?: string;
 }
 
+/** Optional domain sources for Prompt Orchestrator composition. */
+export interface PromptOrchestrationSources {
+  readonly athleteProfile?: AthleteProfile | null;
+  readonly memory?: MemoryContext | null;
+  readonly workoutSummary?: WorkoutSummary | null;
+  readonly coachSummary?: CoachSummary | null;
+}
+
 export interface SendMessageOptions {
   readonly conversationId: string;
   readonly content: string;
   readonly promptContext: PromptContext;
+  readonly orchestrationSources?: PromptOrchestrationSources;
   readonly now?: string;
   /** Incremental conversation snapshots while the assistant streams. */
   readonly onConversationUpdate?: (conversation: Conversation) => void;
@@ -33,6 +48,7 @@ export interface RetryMessageOptions {
   readonly conversationId: string;
   readonly messageId: string;
   readonly promptContext: PromptContext;
+  readonly orchestrationSources?: PromptOrchestrationSources;
   readonly now?: string;
   readonly onConversationUpdate?: (conversation: Conversation) => void;
 }
@@ -48,8 +64,10 @@ interface ActiveStreamState {
 /**
  * Orchestrates conversation state, AI generation, and persistence lifecycle.
  *
- * Owns streaming and durable restore/persist/clear. Depends only on
+ * Owns streaming and durable restore/persist/clear. Depends on
  * ConversationRepository and AIService — never on a concrete StorageAdapter.
+ * When PromptOrchestrator is injected, delegates prompt composition before
+ * Prompt Builder acceptance and AIService generation.
  */
 export class ConversationService {
   private activeStream: ActiveStreamState | null = null;
@@ -57,6 +75,7 @@ export class ConversationService {
   constructor(
     private readonly repository: ConversationRepository,
     private readonly aiService: AIService,
+    private readonly promptOrchestrator: PromptOrchestrator | null = null,
   ) {}
 
   /** Create an empty active conversation with a fresh session. */
@@ -147,6 +166,8 @@ export class ConversationService {
     return this.streamAssistantReply({
       conversation: current,
       promptContext: options.promptContext,
+      userContent: options.content,
+      orchestrationSources: options.orchestrationSources,
       failedMessageId: userMessage.id,
       now,
       onConversationUpdate: options.onConversationUpdate,
@@ -200,6 +221,8 @@ export class ConversationService {
     return this.streamAssistantReply({
       conversation: current,
       promptContext: options.promptContext,
+      userContent: target.content,
+      orchestrationSources: options.orchestrationSources,
       failedMessageId: target.id,
       now,
       onConversationUpdate: options.onConversationUpdate,
@@ -319,11 +342,20 @@ export class ConversationService {
   private async streamAssistantReply(input: {
     readonly conversation: Conversation;
     readonly promptContext: PromptContext;
+    readonly userContent: string;
+    readonly orchestrationSources?: PromptOrchestrationSources;
     readonly failedMessageId: string;
     readonly now: string;
     readonly onConversationUpdate?: (conversation: Conversation) => void;
   }): Promise<Conversation> {
-    const context = buildConversationContext(input.conversation);
+    const composed = await this.composePromptForReply({
+      conversation: input.conversation,
+      promptContext: input.promptContext,
+      userContent: input.userContent,
+      orchestrationSources: input.orchestrationSources,
+    });
+    const context = composed.conversationContext;
+    const promptContext = composed.promptContext;
     const reusableAssistant = findReusableAssistantMessage(
       input.conversation,
       input.failedMessageId,
@@ -414,7 +446,7 @@ export class ConversationService {
 
     try {
       const response = await this.aiService.streamResponse(
-        input.promptContext,
+        promptContext,
         context,
         {
           signal: abortController.signal,
@@ -597,6 +629,43 @@ export class ConversationService {
         { conversationId },
       );
     }
+  }
+
+  private async composePromptForReply(input: {
+    readonly conversation: Conversation;
+    readonly promptContext: PromptContext;
+    readonly userContent: string;
+    readonly orchestrationSources?: PromptOrchestrationSources;
+  }): Promise<{
+    readonly promptContext: PromptContext;
+    readonly conversationContext: ReturnType<typeof buildConversationContext> | undefined;
+  }> {
+    const conversationContext = buildConversationContext(input.conversation);
+
+    if (!this.promptOrchestrator) {
+      return {
+        promptContext: receiveComposedPromptContext(input.promptContext),
+        conversationContext,
+      };
+    }
+
+    const result = await this.promptOrchestrator.orchestrate({
+      message: input.userContent,
+      conversation: conversationContext,
+      athleteProfile: input.orchestrationSources?.athleteProfile,
+      memory: input.orchestrationSources?.memory,
+      workoutSummary: input.orchestrationSources?.workoutSummary,
+      coachSummary: input.orchestrationSources?.coachSummary,
+      promptContext: input.promptContext,
+    });
+
+    const composedPrompt =
+      result.composition.promptContext ?? input.promptContext;
+
+    return {
+      promptContext: receiveComposedPromptContext(composedPrompt),
+      conversationContext: result.composition.conversation ?? undefined,
+    };
   }
 
   private async requireConversation(

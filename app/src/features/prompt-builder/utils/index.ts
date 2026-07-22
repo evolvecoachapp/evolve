@@ -22,6 +22,10 @@ export {
 } from "./buildSections";
 export { buildTrainingContext } from "./buildTrainingContext";
 export {
+  receiveComposedPromptContext,
+  PromptBuilderError,
+} from "./receiveComposedPromptContext";
+export {
   validatePromptContext,
   type PromptValidationCode,
 } from "./validatePromptContext";

@@ -3,6 +3,7 @@ export {
   type StartConversationOptions,
   type SendMessageOptions,
   type RetryMessageOptions,
+  type PromptOrchestrationSources,
 } from "./ConversationService";
 export {
   createConversationService,
