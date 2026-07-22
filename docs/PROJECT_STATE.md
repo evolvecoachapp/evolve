@@ -22,7 +22,7 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Data layer | Service factory pattern; user/workout backend providers; on-device workout history via `WorkoutHistoryRepository` + `StorageAdapter` (Sprint 13.0); analytics via `WorkoutAnalyticsRepository` (Sprint 14.0) |
 | Backend providers | `BackendUserService`, `BackendWorkoutService` live; other `Backend*Service` classes throw `notConfigured()` |
 | Tests | Jest + jest-expo |
-| Sprint status | History + detail shipped (13.1–13.2); workout analytics foundation (14.0); AI workout pipeline foundations through Progression (17.1–17.4) |
+| Sprint status | History + detail shipped (13.1–13.2); workout analytics foundation (14.0); AI workout pipeline foundations through Training Adaptation (17.1–17.5) |
 
 ---
 
@@ -41,7 +41,7 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Exercise Selection | `features/exercise-selection` | Foundation complete (17.2) — deterministic |
 | Programming | `features/programming` | Foundation complete (17.3) — prescriptions only |
 | Progression | `features/progression` | Foundation complete (17.4) — multi-week timeline only |
-| Fatigue & Recovery (pipeline) | — | **Not started** (17.5) |
+| Training Adaptation | `features/training-adaptation` | Foundation complete (17.5) — readiness + recommendations only |
 | Workout Assembly | — | **Not started** (17.6) |
 | Program Generation | — | **Not started** (17.7) |
 
@@ -75,7 +75,7 @@ These domains are TypeScript application modules with in-memory repositories. Th
 | Intent classification | LLM-primary with keyword fallback |
 | Memory | Windowed conversation context; summarization deferred |
 | Mobile AI | MockCoachService working; OpenAI/Anthropic/Local LLM are placeholders |
-| Mobile workout pipeline | Blueprint → Knowledge → Selection → Programming → Progression foundations complete; fatigue/assembly planned |
+| Mobile workout pipeline | Blueprint → Knowledge → Selection → Programming → Progression → Adaptation foundations complete; assembly planned |
 
 ---
 
@@ -136,25 +136,25 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 - No program management HTTP API; workout template *authoring* (write) HTTP API still missing (reads live since Sprint 6.3)
 - No CI pipeline or backend Docker service
 - `docs/TASKS.md` Phase 1–2 checkboxes out of sync with code
-- AI workout pipeline stops at Progression — no fatigue adaptation, assembly, or program generation yet
+- AI workout pipeline stops at Training Adaptation — no workout assembly or program generation yet
 
 ---
 
 ## Last Completed Sprint
 
-**17.4.0 — Progression Engine Foundation** (2026-07-22)
+**17.5.0 — Training Adaptation Engine Foundation** (2026-07-22)
 
-- `features/progression` transforms `ProgrammingResult` into immutable `ProgressionPlan` / `ExerciseProgression` / `ProgressionStep`
-- Strategy pipeline: linear, volume, intensity, frequency, exercise rotation
-- In-memory repository cache; application use-cases; unit tests — no athlete feedback, loads, autoregulation, fatigue, UI, or networking
+- `features/training-adaptation` evaluates `ProgressionPlan` readiness and emits immutable adaptation recommendations
+- Assessments: recovery, fatigue, constraint, execution readiness; strategies: volume, intensity, swap, recovery day, schedule
+- In-memory repository cache; application use-cases; unit tests — recommendations only; no wearables, athlete history, physiological APIs, workout modification, UI, or networking
 
-Previous: **17.3.0 — Programming Engine Foundation**, **17.2.0 — Exercise Selection Engine Foundation**, **17.1.0 — Exercise Knowledge Base Foundation**, **17.0.0 — Workout Blueprint Generator Foundation**
+Previous: **17.4.0 — Progression Engine Foundation**, **17.3.0 — Programming Engine Foundation**, **17.2.0 — Exercise Selection Engine Foundation**, **17.1.0 — Exercise Knowledge Base Foundation**, **17.0.0 — Workout Blueprint Generator Foundation**
 
 ---
 
 ## Next Sprint
 
-**17.5.0 — Fatigue & Recovery Engine** — adaptive load from recovery signals; still no workout assembly or program generation.
+**17.6.0 — Workout Assembly** — assemble complete executable workouts; still no program generation.
 
 ---
 

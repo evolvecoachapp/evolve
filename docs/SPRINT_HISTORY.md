@@ -567,3 +567,18 @@
 | **Results** | Deterministic immutable multi-week plans with trends, validation issues, and explanations. ADR-031 recorded. |
 | **Status** | Complete |
 | **Notes** | No athlete history, readiness, recovery, deload, load prediction, autoregulation, or weekly feedback loop |
+
+### Sprint 17.5.0 — Training Adaptation Engine Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 17.5.0 |
+| **Title** | Training Adaptation Engine Foundation |
+| **Date** | 2026-07-22 |
+| **Goal** | Evaluate whether an existing Progression Plan should be adapted before execution — readiness assessments + immutable recommendations only |
+| **Architecture** | Workout Blueprint → Exercise Selection → Programming → Progression → **Training Adaptation Engine** → Adapted Progression. Assembly remains future (17.6+). Module: `app/src/features/training-adaptation/`. |
+| **Main components** | **Models:** `TrainingAdaptationRequest`, `TrainingAdaptationResult`, `AdaptedProgression`, `AdaptationRecommendation`, `AdaptationAction`, `ReadinessAssessment`, recovery/fatigue/constraint assessments, context, score, reasons, explanations, errors. **Engine:** `TrainingAdaptationEngine` (`evaluate` / `preview` / `explain`). **Assessments:** Recovery, Fatigue, Constraint, ExecutionReadiness. **Strategies:** Volume, Intensity, ExerciseSwap, RecoveryDay, ScheduleAdjustment. **Validators:** assessment consistency, recommendation consistency, constraint compatibility, adaptation ordering. **Utils:** context build, freeze/normalize, readiness score, aggregate assessments, sort recommendations. **Repository:** `TrainingAdaptationRepository` + `InMemoryTrainingAdaptationRepository` (result cache). **Service / Application:** `evaluateTrainingReadiness`, `previewAdaptations`, `explainAdaptations`. |
+| **Tests** | 8 suites — application, assessments, engine, repository, service, strategies, utilities, validators |
+| **Results** | Deterministic immutable readiness + recommendations. ADR-032 recorded. |
+| **Status** | Complete |
+| **Notes** | No wearables, athlete history, physiological APIs, workout modification, Programming/Progression replacement, UI, or networking |

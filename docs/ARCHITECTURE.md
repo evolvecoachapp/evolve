@@ -20,7 +20,7 @@ See [TECH_STACK.md](./TECH_STACK.md) for versions. Onboarding: [PROJECT_CONTEXT.
 │                                                                 │
 │  AI runtime (application layer, in-memory):                     │
 │  Conversation → Workflow → Blueprint → Knowledge → Selection    │
-│  → Programming → Progression  (Recovery / Assembly — planned)   │
+│  → Programming → Progression → Adaptation  (Assembly — planned) │
 └────────────────────────────┬────────────────────────────────────┘
                              │ HTTPS + JWT
                              ▼
@@ -62,7 +62,7 @@ Programming Engine               ← Sprint 17.3 (implemented)
   ↓
 Progression Engine               ← Sprint 17.4 (implemented)
   ↓
-Fatigue & Recovery               ← planned (Sprint 17.5)
+Training Adaptation Engine       ← Sprint 17.5 (implemented)
   ↓
 Workout Assembly                 ← planned (Sprint 17.6)
   ↓
@@ -131,6 +131,21 @@ Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md).
 | **Repository** | `ProgressionRepository` + `InMemoryProgressionRepository` (plan cache only) |
 | **Application** | `generateProgression`, `previewProgression`, `explainProgression` |
 | **Design** | Deterministic. **No athlete feedback**, **no load calculation**, **no autoregulation**, **no fatigue**, **no deload**, **no workout assembly** |
+
+### Training Adaptation Engine (`features/training-adaptation`)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Evaluate whether an existing Progression Plan should be adapted before execution |
+| **Input** | `ProgressionPlan` + `WorkoutBlueprint` |
+| **Output** | `TrainingAdaptationResult` — readiness, recommendations, adapted progression view |
+| **Assessments** | Recovery, Fatigue, Constraint, ExecutionReadiness (independent, immutable) |
+| **Strategy Pattern** | Volume, Intensity, ExerciseSwap, RecoveryDay, ScheduleAdjustment |
+| **Validators** | Assessment consistency, recommendation consistency, constraint compatibility, adaptation ordering |
+| **Utilities** | Context build, freeze/normalize, readiness score, aggregate assessments, sort recommendations |
+| **Repository** | `TrainingAdaptationRepository` + `InMemoryTrainingAdaptationRepository` (result cache only) |
+| **Application** | `evaluateTrainingReadiness`, `previewAdaptations`, `explainAdaptations` |
+| **Design** | Deterministic. **Recommendations only**. **No wearables**, **no athlete history**, **no physiological APIs**, **no workout modification**, **no Programming/Progression replacement** |
 
 ---
 

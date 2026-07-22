@@ -1034,4 +1034,31 @@ Implement `app/src/features/progression` such that `ProgressionEngine` emits an 
 
 ---
 
-*New decisions are appended as Decision 032, 033, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 032 — Training Adaptation Produces Immutable Readiness + Recommendations
+
+**Status:** Accepted
+
+**Context:**
+Sprint 17.5 must evaluate whether an existing `ProgressionPlan` should be adapted before execution. It must not generate workouts, replace Programming or Progression, or integrate wearables / athlete physiological signals. Workout Assembly and Program Generation remain out of scope.
+
+**Decision:**
+Implement `app/src/features/training-adaptation` such that `TrainingAdaptationEngine` emits an immutable `TrainingAdaptationResult` containing frozen `ReadinessAssessment`, `AdaptationRecommendation`, and `AdaptedProgression` objects. Independent Assessment strategies (Recovery, Fatigue, Constraint, ExecutionReadiness) and Adaptation strategies (Volume, Intensity, ExerciseSwap, RecoveryDay, ScheduleAdjustment) produce domain recommendations only. The engine must **not** modify workouts, call wearable APIs, use athlete history, compute HRV/heart-rate/sleep recovery algorithms, or assemble executable sessions.
+
+**Why:**
+- **Clear pipeline stage** — Progression defines multi-week evolution; Adaptation decides whether that plan should be adjusted before execution.
+- **Recommendations-only contract** keeps adaptation from becoming workout assembly or autoregulation.
+- **Determinism** mirrors Progression (ADR-031): same blueprint + progression context ⇒ same adaptation result.
+
+**Alternatives considered:**
+- **Wire Garmin / Apple Health / WHOOP / HRV now** — rejected: no networking, no wearables, no physiological calculations in this foundation.
+- **Mutate ProgressionPlan targets in place** — rejected: adaptations are recommendations; source plan remains immutable.
+- **Replace Fatigue & Recovery naming with opaque load autoregulation** — rejected: this sprint delivers structural readiness + recommendation domain, not load calculation.
+
+**Consequences:**
+- Consumers treat adaptation as “should we adjust before execution?” not as finished workouts.
+- In-memory `TrainingAdaptationRepository` caches results only.
+- Pipeline documentation labels Workout Assembly / Program Generation as planned.
+
+---
+
+*New decisions are appended as Decision 033, 034, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

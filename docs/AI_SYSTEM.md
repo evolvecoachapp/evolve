@@ -12,7 +12,7 @@
 
 Users interact with **one Coach** — a unified conversational interface. Multiple specialized engines operate behind the scenes; the user never selects engines or receives fragmented responses.
 
-On mobile, the Coach conversation path can drive a **deterministic workout pipeline** (blueprint → knowledge → selection → programming → progression). Fatigue & recovery adaptation, workout assembly, and program generation remain **planned**.
+On mobile, the Coach conversation path can drive a **deterministic workout pipeline** (blueprint → knowledge → selection → programming → progression → adaptation). Workout assembly and program generation remain **planned**.
 
 ---
 
@@ -35,9 +35,10 @@ Programming Engine
         ↓
 Progression Engine
         ↓
+Training Adaptation Engine
+        ↓
 ┌───────────────────────────────┐
 │ Future (not implemented)      │
-│ Fatigue & Recovery Engine     │
 │ Workout Assembly              │
 │ Program Generation            │
 └───────────────────────────────┘
@@ -54,10 +55,10 @@ Progression Engine
 | Exercise Selection | `features/exercise-selection` | Implemented (17.2) | Deterministic candidate selection from blueprint + knowledge |
 | Programming | `features/programming` | Implemented (17.3) | Immutable prescriptions (volume, intensity, rest, tempo, order) |
 | Progression | `features/progression` | Implemented (17.4) | Multi-week prescription evolution timeline (no loads/fatigue) |
+| Training Adaptation | `features/training-adaptation` | Implemented (17.5) | Readiness assessment + adaptation recommendations only |
 | Prompt Orchestrator | `features/prompt-orchestrator` | Implemented | Composes prompts for AI-assisted blueprint steps |
 | Tool Engine | `features/tool-calling` | Implemented | Tool registry/execution boundary for workflows |
 | Athlete Context | `features/athlete-context` | Implemented | Structured athlete context for orchestration inputs |
-| Fatigue & Recovery | — | **Planned** (17.5) | Adaptive load from recovery signals |
 | Workout Assembly | — | **Planned** (17.6) | Assemble complete executable workouts |
 | Program Generation | — | **Planned** (17.7) | Multi-week program construction |
 
@@ -65,11 +66,12 @@ Supporting orchestration pieces also present: Memory (conversation persistence a
 
 ### Pipeline rules (implemented)
 
-- Blueprint decides session structure; Selection chooses exercises; Programming decides **how** each selected exercise is executed; Progression defines **how prescriptions evolve over weeks**.
-- Selection, Programming, and Progression are **deterministic** — no LLM inside those engines.
+- Blueprint decides session structure; Selection chooses exercises; Programming decides **how** each selected exercise is executed; Progression defines **how prescriptions evolve over weeks**; Adaptation evaluates **whether that plan should be adjusted before execution**.
+- Selection, Programming, Progression, and Training Adaptation are **deterministic** — no LLM inside those engines.
 - Knowledge Base is **read-only** and contains no workout logic.
 - Programming does **not** progress loads, adapt across weeks, or assemble full workouts.
 - Progression does **not** adapt to athlete feedback, calculate loads, autoregulate, manage fatigue, or apply deloads.
+- Training Adaptation does **not** modify workouts, integrate wearables, use athlete history, or replace Programming/Progression.
 
 ---
 
