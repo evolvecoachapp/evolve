@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-22  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-030). Append only — never renumber.  
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-036). Append only — never renumber.  
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -1143,4 +1143,32 @@ Introduce `app/tests/integration/` as dedicated testing infrastructure with immu
 
 ---
 
-*New decisions are appended as Decision 036, 037, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 036 — Composition Root Owns Mobile Pipeline DI
+
+**Status:** Accepted
+
+**Context:**
+Sprint 17.9 must introduce a centralized Composition Root and Dependency Injection foundation so application code no longer manually instantiates Training Intelligence services. Production engine behavior, orchestrator logic, and persistence/networking must remain unchanged.
+
+**Decision:**
+Implement `app/src/core/composition/` with `CompositionRoot`, `ApplicationContainer`, typed `ServiceRegistry` / `ServiceMap`, creation-only factories, and in-memory providers (configuration, repositories, strategies). Application use-cases resolve defaults via `resolveService(token)`. The container supports singleton and transient lifecycles, prevents duplicate/late registrations, and validates missing/circular/invalid resolutions before freeze. Feature-level `create*Service()` helpers remain available for tests and explicit injection.
+
+**Why:**
+- **Single composition site** prevents ad-hoc `new` / factory calls from drifting across use-cases.
+- **Typed registry** makes future services registerable without rewriting application consumers.
+- **Wiring-only scope** preserves ADR-028–035 engine and orchestration contracts.
+- **Lightweight custom DI** avoids a heavy framework while matching Clean Architecture boundaries.
+
+**Alternatives considered:**
+- **Keep per-feature `create*Service()` as the only API** — rejected: application defaults would continue to own composition.
+- **Adopt Inversify / tsyringe** — rejected: sprint scope is a minimal foundation without new framework dependencies.
+- **Move creation into engines** — rejected: engines must stay free of composition concerns.
+
+**Consequences:**
+- Pipeline documentation references [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
+- Application defaults go through Composition Root; tests may still inject services.
+- Future external providers extend `providers/` without changing use-case signatures.
+
+---
+
+*New decisions are appended as Decision 037, 038, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

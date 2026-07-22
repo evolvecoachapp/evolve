@@ -1,0 +1,80 @@
+import type { ApplicationContainer } from "../container/ApplicationContainer";
+import {
+  DependencyValidationError,
+  MissingRegistrationError,
+} from "../container/ContainerErrors";
+import {
+  SERVICE_TOKENS,
+  type ServiceMap,
+  type ServiceToken,
+} from "./ServiceMap";
+
+/**
+ * Strongly typed facade over ApplicationContainer for pipeline services.
+ * Future services: extend ServiceMap + SERVICE_TOKENS, then register in bootstrap.
+ */
+export class ServiceRegistry {
+  constructor(
+    private readonly container: ApplicationContainer<ServiceMap>,
+  ) {}
+
+  resolve<K extends ServiceToken>(token: K): ServiceMap[K] {
+    return this.container.resolve(token);
+  }
+
+  has(token: ServiceToken): boolean {
+    return this.container.has(token);
+  }
+
+  tokens(): readonly ServiceToken[] {
+    return this.container.registeredTokens() as ServiceToken[];
+  }
+
+  /**
+   * Assert every canonical ServiceMap token is registered exactly once.
+   */
+  assertIntegrity(): void {
+    const registered = new Set(this.tokens());
+    const missing = SERVICE_TOKENS.filter((t) => !registered.has(t));
+    if (missing.length > 0) {
+      throw new DependencyValidationError(
+        "Service registry integrity check failed",
+        missing.map((t) => `missing: ${t}`),
+      );
+    }
+
+    for (const token of SERVICE_TOKENS) {
+      if (!this.container.has(token)) {
+        throw new MissingRegistrationError(token);
+      }
+    }
+  }
+
+  getProgramGenerationService(): ServiceMap["ProgramGenerationService"] {
+    return this.resolve("ProgramGenerationService");
+  }
+
+  getWorkoutBlueprintService(): ServiceMap["WorkoutBlueprintService"] {
+    return this.resolve("WorkoutBlueprintService");
+  }
+
+  getExerciseSelectionService(): ServiceMap["ExerciseSelectionService"] {
+    return this.resolve("ExerciseSelectionService");
+  }
+
+  getProgrammingService(): ServiceMap["ProgrammingService"] {
+    return this.resolve("ProgrammingService");
+  }
+
+  getProgressionService(): ServiceMap["ProgressionService"] {
+    return this.resolve("ProgressionService");
+  }
+
+  getTrainingAdaptationService(): ServiceMap["TrainingAdaptationService"] {
+    return this.resolve("TrainingAdaptationService");
+  }
+
+  getWorkoutAssemblyService(): ServiceMap["WorkoutAssemblyService"] {
+    return this.resolve("WorkoutAssemblyService");
+  }
+}

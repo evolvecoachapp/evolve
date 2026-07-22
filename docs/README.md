@@ -35,9 +35,11 @@
 | Document | Description |
 |----------|-------------|
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Layers, patterns, dependency flow (summary) |
+| [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md) | Composition Root, DI container, factories, service lifecycle |
 | [TECH_STACK.md](./TECH_STACK.md) | Languages, frameworks, versions, future tech |
-| [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-030 (append-only) |
+| [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-036 (append-only) |
 | [AI_SYSTEM.md](./AI_SYSTEM.md) | Coach, LLM, engines, memory, mobile workout pipeline |
+| [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md) | Integration framework for the workout pipeline |
 | [../.cursor/rules/EVOLVE_ARCHITECTURE.md](../.cursor/rules/EVOLVE_ARCHITECTURE.md) | Deep-dive architecture reference |
 
 ## Status Reports
@@ -60,7 +62,7 @@
 
 | Path | Status |
 |------|--------|
-| `docs/architecture/` | Reserved for subsystem diagrams |
+| `docs/architecture/` | Subsystem diagram index (Composition Root, pipeline, integration tests) |
 | `docs/adr/` | Reserved; ADRs live in [DECISIONS.md](./DECISIONS.md) |
 | `docs/meeting-notes/` | Reserved for team meeting notes |
 

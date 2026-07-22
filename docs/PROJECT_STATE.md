@@ -19,7 +19,7 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Navigation | 6-tab bottom bar (Home, Workout, Nutrition, Coach, Progress, Profile) |
 | Design system | Token-based theme with light/dark/system preference (`ThemeContext`) |
 | Feature modules | coach, workout, nutrition, progress, analytics, home, dashboard, profile, shared; plus AI/training domains below |
-| Data layer | Service factory pattern; user/workout backend providers; on-device workout history via `WorkoutHistoryRepository` + `StorageAdapter` (Sprint 13.0); analytics via `WorkoutAnalyticsRepository` (Sprint 14.0) |
+| Data layer | Service factory pattern; Composition Root DI for Training Intelligence pipeline (`core/composition`, Sprint 17.9); user/workout backend providers; on-device workout history via `WorkoutHistoryRepository` + `StorageAdapter` (Sprint 13.0); analytics via `WorkoutAnalyticsRepository` (Sprint 14.0) |
 | Backend providers | `BackendUserService`, `BackendWorkoutService` live; other `Backend*Service` classes throw `notConfigured()` |
 | Tests | Jest + jest-expo |
 | Sprint status | History + detail shipped (13.1–13.2); workout analytics foundation (14.0); AI workout pipeline foundations through Training Adaptation (17.1–17.5) |
@@ -45,8 +45,9 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Workout Assembly | `features/workout-assembly` | Foundation complete (17.6) — immutable session assembly only |
 | Program Generation | `features/program-generation` | Foundation complete (17.7) — orchestration only |
 | Integration Testing Framework | `app/tests/integration/` | Foundation complete (17.8) — testing infrastructure only |
+| Composition Root & DI | `core/composition` | Foundation complete (17.9) — wiring only |
 
-These domains are TypeScript application modules with in-memory repositories. They are **not** backend HTTP APIs and do **not** write to PostgreSQL. The integration framework exercises the full pipeline without modifying engine behavior.
+These domains are TypeScript application modules with in-memory repositories. They are **not** backend HTTP APIs and do **not** write to PostgreSQL. The integration framework exercises the full pipeline without modifying engine behavior. Pipeline services are composed through `core/composition`.
 
 ---
 
@@ -76,7 +77,7 @@ These domains are TypeScript application modules with in-memory repositories. Th
 | Intent classification | LLM-primary with keyword fallback |
 | Memory | Windowed conversation context; summarization deferred |
 | Mobile AI | MockCoachService working; OpenAI/Anthropic/Local LLM are placeholders |
-| Mobile workout pipeline | Blueprint → Knowledge → Selection → Programming → Progression → Adaptation foundations complete; assembly planned |
+| Mobile workout pipeline | Composition Root wires Blueprint → Knowledge → Selection → Programming → Progression → Adaptation → Assembly → Program Generation (17.1–17.9) |
 
 ---
 

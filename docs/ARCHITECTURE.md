@@ -19,9 +19,10 @@ See [TECH_STACK.md](./TECH_STACK.md) for versions. Onboarding: [PROJECT_CONTEXT.
 │  Expo Router → Screens → Features → Service Factory → Provider  │
 │                                                                 │
 │  AI runtime (application layer, in-memory):                     │
-│  Conversation → Workflow → Program Generation Orchestrator →    │
-│  Blueprint → Knowledge → Selection → Programming → Progression  │
-│  → Adaptation → Assembly → WorkoutSession                       │
+│  Application → Composition Root → Container → Registry →        │
+│  Factories → Feature Services → Program Generation Orchestrator │
+│  → Blueprint → Knowledge → Selection → Programming →            │
+│  Progression → Adaptation → Assembly → WorkoutSession           │
 └────────────────────────────┬────────────────────────────────────┘
                              │ HTTPS + JWT
                              ▼
@@ -70,9 +71,12 @@ Workout Assembly Engine          ← Sprint 17.6 (implemented)
 Program Generation Orchestrator  ← Sprint 17.7 (implemented)
   ↓
 Integration Testing Framework    ← Sprint 17.8 (implemented) — tests only
+
+Composition Root & DI            ← Sprint 17.9 (implemented) — wiring only
+  (`app/src/core/composition/`)
 ```
 
-Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md).
+Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
 
 ### Exercise Knowledge Base (`features/exercise-kb`)
 
@@ -192,6 +196,21 @@ Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRA
 | **Design** | **Testing infrastructure only.** No production behavior changes, no AI, networking, persistence, analytics, caching, UI, or engine modifications |
 
 Full detail: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md).
+
+### Composition Root & Dependency Injection (`core/composition`) — Sprint 17.9
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Centralized object creation and dependency wiring for pipeline services |
+| **Flow** | Application → Composition Root → `ApplicationContainer` → `ServiceRegistry` → Factories → Feature Services → Orchestrator → Engines |
+| **Container** | Register / resolve, singleton + transient lifecycles, freeze after init, duplicate/missing/circular/late validation |
+| **Registry** | Typed `ServiceMap` for Blueprint, Selection, Programming, Progression, Adaptation, Assembly, Program Generation |
+| **Factories** | Creation-only factories (no business logic) |
+| **Providers** | Configuration, in-memory repositories, default strategies |
+| **Application API** | Use-cases resolve defaults via `resolveService(token)` — no manual `new` |
+| **Design** | **Wiring only.** No AI, networking, persistence, UI, caching layer, analytics, or engine/business logic changes |
+
+Full detail: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
 
 ---
 
@@ -387,9 +406,12 @@ ai/coach_engines → services (read domain data)
 routes → screens → hooks → service factory → provider → api client
 auth context ← screens (session state)
 theme context ← screens (styling)
+
+# Training Intelligence pipeline (application layer)
+application use-cases → Composition Root → container/registry → factories → feature services → orchestrator → engines
 ```
 
-**Forbidden:** providers → screens directly, api client → screens directly
+**Forbidden:** providers → screens directly, api client → screens directly, application use-cases → `new` feature services (resolve via Composition Root)
 
 ---
 
@@ -428,5 +450,8 @@ AIOrchestrator.process_message (async)
 | 028 | Exercise Knowledge is a dedicated read-only bounded context |
 | 029 | Exercise Selection is deterministic and independent from AI |
 | 030 | Programming produces immutable `ExercisePrescription` objects |
+| 034 | Program Generation Orchestrator coordinates the pipeline |
+| 035 | Integration Testing Framework is isolated test infrastructure |
+| 036 | Composition Root owns mobile pipeline DI |
 
 Full list: [DECISIONS.md](./DECISIONS.md)

@@ -1,28 +1,18 @@
 # Architecture Diagrams
 
-
-
 **Project:** EVOLVE  
-
 **Version:** 0.6.0  
-
-**Status:** Placeholder  
-
+**Status:** Living Document  
 **Last Updated:** 2026-07-22  
+**Purpose:** Index of subsystem architecture diagrams and DI / Composition Root docs.  
+**Source of Truth:** Partial — summary diagrams live in linked docs.
 
-**Purpose:** Reserved for future subsystem diagrams. Summary architecture: [ARCHITECTURE.md](../ARCHITECTURE.md).  
+## Primary diagrams
 
-**Source of Truth:** No — see [ARCHITECTURE.md](../ARCHITECTURE.md) and [EVOLVE_ARCHITECTURE.md](../../.cursor/rules/EVOLVE_ARCHITECTURE.md).
-
-
-
-Current ASCII pipeline diagrams live in:
-
-
-
-- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline (Knowledge → Selection → Programming → Progression → Adaptation → Assembly → Program Generation Orchestrator → Integration Testing Framework)
-
+- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline + Composition Root dependency flow
+- [COMPOSITION_ROOT.md](../COMPOSITION_ROOT.md) — Composition Root, Dependency Graph, Factories, DI, Service Lifecycle
 - [AI_SYSTEM.md](../AI_SYSTEM.md) — Coach + mobile AI runtime pipeline
-
 - [INTEGRATION_TESTING.md](../INTEGRATION_TESTING.md) — Integration framework (fixtures, builders, assertions, scenarios, goldens)
+
+Deep reference: [EVOLVE_ARCHITECTURE.md](../../.cursor/rules/EVOLVE_ARCHITECTURE.md).
 

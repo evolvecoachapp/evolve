@@ -57,6 +57,7 @@ Program Generation Orchestrator  (coordinates the stages above)
 | Workout Assembly | `features/workout-assembly` | Implemented (17.6) | Assemble immutable executable `WorkoutSession` from prior outputs |
 | Program Generation | `features/program-generation` | Implemented (17.7) | Orchestrates Blueprint→…→Assembly; single public generation API |
 | Integration Testing Framework | `app/tests/integration/` | Implemented (17.8) | Fixtures, builders, assertions, scenarios, golden snapshots — tests only |
+| Composition Root & DI | `core/composition` | Implemented (17.9) | Container, registry, factories, providers — wiring only |
 | Prompt Orchestrator | `features/prompt-orchestrator` | Implemented | Composes prompts for AI-assisted blueprint steps |
 | Tool Engine | `features/tool-calling` | Implemented | Tool registry/execution boundary for workflows |
 | Athlete Context | `features/athlete-context` | Implemented | Structured athlete context for orchestration inputs |
@@ -74,6 +75,7 @@ Supporting orchestration pieces also present: Memory (conversation persistence a
 - Workout Assembly does **not** generate strategy, programming, progression, or readiness — it only assembles the final workout.
 - Program Generation does **not** duplicate engine logic, call AI, persist, or cache — it only orchestrates existing engines and freezes the result.
 - Integration Testing Framework (17.8) validates the complete pipeline via fixtures/builders/assertions/scenarios/goldens — **no production behavior changes**.
+- Composition Root (17.9) is the sole DI wiring site for pipeline service defaults — **no engine/business logic changes**.
 
 ---
 

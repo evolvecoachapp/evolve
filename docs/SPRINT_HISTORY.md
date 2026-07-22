@@ -628,3 +628,18 @@
 | **Status** | Complete |
 | **Notes** | Testing infrastructure only. No AI, networking, persistence, analytics, caching, UI, or engine modifications |
 
+### Sprint 17.9.0 — Composition Root & Dependency Injection Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 17.9.0 |
+| **Title** | Composition Root & Dependency Injection Foundation |
+| **Date** | 2026-07-22 |
+| **Goal** | Centralized Composition Root and DI for pipeline services — object creation/wiring only; no production behavior changes |
+| **Architecture** | Application → **Composition Root** → Container → Registry → Factories → Feature Services → Program Generation Orchestrator → Engines. Module: `app/src/core/composition/`. |
+| **Main components** | **Container:** `ApplicationContainer` (register/resolve, singleton/transient, freeze, validation). **Registry:** typed `ServiceMap` / `ServiceRegistry`. **Factories:** Blueprint, Selection, Programming, Progression, Adaptation, Assembly, Program Generation. **Providers:** configuration, in-memory repositories, default strategies. **API:** `createCompositionRoot` / `getCompositionRoot` / `resolveService`. |
+| **Tests** | Container, registry, factories, composition root, dependency validation suites |
+| **Results** | Dedicated DI foundation; application use-cases resolve defaults via Composition Root. ADR-036 recorded. Docs: COMPOSITION_ROOT.md. |
+| **Status** | Complete |
+| **Notes** | Wiring only. No AI, networking, persistence, analytics, caching, UI, or engine/business logic modifications |
+
