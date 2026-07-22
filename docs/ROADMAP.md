@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-22  
+**Last Updated:** 2026-07-23  
 **Purpose:** Engineering roadmap with phase and sprint granularity, completion status, and forward plan.  
 **Source of Truth:** Yes — for phase milestones and sprint sequencing.
 
@@ -65,6 +65,7 @@ Product vision and users: [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Phase arch
 | 18.2 Session Events Foundation | Done |
 | 18.3 Performance Engine Foundation | Done |
 | 18.4 Achievement Engine Foundation (Personal Records) | Done |
+| 18.5 Athlete History Foundation | Done |
 
 ---
 

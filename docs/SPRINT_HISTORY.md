@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
-**Last Updated:** 2026-07-22  
+**Last Updated:** 2026-07-23  
 **Purpose:** Chronological record of every sprint. Append new entries at the bottom — never rewrite past entries.  
 **Source of Truth:** Yes — for sprint chronology and completion dates.
 ---
@@ -732,5 +732,20 @@
 | **Results** | Dedicated Achievement Engine foundation. ADR-042 recorded. Docs: ACHIEVEMENT_ENGINE.md. |
 | **Status** | Complete |
 | **Notes** | Personal Records only. No AI, persistence, networking, history store, badges/streaks/goals/challenges implementation |
+
+### Sprint 18.5 — Athlete History Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 18.5.0 |
+| **Title** | Athlete History Foundation |
+| **Date** | 2026-07-23 |
+| **Goal** | Dedicated Athlete History domain organizing immutable chronological domain facts from workout, performance, and achievement outputs |
+| **Architecture** | Workout Runtime → Domain Events → Performance Snapshot → Achievement Result → **Athlete History** → History Snapshot → Future Consumers. Module: `app/src/features/athlete-history/`. |
+| **Main components** | **Models:** AthleteHistory, HistorySnapshot, HistoryEntry (+ Workout/Performance/Achievement specializations), type/category/context/metadata/reference/evidence/summary/statistics/engine result. **Engine:** `AthleteHistoryEngine`. **Aggregators:** Workout/Performance/Achievement/Statistics/Summary. **Builders / validators / utils.** **Application API:** `buildAthleteHistory`, `createHistorySnapshot`, `summarizeHistory`. |
+| **Tests** | Engine, aggregators, builders, validators, application helpers, Performance/Achievement integration, regression |
+| **Results** | Dedicated Athlete History foundation. ADR-043 recorded. Docs: ATHLETE_HISTORY.md (History Model, Future Offline Synchronization, Future Timeline UI). |
+| **Status** | Complete |
+| **Notes** | Immutable domain modeling only. No AI, persistence, networking, storage, querying/filtering, timeline UI, or calendar |
 
 

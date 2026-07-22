@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-22  
+**Last Updated:** 2026-07-23  
 **Purpose:** Central index for the EVOLVE project knowledge base — the single entry point for all official documentation.  
 **Source of Truth:** Yes — master index; defers detail to linked documents below.
 
@@ -42,8 +42,9 @@
 | [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md) | Immutable domain events, Event Stream, subscriber interfaces |
 | [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md) | Single-session performance snapshots, metric model, trend placeholder |
 | [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md) | Achievement Engine, Personal Records, future milestones/gamification |
+| [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md) | Athlete History domain, History Model, offline sync + Timeline UI placeholders |
 | [TECH_STACK.md](./TECH_STACK.md) | Languages, frameworks, versions, future tech |
-| [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-042 (append-only) |
+| [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-043 (append-only) |
 | [AI_SYSTEM.md](./AI_SYSTEM.md) | Coach, LLM, engines, memory, mobile workout pipeline |
 | [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md) | Integration framework for the workout pipeline |
 | [../.cursor/rules/EVOLVE_ARCHITECTURE.md](../.cursor/rules/EVOLVE_ARCHITECTURE.md) | Deep-dive architecture reference |

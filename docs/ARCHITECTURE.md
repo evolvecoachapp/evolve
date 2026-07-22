@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-22  
+**Last Updated:** 2026-07-23  
 **Purpose:** Concise system architecture — layers, patterns, dependency flow.  
 **Source of Truth:** Partial — summary only; deep reference is [EVOLVE_ARCHITECTURE.md](../.cursor/rules/EVOLVE_ARCHITECTURE.md).
 
@@ -29,6 +29,7 @@ See [TECH_STACK.md](./TECH_STACK.md) for versions. Onboarding: [PROJECT_CONTEXT.
 │  → Domain Events (immutable execution events → Event Stream)    │
 │  → Performance Engine (single-session snapshots from results)   │
 │  → Achievement Engine (Personal Records from snapshots)         │
+│  → Athlete History (immutable chronological domain record)      │
 └────────────────────────────┬────────────────────────────────────┘
                              │ HTTPS + JWT
                              ▼
@@ -98,9 +99,12 @@ Performance Engine               ← Sprint 18.3 (implemented) — single-sessio
   ↓
 Achievement Engine               ← Sprint 18.4 (implemented) — Personal Records foundation
   (`app/src/features/achievement-engine/`)
+  ↓
+Athlete History                  ← Sprint 18.5 (implemented) — immutable chronological record
+  (`app/src/features/athlete-history/`)
 ```
 
-Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md).
+Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md).
 
 ### Exercise Knowledge Base (`features/exercise-kb`)
 
@@ -331,6 +335,22 @@ Full detail: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md).
 | **Design** | **Achievements only.** No AI, persistence, networking, history store, badges/streaks/goals/challenges implementation. Never mutates Performance Engine or Workout Runtime |
 
 Full detail: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md).
+
+### Athlete History (`features/athlete-history`) — Sprint 18.5
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Immutable chronological record of an athlete's journey (domain facts only) |
+| **Flow** | Workout Runtime → Domain Events → Performance Snapshot → Achievement Result → Athlete History → History Snapshot → Future Consumers |
+| **Models** | `AthleteHistory`, `HistorySnapshot`, `HistoryEntry` (+ workout/performance/achievement specializations), type/category/context/metadata/reference/evidence/summary/statistics/engine result |
+| **Engine** | `AthleteHistoryEngine` — chronological ordering, reference linking, snapshot + summary generation |
+| **Aggregators** | Isolated Workout / Performance / Achievement / Statistics / Summary aggregators |
+| **Validators** | Chronology, duplicates, broken references, timestamps, categories, snapshot consistency |
+| **Application API** | `buildAthleteHistory`, `createHistorySnapshot`, `summarizeHistory` |
+| **Integration** | Consumes `WorkoutResult` + `PerformanceSnapshot` + `AchievementResult`; DomainEventStream reference only |
+| **Design** | **History domain modeling only.** No AI, persistence, networking, storage, querying/filtering, timeline UI, or calendar. Never mutates upstream engines |
+
+Full detail: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md).
 
 ---
 

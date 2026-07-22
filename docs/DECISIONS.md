@@ -1345,4 +1345,34 @@ Implement `app/src/features/achievement-engine/` with immutable achievement mode
 
 ---
 
-*New decisions are appended as Decision 043, 044, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 043: Athlete History Foundation (Sprint 18.5)
+
+**Date:** 2026-07-23
+
+**Status:** Accepted
+
+**Context:**
+Sprint 18.5 must introduce an Athlete History domain that organizes an athlete's journey as an immutable chronological record of domain facts. It must consume Workout Results, Performance Snapshots, and Achievement Results (Domain Event Stream as architecture reference only). It must not implement persistence, AI, networking, history storage, querying/filtering, timeline UI, or calendar features, and must not modify upstream engines.
+
+**Decision:**
+Implement `app/src/features/athlete-history/` with immutable history models (`AthleteHistory`, `HistorySnapshot`, `HistoryEntry` + workout/performance/achievement specializations, open type/category strings for future nutrition/recovery/sleep/bodyweight/coach/goals/milestones/challenges entries), isolated aggregators, validators, builders, utilities, `AthleteHistoryEngine`, a service facade, and a narrow application API (`buildAthleteHistory`, `createHistorySnapshot`, `summarizeHistory`).
+
+**Why:**
+- **Dedicated history boundary** keeps runtime, analytics, and achievements free of chronological aggregation concerns.
+- **Open type/category identifiers** allow future entry kinds without redesigning core `HistoryEntry` fields.
+- **Isolated aggregators** keep each domain-fact mapping testable and single-responsibility.
+- **Frozen history + snapshots** give future offline sync and Timeline UI consumers a stable contract without owning storage or rendering here.
+
+**Alternatives considered:**
+- **Fold history into Achievement or Performance Engine** — rejected: those engines own detection/analytics only (ADR-041/042).
+- **Implement persistence / Timeline UI now** — rejected: sprint explicitly limits scope to immutable domain modeling.
+- **Require DomainEventStream at runtime** — rejected: stream remains an architecture reference; workout/performance/achievement facts are sufficient inputs.
+
+**Consequences:**
+- Documentation references [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md).
+- Future entry aggregators can register beside workout/performance/achievement aggregators without redesign.
+- Athlete History remains in-memory and non-persistent until a later sync/consumer sprint.
+
+---
+
+*New decisions are appended as Decision 044, 045, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

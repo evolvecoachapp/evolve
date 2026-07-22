@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0 (current release)
 **Status:** Living Document
-**Last Updated:** 2026-07-22
+**Last Updated:** 2026-07-23
 **Purpose:** Semantic release history; accumulate changes under `[Unreleased]` until tagged.  
 **Source of Truth:** Yes — for release versions and shipped changes.
 All notable changes to EVOLVE are documented in this file.
@@ -27,6 +27,7 @@ Each release section groups changes under: `Added`, `Changed`, `Deprecated`, `Re
 ## [Unreleased]
 
 ### Added
+- Sprint 18.5.0 — Athlete History Foundation: `features/athlete-history` with immutable `AthleteHistory` / `HistorySnapshot` / `HistoryEntry` models (workout/performance/achievement specializations; nutrition/recovery/sleep/bodyweight/coach/goals/milestones/challenges reserved), isolated aggregators, validators, builders, utilities, `AthleteHistoryEngine`, application API (`buildAthleteHistory`, `createHistorySnapshot`, `summarizeHistory`), and [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md) — immutable domain modeling only; no AI, persistence, networking, storage, querying/filtering, timeline UI, or calendar
 - Sprint 18.4.0 — Achievement Engine Foundation (Personal Records): `features/achievement-engine` with immutable `Achievement` / Personal Record models, extensible type/category architecture (milestones/badges/goals/challenges/streaks reserved), isolated PR detectors (weight/volume/tonnage/reps/sets/density/session/exercise volume), validators, builders, utilities, engine-emitted `AchievementUnlockedEvent` / `PersonalRecordUnlockedEvent` (no subscribers), injected `PersonalRecordBaselineProvider` comparison only, application API (`evaluateAchievements`, `detectPersonalRecords`, `summarizeAchievements`), and [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md) — achievements only; no AI, persistence, networking, history store, badges/streaks/gamification implementation
 - Sprint 18.3.0 — Performance Engine Foundation: `features/performance-engine` with immutable `PerformanceSnapshot` / metric groups (volume/intensity/density/completion), exercise/session/movement performance, grade/summary/context/result, single-session `PerformanceTrend` placeholder, isolated calculators, validators, builders, utilities, `PerformanceEngine`, application API (`analyzeWorkoutPerformance`, `summarizePerformance`, `gradePerformance`), Workout Runtime + Domain Events integration, and [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md) — single-session analytics only; no AI, persistence, networking, history, PRs, recovery, or recommendations
 - Sprint 18.2.0 — Session Events Foundation: `core/domain-events` with immutable `DomainEvent` lifecycle models, `EventStream` / `EventStreamStore`, synchronous `DomainEventDispatcher`, subscriber interfaces only (Performance/Timeline/Coach/Analytics/Achievement/Recovery), builders/validators/utilities, application API (`publishEvent`, `subscribe`, `unsubscribe`, `getEventStream`, `summarizeEvents`), Workout + Rest Runtime emission integration, and [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md) — domain events only; not an event bus; no persistence, networking, async queues, brokers, analytics implementations, or subscriber implementations

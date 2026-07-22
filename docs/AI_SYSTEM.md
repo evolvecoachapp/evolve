@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-22  
+**Last Updated:** 2026-07-23  
 **Purpose:** Coach architecture, LLM abstraction, engines, memory, and conversation flow.  
 **Source of Truth:** Yes — for AI subsystem design (endpoints: [API_STATUS.md](./API_STATUS.md)).
 ---
@@ -52,6 +52,8 @@ Domain Events  (immutable execution events → Event Stream — no AI)
 Performance Engine  (single-session Performance Snapshots — no AI)
         ↓
 Achievement Engine  (Personal Records from snapshots — no AI)
+        ↓
+Athlete History  (immutable chronological domain record — no AI)
 ```
 
 ### Layer responsibilities
@@ -76,6 +78,7 @@ Achievement Engine  (Personal Records from snapshots — no AI)
 | Domain Events | `core/domain-events` | Implemented (18.2) | Immutable domain events + Event Stream for workout execution — subscriber interfaces only |
 | Performance Engine | `features/performance-engine` | Implemented (18.3) | Single-session analytics from WorkoutResult + EventStream — immutable snapshots only |
 | Achievement Engine | `features/achievement-engine` | Implemented (18.4) | Personal Records from PerformanceSnapshot + WorkoutResult — immutable achievements/events only |
+| Athlete History | `features/athlete-history` | Implemented (18.5) | Immutable chronological athlete journey from workout/performance/achievement facts |
 | Prompt Orchestrator | `features/prompt-orchestrator` | Implemented | Composes prompts for AI-assisted blueprint steps |
 | Tool Engine | `features/tool-calling` | Implemented | Tool registry/execution boundary for workflows |
 | Athlete Context | `features/athlete-context` | Implemented | Structured athlete context for orchestration inputs |
@@ -100,6 +103,7 @@ Supporting orchestration pieces also present: Memory (conversation persistence a
 - Domain Events (18.2) records immutable execution events from Workout/Rest Runtime into an ordered Event Stream — **not an event bus**; no persistence, networking, async queues, brokers, analytics implementations, or subscriber implementations.
 - Performance Engine (18.3) analyzes completed `WorkoutResult` + `EventStream` into immutable single-session Performance Snapshots — **no AI**, persistence, networking, history, PRs, recovery, or recommendations; never mutates execution or program generation.
 - Achievement Engine (18.4) detects Personal Records from `PerformanceSnapshot` + `WorkoutResult` via injected baselines — **no AI**, persistence, networking, history store, or gamification implementation; never mutates Performance Engine or Workout Runtime.
+- Athlete History (18.5) organizes immutable chronological domain facts from `WorkoutResult` + `PerformanceSnapshot` + `AchievementResult` into `AthleteHistory` / `HistorySnapshot` — **no AI**, persistence, networking, storage, querying/filtering, timeline UI, or calendar; never mutates upstream engines.
 
 ---
 
