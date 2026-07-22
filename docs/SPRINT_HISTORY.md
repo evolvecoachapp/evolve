@@ -658,4 +658,19 @@
 | **Status** | Complete |
 | **Notes** | Explanation substrate only. No engine/business logic changes, AI, networking, persistence, telemetry, logging framework, analytics platform, or UI |
 
+### Sprint 18.0 — Workout Runtime Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 18.0.0 |
+| **Title** | Workout Runtime Foundation |
+| **Date** | 2026-07-22 |
+| **Goal** | Dedicated domain for live execution state of an immutable assembled `WorkoutSession` |
+| **Architecture** | `WorkoutSession` → **WorkoutRuntime** → ExerciseRuntime → SetRuntime → SessionState → WorkoutResult. Module: `app/src/features/workout-runtime/`. |
+| **Main components** | **Models:** runtime/state/progress/summary/result/event/metrics/configuration. **Engine:** `WorkoutRuntimeEngine`. **Builders / validators / utils.** **Application API:** `startWorkout`, `pauseWorkout`, `resumeWorkout`, `completeWorkout`, `skipExercise`, `completeSet` via opaque `ActiveWorkout`. |
+| **Tests** | Lifecycle, state transitions, exercise/set progression, completion, validators, application API, regression |
+| **Results** | Dedicated Workout Runtime foundation. ADR-038 recorded. Docs: WORKOUT_RUNTIME.md. |
+| **Status** | Complete |
+| **Notes** | Execution state only. No Program Generation changes, UI, persistence, networking, timers, analytics, history, or AI |
+
 

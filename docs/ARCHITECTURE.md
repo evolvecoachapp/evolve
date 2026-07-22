@@ -24,6 +24,7 @@ See [TECH_STACK.md](./TECH_STACK.md) for versions. Onboarding: [PROJECT_CONTEXT.
 │  → Blueprint → Knowledge → Selection → Programming →            │
 │  Progression → Adaptation → Assembly → WorkoutSession           │
 │  → Decision Intelligence (decision graph / execution reports)   │
+│  → Workout Runtime (live execution state of WorkoutSession)     │
 └────────────────────────────┬────────────────────────────────────┘
                              │ HTTPS + JWT
                              ▼
@@ -78,9 +79,12 @@ Composition Root & DI            ← Sprint 17.9 (implemented) — wiring only
   ↓
 Decision Intelligence            ← Sprint 17.10 (implemented) — explanations only
   (`app/src/core/decision-intelligence/`)
+  ↓
+Workout Runtime                  ← Sprint 18.0 (implemented) — live session state
+  (`app/src/features/workout-runtime/`)
 ```
 
-Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md).
+Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md).
 
 ### Exercise Knowledge Base (`features/exercise-kb`)
 
@@ -231,6 +235,21 @@ Full detail: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
 | **Design** | **Explanation substrate only.** No engine/business logic changes, AI, networking, persistence, telemetry, logging framework, analytics platform, or UI |
 
 Full detail: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md).
+
+### Workout Runtime (`features/workout-runtime`) — Sprint 18.0
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Live execution state of an immutable assembled `WorkoutSession` |
+| **Flow** | `WorkoutSession` → `WorkoutRuntime` → `ExerciseRuntime` → `SetRuntime` → `SessionState` → `WorkoutResult` |
+| **Lifecycle** | `NotStarted` → `Running` ↔ `Paused` → `Completed` / `Cancelled` (validated transitions) |
+| **Engine** | `WorkoutRuntimeEngine` — start/pause/resume/finish, current exercise/set, advance, completion % |
+| **Models** | Runtime + state + progress/summary/result/event/metrics/configuration |
+| **Validators** | State transitions, set/exercise progression, completion, invalid operations |
+| **Application API** | `startWorkout`, `pauseWorkout`, `resumeWorkout`, `completeWorkout`, `skipExercise`, `completeSet` |
+| **Design** | **Execution state only.** Consumes immutable `WorkoutSession`. **No Program Generation changes**, UI, persistence, networking, timers, analytics, history, or AI |
+
+Full detail: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md).
 
 ---
 

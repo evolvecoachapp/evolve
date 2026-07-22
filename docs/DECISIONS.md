@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-22  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-036). Append only — never renumber.  
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-038). Append only — never renumber.  
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -1200,4 +1200,32 @@ Implement `app/src/core/decision-intelligence/` with immutable decision models (
 
 ---
 
-*New decisions are appended as Decision 038, 039, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 038 — Workout Runtime Is a Dedicated Execution-State Domain
+
+**Status:** Accepted
+
+**Context:**
+Sprint 18.0 must introduce a Workout Runtime foundation so an assembled `WorkoutSession` can be performed with validated lifecycle, exercise, and set progression. Program Generation and upstream training-intelligence engines must remain unchanged. The domain must not add UI, persistence, networking, timers, analytics, history, or AI.
+
+**Decision:**
+Implement `app/src/features/workout-runtime/` with runtime models (`WorkoutRuntime`, `ExerciseRuntime`, `SetRuntime`, `WorkoutState`/`SessionState`, progress/summary/result/event/metrics/configuration), `WorkoutRuntimeEngine` (start/pause/resume/finish, current exercise/set, advance, completion percent), builders, validators (state transitions + progression + completion), utilities, and a narrow application API (`startWorkout`, `pauseWorkout`, `resumeWorkout`, `completeWorkout`, `skipExercise`, `completeSet`) that returns opaque `ActiveWorkout` handles and public summaries/results only. Runtime consumes an immutable `WorkoutSession` and never mutates Program Generation outputs.
+
+**Why:**
+- **Separation of concerns** — generation produces immutable sessions; runtime owns live performance state.
+- **Validated state machine** keeps lifecycle operations safe and testable.
+- **Opaque public API** prevents UI/application layers from depending on engine internals.
+- **No timers/persistence** keeps the foundation focused and additive.
+
+**Alternatives considered:**
+- **Extend Workout Assembly with execution fields** — rejected: would couple immutable assembly to mutable performance state.
+- **Reuse existing `features/workout` local UI session helpers as the domain** — rejected: those are screen-oriented; Sprint 18.0 requires a dedicated domain foundation.
+- **Persist runtime or add rest timers now** — rejected: explicitly out of scope.
+
+**Consequences:**
+- Documentation references [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md).
+- Future UI/timer/persistence sprints consume this domain without changing Program Generation.
+- Program Generation and Decision Intelligence remain independent of Workout Runtime.
+
+---
+
+*New decisions are appended as Decision 039, 040, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

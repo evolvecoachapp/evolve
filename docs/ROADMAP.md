@@ -58,6 +58,9 @@ Product vision and users: [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Phase arch
 | 17.6 Workout Assembly | Done |
 | 17.7 Program Generation | Done |
 | 17.8 Integration Framework Foundation | Done |
+| 17.9 Composition Root & DI | Done |
+| 17.10 Decision Intelligence | Done |
+| 18.0 Workout Runtime Foundation | Done |
 
 ---
 
@@ -238,8 +241,21 @@ Deterministic training intelligence under `app/src/features/`. Not backend HTTP 
 | 17.5 | Training Adaptation Engine — readiness assessment + adaptation recommendations | **Done** |
 | 17.6 | Workout Assembly — assemble complete executable workouts | **Done** |
 | 17.7 | Program Generation Orchestrator — single entry point coordinating the pipeline | **Done** |
+| 17.8 | Integration Framework Foundation — fixtures, builders, assertions, scenarios, goldens | **Done** |
+| 17.9 | Composition Root & DI — wiring only for pipeline services | **Done** |
+| 17.10 | Decision Intelligence — structured domain explanations only | **Done** |
 
 **Out of scope until later sprints:** UI for generated workouts, PostgreSQL persistence for these domains, LLM inside Selection/Programming.
+
+### Phase 18 — Workout Runtime (Mobile Application Layer)
+
+Live execution state for assembled sessions. Consumes immutable `WorkoutSession`. Does not modify Program Generation.
+
+| Sprint | Focus | Status |
+|--------|-------|--------|
+| 18.0 | Workout Runtime Foundation — lifecycle, exercise/set progression, validated state machine, public API | **Done** |
+
+**Out of scope until later sprints:** UI binding, rest timers, persistence, networking, analytics, history.
 
 ---
 
