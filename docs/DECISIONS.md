@@ -1,13 +1,13 @@
 # Architecture Decision Records
 
 **Project:** EVOLVE  
-**Version:** 0.5.0  
+**Version:** 0.6.0  
 **Status:** Living Document (append-only)  
-**Last Updated:** 2026-07-14  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-027). Append only — never renumber.  
+**Last Updated:** 2026-07-22  
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-030). Append only — never renumber.  
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
-New decisions append as Decision 028, 029, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
+New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
 
 ---
 
@@ -928,4 +928,110 @@ Sprint 5.2 is reframed as **Mobile UI Foundation & Navigation**:
 
 ---
 
-*New decisions are appended as Decision 028, 029, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 028 — Exercise Knowledge Is a Dedicated Read-Only Bounded Context
+
+**Status:** Accepted
+
+**Context:**
+Sprint 17.1 introduces structured exercise metadata for future selection engines and AI workflows. The backend already has an `Exercise` catalog table/API, and the mobile workout feature has some exercise-related types. Putting selection, programming, or workout assembly into the same module as metadata would couple unrelated concerns and make the knowledge layer harder to reuse.
+
+**Decision:**
+Create `app/src/features/exercise-kb` as a dedicated **read-only** bounded context whose aggregate is the immutable `ExerciseDefinition`. Persistence is in-memory only (`ExerciseKnowledgeRepository` / `InMemoryExerciseKnowledgeRepository`). The domain may resolve relationship edges (alternative / progression / regression / variation / related) and search/filter definitions, but it must not select exercises for a session, prescribe sets/reps, generate workouts, call LLMs, or know about workout/session aggregates.
+
+**Why:**
+- **Single responsibility** — knowledge is reusable input; selection and programming are separate deterministic engines.
+- **Immutability** — frozen definitions prevent accidental mutation when shared across engines.
+- **Cheap evolution** — a relationship graph and validators can grow without touching workout UI or HTTP APIs.
+- **Matches Clean Architecture** — repository boundary exists even though durable storage is deferred.
+
+**Alternatives considered:**
+- **Extend backend `Exercise` ORM / catalog API only** — rejected for this sprint: mobile pipeline needs a typed application-layer knowledge model independent of HTTP, and no new backend API was in scope.
+- **Colocate knowledge inside Exercise Selection** — rejected: selection would own metadata it does not author, and other consumers (future progression/assembly) would depend on the selection module incorrectly.
+
+**Consequences:**
+- Selection (17.2) and Programming (17.3) depend on Knowledge outward; Knowledge never imports those domains.
+- No PostgreSQL migration or REST surface ships with this context.
+- Illustrative catalog (~25 exercises) is for tests/local orchestration; production-scale catalog loading remains future work.
+
+---
+
+## Decision 029 — Exercise Selection Is Deterministic and Independent From AI
+
+**Status:** Accepted
+
+**Context:**
+Sprint 17.2 must choose exercise candidates for a Workout Blueprint day using the Exercise Knowledge Base. An LLM could propose exercises conversationally, but candidate ranking must be reproducible for tests, explanations, and later programming.
+
+**Decision:**
+Implement `app/src/features/exercise-selection` as a **deterministic** engine (`ExerciseSelectionEngine`) driven by pure Strategy + Selector pipelines over a `SelectionContext` derived from the blueprint. No randomness. No LLM calls inside the engine. Output is an immutable `ExerciseSelectionResult` (candidates, role groups, rejections, explanations). Programming (sets/reps/RPE/volume) is explicitly out of scope.
+
+**Why:**
+- **Reproducibility** — identical blueprint + catalog ⇒ identical candidates; required for unit tests and coach explanations.
+- **Separation from AI** — LLMs may later influence blueprint generation; selection itself stays rule-based and auditable.
+- **Clear pipeline stage** — Blueprint decides *what* structure; Selection decides *which* exercises; Programming decides *how*.
+
+**Alternatives considered:**
+- **LLM picks exercises directly** — rejected: non-deterministic, hard to validate constraints/equipment, and mixes conversational generation with domain rules.
+- **Hard-code exercise lists on blueprint days** — rejected: loses knowledge-graph reuse and alternative/relationship scoring.
+
+**Consequences:**
+- Strategies (movement, equipment, difficulty, goal, constraint, relationship) and role selectors (primary/secondary/accessory) are the extension points.
+- In-memory `SelectionRepository` caches results only; no durable store.
+- ADR-028 Knowledge remains the sole catalog source for this engine.
+
+---
+
+## Decision 030 — Programming Produces Immutable `ExercisePrescription` Objects
+
+**Status:** Accepted
+
+**Context:**
+Sprint 17.3 must turn selected candidates into executable prescription data (volume, intensity, rest, tempo, order, priority). Future Progression, Fatigue & Recovery, Workout Assembly, and Program Generation engines must not be implied by this module’s contract.
+
+**Decision:**
+Implement `app/src/features/programming` such that `ProgrammingEngine` emits an immutable `ProgrammingResult` of frozen `ExercisePrescription` objects via a Strategy pipeline (Volume, Intensity, Rest, Tempo, ExerciseOrder, Priority). The engine may estimate duration/fatigue/workload for a single programmed session snapshot, but must **not** progress loads across sessions, adapt from recovery state, plan weeks, or assemble a complete workout product for the athlete UI.
+
+**Why:**
+- **Immutable prescriptions** are a stable handoff to future Progression/Assembly stages.
+- **Narrow scope** prevents the Programming module from becoming an all-in-one workout generator.
+- **Determinism** mirrors Selection (ADR-029): same selection + blueprint context ⇒ same prescriptions.
+
+**Alternatives considered:**
+- **Emit a full `WorkoutSession` ready for the session UI** — rejected: assembly/session product is Sprint 17.6+; premature coupling to execution UI models.
+- **Include progression and deload logic now** — rejected: belongs to Progression / Fatigue engines (17.4–17.5).
+
+**Consequences:**
+- Consumers must treat prescriptions as “how to perform each selected exercise,” not as a finished program.
+- In-memory `ProgrammingRepository` caches results only.
+- Pipeline documentation must label Progression / Recovery / Assembly / Program Generation as planned, not implemented.
+
+---
+
+## Decision 031 — Progression Produces Immutable `ProgressionPlan` Timelines
+
+**Status:** Accepted
+
+**Context:**
+Sprint 17.4 must introduce the time dimension of training by transforming immutable `ProgrammingResult` objects into multi-week progression timelines. Fatigue & Recovery, Workout Assembly, and Program Generation must remain out of scope.
+
+**Decision:**
+Implement `app/src/features/progression` such that `ProgressionEngine` emits an immutable `ProgressionPlan` of frozen `ExerciseProgression` / `ProgressionStep` objects via a Strategy pipeline (Linear, Volume, Intensity, Frequency, ExerciseRotation). The engine defines how prescription parameters evolve across a `ProgressionWindow`, but must **not** adapt from athlete feedback, calculate absolute loads, autoregulate, manage fatigue, apply deloads, or assemble workouts.
+
+**Why:**
+- **Immutable plans** are a stable handoff to future Fatigue / Assembly stages.
+- **Narrow scope** keeps Progression from becoming a recovery or program-generation engine.
+- **Determinism** mirrors Programming (ADR-030): same programming + blueprint context ⇒ same progression plan.
+
+**Alternatives considered:**
+- **Include deload / fatigue adaptation now** — rejected: belongs to Fatigue & Recovery (17.5).
+- **Emit absolute loads or %1RM** — rejected: load prediction is out of scope; intensity remains RPE/RIR trends only.
+- **Swap exercises mid-block as progression** — rejected: exercise continuity is required; rotation is slot intent only.
+
+**Consequences:**
+- Consumers treat progression as “how prescriptions evolve over weeks,” not as finished workouts or adaptive coaching.
+- In-memory `ProgressionRepository` caches plans only.
+- Pipeline documentation labels Fatigue & Recovery / Assembly / Program Generation as planned.
+
+---
+
+*New decisions are appended as Decision 032, 033, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

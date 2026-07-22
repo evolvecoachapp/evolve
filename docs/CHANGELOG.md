@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0 (current release)
 **Status:** Living Document
-**Last Updated:** 2026-07-21
+**Last Updated:** 2026-07-22
 **Purpose:** Semantic release history; accumulate changes under `[Unreleased]` until tagged.  
 **Source of Truth:** Yes — for release versions and shipped changes.
 All notable changes to EVOLVE are documented in this file.
@@ -27,6 +27,10 @@ Each release section groups changes under: `Added`, `Changed`, `Deprecated`, `Re
 ## [Unreleased]
 
 ### Added
+- Sprint 17.4.0 — Progression Engine Foundation: `features/progression` with immutable `ProgressionPlan` / `ExerciseProgression` / `ProgressionStep`, `ProgressionEngine` (linear/volume/intensity/frequency/rotation strategies), validators, timeline utilities, in-memory plan cache, application use-cases (`generateProgression`, `previewProgression`, `explainProgression`) — no athlete feedback, load calculation, autoregulation, fatigue, deload, UI, or networking
+- Sprint 17.3.0 — Programming Engine Foundation: `features/programming` with `ExercisePrescription` / `ProgrammingResult`, `ProgrammingEngine` (volume/intensity/rest/tempo/order/priority strategies), validators, estimates, in-memory result cache, application use-cases (`programExercises`, `previewProgramming`, `explainProgramming`) — no progression, weekly planning, workout assembly, UI, or networking
+- Sprint 17.2.0 — Exercise Selection Engine Foundation: `features/exercise-selection` with deterministic `ExerciseSelectionEngine`, `SelectionContext`, strategy/selector pipelines, ranking/filtering, in-memory result cache, application use-cases (`selectExercises`, `previewExerciseCandidates`, `explainSelection`) — no sets/reps/RPE/volume/programming
+- Sprint 17.1.0 — Exercise Knowledge Base Foundation: `features/exercise-kb` read-only bounded context with immutable `ExerciseDefinition`, relationship graph, validators, illustrative in-memory catalog, `ExerciseKnowledgeService` + application queries — no workout logic, selection, UI, or durable persistence
 - Sprint 14.0.0 — Workout Analytics Foundation: `features/analytics` domain with `WorkoutAnalytics` / `ExerciseAnalytics` / `WeeklyAnalytics` / `WorkoutTrend` models, `WorkoutAnalyticsRepository` (`HistoryBackedWorkoutAnalyticsRepository` over `WorkoutHistoryRepository`), application use-cases + `useWorkoutAnalytics` hook, volume/frequency trend APIs — no screens, charts, dashboards, or AI
 - Sprint 13.2.0 — Workout Detail Experience: `WorkoutDetailScreen` + reusable `WorkoutDetailHero` / `WorkoutMetricsGrid` / `WorkoutExerciseCard` / `WorkoutSetRow` / `WorkoutDetailFooter`, `getCompletedSession` / `useWorkoutDetail`, empty/not-found state — loads via `WorkoutHistoryRepository.getCompletedSession`; completed exercises/sets persisted on `CompletedWorkout`; no editing, deletion, analytics, PRs, sharing, export, or AI
 - Sprint 13.1.0 — Workout History Timeline: `WorkoutHistoryScreen` + reusable `WorkoutHistoryCard`, `listCompletedSessions` / `useWorkoutHistory`, empty state, and detail-route stub — reads exclusively via `WorkoutHistoryRepository`; newest-first; no analytics, charts, filters, search, export, or cloud sync
@@ -64,6 +68,7 @@ Each release section groups changes under: `Added`, `Changed`, `Deprecated`, `Re
 - Documentation Maintenance Policy in [README.md](./README.md)
 
 ### Changed
+- Architecture docs now describe the mobile AI workout pipeline through Progression (17.1–17.4); Fatigue & Recovery / Assembly / Program Generation remain planned (17.5–17.7)
 - `CompletedWorkout` / `WorkoutSessionSummary` now carry ordered exercise snapshots with completed sets (weight, reps, set number) for detail rendering; legacy history entries parse with empty `exercises` (Sprint 13.2.0)
 - Optional `programName` on `WorkoutSessionSummary` / `CompletedWorkout` (from session `programTitle`); history entry from Workout tab; card press → detail stub (Sprint 13.1.0)
 - `useSessionFinish.buildSummary()` persists a `CompletedWorkout` via the application layer after mapping (fire-and-forget; finish navigation unchanged) (Sprint 13.0.0)
@@ -83,6 +88,16 @@ Each release section groups changes under: `Added`, `Changed`, `Deprecated`, `Re
 - `docs/DECISIONS.md` — standard document header
 - API endpoint counts reconciled: **49 implemented**, **7 planned** ([API_STATUS.md](./API_STATUS.md))
 
+### Architecture
+- Three new mobile bounded contexts: Exercise Knowledge Base (read-only), Exercise Selection Engine (deterministic), Programming Engine (immutable prescriptions)
+- Pipeline boundary clarified: Programming stops at prescriptions; progression/assembly/program generation are separate future engines
+- ADRs 028–030 appended for Knowledge / Selection / Programming boundaries
+
+### Testing
+- Jest suites added for `exercise-kb` (6), `exercise-selection` (8), and `programming` (7) covering models/engine/strategies/validators/utils/repository/service/application
+
+### Typecheck
+- New domains are TypeScript-strict application modules under `app/src/features/`; no new HTTP contracts or schema migrations
 ---
 
 ## [0.5.0] — Mobile App (Partial)

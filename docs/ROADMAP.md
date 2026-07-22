@@ -1,9 +1,9 @@
 # EVOLVE Roadmap
 
 **Project:** EVOLVE  
-**Version:** 0.5.0  
+**Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-14  
+**Last Updated:** 2026-07-22  
 **Purpose:** Engineering roadmap with phase and sprint granularity, completion status, and forward plan.  
 **Source of Truth:** Yes — for phase milestones and sprint sequencing.
 
@@ -49,6 +49,14 @@ Product vision and users: [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Phase arch
 | 6.1–6.3 Production | Pending |
 | DOC-1 Knowledge Base | Done |
 | DOC-1.1 Documentation Finalization | Done |
+| 17.0 Workout Blueprint Generator | Done |
+| 17.1 Exercise Knowledge Base | Done |
+| 17.2 Exercise Selection Engine | Done |
+| 17.3 Programming Engine | Done |
+| 17.4 Progression Engine | Done |
+| 17.5 Fatigue & Recovery Engine | Upcoming |
+| 17.6 Workout Assembly | Upcoming |
+| 17.7 Program Generation | Upcoming |
 
 ---
 
@@ -212,6 +220,25 @@ Each phase is broken into 1–3 sprints. Sprint length is indicative (assume 1�
 | 6.1 | Managed PostgreSQL, secrets management, environment separation |
 | 6.2 | Full CI/CD pipeline, automated migrations on deploy |
 | 6.3 | Monitoring, alerting, backups, load testing, runbooks |
+
+### Phase 17 — AI Workout Pipeline (Mobile Application Layer)
+
+Deterministic training intelligence under `app/src/features/`. Not backend HTTP APIs. Pipeline:
+
+`Conversation → Workflow → Blueprint → Knowledge → Selection → Programming → (Progression → Recovery → Assembly → Program Generation)`
+
+| Sprint | Focus | Status |
+|--------|-------|--------|
+| 17.0 | Workout Blueprint Generator — session structure (what to build), not exercises/sets | **Done** |
+| 17.1 | Exercise Knowledge Base — read-only `ExerciseDefinition` metadata + relationship graph | **Done** |
+| 17.2 | Exercise Selection Engine — deterministic candidates from blueprint + knowledge | **Done** |
+| 17.3 | Programming Engine — immutable `ExercisePrescription` (volume/intensity/rest/tempo/order) | **Done** |
+| 17.4 | Progression Engine — multi-week prescription evolution timeline | **Done** |
+| 17.5 | Fatigue & Recovery Engine — adaptive load from recovery signals | **Current** |
+| 17.6 | Workout Assembly — assemble complete executable workouts | Upcoming |
+| 17.7 | Program Generation — multi-week program construction | Upcoming |
+
+**Out of scope until later sprints:** UI for generated workouts, PostgreSQL persistence for these domains, LLM inside Selection/Programming.
 
 ---
 

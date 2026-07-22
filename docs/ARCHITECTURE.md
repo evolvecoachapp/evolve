@@ -1,9 +1,9 @@
 # EVOLVE Architecture
 
 **Project:** EVOLVE  
-**Version:** 0.5.0  
+**Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-14  
+**Last Updated:** 2026-07-22  
 **Purpose:** Concise system architecture — layers, patterns, dependency flow.  
 **Source of Truth:** Partial — summary only; deep reference is [EVOLVE_ARCHITECTURE.md](../.cursor/rules/EVOLVE_ARCHITECTURE.md).
 
@@ -17,6 +17,10 @@ See [TECH_STACK.md](./TECH_STACK.md) for versions. Onboarding: [PROJECT_CONTEXT.
 ┌─────────────────────────────────────────────────────────────────┐
 │                        MOBILE CLIENT (app/)                      │
 │  Expo Router → Screens → Features → Service Factory → Provider  │
+│                                                                 │
+│  AI runtime (application layer, in-memory):                     │
+│  Conversation → Workflow → Blueprint → Knowledge → Selection    │
+│  → Programming → Progression  (Recovery / Assembly — planned)   │
 └────────────────────────────┬────────────────────────────────────┘
                              │ HTTPS + JWT
                              ▼
@@ -34,6 +38,99 @@ See [TECH_STACK.md](./TECH_STACK.md) for versions. Onboarding: [PROJECT_CONTEXT.
                       │  PostgreSQL  │
                       └──────────────┘
 ```
+
+---
+
+## AI Workout Pipeline (Mobile Application Layer)
+
+Deterministic training intelligence domains live under `app/src/features/`. They are **not** HTTP APIs and do **not** persist to PostgreSQL.
+
+```
+Coach
+  ↓
+Conversation Engine
+  ↓
+Workflow Engine
+  ↓
+Workout Blueprint Generator
+  ↓
+Exercise Knowledge Base          ← Sprint 17.1 (implemented)
+  ↓
+Exercise Selection Engine        ← Sprint 17.2 (implemented)
+  ↓
+Programming Engine               ← Sprint 17.3 (implemented)
+  ↓
+Progression Engine               ← Sprint 17.4 (implemented)
+  ↓
+Fatigue & Recovery               ← planned (Sprint 17.5)
+  ↓
+Workout Assembly                 ← planned (Sprint 17.6)
+  ↓
+Program Generation               ← planned (Sprint 17.7)
+```
+
+Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md).
+
+### Exercise Knowledge Base (`features/exercise-kb`)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Read-only structured knowledge about exercises for selection and future AI workflows |
+| **Responsibilities** | Define, validate, query, and resolve relationships for immutable `ExerciseDefinition` entries |
+| **Models** | `ExerciseDefinition`, difficulty/category/muscles/equipment, `ExerciseRelationship`, constraints, tags, metadata, result/error types |
+| **Repository** | `ExerciseKnowledgeRepository` + `InMemoryExerciseKnowledgeRepository` (no durable storage) |
+| **Service** | `ExerciseKnowledgeService` — search, relationship resolution, alternatives/progressions/regressions |
+| **Validators** | Definition, constraints, relationships, metadata |
+| **Utilities** | Freeze/normalize, complexity & equipment scores, alternative ranking |
+| **Application** | `queryExerciseKnowledge`, `searchExercises`, `findAlternativeExercises`, `findProgressions`, `findRegressions` |
+| **Catalog** | Illustrative in-memory catalog (~25 exercises) for tests/local orchestration |
+| **Relationship graph** | Directed edges: `alternative`, `progression`, `regression`, `variation`, `related` |
+| **Immutability** | Definitions frozen via `freezeExerciseDefinition`; repository returns immutable objects |
+| **Design** | Read-only. **No workout logic**, no sets/reps, no athlete state, no networking, no UI |
+
+### Exercise Selection Engine (`features/exercise-selection`)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Deterministically select ranked exercise candidates for a workout blueprint day |
+| **Input** | `WorkoutBlueprint` day + Exercise Knowledge Base catalog |
+| **Output** | `ExerciseSelectionResult` — candidates, role groups, rejections, explanations |
+| **SelectionContext** | Immutable derived context from blueprint (focus, goals, equipment, difficulty cap, constraints) |
+| **Strategy Pattern** | `MovementPattern`, `Equipment`, `Difficulty`, `Goal`, `Constraint`, `Relationship` strategies |
+| **Selectors** | `PrimaryExerciseSelector`, `SecondaryExerciseSelector`, `AccessoryExerciseSelector` |
+| **Ranking / filtering** | Score merge + deterministic sort (`score desc`, then `id asc`); hard rejects tracked separately |
+| **Candidate generation** | Role-grouped candidates; no sets, reps, RPE, volume, or progression |
+| **Repository** | `SelectionRepository` + `InMemorySelectionRepository` (result cache only) |
+| **Application** | `selectExercises`, `previewExerciseCandidates`, `explainSelection` |
+| **Design** | Fully deterministic. Independent from LLM. **No programming** |
+
+### Programming Engine (`features/programming`)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Transform selected candidates into immutable per-exercise training prescriptions |
+| **ExercisePrescription** | Sets, volume, intensity, rest, tempo, execution, order, priority, estimates, score, reasons |
+| **ProgrammingResult** | Ordered prescriptions + explanations + validation issues + aggregate score |
+| **Strategy Pattern** | `Volume`, `Intensity`, `Rest`, `Tempo`, `ExerciseOrder`, `Priority` strategies |
+| **Validators** | Consistency, uniqueness, volume/intensity/rest ranges, execution order |
+| **Utilities** | Context build, normalize, freeze, score, duration/fatigue/workload estimates, sort |
+| **Repository** | `ProgrammingRepository` + `InMemoryProgrammingRepository` (result cache only) |
+| **Application** | `programExercises`, `previewProgramming`, `explainProgramming` |
+| **Design** | Deterministic. **No progression**, **no fatigue adaptation**, **no weekly planning**, **no workout assembly** |
+
+### Progression Engine (`features/progression`)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Transform programming prescriptions into immutable multi-week progression timelines |
+| **ProgressionPlan** | Exercise progressions + week-ordered timeline + explanations + validation issues + aggregate score |
+| **ExerciseProgression / ProgressionStep** | Per-exercise week steps with targets, difficulty/volume/intensity trends, notes |
+| **Strategy Pattern** | `Linear`, `Volume`, `Intensity`, `Frequency`, `ExerciseRotation` strategies |
+| **Validators** | Timeline consistency, exercise continuity, progression consistency, week ordering, constraints |
+| **Utilities** | Context build, normalize/freeze plan, score, workload trend, sort timeline |
+| **Repository** | `ProgressionRepository` + `InMemoryProgressionRepository` (plan cache only) |
+| **Application** | `generateProgression`, `previewProgression`, `explainProgression` |
+| **Design** | Deterministic. **No athlete feedback**, **no load calculation**, **no autoregulation**, **no fatigue**, **no deload**, **no workout assembly** |
 
 ---
 
@@ -267,5 +364,8 @@ AIOrchestrator.process_message (async)
 | 017 | Coach engine adapters |
 | 025 | React Native + Expo |
 | 027 | Mock-first mobile shells |
+| 028 | Exercise Knowledge is a dedicated read-only bounded context |
+| 029 | Exercise Selection is deterministic and independent from AI |
+| 030 | Programming produces immutable `ExercisePrescription` objects |
 
 Full list: [DECISIONS.md](./DECISIONS.md)

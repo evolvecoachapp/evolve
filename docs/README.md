@@ -1,9 +1,9 @@
 # EVOLVE Documentation Index
 
 **Project:** EVOLVE  
-**Version:** 0.5.0  
+**Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-14  
+**Last Updated:** 2026-07-22  
 **Purpose:** Central index for the EVOLVE project knowledge base — the single entry point for all official documentation.  
 **Source of Truth:** Yes — master index; defers detail to linked documents below.
 
@@ -36,8 +36,8 @@
 |----------|-------------|
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Layers, patterns, dependency flow (summary) |
 | [TECH_STACK.md](./TECH_STACK.md) | Languages, frameworks, versions, future tech |
-| [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-027 (append-only) |
-| [AI_SYSTEM.md](./AI_SYSTEM.md) | Coach, LLM, engines, memory, conversation flow |
+| [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-030 (append-only) |
+| [AI_SYSTEM.md](./AI_SYSTEM.md) | Coach, LLM, engines, memory, mobile workout pipeline |
 | [../.cursor/rules/EVOLVE_ARCHITECTURE.md](../.cursor/rules/EVOLVE_ARCHITECTURE.md) | Deep-dive architecture reference |
 
 ## Status Reports

@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-21  
+**Last Updated:** 2026-07-22  
 **Purpose:** Snapshot of the current project state only.  
 **Source of Truth:** Yes — for current sprint, completion %, and live system status.
 
@@ -18,11 +18,34 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Auth | Connected — login, register, refresh, secure-store tokens |
 | Navigation | 6-tab bottom bar (Home, Workout, Nutrition, Coach, Progress, Profile) |
 | Design system | Token-based theme with light/dark/system preference (`ThemeContext`) |
-| Feature modules | coach, workout, nutrition, progress, analytics, home, dashboard, profile, shared |
+| Feature modules | coach, workout, nutrition, progress, analytics, home, dashboard, profile, shared; plus AI/training domains below |
 | Data layer | Service factory pattern; user/workout backend providers; on-device workout history via `WorkoutHistoryRepository` + `StorageAdapter` (Sprint 13.0); analytics via `WorkoutAnalyticsRepository` (Sprint 14.0) |
 | Backend providers | `BackendUserService`, `BackendWorkoutService` live; other `Backend*Service` classes throw `notConfigured()` |
 | Tests | Jest + jest-expo |
-| Sprint status | History + detail shipped (13.1–13.2); workout analytics foundation (14.0) — domain/hook only, no charts UI |
+| Sprint status | History + detail shipped (13.1–13.2); workout analytics foundation (14.0); AI workout pipeline foundations through Progression (17.1–17.4) |
+
+---
+
+## Mobile AI / Training Domains (Application Layer)
+
+| Domain | Module | Maturity |
+|--------|--------|----------|
+| Conversation | `features/conversation` | Foundation complete |
+| Workflow | `features/workflow` | Foundation complete |
+| Memory | conversation persistence adapters | Foundation complete |
+| Prompt Orchestrator | `features/prompt-orchestrator` | Foundation complete |
+| Tool Engine | `features/tool-calling` | Foundation complete |
+| Athlete Context | `features/athlete-context` | Foundation complete |
+| Workout Blueprint | `features/workout-blueprint` | Foundation complete (17.0) |
+| Exercise Knowledge Base | `features/exercise-kb` | Foundation complete (17.1) — read-only, in-memory |
+| Exercise Selection | `features/exercise-selection` | Foundation complete (17.2) — deterministic |
+| Programming | `features/programming` | Foundation complete (17.3) — prescriptions only |
+| Progression | `features/progression` | Foundation complete (17.4) — multi-week timeline only |
+| Fatigue & Recovery (pipeline) | — | **Not started** (17.5) |
+| Workout Assembly | — | **Not started** (17.6) |
+| Program Generation | — | **Not started** (17.7) |
+
+These domains are TypeScript application modules with in-memory repositories. They are **not** backend HTTP APIs and do **not** write to PostgreSQL.
 
 ---
 
@@ -52,6 +75,7 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Intent classification | LLM-primary with keyword fallback |
 | Memory | Windowed conversation context; summarization deferred |
 | Mobile AI | MockCoachService working; OpenAI/Anthropic/Local LLM are placeholders |
+| Mobile workout pipeline | Blueprint → Knowledge → Selection → Programming → Progression foundations complete; fatigue/assembly planned |
 
 ---
 
@@ -85,7 +109,7 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Backend unit | 19 files — services, engines, orchestrator, intent, LLM provider |
 | Backend integration | 11 files — real PostgreSQL via pytest fixtures (incl. workout templates, workout log skip) |
 | Backend runner | pytest 9.1 + pytest-asyncio |
-| Mobile | Jest + Testing Library (23 files) — auth, API client, screens, feature architecture, Workout backend service/adapters |
+| Mobile | Jest + Testing Library — auth, API client, screens, feature architecture, Workout backend service/adapters; plus domain suites for exercise-kb (6), exercise-selection (8), programming (7) |
 | CI pipeline | **Not configured** (no `.github/workflows`) |
 
 ---
@@ -112,23 +136,25 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 - No program management HTTP API; workout template *authoring* (write) HTTP API still missing (reads live since Sprint 6.3)
 - No CI pipeline or backend Docker service
 - `docs/TASKS.md` Phase 1–2 checkboxes out of sync with code
+- AI workout pipeline stops at Progression — no fatigue adaptation, assembly, or program generation yet
 
 ---
 
 ## Last Completed Sprint
 
-**14.0.0 — Workout Analytics Foundation** (2026-07-21)
+**17.4.0 — Progression Engine Foundation** (2026-07-22)
 
-- `features/analytics` computes totals, exercise stats, weekly volume, and trend series from `WorkoutHistoryRepository`
-- `useWorkoutAnalytics` → application → `WorkoutAnalyticsRepository` (history-backed); no screens or charts
+- `features/progression` transforms `ProgrammingResult` into immutable `ProgressionPlan` / `ExerciseProgression` / `ProgressionStep`
+- Strategy pipeline: linear, volume, intensity, frequency, exercise rotation
+- In-memory repository cache; application use-cases; unit tests — no athlete feedback, loads, autoregulation, fatigue, UI, or networking
 
-Previous: **13.2.0 — Workout Detail Experience**, **13.1.0 — Workout History Timeline**, **13.0.0 — Workout History Persistence Foundation** (2026-07-21)
+Previous: **17.3.0 — Programming Engine Foundation**, **17.2.0 — Exercise Selection Engine Foundation**, **17.1.0 — Exercise Knowledge Base Foundation**, **17.0.0 — Workout Blueprint Generator Foundation**
 
 ---
 
 ## Next Sprint
 
-**Progress charts / analytics UI (TBD)** — wire analytics domain into Progress surfaces; still no AI.
+**17.5.0 — Fatigue & Recovery Engine** — adaptive load from recovery signals; still no workout assembly or program generation.
 
 ---
 
@@ -140,7 +166,7 @@ Previous: **13.2.0 — Workout Detail Experience**, **13.1.0 — Workout History
 | 2 Authentication | 10% | 90% |
 | 3 Workout Engine | 15% | 100% |
 | 4 AI Coach | 25% | 95% |
-| 5 Mobile App | 30% | 72% |
+| 5 Mobile App | 30% | 74% |
 | 6 Production | 10% | 0% |
 
-**Weighted overall: ~78%**
+**Weighted overall: ~79%**

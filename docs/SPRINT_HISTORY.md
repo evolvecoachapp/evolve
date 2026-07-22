@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
-**Last Updated:** 2026-07-21  
+**Last Updated:** 2026-07-22  
 **Purpose:** Chronological record of every sprint. Append new entries at the bottom — never rewrite past entries.  
 **Source of Truth:** Yes — for sprint chronology and completion dates.
 ---
@@ -507,3 +507,63 @@
 | **Architecture impact** | Preview day → application `WorkoutSessionBuilder` → immutable `WorkoutSession` → handoff → `WorkoutSessionScreen`; React does not construct sessions; Training Engine untouched |
 | **Status** | Complete |
 | **Notes** | No persistence, timers, logging, AI, or backend in this sprint. Rest days disable the Start CTA. |
+
+### Sprint 17.1.0 — Exercise Knowledge Base Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 17.1.0 |
+| **Title** | Exercise Knowledge Base Foundation |
+| **Date** | 2026-07-22 |
+| **Goal** | Create a read-only Exercise Knowledge Base domain that provides immutable exercise metadata for selection engines and future AI workflows — no workout generation, no selection, no networking, no UI, no durable persistence |
+| **Architecture** | Workout Blueprint → Exercise Selection (future at time of sprint) → **Exercise Knowledge Base** → `ExerciseDefinition`. Bounded context under `app/src/features/exercise-kb/`. Nothing inside the KB knows about workouts. |
+| **Main components** | **Models:** `ExerciseDefinition`, difficulty/category/muscles/equipment, `ExerciseRelationship`, constraints, tags, variants, metadata, result/error types. **Repository:** `ExerciseKnowledgeRepository` + `InMemoryExerciseKnowledgeRepository`. **Service:** `ExerciseKnowledgeService` (query, search, alternatives, progressions, regressions). **Validators:** definition, constraints, relationships, metadata. **Utils:** freeze/normalize, complexity & equipment scores, `rankAlternatives`. **Application:** `queryExerciseKnowledge`, `searchExercises`, `findAlternativeExercises`, `findProgressions`, `findRegressions`. **Catalog:** illustrative in-memory catalog (~25 exercises). |
+| **Tests** | 6 suites — application, catalog, repository, service, utilities, validators |
+| **Results** | Read-only immutable knowledge graph with relationship kinds `alternative` / `progression` / `regression` / `variation` / `related`. No sets/reps/athlete state. ADR-028 recorded. |
+| **Status** | Complete |
+| **Notes** | In-memory only; architecture supports large catalogs; no HTTP API |
+
+### Sprint 17.2.0 — Exercise Selection Engine Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 17.2.0 |
+| **Title** | Exercise Selection Engine Foundation |
+| **Date** | 2026-07-22 |
+| **Goal** | Implement a deterministic Exercise Selection Engine that consumes a Workout Blueprint + Exercise Knowledge Base and produces ranked Workout Exercise Candidates — no sets, reps, RPE, volume, progression, or complete workouts |
+| **Architecture** | Workout Blueprint → **Exercise Selection Engine** → Exercise Knowledge Base → Candidates. Programming Engine was future at sprint close (now 17.3). Module: `app/src/features/exercise-selection/`. |
+| **Main components** | **Models:** `SelectionContext`, `ExerciseSelectionRequest`/`Result`, `CandidateExercise`, role groups, scores, reasons, explanations, rejections, constraints. **Engine:** `ExerciseSelectionEngine` (`select` / `preview` / `explain`). **Strategies:** MovementPattern, Equipment, Difficulty, Goal, Constraint, Relationship. **Selectors:** Primary, Secondary, Accessory. **Validators:** blueprint compatibility, candidate consistency, relationships, duplicates, constraint violations. **Utils:** context build, scoring, deterministic sort, ranking, freeze. **Repository:** `SelectionRepository` + `InMemorySelectionRepository` (result cache). **Service / Application:** `selectExercises`, `previewExerciseCandidates`, `explainSelection`. |
+| **Tests** | 8 suites — application, engine, repository, selectors, service, strategies, utilities, validators |
+| **Results** | Fully deterministic selection independent of LLM. Role-grouped ranked candidates with rejection tracking and optional explanations. ADR-029 recorded. |
+| **Status** | Complete |
+| **Notes** | No programming, no UI, no networking, no durable persistence |
+
+### Sprint 17.3.0 — Programming Engine Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 17.3.0 |
+| **Title** | Programming Engine Foundation |
+| **Date** | 2026-07-22 |
+| **Goal** | Transform selected exercise candidates into immutable training prescriptions describing **how** each exercise should be executed — no progression, no weekly adaptation, no complete workout assembly |
+| **Architecture** | Workout Blueprint → Exercise Selection → **Programming Engine** → Training Prescription. Progression / Workout Assembly remain future (17.4+). Module: `app/src/features/programming/`. |
+| **Main components** | **Models:** `ExercisePrescription`, `ProgrammingResult`, volume/intensity/rest/tempo/set/execution, context, score, reasons, explanations, constraints, errors. **Engine:** `ProgrammingEngine` (`program` / `preview` / `explain`). **Strategies:** Volume, Intensity, Rest, Tempo, ExerciseOrder, Priority. **Validators:** consistency, uniqueness, volume/intensity/rest ranges, execution order. **Utils:** context build, normalize, freeze, score, duration/fatigue/workload estimates, sort. **Repository:** `ProgrammingRepository` + `InMemoryProgrammingRepository` (result cache). **Service / Application:** `programExercises`, `previewProgramming`, `explainProgramming`. |
+| **Tests** | 7 suites — application, engine, repository, service, strategies, utilities, validators |
+| **Results** | Deterministic immutable prescriptions with ordered execution, estimates, and validation issues. ADR-030 recorded. |
+| **Status** | Complete |
+| **Notes** | No progression, no fatigue adaptation, no weekly planning, no UI, no AI inside the engine, no networking |
+
+### Sprint 17.4.0 — Progression Engine Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 17.4.0 |
+| **Title** | Progression Engine Foundation |
+| **Date** | 2026-07-22 |
+| **Goal** | Transform immutable programming prescriptions into deterministic multi-week progression timelines — no athlete feedback, loads, autoregulation, fatigue, or workout assembly |
+| **Architecture** | Workout Blueprint → Exercise Selection → Programming → **Progression Engine** → Progression Plan. Fatigue / Assembly remain future (17.5+). Module: `app/src/features/progression/`. |
+| **Main components** | **Models:** `ProgressionRequest`, `ProgressionPlan`, `ExerciseProgression`, `ProgressionStep`, `ProgressionWindow`, `ProgressionContext`, constraints, score, reasons, explanations, errors. **Engine:** `ProgressionEngine` (`generate` / `preview` / `explain`). **Strategies:** Linear, Volume, Intensity, Frequency, ExerciseRotation. **Validators:** timeline consistency, exercise continuity, progression consistency, week ordering, constraints. **Utils:** context build, normalize/freeze, score, workload trend, sort timeline. **Repository:** `ProgressionRepository` + `InMemoryProgressionRepository` (plan cache). **Service / Application:** `generateProgression`, `previewProgression`, `explainProgression`. |
+| **Tests** | 7 suites — application, engine, repository, service, strategies, utilities, validators |
+| **Results** | Deterministic immutable multi-week plans with trends, validation issues, and explanations. ADR-031 recorded. |
+| **Status** | Complete |
+| **Notes** | No athlete history, readiness, recovery, deload, load prediction, autoregulation, or weekly feedback loop |

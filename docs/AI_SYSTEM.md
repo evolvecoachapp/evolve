@@ -1,9 +1,9 @@
 # EVOLVE AI System
 
 **Project:** EVOLVE  
-**Version:** 0.5.0  
+**Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-14  
+**Last Updated:** 2026-07-22  
 **Purpose:** Coach architecture, LLM abstraction, engines, memory, and conversation flow.  
 **Source of Truth:** Yes — for AI subsystem design (endpoints: [API_STATUS.md](./API_STATUS.md)).
 ---
@@ -11,6 +11,65 @@
 ## Design Principle
 
 Users interact with **one Coach** — a unified conversational interface. Multiple specialized engines operate behind the scenes; the user never selects engines or receives fragmented responses.
+
+On mobile, the Coach conversation path can drive a **deterministic workout pipeline** (blueprint → knowledge → selection → programming → progression). Fatigue & recovery adaptation, workout assembly, and program generation remain **planned**.
+
+---
+
+## AI Runtime Pipeline (Mobile)
+
+Implemented application-layer pipeline under `app/src/features/`:
+
+```
+Conversation Engine
+        ↓
+Workflow Engine
+        ↓
+Workout Blueprint Generator
+        ↓
+Exercise Knowledge Base
+        ↓
+Exercise Selection Engine
+        ↓
+Programming Engine
+        ↓
+Progression Engine
+        ↓
+┌───────────────────────────────┐
+│ Future (not implemented)      │
+│ Fatigue & Recovery Engine     │
+│ Workout Assembly              │
+│ Program Generation            │
+└───────────────────────────────┘
+```
+
+### Layer responsibilities
+
+| Layer | Module | Status | Responsibility |
+|-------|--------|--------|----------------|
+| Conversation | `features/conversation` | Implemented | Coach turn lifecycle, memory handoff into workflows |
+| Workflow | `features/workflow` | Implemented | Capability routing; hosts blueprint generation workflow |
+| Workout Blueprint | `features/workout-blueprint` | Implemented | Decides **what** session structure to build (split, focus, constraints) — not exercises or sets |
+| Exercise Knowledge Base | `features/exercise-kb` | Implemented (17.1) | Read-only exercise metadata + relationship graph |
+| Exercise Selection | `features/exercise-selection` | Implemented (17.2) | Deterministic candidate selection from blueprint + knowledge |
+| Programming | `features/programming` | Implemented (17.3) | Immutable prescriptions (volume, intensity, rest, tempo, order) |
+| Progression | `features/progression` | Implemented (17.4) | Multi-week prescription evolution timeline (no loads/fatigue) |
+| Prompt Orchestrator | `features/prompt-orchestrator` | Implemented | Composes prompts for AI-assisted blueprint steps |
+| Tool Engine | `features/tool-calling` | Implemented | Tool registry/execution boundary for workflows |
+| Athlete Context | `features/athlete-context` | Implemented | Structured athlete context for orchestration inputs |
+| Fatigue & Recovery | — | **Planned** (17.5) | Adaptive load from recovery signals |
+| Workout Assembly | — | **Planned** (17.6) | Assemble complete executable workouts |
+| Program Generation | — | **Planned** (17.7) | Multi-week program construction |
+
+Supporting orchestration pieces also present: Memory (conversation persistence adapters), Prompt Builder, AIService / AI providers — see feature modules under `app/src/features/`.
+
+### Pipeline rules (implemented)
+
+- Blueprint decides session structure; Selection chooses exercises; Programming decides **how** each selected exercise is executed; Progression defines **how prescriptions evolve over weeks**.
+- Selection, Programming, and Progression are **deterministic** — no LLM inside those engines.
+- Knowledge Base is **read-only** and contains no workout logic.
+- Programming does **not** progress loads, adapt across weeks, or assemble full workouts.
+- Progression does **not** adapt to athlete feedback, calculate loads, autoregulate, manage fatigue, or apply deloads.
 
 ---
 
@@ -52,6 +111,7 @@ Users interact with **one Coach** — a unified conversational interface. Multip
                                       └──────────────┘
 ```
 
+Backend Coach path (above) remains the HTTP conversational surface. Mobile pipeline domains are separate application-layer bounded contexts and are not yet exposed as backend REST engines.
 ---
 
 ## LLM Abstraction
@@ -270,3 +330,6 @@ See [BACKEND_STATUS.md](./BACKEND_STATUS.md) for full config list.
 | 022 | Hybrid Progress Analyzer |
 | 023 | Progress decoupled from Coach |
 | 024 | LLM-primary intent classification |
+| 028 | Exercise Knowledge read-only bounded context |
+| 029 | Deterministic Exercise Selection independent from AI |
+| 030 | Immutable Programming prescriptions |
