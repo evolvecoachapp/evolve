@@ -37,9 +37,10 @@ Progression Engine
         ↓
 Training Adaptation Engine
         ↓
+Workout Assembly Engine
+        ↓
 ┌───────────────────────────────┐
 │ Future (not implemented)      │
-│ Workout Assembly              │
 │ Program Generation            │
 └───────────────────────────────┘
 ```
@@ -56,22 +57,23 @@ Training Adaptation Engine
 | Programming | `features/programming` | Implemented (17.3) | Immutable prescriptions (volume, intensity, rest, tempo, order) |
 | Progression | `features/progression` | Implemented (17.4) | Multi-week prescription evolution timeline (no loads/fatigue) |
 | Training Adaptation | `features/training-adaptation` | Implemented (17.5) | Readiness assessment + adaptation recommendations only |
+| Workout Assembly | `features/workout-assembly` | Implemented (17.6) | Assemble immutable executable `WorkoutSession` from prior outputs |
 | Prompt Orchestrator | `features/prompt-orchestrator` | Implemented | Composes prompts for AI-assisted blueprint steps |
 | Tool Engine | `features/tool-calling` | Implemented | Tool registry/execution boundary for workflows |
 | Athlete Context | `features/athlete-context` | Implemented | Structured athlete context for orchestration inputs |
-| Workout Assembly | — | **Planned** (17.6) | Assemble complete executable workouts |
 | Program Generation | — | **Planned** (17.7) | Multi-week program construction |
 
 Supporting orchestration pieces also present: Memory (conversation persistence adapters), Prompt Builder, AIService / AI providers — see feature modules under `app/src/features/`.
 
 ### Pipeline rules (implemented)
 
-- Blueprint decides session structure; Selection chooses exercises; Programming decides **how** each selected exercise is executed; Progression defines **how prescriptions evolve over weeks**; Adaptation evaluates **whether that plan should be adjusted before execution**.
-- Selection, Programming, Progression, and Training Adaptation are **deterministic** — no LLM inside those engines.
+- Blueprint decides session structure; Selection chooses exercises; Programming decides **how** each selected exercise is executed; Progression defines **how prescriptions evolve over weeks**; Adaptation evaluates **whether that plan should be adjusted before execution**; Assembly **assembles the final executable session**.
+- Selection, Programming, Progression, Training Adaptation, and Workout Assembly are **deterministic** — no LLM inside those engines.
 - Knowledge Base is **read-only** and contains no workout logic.
 - Programming does **not** progress loads, adapt across weeks, or assemble full workouts.
 - Progression does **not** adapt to athlete feedback, calculate loads, autoregulate, manage fatigue, or apply deloads.
 - Training Adaptation does **not** modify workouts, integrate wearables, use athlete history, or replace Programming/Progression.
+- Workout Assembly does **not** generate strategy, programming, progression, or readiness — it only assembles the final workout.
 
 ---
 

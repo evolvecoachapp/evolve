@@ -42,7 +42,7 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Programming | `features/programming` | Foundation complete (17.3) — prescriptions only |
 | Progression | `features/progression` | Foundation complete (17.4) — multi-week timeline only |
 | Training Adaptation | `features/training-adaptation` | Foundation complete (17.5) — readiness + recommendations only |
-| Workout Assembly | — | **Not started** (17.6) |
+| Workout Assembly | `features/workout-assembly` | Foundation complete (17.6) — immutable session assembly only |
 | Program Generation | — | **Not started** (17.7) |
 
 These domains are TypeScript application modules with in-memory repositories. They are **not** backend HTTP APIs and do **not** write to PostgreSQL.
@@ -136,25 +136,25 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 - No program management HTTP API; workout template *authoring* (write) HTTP API still missing (reads live since Sprint 6.3)
 - No CI pipeline or backend Docker service
 - `docs/TASKS.md` Phase 1–2 checkboxes out of sync with code
-- AI workout pipeline stops at Training Adaptation — no workout assembly or program generation yet
+- AI workout pipeline stops at Workout Assembly — no program generation yet
 
 ---
 
 ## Last Completed Sprint
 
-**17.5.0 — Training Adaptation Engine Foundation** (2026-07-22)
+**17.6.0 — Workout Assembly Engine Foundation** (2026-07-22)
 
-- `features/training-adaptation` evaluates `ProgressionPlan` readiness and emits immutable adaptation recommendations
-- Assessments: recovery, fatigue, constraint, execution readiness; strategies: volume, intensity, swap, recovery day, schedule
-- In-memory repository cache; application use-cases; unit tests — recommendations only; no wearables, athlete history, physiological APIs, workout modification, UI, or networking
+- `features/workout-assembly` assembles immutable `WorkoutSession` from Blueprint + Selection + Programming + Progression + Adaptation
+- Resolves adaptation recommendations, builds blocks/execution order/summary; in-memory cache; application use-cases
+- Unit tests across engine/validators/utils/application/repository/service — no strategy, programming, progression, readiness, execution state, timers, analytics, UI, or networking
 
-Previous: **17.4.0 — Progression Engine Foundation**, **17.3.0 — Programming Engine Foundation**, **17.2.0 — Exercise Selection Engine Foundation**, **17.1.0 — Exercise Knowledge Base Foundation**, **17.0.0 — Workout Blueprint Generator Foundation**
+Previous: **17.5.0 — Training Adaptation Engine Foundation**, **17.4.0 — Progression Engine Foundation**, **17.3.0 — Programming Engine Foundation**, **17.2.0 — Exercise Selection Engine Foundation**, **17.1.0 — Exercise Knowledge Base Foundation**, **17.0.0 — Workout Blueprint Generator Foundation**
 
 ---
 
 ## Next Sprint
 
-**17.6.0 — Workout Assembly** — assemble complete executable workouts; still no program generation.
+**17.7.0 — Program Generation** — multi-week program construction from assembled sessions.
 
 ---
 

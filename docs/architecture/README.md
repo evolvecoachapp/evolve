@@ -9,5 +9,5 @@
 
 Current ASCII pipeline diagrams live in:
 
-- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline (Knowledge → Selection → Programming → Progression → Adaptation)
+- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline (Knowledge → Selection → Programming → Progression → Adaptation → Assembly)
 - [AI_SYSTEM.md](../AI_SYSTEM.md) — Coach + mobile AI runtime pipeline

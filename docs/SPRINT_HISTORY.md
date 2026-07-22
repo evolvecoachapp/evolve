@@ -582,3 +582,18 @@
 | **Results** | Deterministic immutable readiness + recommendations. ADR-032 recorded. |
 | **Status** | Complete |
 | **Notes** | No wearables, athlete history, physiological APIs, workout modification, Programming/Progression replacement, UI, or networking |
+
+### Sprint 17.6.0 — Workout Assembly Engine Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 17.6.0 |
+| **Title** | Workout Assembly Engine Foundation |
+| **Date** | 2026-07-22 |
+| **Goal** | Assemble the final executable WorkoutSession from prior pipeline outputs — no strategy, programming, progression, or readiness evaluation |
+| **Architecture** | Workout Blueprint → Exercise Selection → Programming → Progression → Training Adaptation → **Workout Assembly Engine** → Workout Session. Program Generation remains future (17.7). Module: `app/src/features/workout-assembly/`. |
+| **Main components** | **Models:** `WorkoutAssemblyRequest`, `WorkoutAssemblyResult`, `WorkoutSession`, `WorkoutExercise`, `WorkoutBlock`, `WorkoutSummary`, `WorkoutExecutionOrder`, context, constraints, score, reasons, explanations, errors. **Engine:** `WorkoutAssemblyEngine` (`assemble` / `preview` / `explain`). **Validators:** exercise ordering, prescription consistency, adaptation consistency, duplicate prevention, session integrity. **Utils:** context build, resolve recommendations, assemble exercises, group blocks, freeze/normalize, duration/workload estimates, summary. **Repository:** `WorkoutAssemblyRepository` + `InMemoryWorkoutAssemblyRepository` (result cache). **Service / Application:** `assembleWorkout`, `previewWorkout`, `explainWorkout`. |
+| **Tests** | 6 suites — application, engine, repository, service, utilities, validators |
+| **Results** | Deterministic immutable WorkoutSession assembly. ADR-033 recorded. |
+| **Status** | Complete |
+| **Notes** | No strategy generation, programming, progression, readiness, execution state, timers, analytics, persistence, UI, or networking |

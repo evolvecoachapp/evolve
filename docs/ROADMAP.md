@@ -54,8 +54,8 @@ Product vision and users: [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Phase arch
 | 17.2 Exercise Selection Engine | Done |
 | 17.3 Programming Engine | Done |
 | 17.4 Progression Engine | Done |
-| 17.5 Fatigue & Recovery Engine | Upcoming |
-| 17.6 Workout Assembly | Upcoming |
+| 17.5 Fatigue & Recovery Engine | Done |
+| 17.6 Workout Assembly | Done |
 | 17.7 Program Generation | Upcoming |
 
 ---
@@ -225,7 +225,7 @@ Each phase is broken into 1–3 sprints. Sprint length is indicative (assume 1�
 
 Deterministic training intelligence under `app/src/features/`. Not backend HTTP APIs. Pipeline:
 
-`Conversation → Workflow → Blueprint → Knowledge → Selection → Programming → Progression → Adaptation → (Assembly → Program Generation)`
+`Conversation → Workflow → Blueprint → Knowledge → Selection → Programming → Progression → Adaptation → Assembly → (Program Generation)`
 
 | Sprint | Focus | Status |
 |--------|-------|--------|
@@ -235,8 +235,8 @@ Deterministic training intelligence under `app/src/features/`. Not backend HTTP 
 | 17.3 | Programming Engine — immutable `ExercisePrescription` (volume/intensity/rest/tempo/order) | **Done** |
 | 17.4 | Progression Engine — multi-week prescription evolution timeline | **Done** |
 | 17.5 | Training Adaptation Engine — readiness assessment + adaptation recommendations | **Done** |
-| 17.6 | Workout Assembly — assemble complete executable workouts | **Current** |
-| 17.7 | Program Generation — multi-week program construction | Upcoming |
+| 17.6 | Workout Assembly — assemble complete executable workouts | **Done** |
+| 17.7 | Program Generation — multi-week program construction | **Current** |
 
 **Out of scope until later sprints:** UI for generated workouts, PostgreSQL persistence for these domains, LLM inside Selection/Programming.
 

@@ -20,7 +20,8 @@ See [TECH_STACK.md](./TECH_STACK.md) for versions. Onboarding: [PROJECT_CONTEXT.
 │                                                                 │
 │  AI runtime (application layer, in-memory):                     │
 │  Conversation → Workflow → Blueprint → Knowledge → Selection    │
-│  → Programming → Progression → Adaptation  (Assembly — planned) │
+│  → Programming → Progression → Adaptation → Assembly            │
+│  (Program Generation — planned)                                 │
 └────────────────────────────┬────────────────────────────────────┘
                              │ HTTPS + JWT
                              ▼
@@ -64,7 +65,7 @@ Progression Engine               ← Sprint 17.4 (implemented)
   ↓
 Training Adaptation Engine       ← Sprint 17.5 (implemented)
   ↓
-Workout Assembly                 ← planned (Sprint 17.6)
+Workout Assembly Engine          ← Sprint 17.6 (implemented)
   ↓
 Program Generation               ← planned (Sprint 17.7)
 ```
@@ -146,6 +147,20 @@ Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md).
 | **Repository** | `TrainingAdaptationRepository` + `InMemoryTrainingAdaptationRepository` (result cache only) |
 | **Application** | `evaluateTrainingReadiness`, `previewAdaptations`, `explainAdaptations` |
 | **Design** | Deterministic. **Recommendations only**. **No wearables**, **no athlete history**, **no physiological APIs**, **no workout modification**, **no Programming/Progression replacement** |
+
+### Workout Assembly Engine (`features/workout-assembly`)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Assemble the final executable `WorkoutSession` from prior pipeline outputs |
+| **Input** | `WorkoutBlueprint` + `ExerciseSelectionResult` + `ProgrammingResult` + `ProgressionPlan` + `TrainingAdaptationResult` |
+| **Output** | `WorkoutAssemblyResult` — immutable `WorkoutSession`, blocks, summary, explanations |
+| **Assembly Steps** | Build context → resolve recommendations → assemble exercises → group blocks → summary → freeze |
+| **Validators** | Exercise ordering, prescription consistency, adaptation consistency, duplicate prevention, session integrity |
+| **Utilities** | Freeze/normalize session, estimate duration/workload, sort exercises, build summary |
+| **Repository** | `WorkoutAssemblyRepository` + `InMemoryWorkoutAssemblyRepository` (result cache only) |
+| **Application** | `assembleWorkout`, `previewWorkout`, `explainWorkout` |
+| **Design** | Deterministic. **No strategy generation**, **no programming**, **no progression**, **no readiness evaluation**, **no execution state**, **no timers**, **no analytics**, **no persistence** |
 
 ---
 

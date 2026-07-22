@@ -1057,8 +1057,35 @@ Implement `app/src/features/training-adaptation` such that `TrainingAdaptationEn
 **Consequences:**
 - Consumers treat adaptation as “should we adjust before execution?” not as finished workouts.
 - In-memory `TrainingAdaptationRepository` caches results only.
-- Pipeline documentation labels Workout Assembly / Program Generation as planned.
+- Pipeline documentation labels Program Generation as planned; Workout Assembly is implemented in ADR-033.
 
 ---
 
-*New decisions are appended as Decision 033, 034, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 033 — Workout Assembly Produces Immutable Executable Sessions
+
+**Status:** Accepted
+
+**Context:**
+Sprint 17.6 must assemble the final executable `WorkoutSession` from prior pipeline outputs (`WorkoutBlueprint`, `ExerciseSelectionResult`, `ProgrammingResult`, `ProgressionPlan`, `TrainingAdaptationResult`). It must not generate strategy, perform programming/progression, evaluate readiness, track execution, or persist history. Program Generation remains out of scope.
+
+**Decision:**
+Implement `app/src/features/workout-assembly` such that `WorkoutAssemblyEngine` emits an immutable `WorkoutAssemblyResult` containing a frozen `WorkoutSession` with ordered `WorkoutExercise` entries, `WorkoutBlock` groups, `WorkoutSummary`, and `WorkoutExecutionOrder`. The engine resolves adaptation recommendations into assembled prescriptions for a selected progression week, then freezes the session. The engine must **not** invent training strategy, replace Programming/Progression/Adaptation, introduce timers/execution state/analytics, call network APIs, or persist durable history.
+
+**Why:**
+- **Clear pipeline stage** — Adaptation decides whether to adjust; Assembly materializes the executable session.
+- **Immutable session contract** keeps assembly separate from live execution and future Execution Engine concerns.
+- **Determinism** mirrors prior engines: same upstream inputs + week ⇒ same assembled session.
+
+**Alternatives considered:**
+- **Reuse `workout/models/WorkoutSession` runtime types** — rejected: those carry execution/status concerns; assembly must stay prescription-only and namespaced under `workout-assembly`.
+- **Mutate programming prescriptions in place** — rejected: assembly produces a new session view; upstream results remain immutable.
+- **Include live timers / completion tracking now** — rejected: no execution state in this foundation.
+
+**Consequences:**
+- Consumers treat assembly as “the session to execute,” not as strategy or readiness evaluation.
+- In-memory `WorkoutAssemblyRepository` caches results only.
+- Pipeline documentation labels Program Generation as planned (17.7).
+
+---
+
+*New decisions are appended as Decision 034, 035, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
