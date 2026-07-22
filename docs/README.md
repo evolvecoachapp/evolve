@@ -47,9 +47,10 @@
 | [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md) | Insight Engine domain, Insight Model, Future Coach Integration placeholder |
 | [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md) | Coach Intelligence domain, Coaching Context, Future Prompt Builder / AI Provider placeholders |
 | [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md) | Conversation Orchestrator domain, Conversation Context, handoff to Prompt Composition |
-| [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md) | Prompt Composition Engine, Prompt Package, Future Provider Mapping |
+| [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md) | Prompt Composition Engine, Prompt Package, handoff to AI Provider Abstraction |
+| [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md) | AI Provider Abstraction, Provider Registry, Future OpenAI / Multi-provider |
 | [TECH_STACK.md](./TECH_STACK.md) | Languages, frameworks, versions, future tech |
-| [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-048 (append-only) |
+| [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-049 (append-only) |
 | [AI_SYSTEM.md](./AI_SYSTEM.md) | Coach, LLM, engines, memory, mobile workout pipeline |
 | [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md) | Integration framework for the workout pipeline |
 | [../.cursor/rules/EVOLVE_ARCHITECTURE.md](../.cursor/rules/EVOLVE_ARCHITECTURE.md) | Deep-dive architecture reference |

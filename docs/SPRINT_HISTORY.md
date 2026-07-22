@@ -823,3 +823,18 @@
 | **Status** | Complete |
 | **Notes** | Immutable structured prompt composition only. No AI, networking, HTTP, OpenAI/Anthropic/Gemini/Ollama, or provider-specific string prompt generation |
 
+### Sprint 19.2 — AI Provider Abstraction Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 19.2.0 |
+| **Title** | AI Provider Abstraction Foundation |
+| **Date** | 2026-07-23 |
+| **Goal** | Dedicated AI Provider Abstraction defining common contracts and orchestration over Prompt Package |
+| **Architecture** | Prompt Package → **AI Provider Abstraction** → Future Providers (OpenAI / Anthropic / Gemini / Ollama) → Standard AI Response. Module: `app/src/features/ai-provider/`. |
+| **Main components** | **Models:** AIRequest, AIResponse, AIProvider, AIProviderId, AIProviderCapabilities, AIProviderConfiguration, AIProviderMetadata, AIProviderStatus, AIProviderHealth, AIProviderLimits, AIProviderError, AIProviderResult, AIExecutionContext, AIExecutionOptions, AITokenUsage, AIFinishReason, AIResponseChunk, AIModel, AIModelInfo. **Contracts:** IAIProvider, IAIStreamingProvider, IAIHealthProvider, IAIModelProvider, IAIProviderRegistry. **Registry:** `AIProviderRegistry`. **Engine:** `AIProviderEngine`. **Builders / validators / utils.** **Application API:** `prepareAIRequest`, `resolveProvider`, `createExecutionContext`. |
+| **Tests** | Registry, contracts, validators, builders, application helpers, Prompt Package integration, regression |
+| **Results** | Dedicated AI Provider Abstraction foundation. ADR-049 recorded. Docs: AI_PROVIDER_ABSTRACTION.md (Provider Registry, Future OpenAI Integration, Future Multi-provider Support). |
+| **Status** | Complete |
+| **Notes** | Interfaces and orchestration only. No OpenAI/Anthropic/Gemini/Ollama implementations, HTTP, networking, or SDKs |
+

@@ -121,9 +121,12 @@ Conversation Orchestrator        ← Sprint 19.0 (implemented) — immutable Con
   ↓
 Prompt Composition Engine        ← Sprint 19.1 (implemented) — immutable Prompt Package composition
   (`app/src/features/prompt-composition/`)
+  ↓
+AI Provider Abstraction          ← Sprint 19.2 (implemented) — provider contracts + registry
+  (`app/src/features/ai-provider/`)
 ```
 
-Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md). Insight Engine: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md). Coach Intelligence: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md). Conversation Orchestrator: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md). Prompt Composition: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md).
+Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md). Insight Engine: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md). Coach Intelligence: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md). Conversation Orchestrator: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md). Prompt Composition: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md). AI Provider Abstraction: [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md).
 
 ### Exercise Knowledge Base (`features/exercise-kb`)
 
@@ -408,7 +411,7 @@ Full detail: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md) (Insight Model + Future Co
 | Aspect | Implementation |
 |--------|----------------|
 | **Purpose** | Transform deterministic domain knowledge into immutable Coaching Context |
-| **Flow** | Insight Snapshot → Coach Intelligence → Coaching Context → Conversation Orchestrator → Conversation Context → Prompt Composition Engine → Prompt Package → Future Provider Abstraction → Future AI Providers |
+| **Flow** | Insight Snapshot → Coach Intelligence → Coaching Context → Conversation Orchestrator → Conversation Context → Prompt Composition Engine → Prompt Package → AI Provider Abstraction → Future AI Providers |
 | **Models** | `CoachingContext`, `CoachSession`, `CoachObjective`, `CoachIntent`, `CoachPriority`, `CoachConstraint`, `CoachInstruction`, `CoachFocus`, `CoachEvidence`, `CoachMetadata`, `CoachingContextSummary`, `CoachContextSnapshot`, `CoachEngineResult`, `CoachPreparation`, `CoachAudience`, `CoachCommunicationStyle`, `CoachKnowledge`, `CoachReason` (legacy history-backed `CoachSummary` retained) |
 | **Engine** | `CoachIntelligenceEngine` — modular selectors + context preparation |
 | **Selectors** | Isolated Insight / Priority / Evidence / Recovery / History / Objective selectors |
@@ -424,7 +427,7 @@ Full detail: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md) (Coaching Context 
 | Aspect | Implementation |
 |--------|----------------|
 | **Purpose** | Coordinate Coach Intelligence → future AI by preparing immutable Conversation Context |
-| **Flow** | Coaching Context → Conversation Orchestrator → Conversation Context → Prompt Composition Engine → Prompt Package → Future Provider Abstraction → Future AI Providers |
+| **Flow** | Coaching Context → Conversation Orchestrator → Conversation Context → Prompt Composition Engine → Prompt Package → AI Provider Abstraction → Future AI Providers |
 | **Models** | `ConversationContext`, `ConversationSession`, `ConversationMessage`, `ConversationTurn`, `ConversationIntent`, `ConversationGoal`, `ConversationAudience`, `ConversationPriority`, `ConversationConstraint`, `ConversationMetadata`, `ConversationKnowledge`, `ConversationEvidence`, `ConversationSummary`, `ConversationSnapshot`, `ConversationEngineResult`, `ConversationPreparation`, `ConversationState`, `ConversationStage`, `ConversationRequest`, `ConversationResponsePlaceholder` |
 | **Engine** | `ConversationOrchestratorEngine` — modular selectors + context preparation |
 | **Selectors** | Isolated Knowledge / Priority / Goal / Evidence / Constraint / Session selectors |
@@ -440,7 +443,7 @@ Full detail: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md) (Con
 | Aspect | Implementation |
 |--------|----------------|
 | **Purpose** | Transform immutable Conversation Context into immutable Prompt Package of structured blocks |
-| **Flow** | Conversation Context → Prompt Composition Engine → Prompt Package → Future Provider Abstraction → Future AI Providers |
+| **Flow** | Conversation Context → Prompt Composition Engine → Prompt Package → AI Provider Abstraction → Future AI Providers |
 | **Models** | `PromptPackage`, `PromptBlock`, `PromptBlockType`, `PromptSection`, `PromptPriority`, `PromptMetadata`, `PromptContext`, `PromptConstraints`, `PromptInstruction`, `PromptKnowledge`, `PromptConversation`, `PromptMemory`, `PromptSafety`, `PromptIdentity`, `PromptUserInput`, `PromptSummary`, `PromptSnapshot`, `PromptEngineResult`, `PromptCompositionInput`, `PromptEngineError` |
 | **Engine** | `PromptCompositionEngine` — modular composers + package composition |
 | **Composers** | Isolated System / Identity / Knowledge / Conversation / Memory / Constraint / Safety / UserInput / Summary composers |
@@ -449,7 +452,23 @@ Full detail: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md) (Con
 | **Integration** | Consumes `ConversationContext`; optionally references CoachingContext / InsightSnapshot |
 | **Design** | **Immutable prompt composition only.** No AI, networking, HTTP, OpenAI/Anthropic/Gemini/Ollama, or provider-specific string prompt generation. Never mutates upstream domains |
 
-Full detail: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md) (Prompt Package + Future Provider Mapping).
+Full detail: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md) (Prompt Package + handoff to AI Provider Abstraction).
+
+### AI Provider Abstraction (`features/ai-provider`) — Sprint 19.2
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Define common provider contracts and orchestration primitives for future AI providers |
+| **Flow** | Prompt Package → AI Provider Abstraction → Future Providers (OpenAI / Anthropic / Gemini / Ollama) → Standard AI Response |
+| **Models** | `AIRequest`, `AIResponse`, `AIProvider`, `AIProviderId`, `AIProviderCapabilities`, `AIProviderConfiguration`, `AIProviderMetadata`, `AIProviderStatus`, `AIProviderHealth`, `AIProviderLimits`, `AIProviderError`, `AIProviderResult`, `AIExecutionContext`, `AIExecutionOptions`, `AITokenUsage`, `AIFinishReason`, `AIResponseChunk`, `AIModel`, `AIModelInfo` |
+| **Contracts** | `IAIProvider`, `IAIStreamingProvider`, `IAIHealthProvider`, `IAIModelProvider`, `IAIProviderRegistry` |
+| **Registry** | `AIProviderRegistry` — register / resolve / list / availability validation |
+| **Engine** | `AIProviderEngine` — validate request, resolve provider, prepare execution context (no execution) |
+| **Application API** | `prepareAIRequest`, `resolveProvider`, `createExecutionContext` |
+| **Integration** | Consumes `PromptPackage`; does not modify Prompt Composition |
+| **Design** | **Interfaces and orchestration only.** No OpenAI/Anthropic/Gemini/Ollama implementations, HTTP, networking, or SDKs |
+
+Full detail: [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md) (Provider Registry + Future OpenAI Integration + Future Multi-provider Support).
 
 ---
 

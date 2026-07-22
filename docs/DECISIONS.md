@@ -1521,4 +1521,34 @@ Create `app/src/features/prompt-composition/` with immutable Prompt Package comp
 
 ---
 
-*New decisions are appended as Decision 049, 050, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 049: AI Provider Abstraction Foundation (Sprint 19.2)
+
+**Date:** 2026-07-23
+
+**Status:** Accepted
+
+**Context:**
+Sprint 19.2 must introduce AI Provider Abstraction that defines a common contract for all future AI providers over immutable Prompt Packages. This domain must not implement OpenAI / Anthropic / Gemini / Ollama, must not perform HTTP or networking, and must not execute providers.
+
+**Decision:**
+Create `app/src/features/ai-provider/` with immutable request/response/provider models (`AIRequest`, `AIResponse`, `AIProvider`, `AIProviderId`, `AIProviderCapabilities`, `AIProviderConfiguration`, `AIProviderMetadata`, `AIProviderStatus`, `AIProviderHealth`, `AIProviderLimits`, `AIProviderError`, `AIProviderResult`, `AIExecutionContext`, `AIExecutionOptions`, `AITokenUsage`, `AIFinishReason`, `AIResponseChunk`, `AIModel`, `AIModelInfo`), provider contracts (`IAIProvider`, `IAIStreamingProvider`, `IAIHealthProvider`, `IAIModelProvider`, `IAIProviderRegistry`), `AIProviderRegistry`, validators, builders, utilities, `AIProviderEngine`, a service facade, and a narrow application API (`prepareAIRequest`, `resolveProvider`, `createExecutionContext`). Future OpenAI / Anthropic / Gemini / Ollama adapters remain architecture placeholders only. Existing Prompt Composition is consumed by reference only and must not be modified.
+
+**Why:**
+- **Dedicated provider boundary** keeps Prompt Composition free of vendor contracts and SDKs.
+- **Registry + contracts** allow multi-provider registration without coupling consumers to vendors.
+- **Frozen AIRequest / AIExecutionContext** give future adapters a stable orchestration surface without executing now.
+- **Standardized AIResponse** keeps downstream consumers vendor-neutral.
+
+**Alternatives considered:**
+- **Fold provider contracts into Prompt Composition** — rejected: Prompt Composition owns structured blocks; Provider Abstraction owns provider contracts.
+- **Implement OpenAI (or another vendor) now** — rejected: sprint explicitly forbids provider implementations, HTTP, networking, and SDKs.
+- **Reuse legacy `features/ai` providers as the Sprint 19.2 foundation** — rejected: AI Provider Abstraction is the Prompt Package → provider-contract path for the Coach Intelligence pipeline; legacy AI providers remain a separate earlier foundation.
+
+**Consequences:**
+- Documentation references [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md) (Provider Registry + Future OpenAI Integration + Future Multi-provider Support).
+- Future provider adapters can implement `IAIProvider` and register without redesigning this foundation.
+- AI Provider Abstraction remains non-executing and non-networking until a later adapter sprint.
+
+---
+
+*New decisions are appended as Decision 050, 051, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

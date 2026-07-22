@@ -5,7 +5,7 @@
 **Status:** Living Document  
 **Last Updated:** 2026-07-23  
 **Purpose:** Document the Prompt Composition Engine domain foundation (Sprint 19.1).  
-**Source of Truth:** Yes — for Prompt Composition Engine layout, Prompt Package, and Future Provider Mapping on mobile.
+**Source of Truth:** Yes — for Prompt Composition Engine layout, Prompt Package, and handoff to AI Provider Abstraction on mobile.
 
 Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md), [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md), [AI_SYSTEM.md](./AI_SYSTEM.md), [DECISIONS.md](./DECISIONS.md) (ADR-048).
 
@@ -20,7 +20,7 @@ Prompt Composition Engine
       ↓
 Prompt Package
       ↓
-Future Provider Abstraction
+AI Provider Abstraction
       ↓
 Future AI Providers
 ```
@@ -153,18 +153,18 @@ Engine internals are not part of the public API surface.
 
 ---
 
-## Future Provider Mapping
+## Provider Abstraction Handoff
 
-Provider-specific prompt rendering is **reserved in architecture only**.
+Provider-specific prompt rendering lives in **AI Provider Abstraction** ([AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md)).
 
-| Concern | Future |
-|---------|--------|
+| Concern | Consumer |
+|---------|----------|
 | Input | `PromptPackage` / `PromptSnapshot` (read-only structured blocks) |
-| Consumer | Future Provider Abstraction |
+| Consumer | AI Provider Abstraction (`features/ai-provider`) |
 | Mapping | Blocks → provider message roles / parts **outside** this domain |
-| Rules | Prompt Composition Engine remains non-AI; Provider Abstraction owns provider strings / SDKs |
+| Rules | Prompt Composition Engine remains non-AI; Provider Abstraction owns provider contracts / future SDKs |
 
-Future AI Providers (OpenAI / Anthropic / Gemini / Ollama / etc.) consume artifacts from Future Provider Abstraction — never from Conversation Orchestrator or Prompt Composition Engine directly.
+Future AI Providers (OpenAI / Anthropic / Gemini / Ollama / etc.) consume artifacts from AI Provider Abstraction — never from Conversation Orchestrator or Prompt Composition Engine directly.
 
 ---
 
