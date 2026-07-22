@@ -54,6 +54,8 @@ Performance Engine  (single-session Performance Snapshots — no AI)
 Achievement Engine  (Personal Records from snapshots — no AI)
         ↓
 Athlete History  (immutable chronological domain record — no AI)
+        ↓
+Recovery Intelligence  (deterministic Recovery Snapshots — no AI)
 ```
 
 ### Layer responsibilities
@@ -79,6 +81,7 @@ Athlete History  (immutable chronological domain record — no AI)
 | Performance Engine | `features/performance-engine` | Implemented (18.3) | Single-session analytics from WorkoutResult + EventStream — immutable snapshots only |
 | Achievement Engine | `features/achievement-engine` | Implemented (18.4) | Personal Records from PerformanceSnapshot + WorkoutResult — immutable achievements/events only |
 | Athlete History | `features/athlete-history` | Implemented (18.5) | Immutable chronological athlete journey from workout/performance/achievement facts |
+| Recovery Intelligence | `features/recovery-intelligence` | Implemented (18.6) | Deterministic recovery metrics/snapshots from history + performance |
 | Prompt Orchestrator | `features/prompt-orchestrator` | Implemented | Composes prompts for AI-assisted blueprint steps |
 | Tool Engine | `features/tool-calling` | Implemented | Tool registry/execution boundary for workflows |
 | Athlete Context | `features/athlete-context` | Implemented | Structured athlete context for orchestration inputs |
@@ -104,6 +107,7 @@ Supporting orchestration pieces also present: Memory (conversation persistence a
 - Performance Engine (18.3) analyzes completed `WorkoutResult` + `EventStream` into immutable single-session Performance Snapshots — **no AI**, persistence, networking, history, PRs, recovery, or recommendations; never mutates execution or program generation.
 - Achievement Engine (18.4) detects Personal Records from `PerformanceSnapshot` + `WorkoutResult` via injected baselines — **no AI**, persistence, networking, history store, or gamification implementation; never mutates Performance Engine or Workout Runtime.
 - Athlete History (18.5) organizes immutable chronological domain facts from `WorkoutResult` + `PerformanceSnapshot` + `AchievementResult` into `AthleteHistory` / `HistorySnapshot` — **no AI**, persistence, networking, storage, querying/filtering, timeline UI, or calendar; never mutates upstream engines.
+- Recovery Intelligence (18.6) analyzes `AthleteHistory` + `PerformanceSnapshot` (+ optional `WorkoutResult`) into immutable `RecoverySnapshot` metrics — **no AI**, recommendations, persistence, networking, predictions, sleep, or wearables; never mutates upstream engines.
 
 ---
 

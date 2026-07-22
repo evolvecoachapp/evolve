@@ -748,4 +748,19 @@
 | **Status** | Complete |
 | **Notes** | Immutable domain modeling only. No AI, persistence, networking, storage, querying/filtering, timeline UI, or calendar |
 
+### Sprint 18.6 — Recovery Intelligence Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 18.6.0 |
+| **Title** | Recovery Intelligence Foundation |
+| **Date** | 2026-07-23 |
+| **Goal** | Dedicated Recovery Intelligence domain producing immutable Recovery Snapshots from Athlete History + Performance Snapshot |
+| **Architecture** | Athlete History → Performance Snapshot → **Recovery Intelligence Engine** → Recovery Snapshot → Future Consumers. Module: `app/src/features/recovery-intelligence/`. |
+| **Main components** | **Models:** RecoverySnapshot, RecoveryMetrics, RecoveryStatus, RecoveryContext, RecoverySummary, RecoveryWindow, RecoveryIndicator, TrainingLoad, FatigueScore, DensityLoad, FrequencyLoad, RecoveryAssessment, RecoveryEvidence, RecoveryEngineResult. **Engine:** `RecoveryIntelligenceEngine`. **Calculators:** TrainingLoad/Fatigue/DensityLoad/Frequency/RecoveryWindow/RecoveryStatus. **Builders / validators / utils.** **Application API:** `analyzeRecovery`, `createRecoverySnapshot`, `summarizeRecovery`. |
+| **Tests** | Engine, calculators, builders, validators, application helpers, Athlete History/Performance integration, regression |
+| **Results** | Dedicated Recovery Intelligence foundation. ADR-044 recorded. Docs: RECOVERY_INTELLIGENCE.md (Recovery Metrics, Future Readiness Model). |
+| **Status** | Complete |
+| **Notes** | Deterministic recovery metrics only. No AI, recommendations, persistence, networking, predictions, sleep, or wearables |
+
 

@@ -43,8 +43,9 @@
 | [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md) | Single-session performance snapshots, metric model, trend placeholder |
 | [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md) | Achievement Engine, Personal Records, future milestones/gamification |
 | [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md) | Athlete History domain, History Model, offline sync + Timeline UI placeholders |
+| [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md) | Recovery Intelligence domain, Recovery Metrics, Future Readiness Model placeholder |
 | [TECH_STACK.md](./TECH_STACK.md) | Languages, frameworks, versions, future tech |
-| [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-043 (append-only) |
+| [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-044 (append-only) |
 | [AI_SYSTEM.md](./AI_SYSTEM.md) | Coach, LLM, engines, memory, mobile workout pipeline |
 | [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md) | Integration framework for the workout pipeline |
 | [../.cursor/rules/EVOLVE_ARCHITECTURE.md](../.cursor/rules/EVOLVE_ARCHITECTURE.md) | Deep-dive architecture reference |

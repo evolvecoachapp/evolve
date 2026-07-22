@@ -1375,4 +1375,33 @@ Implement `app/src/features/athlete-history/` with immutable history models (`At
 
 ---
 
-*New decisions are appended as Decision 044, 045, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 044: Recovery Intelligence Foundation (Sprint 18.6)
+
+**Date:** 2026-07-23
+
+**Status:** Accepted
+
+**Context:**
+Sprint 18.6 must introduce a Recovery Intelligence domain that analyzes completed training using Athlete History, Performance Snapshot, and optional Workout context into immutable Recovery Snapshots. It must not add AI, recommendations, persistence, networking, history storage, predictive models, sleep analysis, or wearable integration, and must not modify upstream engines.
+
+**Decision:**
+Implement `app/src/features/recovery-intelligence/` with immutable recovery models (`RecoverySnapshot`, `RecoveryMetrics`, `RecoveryStatus`, `RecoveryContext`, `RecoverySummary`, `RecoveryWindow`, `RecoveryIndicator`, `TrainingLoad`, `FatigueScore`, `DensityLoad`, `FrequencyLoad`, `RecoveryAssessment`, `RecoveryEvidence`, `RecoveryEngineResult`), isolated calculators, validators, builders, utilities, `RecoveryIntelligenceEngine`, a service facade, and a narrow application API (`analyzeRecovery`, `createRecoverySnapshot`, `summarizeRecovery`). Future Readiness Model remains an architecture placeholder only.
+
+**Why:**
+- **Dedicated recovery boundary** keeps history, performance, and achievements free of recovery aggregation concerns.
+- **Isolated calculators** keep each load/fatigue/frequency/window/status rule testable and single-responsibility.
+- **Frozen snapshots** give future readiness / Coach consumers a stable contract without owning predictions or recommendations here.
+
+**Alternatives considered:**
+- **Fold recovery into Athlete History or Performance Engine** — rejected: those engines own chronology/analytics only (ADR-041/043).
+- **Ship readiness scoring / recommendations now** — rejected: sprint explicitly limits scope to deterministic recovery metrics.
+- **Require wearables or sleep inputs** — rejected: out of scope; foundation uses completed training domain facts only.
+
+**Consequences:**
+- Documentation references [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md) (Recovery Metrics + Future Readiness Model).
+- Future readiness consumers can read `RecoverySnapshot` without redesigning this foundation.
+- Recovery Intelligence remains in-memory, non-persistent, and non-predictive until a later consumer sprint.
+
+---
+
+*New decisions are appended as Decision 045, 046, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

@@ -30,6 +30,7 @@ See [TECH_STACK.md](./TECH_STACK.md) for versions. Onboarding: [PROJECT_CONTEXT.
 │  → Performance Engine (single-session snapshots from results)   │
 │  → Achievement Engine (Personal Records from snapshots)         │
 │  → Athlete History (immutable chronological domain record)      │
+│  → Recovery Intelligence (deterministic recovery snapshots)     │
 └────────────────────────────┬────────────────────────────────────┘
                              │ HTTPS + JWT
                              ▼
@@ -102,9 +103,12 @@ Achievement Engine               ← Sprint 18.4 (implemented) — Personal Reco
   ↓
 Athlete History                  ← Sprint 18.5 (implemented) — immutable chronological record
   (`app/src/features/athlete-history/`)
+  ↓
+Recovery Intelligence            ← Sprint 18.6 (implemented) — deterministic recovery snapshots
+  (`app/src/features/recovery-intelligence/`)
 ```
 
-Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md).
+Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md).
 
 ### Exercise Knowledge Base (`features/exercise-kb`)
 
@@ -351,6 +355,22 @@ Full detail: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md).
 | **Design** | **History domain modeling only.** No AI, persistence, networking, storage, querying/filtering, timeline UI, or calendar. Never mutates upstream engines |
 
 Full detail: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md).
+
+### Recovery Intelligence (`features/recovery-intelligence`) — Sprint 18.6
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Deterministic recovery analysis from completed training context |
+| **Flow** | Athlete History → Performance Snapshot → Recovery Intelligence Engine → Recovery Snapshot → Future Consumers |
+| **Models** | `RecoverySnapshot`, `RecoveryMetrics`, `RecoveryStatus`, `RecoveryContext`, `RecoverySummary`, `RecoveryWindow`, `RecoveryIndicator`, `TrainingLoad`, `FatigueScore`, `DensityLoad`, `FrequencyLoad`, `RecoveryAssessment`, `RecoveryEvidence`, `RecoveryEngineResult` |
+| **Engine** | `RecoveryIntelligenceEngine` — load/fatigue/frequency/window/status calculation + snapshot generation |
+| **Calculators** | Isolated TrainingLoad / Fatigue / DensityLoad / Frequency / RecoveryWindow / RecoveryStatus calculators |
+| **Validators** | Metric consistency, negative values, recovery windows, timestamps, assessment consistency, snapshot integrity |
+| **Application API** | `analyzeRecovery`, `createRecoverySnapshot`, `summarizeRecovery` |
+| **Integration** | Consumes `AthleteHistory` + `PerformanceSnapshot` (+ optional `WorkoutResult`); `AchievementResult` reference only |
+| **Design** | **Deterministic recovery metrics only.** No AI, recommendations, persistence, networking, predictions, sleep, or wearables. Never mutates upstream engines |
+
+Full detail: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md).
 
 ---
 
