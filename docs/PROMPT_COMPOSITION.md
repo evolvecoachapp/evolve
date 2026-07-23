@@ -164,7 +164,7 @@ Provider-specific prompt rendering lives in **AI Provider Abstraction** ([AI_PRO
 | Mapping | Blocks → provider message roles / parts **outside** this domain |
 | Rules | Prompt Composition Engine remains non-AI; Provider Abstraction owns provider contracts / future SDKs |
 
-Future AI Providers (OpenAI / Anthropic / Gemini / Ollama / etc.) consume artifacts from AI Provider Abstraction — never from Conversation Orchestrator or Prompt Composition Engine directly.
+Concrete providers (OpenAI in Sprint 19.3 — see [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md); Anthropic / Gemini / Ollama later) consume artifacts from AI Provider Abstraction — never from Conversation Orchestrator or Prompt Composition Engine directly.
 
 ---
 

@@ -3,8 +3,8 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
-**Last Updated:** 2026-07-22  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-039). Append only — never renumber.  
+**Last Updated:** 2026-07-23  
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-050). Append only — never renumber.  
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -1551,4 +1551,34 @@ Create `app/src/features/ai-provider/` with immutable request/response/provider 
 
 ---
 
-*New decisions are appended as Decision 050, 051, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 050: OpenAI Provider Foundation (Sprint 19.3)
+
+**Date:** 2026-07-23
+
+**Status:** Accepted
+
+**Context:**
+Sprint 19.3 must implement the first concrete AI provider using the AI Provider Abstraction. The adapter must translate `PromptPackage` into OpenAI requests and OpenAI responses into standardized `AIResponse` without leaking provider-specific concepts into the domain, and without modifying previous domains.
+
+**Decision:**
+Create `app/src/features/openai-provider/` with immutable OpenAI models (`OpenAIRequest`, `OpenAIResponse`, `OpenAIMessage`, `OpenAIChoice`, `OpenAIUsage`, `OpenAIError`, `OpenAIModelConfiguration`, `OpenAIExecutionResult`, `OpenAIProviderConfiguration`, `OpenAIClientOptions`), `OpenAIProvider` (implements `IAIProvider` / `IAIHealthProvider` / `IAIModelProvider` plus `execute()` / `health()` / `listModels()`), `OpenAIClient` (OpenAI SDK; SDK types never leave the client), mappers (`PromptPackageMapper`, `ResponseMapper`, `ErrorMapper`), validators, builders, utilities, a service facade, and a narrow application API (`executePrompt`, `checkHealth`, `listAvailableModels`). Configuration is loaded from environment (`OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_TIMEOUT`). Streaming, memory, tool calling, and conversation history are out of scope.
+
+**Why:**
+- **Dedicated provider module** keeps AI Provider Abstraction vendor-neutral while enabling real execution.
+- **Mapper boundary** isolates PromptPackage → OpenAI and OpenAI → AIResponse translation.
+- **SDK confinement** prevents OpenAI types from leaking into domain / application consumers.
+- **Env configuration** avoids hardcoded secrets.
+
+**Alternatives considered:**
+- **Extend legacy `features/ai` OpenAI provider** — rejected: Sprint 19.x path is PromptPackage → AI Provider Abstraction → concrete adapters.
+- **Call OpenAI HTTP without an SDK wrapper** — rejected: sprint requires an OpenAI Client over the official SDK with mocked transport in tests.
+- **Add streaming now** — rejected: explicitly deferred to Future Streaming Support.
+
+**Consequences:**
+- Documentation references [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md) (Provider Flow + Configuration + Future Streaming Support).
+- AI Provider Abstraction remains free of vendor SDKs; OpenAI-specific logic lives only in `openai-provider`.
+- Future Anthropic / Gemini / Ollama adapters can follow the same pattern.
+
+---
+
+*New decisions are appended as Decision 051, 052, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

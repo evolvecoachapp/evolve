@@ -18,8 +18,8 @@ Prompt Package
       ↓
 AI Provider Abstraction
       ↓
-Future Providers
-(OpenAI / Anthropic / Gemini / Ollama)
+Providers
+(OpenAI implemented / Anthropic / Gemini / Ollama future)
       ↓
 Standard AI Response
 ```
@@ -125,17 +125,18 @@ Engine internals are not part of the public API surface.
 
 ---
 
-## Future OpenAI Integration
+## OpenAI Integration
 
-Reserved in architecture only.
+Implemented in Sprint 19.3 — see [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md).
 
-| Concern | Future |
+| Concern | Status |
 |---------|--------|
-| Adapter | `IAIProvider` (+ streaming/health/model as needed) |
-| Registry | `registry.register(openAIProvider)` |
+| Adapter | `features/openai-provider` implements `IAIProvider` + health/model + `execute()` |
+| Registry | Concrete provider can `registry.register(openAIProvider)` |
 | Mapping | `PromptPackage` blocks → OpenAI message roles **inside** adapter |
-| Response | Vendor payload → standardized `AIResponse` / `AIResponseChunk` |
-| Rules | Abstraction remains vendor-neutral; OpenAI SDK/HTTP stays in adapter |
+| Response | Vendor payload → standardized `AIResponse` |
+| Rules | Abstraction remains vendor-neutral; OpenAI SDK stays in `OpenAIClient` |
+| Streaming | Reserved — Future Streaming Support in OpenAI Provider docs |
 
 ---
 

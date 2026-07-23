@@ -118,7 +118,8 @@ Supporting orchestration pieces also present: Memory (conversation persistence a
 - Coach Intelligence (18.8) prepares immutable `CoachingContext` from `InsightSnapshot` (+ optional recovery/history/performance/achievement references) — **no AI**, prompts, LLM providers, networking, HTTP, persistence, or conversation; never mutates upstream engines.
 - Conversation Orchestrator (19.0) prepares immutable `ConversationContext` from `CoachingContext` (+ optional upstream references) — **no AI**, prompts, LLM providers, networking, HTTP, persistence, or conversation generation; never mutates upstream engines.
 - Prompt Composition Engine (19.1) transforms `ConversationContext` into an immutable `PromptPackage` of structured blocks — **no AI**, networking, HTTP, OpenAI/Anthropic/Gemini/Ollama, or provider-specific string prompt generation.
-- AI Provider Abstraction (19.2) defines immutable provider contracts, registry, and orchestration primitives over `PromptPackage` — **no** OpenAI/Anthropic/Gemini/Ollama implementations, HTTP, networking, or SDKs; Future AI Providers remain adapter placeholders.
+- AI Provider Abstraction (19.2) defines immutable provider contracts, registry, and orchestration primitives over `PromptPackage` — vendor-neutral; no SDK leakage into the abstraction layer.
+- OpenAI Provider (19.3) is the first concrete adapter: `PromptPackage` → OpenAI Client (SDK) → standardized `AIResponse` — **no** streaming, memory, tool calling, or conversation history; Anthropic / Gemini / Ollama remain future adapters.
 
 ---
 

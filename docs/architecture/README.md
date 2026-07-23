@@ -9,7 +9,7 @@
 
 ## Primary diagrams
 
-- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline + Composition Root + Decision Intelligence + Workout/Rest Runtime + Domain Events + Performance Engine + Achievement Engine + Athlete History + Recovery Intelligence + Insight Engine + Coach Intelligence + Conversation Orchestrator + Prompt Composition Engine + AI Provider Abstraction dependency flow
+- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline + Composition Root + Decision Intelligence + Workout/Rest Runtime + Domain Events + Performance Engine + Achievement Engine + Athlete History + Recovery Intelligence + Insight Engine + Coach Intelligence + Conversation Orchestrator + Prompt Composition Engine + AI Provider Abstraction + OpenAI Provider dependency flow
 - [COMPOSITION_ROOT.md](../COMPOSITION_ROOT.md) — Composition Root, Dependency Graph, Factories, DI, Service Lifecycle
 - [DECISION_INTELLIGENCE.md](../DECISION_INTELLIGENCE.md) — Decision graph, explainability, execution reports, Coach AI preparation
 - [WORKOUT_RUNTIME.md](../WORKOUT_RUNTIME.md) — Live WorkoutSession execution state, session lifecycle, runtime state model
@@ -24,6 +24,7 @@
 - [CONVERSATION_ORCHESTRATOR.md](../CONVERSATION_ORCHESTRATOR.md) — Conversation Orchestrator domain, Conversation Context, handoff to Prompt Composition
 - [PROMPT_COMPOSITION.md](../PROMPT_COMPOSITION.md) — Prompt Composition Engine, Prompt Package, handoff to AI Provider Abstraction
 - [AI_PROVIDER_ABSTRACTION.md](../AI_PROVIDER_ABSTRACTION.md) — AI Provider Abstraction, Provider Registry, Future OpenAI Integration, Future Multi-provider Support
+- [OPENAI_PROVIDER.md](../OPENAI_PROVIDER.md) — OpenAI Provider, Provider Flow, Configuration, Future Streaming Support
 - [AI_SYSTEM.md](../AI_SYSTEM.md) — Coach + mobile AI runtime pipeline
 - [INTEGRATION_TESTING.md](../INTEGRATION_TESTING.md) — Integration framework (fixtures, builders, assertions, scenarios, goldens)
 

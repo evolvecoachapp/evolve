@@ -124,9 +124,12 @@ Prompt Composition Engine        ← Sprint 19.1 (implemented) — immutable Pro
   ↓
 AI Provider Abstraction          ← Sprint 19.2 (implemented) — provider contracts + registry
   (`app/src/features/ai-provider/`)
+  ↓
+OpenAI Provider                  ← Sprint 19.3 (implemented) — concrete OpenAI adapter → AIResponse
+  (`app/src/features/openai-provider/`)
 ```
 
-Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md). Insight Engine: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md). Coach Intelligence: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md). Conversation Orchestrator: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md). Prompt Composition: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md). AI Provider Abstraction: [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md).
+Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md). Insight Engine: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md). Coach Intelligence: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md). Conversation Orchestrator: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md). Prompt Composition: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md). AI Provider Abstraction: [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md). OpenAI Provider: [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md).
 
 ### Exercise Knowledge Base (`features/exercise-kb`)
 
@@ -469,6 +472,23 @@ Full detail: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md) (Prompt Package + 
 | **Design** | **Interfaces and orchestration only.** No OpenAI/Anthropic/Gemini/Ollama implementations, HTTP, networking, or SDKs |
 
 Full detail: [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md) (Provider Registry + Future OpenAI Integration + Future Multi-provider Support).
+
+### OpenAI Provider (`features/openai-provider`) — Sprint 19.3
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | First concrete AI provider adapter over AI Provider Abstraction |
+| **Flow** | Prompt Package → AI Provider Engine → OpenAI Provider → Prompt Mapper → OpenAI Client → Raw OpenAI Response → Response Mapper → AIResponse |
+| **Models** | `OpenAIRequest`, `OpenAIResponse`, `OpenAIMessage`, `OpenAIChoice`, `OpenAIUsage`, `OpenAIError`, `OpenAIModelConfiguration`, `OpenAIExecutionResult`, `OpenAIProviderConfiguration`, `OpenAIClientOptions` |
+| **Contracts** | Implements `IAIProvider`, `IAIHealthProvider`, `IAIModelProvider`; adapter methods `execute()`, `health()`, `listModels()` |
+| **Mappers** | `PromptPackageMapper`, `ResponseMapper`, `ErrorMapper` (immutable; no business logic) |
+| **Client** | `OpenAIClient` — OpenAI SDK calls; SDK types never leave the client layer |
+| **Application API** | `executePrompt`, `checkHealth`, `listAvailableModels` |
+| **Configuration** | `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_TIMEOUT` (env; no hardcoded secrets) |
+| **Integration** | Consumes `PromptPackage` + AI Provider Abstraction; does not modify previous domains |
+| **Design** | **No streaming, memory, tool calling, or conversation history.** Provider-specific logic stays in this layer |
+
+Full detail: [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md) (Provider Flow + Configuration + Future Streaming Support).
 
 ---
 

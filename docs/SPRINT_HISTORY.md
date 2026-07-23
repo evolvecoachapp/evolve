@@ -838,3 +838,18 @@
 | **Status** | Complete |
 | **Notes** | Interfaces and orchestration only. No OpenAI/Anthropic/Gemini/Ollama implementations, HTTP, networking, or SDKs |
 
+### Sprint 19.3 — OpenAI Provider Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 19.3.0 |
+| **Title** | OpenAI Provider Foundation |
+| **Date** | 2026-07-23 |
+| **Goal** | First concrete AI provider implementing AI Provider Abstraction contracts over Prompt Package |
+| **Architecture** | Prompt Package → AI Provider Engine → **OpenAI Provider** → Prompt Mapper → OpenAI Client → Raw OpenAI Response → Response Mapper → AIResponse. Module: `app/src/features/openai-provider/`. |
+| **Main components** | **Models:** OpenAIRequest, OpenAIResponse, OpenAIMessage, OpenAIChoice, OpenAIUsage, OpenAIError, OpenAIModelConfiguration, OpenAIExecutionResult, OpenAIProviderConfiguration, OpenAIClientOptions. **Provider:** `OpenAIProvider` (`IAIProvider` + health/model + `execute`/`health`/`listModels`). **Client:** `OpenAIClient` (OpenAI SDK). **Mappers:** PromptPackageMapper, ResponseMapper, ErrorMapper. **Builders / validators / utils.** **Application API:** `executePrompt`, `checkHealth`, `listAvailableModels`. **Config:** `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_TIMEOUT`. |
+| **Tests** | Provider, client (mocked), mappers, validators, builders, application, integration, regression |
+| **Results** | Concrete OpenAI Provider foundation. ADR-050 recorded. Docs: OPENAI_PROVIDER.md (Provider Flow, Configuration, Future Streaming Support). |
+| **Status** | Complete |
+| **Notes** | No streaming, memory, tool calling, or conversation history. Does not modify Prompt Composition or AI Provider Abstraction |
+
