@@ -2001,4 +2001,32 @@ Extend `app/src/features/workout-agent/` with `WorkoutDomainGateway` + `DomainCa
 
 ---
 
-*New decisions are appended as Decision 065, 066, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 065: Conversation Memory Foundation (Sprint 21.4)
+
+**Date:** 2026-07-23  
+**Status:** Accepted  
+
+**Context:**
+The Coach Agent needs deterministic access to structured coaching knowledge (profile facts, session context, prior decisions). Chat history is not an appropriate memory model. A dedicated Conversation Memory foundation was required before durable persistence, with clear contracts for Profile / Context / Decision lanes, snapshots, timelines, and a public API — without AI, prompts, networking, or a persistence implementation.
+
+**Decision:**
+Introduce `app/src/features/conversation-memory/` with immutable memory models, `ConversationMemory` orchestration, deterministic query + policy layers, `MemoryTimelineTracker`, store **interfaces only** (`MemoryStore`, `ProfileStore`, `ContextStore`, `DecisionStore`), and application API (`saveMemory`, `loadMemory`, `queryMemory`, `updateMemory`, `buildMemorySnapshot`, `summarizeMemory`). Working memory is in-process orchestration state. Existing agents are not modified.
+
+**Why:**
+- **Structured knowledge ≠ chat history** keeps Coach Agent memory deterministic and coachable.
+- **Lane projection** (Profile / Context / Decision) matches how coaching knowledge is consumed.
+- **Store contracts without implementations** unlock future persistence without blocking orchestration.
+- **No AI / prompts / networking** preserves Clean Architecture boundaries for agent foundations.
+
+**Alternatives considered:**
+- **Reuse chat transcript as memory** — rejected: not structured coaching knowledge.
+- **Implement SQLite / remote persistence now** — rejected: out of sprint scope; contracts first.
+- **Embed memory inside Coach Agent** — rejected: memory is a shared foundation for Coach Agent / Agent Runtime / future persistence.
+
+**Consequences:**
+- Documentation updates: [CONVERSATION_MEMORY.md](./CONVERSATION_MEMORY.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [architecture/README.md](./architecture/README.md).
+- Conversation Memory remains free of AI, prompts, providers, networking, and persistence implementations.
+
+---
+
+*New decisions are appended as Decision 066, 067, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
