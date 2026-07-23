@@ -22,6 +22,7 @@ describe("openai-provider provider", () => {
     expect(provider.getCapabilities().chat).toBe(true);
     expect(provider.getCapabilities().streaming).toBe(false);
     expect(provider.supports("chat")).toBe(true);
+    expect(provider.supportsStreaming()).toBe(false);
     expect(provider.getInfo().displayName).toBe("OpenAI");
     expect(provider.listModels().length).toBeGreaterThan(0);
     expect(provider.getModel("gpt-4o-mini")?.available).toBe(true);
@@ -75,9 +76,9 @@ describe("openai-provider provider", () => {
     expect(provider.getHealth().healthy).toBe(true);
   });
 
-  it("rejects streaming execution options", async () => {
+  it("rejects streaming execution options when streaming disabled", async () => {
     const provider = createOpenAIProvider({
-      configuration: createProviderConfiguration(),
+      configuration: createProviderConfiguration({ streaming: false }),
       client: createMockTransport(),
     });
 
@@ -98,5 +99,29 @@ describe("openai-provider provider", () => {
     ).rejects.toMatchObject({
       code: "openai_execution_options_streaming_not_supported",
     });
+  });
+
+  it("executeStreaming yields chunks when streaming enabled", async () => {
+    const provider = createOpenAIProvider({
+      configuration: createProviderConfiguration({ streaming: true }),
+      client: createMockTransport(
+        createOpenAIResponseFixture({ content: "Hi" }),
+      ),
+    });
+
+    expect(provider.supportsStreaming()).toBe(true);
+    expect(provider.getCapabilities().streaming).toBe(true);
+
+    const deltas: string[] = [];
+    for await (const chunk of provider.executeStreaming({
+      promptPackage: createPromptPackageFixture(),
+      requestId: "stream-req",
+      executedAt: FIXED_TIMESTAMP,
+    })) {
+      deltas.push(chunk.delta);
+      expect(chunk.requestId).toBe("stream-req");
+    }
+
+    expect(deltas.join("")).toBe("Hi");
   });
 });

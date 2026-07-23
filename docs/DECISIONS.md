@@ -1561,21 +1561,22 @@ Create `app/src/features/ai-provider/` with immutable request/response/provider 
 Sprint 19.3 must implement the first concrete AI provider using the AI Provider Abstraction. The adapter must translate `PromptPackage` into OpenAI requests and OpenAI responses into standardized `AIResponse` without leaking provider-specific concepts into the domain, and without modifying previous domains.
 
 **Decision:**
-Create `app/src/features/openai-provider/` with immutable OpenAI models (`OpenAIRequest`, `OpenAIResponse`, `OpenAIMessage`, `OpenAIChoice`, `OpenAIUsage`, `OpenAIError`, `OpenAIModelConfiguration`, `OpenAIExecutionResult`, `OpenAIProviderConfiguration`, `OpenAIClientOptions`), `OpenAIProvider` (implements `IAIProvider` / `IAIHealthProvider` / `IAIModelProvider` plus `execute()` / `health()` / `listModels()`), `OpenAIClient` (OpenAI SDK; SDK types never leave the client), mappers (`PromptPackageMapper`, `ResponseMapper`, `ErrorMapper`), validators, builders, utilities, a service facade, and a narrow application API (`executePrompt`, `checkHealth`, `listAvailableModels`). Configuration is loaded from environment (`OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_TIMEOUT`). Streaming, memory, tool calling, and conversation history are out of scope.
+Create `app/src/features/openai-provider/` with immutable OpenAI models (`OpenAIRequest`, `OpenAIResponse`, `OpenAIMessage`, `OpenAIChoice`, `OpenAIUsage`, `OpenAIError`, `OpenAIStreamChunk`, `OpenAIRetryPolicy`, `OpenAIModelConfiguration`, `OpenAIExecutionResult`, `OpenAIProviderConfiguration`, `OpenAIClientOptions`), `OpenAIProvider` (implements `IAIProvider` / `IAIHealthProvider` / `IAIModelProvider` / `IAIStreamingProvider` plus `execute()` / `executeStreaming()` / `health()`), `OpenAIClient` (OpenAI SDK; SDK types never leave the client), mappers (`OpenAIRequestBuilder` / `PromptPackageMapper`, `OpenAIResponseMapper`, `OpenAIUsageMapper`, `OpenAIErrorMapper`), dedicated error hierarchy → `AIError`, streaming abstraction (no UI), validators, utilities (tokens / retry / backoff / statistics), a service facade, registry registration helper, and a narrow application API (`execute`, `executeStreaming`, `healthCheck`, `validateConfiguration`). Configuration is immutable and environment-based (API key, organization, project, base URL, model, temperature, topP, max tokens, timeout, retry policy, streaming). Memory, tool calling, conversation history, domain logic, prompt generation, and UI remain out of scope.
 
 **Why:**
 - **Dedicated provider module** keeps AI Provider Abstraction vendor-neutral while enabling real execution.
 - **Mapper boundary** isolates PromptPackage → OpenAI and OpenAI → AIResponse translation.
 - **SDK confinement** prevents OpenAI types from leaking into domain / application consumers.
 - **Env configuration** avoids hardcoded secrets.
+- **Streaming abstraction** supports incremental chunks without UI coupling; config-gated so non-streaming remains default.
 
 **Alternatives considered:**
 - **Extend legacy `features/ai` OpenAI provider** — rejected: Sprint 19.x path is PromptPackage → AI Provider Abstraction → concrete adapters.
 - **Call OpenAI HTTP without an SDK wrapper** — rejected: sprint requires an OpenAI Client over the official SDK with mocked transport in tests.
-- **Add streaming now** — rejected: explicitly deferred to Future Streaming Support.
+- **Defer all streaming** — superseded for Sprint 19.3 acceptance: provider-local streaming abstraction is required; cross-cutting Streaming Foundation remains Sprint 20.0.
 
 **Consequences:**
-- Documentation references [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md) (Provider Flow + Configuration + Future Streaming Support).
+- Documentation references [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md) (Configuration + Streaming + Error Mapping).
 - AI Provider Abstraction remains free of vendor SDKs; OpenAI-specific logic lives only in `openai-provider`.
 - Future Anthropic / Gemini / Ollama adapters can follow the same pattern.
 

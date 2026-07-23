@@ -3,7 +3,10 @@ export {
   type PromptPackageMapperOptions,
 } from "./PromptPackageMapper";
 export {
+  OpenAIResponseMapper,
   ResponseMapper,
+  type OpenAIResponseMapperContext,
   type ResponseMapperContext,
-} from "./ResponseMapper";
-export { ErrorMapper } from "./ErrorMapper";
+} from "./OpenAIResponseMapper";
+export { OpenAIUsageMapper } from "./OpenAIUsageMapper";
+export { OpenAIErrorMapper, ErrorMapper } from "./OpenAIErrorMapper";

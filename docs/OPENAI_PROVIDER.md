@@ -4,8 +4,8 @@
 **Version:** 0.6.0  
 **Status:** Living Document  
 **Last Updated:** 2026-07-23  
-**Purpose:** Document the OpenAI Provider foundation (Sprint 19.3).  
-**Source of Truth:** Yes — for OpenAI Provider layout, Provider Flow, Configuration, and Future Streaming Support on mobile.
+**Purpose:** Document the OpenAI Provider (Sprint 19.3).  
+**Source of Truth:** Yes — for OpenAI Provider layout, Provider Flow, Configuration, Streaming, and Error Mapping on mobile.
 
 Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md), [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md), [AI_SYSTEM.md](./AI_SYSTEM.md), [DECISIONS.md](./DECISIONS.md) (ADR-050).
 
@@ -14,45 +14,47 @@ Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [AI_PROVIDER_ABSTRACTION.md](./AI
 ## Architecture Summary
 
 ```
-Prompt Package
+PromptPackage
       ↓
-AI Provider Engine
+AIProvider
       ↓
-OpenAI Provider
+OpenAIProvider
       ↓
-Prompt Mapper
+OpenAI SDK
       ↓
-OpenAI Client
+OpenAI API
       ↓
-Raw OpenAI Response
-      ↓
-Response Mapper
-      ↓
-AIResponse
+Unified AIResponse
 ```
 
-This layer is the first concrete AI provider adapter over the AI Provider Abstraction.
+Module: `app/src/features/openai-provider/`.
 
-It consumes:
-
-- immutable `PromptPackage` (required)
-- AI Provider Abstraction contracts (`IAIProvider`, `IAIHealthProvider`, `IAIModelProvider`)
-
-It produces:
-
-- immutable provider-layer `OpenAIRequest` / `OpenAIResponse`
-- standardized immutable `AIResponse`
-- health + model catalog descriptors
+Only this module may import the OpenAI SDK.
 
 It is **not**:
 
-- prompt composition
-- conversation history management
-- memory
-- tool calling
-- streaming (reserved)
+- domain / business logic
+- prompt generation
+- conversation orchestration
+- UI / rendering
 
-Module: `app/src/features/openai-provider/`.
+---
+
+## Module Layout
+
+| Folder | Role |
+|--------|------|
+| **provider/** | `OpenAIProvider` (+ registry registration helper) |
+| **client/** | `OpenAIClient` — SDK communication only |
+| **configuration/** | Immutable env-based configuration loading |
+| **mappers/** | `OpenAIRequest` / response / usage / error mappers |
+| **builders/** | `OpenAIRequestBuilder` (PromptPackage → OpenAI Request) |
+| **validators/** | Configuration, request, response, streaming |
+| **streaming/** | Incremental chunk abstraction (no UI) |
+| **errors/** | Dedicated error hierarchy → `AIError` |
+| **services/** | `OpenAIProviderService` coordination facade |
+| **application/** | Public API surface |
+| **utils/** | Tokens, retry, backoff, statistics, formatting |
 
 ---
 
@@ -65,31 +67,29 @@ Module: `app/src/features/openai-provider/`.
 | `IAIProvider` | `getInfo`, `getCapabilities`, `getConfiguration`, `getMetadata`, `getStatus`, `supports` |
 | `IAIHealthProvider` | `getHealth` |
 | `IAIModelProvider` | `listModels`, `getModel` |
+| `IAIStreamingProvider` | `supportsStreaming`, `stream` (when config enables streaming) |
 
-Concrete execution surface (adapter only):
+Adapter methods:
 
 | Method | Role |
 |--------|------|
 | `execute()` | PromptPackage → OpenAI → `AIResponse` |
+| `executeStreaming()` | PromptPackage → incremental `AIStreamingChunk` |
 | `health()` | Live configuration/health snapshot |
-| `listModels()` | Available model catalog |
 
-Capabilities in this sprint: `chat`, `models`, `health`.  
-Explicitly off: `streaming`, `tools`, `vision`, `audio`, `embeddings`.
+Capabilities: `chat`, `models`, `health`; `streaming` follows configuration flag.  
+Explicitly off: `tools`, `vision`, `audio`, `embeddings`.
 
 ---
 
 ## Provider Flow
 
 1. Validate configuration, API key, model availability, execution options  
-2. Map `PromptPackage` → immutable `OpenAIRequest` (`PromptPackageMapper`)  
+2. `OpenAIRequestBuilder.fromPromptPackage` → immutable `OpenAIRequest`  
 3. Validate mapped request integrity  
 4. Call `OpenAIClient` (OpenAI SDK; SDK types stay inside client)  
-5. Receive provider-layer `OpenAIResponse`  
-6. Map → standardized `AIResponse` (`ResponseMapper`)  
-7. Surface errors via `ErrorMapper` → `AIProviderError`
-
-No business logic in mappers. No prompt composition in this domain.
+5. Map → standardized `AIResponse` (`OpenAIResponseMapper` + `OpenAIUsageMapper`)  
+6. Surface errors via `OpenAIErrorMapper` → typed hierarchy + `AIError` / `AIProviderError`
 
 ### Prompt mapping rules
 
@@ -104,23 +104,52 @@ No assistant turns. No conversation history replay.
 
 ## Configuration
 
-Read from environment (no hardcoded secrets):
+Immutable. Environment-based loading via `loadOpenAIConfiguration()`.
 
-| Variable | Purpose |
-|----------|---------|
-| `OPENAI_API_KEY` | Required for execution |
-| `OPENAI_MODEL` | Default model (fallback: `gpt-4o-mini`) |
-| `OPENAI_TIMEOUT` | Request timeout in ms (fallback: `30000`) |
+| Field | Env / notes |
+|-------|-------------|
+| API Key | `OPENAI_API_KEY` (required for execution) |
+| Organization | `OPENAI_ORG` |
+| Project | `OPENAI_PROJECT` |
+| Base URL | `OPENAI_BASE_URL` (default OpenAI API) |
+| Model | `OPENAI_MODEL` (fallback `gpt-4o-mini`) |
+| Temperature | `OPENAI_TEMPERATURE` (fallback `0.7`) |
+| TopP | `OPENAI_TOP_P` (fallback `1`) |
+| Max Tokens | configuration default / execution options |
+| Timeout | `OPENAI_TIMEOUT` (fallback `30000`) |
+| Retry Policy | `OPENAI_MAX_RETRIES` + delay env vars |
+| Streaming | `OPENAI_STREAMING` (`true`/`false`, default off) |
 
-Optional:
+---
 
-| Variable | Purpose |
-|----------|---------|
-| `OPENAI_BASE_URL` | Override API base URL |
-| `OPENAI_ORG` | Organization header |
-| `OPENAI_MAX_RETRIES` | SDK retry count |
+## Streaming
 
-Loaded via `loadOpenAIConfiguration()`.
+Provider-local streaming abstraction (no UI, no rendering):
+
+| Type | Role |
+|------|------|
+| `OpenAIStreamChunk` | Provider-layer incremental chunk |
+| `OpenAIStreamingSession` | Yields `AIStreamingChunk` |
+| `OpenAIStreamAggregator` | Concatenates deltas for final content |
+| `OpenAIStreamChunkMapper` | Maps to `AIStreamingChunk` / `AIResponseChunk` |
+
+`executeStreaming()` requires `configuration.streaming === true`.
+
+---
+
+## Error Mapping
+
+Dedicated hierarchy (all map into `AIError`):
+
+- `AuthenticationError`
+- `RateLimitError`
+- `TimeoutError`
+- `NetworkError`
+- `ProviderUnavailableError`
+- `InvalidResponseError`
+- `ConfigurationError`
+
+`OpenAIErrorMapper` classifies SDK/transport failures into this hierarchy, then to `AIError` / `AIProviderError`.
 
 ---
 
@@ -128,28 +157,30 @@ Loaded via `loadOpenAIConfiguration()`.
 
 | Function | Role |
 |----------|------|
-| `executePrompt(options)` | PromptPackage → `AIResponse` |
-| `checkHealth(options?)` | Provider health snapshot |
-| `listAvailableModels(options?)` | Available model descriptors |
+| `execute()` | PromptPackage → `AIResponse` |
+| `executeStreaming()` | PromptPackage → `AsyncIterable<AIStreamingChunk>` |
+| `healthCheck()` | Provider health snapshot |
+| `validateConfiguration()` | Soft-validate configuration / API key |
+| `listAvailableModels()` | Available model descriptors |
+
+Aliases kept for compatibility: `executePrompt`, `checkHealth`.
 
 Client / SDK internals are not part of the public API surface.
 
 ---
 
-## Future Streaming Support
+## Integration
 
-Reserved architecture only in this sprint.
-
-| Concern | Future |
+| Concern | Detail |
 |---------|--------|
-| Contract | Implement `IAIStreamingProvider` |
-| Client | SDK streaming / SSE transport |
-| Mapper | Stream chunks → `AIResponseChunk` |
-| Capability | Flip `streaming: true` when shipped |
-| Rules | Keep non-streaming `execute()` path; do not leak SDK stream types outside client |
+| Consumes | `PromptPackage` |
+| Produces | `AIResponse` / `AIStreamingChunk` |
+| Implements | `IAIProvider` (+ health / model / streaming) |
+| Registry | `registerOpenAIProvider(registry, options)` |
+| Factory | Compatible — resolve by id `"openai"` after registration |
 
 ---
 
 ## Explicit Non-Goals
 
-No streaming. No memory. No tool calling. No conversation history. No provider-specific logic outside this provider layer. No domain / coaching logic. Does not modify Prompt Composition or AI Provider Abstraction.
+No domain logic. No prompt generation. No Conversation Orchestrator logic. No Prompt Builder logic. Provider remains completely replaceable. Does not modify Prompt Composition or AI Provider Abstraction contracts beyond implementing them.

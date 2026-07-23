@@ -155,12 +155,13 @@ Implemented in Sprint 19.3 — see [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md).
 
 | Concern | Status |
 |---------|--------|
-| Adapter | `features/openai-provider` implements `IAIProvider` + health/model + `execute()` |
-| Registry | Concrete provider can `registry.register(openAIProvider)` |
-| Mapping | `PromptPackage` blocks → OpenAI message roles **inside** adapter |
-| Response | Vendor payload → standardized `AIResponse` |
+| Adapter | `features/openai-provider` implements `IAIProvider` + health/model/streaming + `execute()` / `executeStreaming()` |
+| Registry | `registerOpenAIProvider(registry)` — factory-compatible |
+| Mapping | `PromptPackage` → OpenAI request **inside** adapter (`OpenAIRequestBuilder`) |
+| Response | Vendor payload → standardized `AIResponse` / `AIStreamingChunk` |
+| Errors | Dedicated hierarchy maps into `AIError` |
 | Rules | Abstraction remains vendor-neutral; OpenAI SDK stays in `OpenAIClient` |
-| Streaming | Reserved — Future Streaming Support in OpenAI Provider docs |
+| Streaming | Provider-local streaming abstraction (config-gated; no UI) |
 
 ---
 

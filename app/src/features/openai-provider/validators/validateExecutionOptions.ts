@@ -1,10 +1,13 @@
 import type { AIExecutionOptions } from "../../ai-provider/models/AIExecutionOptions";
 
 /**
- * Validate execution options for OpenAI (no streaming in this sprint).
+ * Validate execution options for OpenAI.
+ *
+ * Streaming is allowed only when `streamingEnabled` is true (config flag).
  */
 export function validateOpenAIExecutionOptions(
   options: AIExecutionOptions | null | undefined,
+  streamingEnabled = false,
 ): readonly string[] {
   const issues: string[] = [];
 
@@ -31,7 +34,7 @@ export function validateOpenAIExecutionOptions(
     issues.push("openai_execution_options_timeout_invalid");
   }
 
-  if (options.stream) {
+  if (options.stream && !streamingEnabled) {
     issues.push("openai_execution_options_streaming_not_supported");
   }
 

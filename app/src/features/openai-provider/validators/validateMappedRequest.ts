@@ -5,6 +5,7 @@ import type { OpenAIRequest } from "../models/OpenAIRequest";
  */
 export function validateMappedRequest(
   request: OpenAIRequest | null | undefined,
+  streamingEnabled = false,
 ): readonly string[] {
   const issues: string[] = [];
 
@@ -34,7 +35,7 @@ export function validateMappedRequest(
     }
   }
 
-  if (request.stream !== false) {
+  if (request.stream && !streamingEnabled) {
     issues.push("openai_mapped_request_streaming_not_allowed");
   }
 

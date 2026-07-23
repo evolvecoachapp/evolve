@@ -7,6 +7,7 @@ import type { OpenAIModelConfiguration } from "../models/OpenAIModelConfiguratio
 import type { OpenAIProviderConfiguration } from "../models/OpenAIProviderConfiguration";
 import type { OpenAIRequest } from "../models/OpenAIRequest";
 import type { OpenAIResponse } from "../models/OpenAIResponse";
+import type { OpenAIRetryPolicy } from "../models/OpenAIRetryPolicy";
 import type { OpenAIUsage } from "../models/OpenAIUsage";
 import { freezeResponse } from "../../ai-provider/utils/freezeObjects";
 
@@ -25,12 +26,18 @@ export function freezeChoice(choice: OpenAIChoice): OpenAIChoice {
   });
 }
 
+export function freezeRetryPolicy(
+  policy: OpenAIRetryPolicy,
+): OpenAIRetryPolicy {
+  return Object.freeze({ ...policy });
+}
+
 export function freezeRequest(request: OpenAIRequest): OpenAIRequest {
   return Object.freeze({
     ...request,
     messages: Object.freeze(request.messages.map(freezeMessage)),
     stop: request.stop ? Object.freeze([...request.stop]) : null,
-    stream: false as const,
+    stream: Boolean(request.stream),
   });
 }
 
@@ -58,7 +65,10 @@ export function freezeModelConfiguration(
 export function freezeClientOptions(
   options: OpenAIClientOptions,
 ): OpenAIClientOptions {
-  return Object.freeze({ ...options });
+  return Object.freeze({
+    ...options,
+    retryPolicy: freezeRetryPolicy(options.retryPolicy),
+  });
 }
 
 export function freezeProviderConfiguration(
@@ -68,6 +78,7 @@ export function freezeProviderConfiguration(
     ...configuration,
     models: Object.freeze(configuration.models.map(freezeModelConfiguration)),
     client: freezeClientOptions(configuration.client),
+    retryPolicy: freezeRetryPolicy(configuration.retryPolicy),
   });
 }
 

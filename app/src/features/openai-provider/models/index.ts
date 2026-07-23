@@ -13,10 +13,14 @@ export {
   DEFAULT_OPENAI_TIMEOUT_MS,
   DEFAULT_OPENAI_MAX_RETRIES,
   OPENAI_API_BASE_URL,
+  DEFAULT_OPENAI_RETRY_POLICY,
 } from "./OpenAIClientOptions";
+export type { OpenAIRetryPolicy } from "./OpenAIRetryPolicy";
 export type { OpenAIProviderConfiguration } from "./OpenAIProviderConfiguration";
 export {
   DEFAULT_OPENAI_MODEL,
   DEFAULT_OPENAI_TEMPERATURE,
+  DEFAULT_OPENAI_TOP_P,
 } from "./OpenAIProviderConfiguration";
 export type { OpenAIExecutionResult } from "./OpenAIExecutionResult";
+export type { OpenAIStreamChunk } from "./OpenAIStreamChunk";

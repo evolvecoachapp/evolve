@@ -12,6 +12,7 @@ export interface PromptPackageMapperOptions {
   readonly modelId?: string | null;
   readonly options?: AIExecutionOptions | null;
   readonly configuration: OpenAIProviderConfiguration;
+  readonly stream?: boolean;
 }
 
 const SYSTEM_BLOCK_TYPES = Object.freeze([
@@ -46,13 +47,18 @@ export class PromptPackageMapper {
     const maxTokens =
       execution?.maxOutputTokens ??
       options.configuration.defaultMaxOutputTokens;
-    const topP = execution?.topP ?? null;
+    const topP =
+      execution?.topP ?? options.configuration.defaultTopP;
     const stop =
       execution?.stopSequences && execution.stopSequences.length > 0
         ? execution.stopSequences
         : null;
     const timeoutMs =
       execution?.timeoutMs ?? options.configuration.client.timeoutMs;
+    const stream =
+      options.stream ??
+      execution?.stream ??
+      false;
 
     return new OpenAIRequestBuilder()
       .withModel(modelId)
@@ -62,6 +68,7 @@ export class PromptPackageMapper {
       .withTopP(topP)
       .withStop(stop)
       .withTimeoutMs(timeoutMs)
+      .withStream(stream)
       .build();
   }
 }

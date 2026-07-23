@@ -5,9 +5,16 @@ import { validateConfiguration } from "../validators/validateConfiguration";
 import { validateOpenAIExecutionOptions } from "../validators/validateExecutionOptions";
 import { validateMappedRequest } from "../validators/validateMappedRequest";
 import { validateModelAvailability } from "../validators/validateModelAvailability";
+import { validateResponse } from "../validators/validateResponse";
+import {
+  validateStreamChunk,
+  validateStreamingEnabled,
+} from "../validators/validateStreaming";
 import {
   createClientOptions,
+  createOpenAIResponseFixture,
   createProviderConfiguration,
+  FIXED_TIMESTAMP,
 } from "../testSupport/fixtures";
 
 describe("openai-provider validators", () => {
@@ -38,13 +45,26 @@ describe("openai-provider validators", () => {
     );
   });
 
-  it("validateOpenAIExecutionOptions rejects streaming", () => {
+  it("validateOpenAIExecutionOptions rejects streaming when disabled", () => {
     expect(
-      validateOpenAIExecutionOptions({
-        ...DEFAULT_EXECUTION_OPTIONS,
-        stream: true,
-      }),
+      validateOpenAIExecutionOptions(
+        {
+          ...DEFAULT_EXECUTION_OPTIONS,
+          stream: true,
+        },
+        false,
+      ),
     ).toContain("openai_execution_options_streaming_not_supported");
+
+    expect(
+      validateOpenAIExecutionOptions(
+        {
+          ...DEFAULT_EXECUTION_OPTIONS,
+          stream: true,
+        },
+        true,
+      ),
+    ).toEqual([]);
   });
 
   it("validateMappedRequest requires user message", () => {
@@ -67,5 +87,29 @@ describe("openai-provider validators", () => {
       ])
       .build();
     expect(validateMappedRequest(valid)).toEqual([]);
+  });
+
+  it("validateResponse requires choices", () => {
+    const valid = createOpenAIResponseFixture();
+    expect(validateResponse(valid)).toEqual([]);
+    expect(validateResponse(null)).toContain("openai_response_missing");
+  });
+
+  it("validateStreamingEnabled and validateStreamChunk", () => {
+    expect(validateStreamingEnabled(false)).toContain(
+      "openai_streaming_not_enabled",
+    );
+    expect(validateStreamingEnabled(true)).toEqual([]);
+    expect(
+      validateStreamChunk({
+        id: "c1",
+        index: 0,
+        delta: "x",
+        finishReason: null,
+        model: null,
+        usage: null,
+        createdAt: FIXED_TIMESTAMP,
+      }),
+    ).toEqual([]);
   });
 });

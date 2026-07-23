@@ -510,17 +510,19 @@ Full detail: [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md) (Provide
 | Aspect | Implementation |
 |--------|----------------|
 | **Purpose** | First concrete AI provider adapter over AI Provider Abstraction |
-| **Flow** | Prompt Package → AI Provider Engine → OpenAI Provider → Prompt Mapper → OpenAI Client → Raw OpenAI Response → Response Mapper → AIResponse |
-| **Models** | `OpenAIRequest`, `OpenAIResponse`, `OpenAIMessage`, `OpenAIChoice`, `OpenAIUsage`, `OpenAIError`, `OpenAIModelConfiguration`, `OpenAIExecutionResult`, `OpenAIProviderConfiguration`, `OpenAIClientOptions` |
-| **Contracts** | Implements `IAIProvider`, `IAIHealthProvider`, `IAIModelProvider`; adapter methods `execute()`, `health()`, `listModels()` |
-| **Mappers** | `PromptPackageMapper`, `ResponseMapper`, `ErrorMapper` (immutable; no business logic) |
-| **Client** | `OpenAIClient` — OpenAI SDK calls; SDK types never leave the client layer |
-| **Application API** | `executePrompt`, `checkHealth`, `listAvailableModels` |
-| **Configuration** | `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_TIMEOUT` (env; no hardcoded secrets) |
-| **Integration** | Consumes `PromptPackage` + AI Provider Abstraction; does not modify previous domains |
-| **Design** | **No streaming, memory, tool calling, or conversation history.** Provider-specific logic stays in this layer |
+| **Flow** | PromptPackage → AIProvider → OpenAIProvider → OpenAI SDK → Unified AIResponse |
+| **Models** | `OpenAIRequest`, `OpenAIResponse`, `OpenAIMessage`, `OpenAIChoice`, `OpenAIUsage`, `OpenAIError`, `OpenAIStreamChunk`, `OpenAIRetryPolicy`, `OpenAIModelConfiguration`, `OpenAIExecutionResult`, `OpenAIProviderConfiguration`, `OpenAIClientOptions` |
+| **Contracts** | Implements `IAIProvider`, `IAIHealthProvider`, `IAIModelProvider`, `IAIStreamingProvider`; adapter methods `execute()`, `executeStreaming()`, `health()` |
+| **Mappers** | `OpenAIRequestBuilder` / `PromptPackageMapper`, `OpenAIResponseMapper`, `OpenAIUsageMapper`, `OpenAIErrorMapper` |
+| **Client** | `OpenAIClient` — OpenAI SDK calls only; SDK types never leave the client layer |
+| **Streaming** | Provider-local chunk abstraction (`OpenAIStreamingSession`) — no UI |
+| **Errors** | Dedicated hierarchy → `AIError` (`AuthenticationError`, `RateLimitError`, …) |
+| **Application API** | `execute`, `executeStreaming`, `healthCheck`, `validateConfiguration` |
+| **Configuration** | Immutable env load: API key, org, project, base URL, model, temperature, topP, timeout, retry policy, streaming |
+| **Integration** | Consumes `PromptPackage`; produces `AIResponse`; `registerOpenAIProvider` for registry/factory |
+| **Design** | **No domain logic, prompt generation, conversation orchestration, or UI.** Only module allowed to import OpenAI SDK |
 
-Full detail: [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md) (Provider Flow + Configuration + Future Streaming Support).
+Full detail: [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md) (Configuration + Streaming + Error Mapping).
 
 ### AI Execution Pipeline (`features/ai-execution`) — Sprint 19.4
 
