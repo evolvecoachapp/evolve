@@ -4,9 +4,11 @@ import {
   IntentSelector,
   MealSelector,
   MacroSelector,
+  NutritionCapabilitySelector,
 } from "../selectors";
 import { NutritionGoals } from "../models/NutritionGoal";
 import { NutritionIntents } from "../models/NutritionIntent";
+import { NutritionCapabilities } from "../models/NutritionCapability";
 import { NutritionContextBuilder } from "../builders/NutritionContextBuilder";
 import {
   createNutritionRequestFixture,
@@ -42,5 +44,15 @@ describe("nutrition-agent selectors", () => {
     });
     expect(new MealSelector().select(context).mealsPerDay).toBeGreaterThan(0);
     expect(new MacroSelector().select(context).proteinG).toBeGreaterThan(0);
+  });
+
+  it("NutritionCapabilitySelector maps intents to extensible capabilities", () => {
+    const selector = new NutritionCapabilitySelector();
+    expect(selector.select(NutritionIntents.HYDRATION)).toEqual([
+      NutritionCapabilities.HYDRATION_GUIDANCE,
+    ]);
+    expect(selector.select(NutritionIntents.SUPPLEMENTATION)).toContain(
+      NutritionCapabilities.SUPPLEMENT_GUIDANCE,
+    );
   });
 });

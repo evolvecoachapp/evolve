@@ -1,65 +1,77 @@
-import { NutritionContextBuilder } from "../builders/NutritionContextBuilder";
-import { NutritionPlanBuilder } from "../builders/NutritionPlanBuilder";
-import { RecommendationBuilder } from "../builders/RecommendationBuilder";
-import { MealPlanBuilder } from "../builders/MealPlanBuilder";
-import { MacroPlanBuilder } from "../builders/MacroPlanBuilder";
 import {
-  createNutritionRequestFixture,
+  NutritionRequestBuilder,
+  NutritionResultBuilder,
+  NutritionContextBuilder,
+  NutritionPlanBuilder,
+} from "../builders";
+import {
   createFixedClock,
-  createMockCoachResponse,
+  createNutritionRequestFixture,
+  FIXED_TIMESTAMP,
 } from "../testSupport/fixtures";
-import { labelFromScore } from "../models/NutritionConfidence";
-import { EMPTY_NUTRITION_AGENT_METADATA } from "../models/NutritionMetadata";
+import { NutritionIntents } from "../models/NutritionIntent";
+import { NutritionGoals } from "../models/NutritionGoal";
+import { NutritionDomainInvocationStatuses } from "../models/NutritionDomainInvocation";
+import { NutritionCapabilities } from "../models/NutritionCapability";
 
 describe("nutrition-agent builders", () => {
-  const clock = createFixedClock();
-
-  it("NutritionContextBuilder freezes context", () => {
-    const context = new NutritionContextBuilder().build({
-      request: createNutritionRequestFixture(),
-      coachResponse: createMockCoachResponse(),
-      clock,
+  it("NutritionRequestBuilder builds frozen agent request", () => {
+    const request = new NutritionRequestBuilder().build({
+      id: "nreq:builder:1",
+      message: "Adjust my macros",
+      createdAt: FIXED_TIMESTAMP,
+      intentHint: NutritionIntents.ADJUST_MACROS,
+      goalHint: NutritionGoals.MAINTENANCE,
     });
-    expect(Object.isFrozen(context)).toBe(true);
-    expect(context.coachResponseId).toBe("coach:resp:1");
+    expect(request.id).toBe("nreq:builder:1");
+    expect(request.intentHint).toBe(NutritionIntents.ADJUST_MACROS);
+    expect(Object.isFrozen(request)).toBe(true);
   });
 
-  it("NutritionPlanBuilder builds proposal", () => {
+  it("NutritionResultBuilder builds plan summary and evaluation", () => {
+    const clock = createFixedClock();
     const context = new NutritionContextBuilder().build({
       request: createNutritionRequestFixture(),
       clock,
     });
     const plan = new NutritionPlanBuilder().buildProposal({ context, clock });
-    expect(plan.calorieTargets.targetCalories).toBeGreaterThan(0);
-    expect(Object.isFrozen(plan)).toBe(true);
+    const builder = new NutritionResultBuilder();
+    const summary = builder.buildPlanSummary(plan);
+    expect(summary.planId).toBe(plan.id);
+    expect(summary.targetCalories).toBe(plan.calorieTargets.targetCalories);
+    expect(Object.isFrozen(summary)).toBe(true);
+
+    const evaluation = builder.buildEvaluation({
+      id: "eval:1",
+      planId: plan.id,
+      validation: Object.freeze({ valid: true, issues: Object.freeze([]) }),
+      findings: Object.freeze(["ok"]),
+      evaluatedAt: FIXED_TIMESTAMP,
+    });
+    expect(evaluation.validation.valid).toBe(true);
+    expect(evaluation.findings).toEqual(["ok"]);
   });
 
-  it("RecommendationBuilder / MealPlanBuilder / MacroPlanBuilder work", () => {
-    const context = new NutritionContextBuilder().build({
-      request: createNutritionRequestFixture(),
-      clock,
-    });
-    const plan = new NutritionPlanBuilder().buildProposal({ context, clock });
-    const decision = Object.freeze({
-      id: "nd:1",
-      intent: context.intent,
-      goal: context.goal,
-      strategyId: context.strategy?.id ?? null,
-      plan,
-      accepted: true,
-      confidence: Object.freeze({
-        score: 0.8,
-        label: labelFromScore(0.8),
-        rationale: null,
-      }),
-      reasons: Object.freeze([] as string[]),
-      policyFlags: Object.freeze([] as string[]),
-      metadata: EMPTY_NUTRITION_AGENT_METADATA,
-      decidedAt: clock(),
-    });
-    const recs = new RecommendationBuilder().build({ decision, plan });
-    expect(recs.length).toBeGreaterThan(0);
-    expect(new MealPlanBuilder().build(context).mealsPerDay).toBeGreaterThan(0);
-    expect(new MacroPlanBuilder().build(context).proteinG).toBeGreaterThan(0);
+  it("NutritionResultBuilder attaches domain invocations", () => {
+    const builder = new NutritionResultBuilder();
+    const base = {
+      id: "nresult:1",
+      domainInvocations: Object.freeze([]),
+    } as unknown as import("../models/NutritionAgentResult").NutritionAgentResult;
+    const withInvocations = builder.withDomainInvocations(
+      base,
+      Object.freeze([
+        Object.freeze({
+          id: "ndomain:1",
+          capability: NutritionCapabilities.ANALYZE_NUTRITION,
+          status: NutritionDomainInvocationStatuses.SELECTED,
+          summary: "selected",
+          resultRef: null,
+          attributes: Object.freeze({}),
+          invokedAt: FIXED_TIMESTAMP,
+        }),
+      ]),
+    );
+    expect(withInvocations.domainInvocations).toHaveLength(1);
   });
 });

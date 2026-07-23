@@ -717,22 +717,24 @@ Full detail: [AGENT_RUNTIME.md](./AGENT_RUNTIME.md).
 
 Full detail: [WORKOUT_AGENT.md](./WORKOUT_AGENT.md). Agent Framework: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md). Agent Runtime: [AGENT_RUNTIME.md](./AGENT_RUNTIME.md). Workout Intelligence: [WORKOUT_INTELLIGENCE.md](./WORKOUT_INTELLIGENCE.md).
 
-### Nutrition Agent (`features/nutrition-agent`) — Sprint 21.2
+### Nutrition Agent (`features/nutrition-agent`) — Specialized Framework Agent
 
 | Aspect | Implementation |
 |--------|----------------|
-| **Purpose** | Intelligent nutrition specialist — meal planning, macros, dietary strategy, supplementation, body composition, education |
-| **Flow** | User Request → Conversation Runtime → Nutrition Agent → Coach Intelligence → Prompt Builder → AI Provider → Response Formatter → Action Engine → Tool Runtime → Nutrition Domain |
-| **Models** | `NutritionAgent`, `NutritionRequest`, `NutritionContext`, `NutritionGoal`, `NutritionIntent`, `NutritionStrategy`, `NutritionPlan`, `NutritionDecision`, `NutritionRecommendation`, `NutritionExplanation`, `NutritionConversation`, `NutritionAgentResult`, `NutritionAgentSnapshot`, `NutritionMetadata`, `NutritionConfidence`, `NutritionReasoning`, `NutritionPlanningContext`, `NutritionPlanningResult`, `NutritionExecutionContext`, `NutritionStatistics`, `MacroTargets`, `CalorieTargets`, `MealDistribution`, `HydrationPlan`, `SupplementPlan`, `BodyCompositionState` |
+| **Purpose** | Specialized framework agent — orchestrates nutrition planning and Nutrition Domain capabilities |
+| **Flow** | Agent Runtime → Nutrition Framework Agent → Nutrition Domain Gateway → Capability Selector → Nutrition Domain → NutritionAgentResult |
+| **Models** | `NutritionAgent`, `NutritionAgentRequest`, `NutritionRequest`, `NutritionContext`, `NutritionGoal`, `NutritionIntent`, `NutritionCapability`, `NutritionDomainInvocation`, `NutritionDomainPayloads`, `NutritionEvaluation`, `NutritionPlanSummary`, `NutritionPlan`, `NutritionDecision`, `NutritionRecommendation`, `NutritionExplanation`, `NutritionConversation`, `NutritionAgentResult`, `NutritionAgentSnapshot`, `NutritionMetadata`, … |
 | **Agent** | `NutritionAgent`, `NutritionAgentEngine`, `NutritionAgentCoordinator`, `NutritionAgentSession`, `NutritionAgentState` |
 | **Framework** | `NutritionFrameworkAgent` implements `IAgent`; optional `registerWithFramework` |
+| **Domain Gateway** | `NutritionDomainGateway` — selects / invokes GenerateNutritionPlan, AdjustMacros, AnalyzeNutrition, MealTiming, HydrationGuidance, SupplementGuidance |
+| **Capability Selector** | `NutritionCapabilitySelector` — extensible intent → capability matrix |
 | **Reasoning** | Calorie / Macro / Meal Timing / Body Composition / Energy Balance / Protein / Carb / Fat / Fiber / Hydration / Supplement / Adherence / Education / Goal (deterministic, no AI) |
 | **Planning** | Nutrition / Meal / Macro / Calorie / Hydration / Supplement / Diet Phase / Refeed / Reverse / Cut / Bulk / Maintenance (no execution) |
 | **Strategies** | Fat Loss / Muscle Gain / Maintenance / Recomposition / Performance / Powerlifting / Hypertrophy / General Health / Contest Prep |
 | **Policies** | Safety / Calorie / Macro / Meal / Hydration / Supplement / Adherence / Recovery Nutrition |
-| **Application API** | `processNutritionRequest`, `buildNutritionPlan`, `evaluateNutrition`, `describeNutritionCapabilities`, `validateNutritionPlan` |
-| **Integration** | Consumes Conversation Context / Memory, CoachResponse, ActionPlan, ToolExecutionResult; produces immutable `NutritionAgentResult`; registers with Agent Framework |
-| **Design** | **No prompts, provider calls, tool execution, networking, persistence, or UI.** Orchestrator only — does not replace Nutrition Domain |
+| **Application API** | `processNutritionRequest`, `buildNutritionPlan`, `adjustNutritionPlan`, `evaluateNutrition`, `describeNutritionCapabilities`, `validateNutritionPlan` |
+| **Integration** | Consumes Conversation Context + Nutrition Domain port contracts; produces immutable `NutritionAgentResult` (with `domainInvocations`); registers with Agent Framework |
+| **Design** | **No prompts, provider calls, tool execution, networking, persistence, UI, or business logic.** Orchestrator only — does not replace Nutrition Domain |
 
 Full detail: [NUTRITION_AGENT.md](./NUTRITION_AGENT.md). Agent Framework: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md). Agent Runtime: [AGENT_RUNTIME.md](./AGENT_RUNTIME.md). Nutrition Intelligence: [NUTRITION_INTELLIGENCE.md](./NUTRITION_INTELLIGENCE.md).
 

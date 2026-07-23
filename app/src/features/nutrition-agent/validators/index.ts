@@ -19,3 +19,8 @@ export {
 } from "./validateDietAndSafety";
 export { validateRecommendations } from "./validateRecommendations";
 export { validateNutritionPlan } from "./validateNutritionPlan";
+export { validateNutritionRequest } from "./validateNutritionRequest";
+export { validateCapabilityCompatibility } from "./validateCapabilityCompatibility";
+export { validateGatewayInvocation } from "./validateGatewayInvocation";
+export { validateExecutionContext } from "./validateExecutionContext";
+export { validateNutritionResult } from "./validateNutritionResult";

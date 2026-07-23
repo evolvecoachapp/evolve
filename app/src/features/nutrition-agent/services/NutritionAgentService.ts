@@ -12,6 +12,8 @@ import {
 import type { NutritionAgentEngineDeps } from "../agent/NutritionAgentEngine";
 import type { NutritionAgent } from "../models/NutritionAgent";
 import type { NutritionAgentResult } from "../models/NutritionAgentResult";
+import type { NutritionAdjustMacrosRequest } from "../models/NutritionDomainPayloads";
+import type { NutritionDomainPayloads } from "../models/NutritionDomainPayloads";
 import type { NutritionPlan } from "../models/NutritionPlan";
 import type { NutritionRequest } from "../models/NutritionRequest";
 import type { NutritionValidation } from "../models/NutritionValidation";
@@ -25,8 +27,10 @@ export interface NutritionAgentServiceDeps extends NutritionAgentEngineDeps {
 /**
  * Nutrition Agent Service — coordinates engine / orchestrator.
  *
- * Implements Agent Framework IAgent adapter. Processing behavior is
- * orchestration-only. No networking. No persistence. No provider SDKs.
+ * Specialized framework agent: Agent Runtime → NutritionFrameworkAgent →
+ * Nutrition Domain Gateway → Capability Selector → Nutrition Domain →
+ * NutritionAgentResult.
+ * No networking. No persistence. No provider SDKs. No prompt generation.
  */
 export class NutritionAgentService {
   private readonly engine: NutritionAgentEngine;
@@ -76,6 +80,19 @@ export class NutritionAgentService {
     readonly memoryTurnCount?: number;
   }): NutritionPlan {
     return this.engine.buildPlan(input);
+  }
+
+  async adjustNutritionPlan(input: {
+    readonly request: NutritionRequest;
+    readonly adjustMacrosRequest: NutritionAdjustMacrosRequest;
+    readonly conversationContext?: ConversationContext | null;
+    readonly coachResponse?: CoachResponse | null;
+    readonly actionPlan?: ActionPlan | null;
+    readonly toolExecutionResult?: ToolExecutionResult | null;
+    readonly memoryTurnCount?: number;
+    readonly domainPayloads?: NutritionDomainPayloads;
+  }): Promise<NutritionAgentResult> {
+    return this.orchestrator.adjust(input);
   }
 
   evaluateNutrition(plan: NutritionPlan): NutritionValidation {

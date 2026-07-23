@@ -8,9 +8,12 @@ import type { NutritionConfidence } from "../models/NutritionConfidence";
 import type { NutritionContext } from "../models/NutritionContext";
 import type { NutritionConversation } from "../models/NutritionConversation";
 import type { NutritionDecision } from "../models/NutritionDecision";
+import type { NutritionDomainInvocation } from "../models/NutritionDomainInvocation";
+import type { NutritionEvaluation } from "../models/NutritionEvaluation";
 import type { NutritionExecutionContext } from "../models/NutritionExecutionContext";
 import type { NutritionExplanation } from "../models/NutritionExplanation";
 import type { NutritionPlan } from "../models/NutritionPlan";
+import type { NutritionPlanSummary } from "../models/NutritionPlanSummary";
 import type { NutritionPlanningContext } from "../models/NutritionPlanningContext";
 import type { NutritionPlanningResult } from "../models/NutritionPlanningResult";
 import type { NutritionReasoning } from "../models/NutritionReasoning";
@@ -285,6 +288,32 @@ export function freezeAgent(agent: NutritionAgent): NutritionAgent {
   });
 }
 
+export function freezeDomainInvocation(
+  invocation: NutritionDomainInvocation,
+): NutritionDomainInvocation {
+  return Object.freeze({
+    ...invocation,
+    attributes: Object.freeze({ ...invocation.attributes }),
+  });
+}
+
+export function freezePlanSummary(
+  summary: NutritionPlanSummary,
+): NutritionPlanSummary {
+  return Object.freeze({ ...summary });
+}
+
+export function freezeEvaluation(
+  evaluation: NutritionEvaluation,
+): NutritionEvaluation {
+  return Object.freeze({
+    ...evaluation,
+    validation: freezeValidation(evaluation.validation),
+    findings: Object.freeze([...evaluation.findings]),
+    metadata: freezeMetadata(evaluation.metadata),
+  });
+}
+
 export function freezeAgentResult(
   result: NutritionAgentResult,
 ): NutritionAgentResult {
@@ -302,6 +331,9 @@ export function freezeAgentResult(
     validation: freezeValidation(result.validation),
     snapshot: freezeSnapshot(result.snapshot),
     statistics: freezeStatistics(result.statistics),
+    domainInvocations: Object.freeze(
+      (result.domainInvocations ?? []).map(freezeDomainInvocation),
+    ),
     metadata: freezeMetadata(result.metadata),
   });
 }

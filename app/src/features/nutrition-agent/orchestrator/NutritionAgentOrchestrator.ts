@@ -1,9 +1,11 @@
-import type { NutritionAgentResult } from "../models/NutritionAgentResult";
-import type { NutritionRequest } from "../models/NutritionRequest";
 import type { ActionPlan } from "../../action-engine/models/ActionPlan";
 import type { ConversationContext } from "../../conversation-orchestrator/models/ConversationContext";
 import type { CoachResponse } from "../../response-formatter/models/CoachResponse";
 import type { ToolExecutionResult } from "../../tool-runtime/models/ToolExecutionResult";
+import type { NutritionAgentResult } from "../models/NutritionAgentResult";
+import type { NutritionAdjustMacrosRequest } from "../models/NutritionDomainPayloads";
+import type { NutritionDomainPayloads } from "../models/NutritionDomainPayloads";
+import type { NutritionRequest } from "../models/NutritionRequest";
 import {
   NutritionAgentEngine,
   type NutritionAgentEngineDeps,
@@ -29,6 +31,19 @@ export class NutritionAgentOrchestrator {
     readonly memoryTurnCount?: number;
   }): NutritionAgentResult {
     return this.engine.processRequest(input);
+  }
+
+  adjust(input: {
+    readonly request: NutritionRequest;
+    readonly adjustMacrosRequest: NutritionAdjustMacrosRequest;
+    readonly conversationContext?: ConversationContext | null;
+    readonly coachResponse?: CoachResponse | null;
+    readonly actionPlan?: ActionPlan | null;
+    readonly toolExecutionResult?: ToolExecutionResult | null;
+    readonly memoryTurnCount?: number;
+    readonly domainPayloads?: NutritionDomainPayloads;
+  }): Promise<NutritionAgentResult> {
+    return this.engine.adjustNutritionPlan(input);
   }
 
   getEngine(): NutritionAgentEngine {

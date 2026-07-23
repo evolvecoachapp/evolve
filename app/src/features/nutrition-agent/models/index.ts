@@ -7,6 +7,7 @@ export {
   EMPTY_NUTRITION_AGENT_METADATA,
   EMPTY_NUTRITION_METADATA,
 } from "./NutritionMetadata";
+export type { NutritionAgentRequest } from "./NutritionAgentRequest";
 export type { NutritionAgentResult } from "./NutritionAgentResult";
 export type { NutritionAgentSnapshot } from "./NutritionAgentSnapshot";
 export type { NutritionAgentState } from "./NutritionAgentState";
@@ -16,6 +17,16 @@ export type {
 } from "./NutritionStatistics";
 export type { NutritionAgentStatus } from "./NutritionAgentStatus";
 export { NutritionAgentStatuses } from "./NutritionAgentStatus";
+export type {
+  NutritionCapability,
+  NutritionDomainCapability,
+} from "./NutritionCapability";
+export {
+  NutritionCapabilities,
+  NutritionDomainCapabilities,
+  ALL_NUTRITION_CAPABILITIES,
+  ALL_NUTRITION_DOMAIN_CAPABILITIES,
+} from "./NutritionCapability";
 export type {
   NutritionConfidence,
   NutritionConfidenceLabel,
@@ -27,6 +38,24 @@ export {
 export type { NutritionContext } from "./NutritionContext";
 export type { NutritionConversation } from "./NutritionConversation";
 export type { NutritionDecision } from "./NutritionDecision";
+export type {
+  NutritionDomainInvocation,
+  NutritionDomainInvocationStatus,
+} from "./NutritionDomainInvocation";
+export { NutritionDomainInvocationStatuses } from "./NutritionDomainInvocation";
+export type {
+  NutritionAdjustMacrosRequest,
+  NutritionAnalyzeRequest,
+  NutritionDomainPayload,
+  NutritionDomainPayloads,
+  NutritionDomainPorts,
+  NutritionDomainResultRef,
+  NutritionGeneratePlanRequest,
+  NutritionHydrationRequest,
+  NutritionMealTimingRequest,
+  NutritionSupplementRequest,
+} from "./NutritionDomainPayloads";
+export type { NutritionEvaluation } from "./NutritionEvaluation";
 export type { NutritionExecutionContext } from "./NutritionExecutionContext";
 export type { NutritionExplanation } from "./NutritionExplanation";
 export type { NutritionIntent } from "./NutritionIntent";
@@ -34,6 +63,7 @@ export { NutritionIntents, ALL_NUTRITION_INTENTS } from "./NutritionIntent";
 export type { NutritionGoal } from "./NutritionGoal";
 export { NutritionGoals, ALL_NUTRITION_GOALS } from "./NutritionGoal";
 export type { NutritionPlan, NutritionPhaseHint } from "./NutritionPlan";
+export type { NutritionPlanSummary } from "./NutritionPlanSummary";
 export type { NutritionPlanningContext } from "./NutritionPlanningContext";
 export type { NutritionPlanningResult } from "./NutritionPlanningResult";
 export type {

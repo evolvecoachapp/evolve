@@ -5,6 +5,8 @@ import type { ToolExecutionResult } from "../../tool-runtime/models/ToolExecutio
 import type { NutritionAgent } from "../models/NutritionAgent";
 import { EMPTY_NUTRITION_AGENT_METADATA } from "../models/NutritionMetadata";
 import type { NutritionAgentResult } from "../models/NutritionAgentResult";
+import type { NutritionAdjustMacrosRequest } from "../models/NutritionDomainPayloads";
+import type { NutritionDomainPayloads } from "../models/NutritionDomainPayloads";
 import type { NutritionPlan } from "../models/NutritionPlan";
 import type { NutritionRequest } from "../models/NutritionRequest";
 import type { NutritionValidation } from "../models/NutritionValidation";
@@ -53,7 +55,7 @@ export class NutritionAgentEngine {
     return freezeAgent({
       id: this.id,
       name: "Nutrition Agent",
-      version: "1.0.0",
+      version: "1.1.0",
       capabilities: formatCapabilities([
         "nutrition_planning",
         "macro_distribution",
@@ -63,6 +65,7 @@ export class NutritionAgentEngine {
         "body_composition_support",
         "nutrition_education",
         "plan_evaluation",
+        "domain_orchestration",
       ]),
       strategyIds: Object.freeze(
         createDefaultStrategies().map((s) => s.id),
@@ -123,5 +126,25 @@ export class NutritionAgentEngine {
 
   evaluate(plan: NutritionPlan): NutritionValidation {
     return validatePlan(plan);
+  }
+
+  adjustNutritionPlan(input: {
+    readonly request: NutritionRequest;
+    readonly adjustMacrosRequest: NutritionAdjustMacrosRequest;
+    readonly conversationContext?: ConversationContext | null;
+    readonly coachResponse?: CoachResponse | null;
+    readonly actionPlan?: ActionPlan | null;
+    readonly toolExecutionResult?: ToolExecutionResult | null;
+    readonly memoryTurnCount?: number;
+    readonly domainPayloads?: NutritionDomainPayloads;
+  }): Promise<NutritionAgentResult> {
+    return this.coordinator.adjust({
+      ...input,
+      request: freezeRequest(input.request),
+    });
+  }
+
+  getCoordinator(): NutritionAgentCoordinator {
+    return this.coordinator;
   }
 }

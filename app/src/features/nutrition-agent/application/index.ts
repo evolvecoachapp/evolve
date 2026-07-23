@@ -4,6 +4,8 @@ import type { CoachResponse } from "../../response-formatter/models/CoachRespons
 import type { ToolExecutionResult } from "../../tool-runtime/models/ToolExecutionResult";
 import type { NutritionAgent } from "../models/NutritionAgent";
 import type { NutritionAgentResult } from "../models/NutritionAgentResult";
+import type { NutritionAdjustMacrosRequest } from "../models/NutritionDomainPayloads";
+import type { NutritionDomainPayloads } from "../models/NutritionDomainPayloads";
 import type { NutritionPlan } from "../models/NutritionPlan";
 import type { NutritionRequest } from "../models/NutritionRequest";
 import type { NutritionValidation } from "../models/NutritionValidation";
@@ -62,6 +64,30 @@ export function buildNutritionPlan(options: {
     clock || nowMs ? { clock, nowMs } : undefined,
   );
   return resolved.buildNutritionPlan(rest);
+}
+
+/**
+ * Public API — adjust a nutrition plan via AdjustMacros domain orchestration.
+ */
+export async function adjustNutritionPlan(options: {
+  readonly request: NutritionRequest;
+  readonly adjustMacrosRequest: NutritionAdjustMacrosRequest;
+  readonly conversationContext?: ConversationContext | null;
+  readonly coachResponse?: CoachResponse | null;
+  readonly actionPlan?: ActionPlan | null;
+  readonly toolExecutionResult?: ToolExecutionResult | null;
+  readonly memoryTurnCount?: number;
+  readonly domainPayloads?: NutritionDomainPayloads;
+  readonly service?: NutritionAgentService;
+  readonly clock?: NutritionAgentServiceDeps["clock"];
+  readonly nowMs?: NutritionAgentServiceDeps["nowMs"];
+}): Promise<NutritionAgentResult> {
+  const { service, clock, nowMs, ...rest } = options;
+  const resolved = resolveService(
+    service,
+    clock || nowMs ? { clock, nowMs } : undefined,
+  );
+  return resolved.adjustNutritionPlan(rest);
 }
 
 /**

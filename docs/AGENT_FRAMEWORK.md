@@ -31,6 +31,12 @@ Workout Agent execution path (specialized):
 Agent Runtime → Workout Framework Agent → Planning → Workout Domain → Workout Result
 ```
 
+Nutrition Agent execution path (specialized):
+
+```
+Agent Runtime → Nutrition Framework Agent → Nutrition Domain Gateway → Capability Selector → Nutrition Domain → NutritionAgentResult
+```
+
 Module: `app/src/features/agent-framework/`.
 
 The Agent Framework defines the common contracts, lifecycle, and orchestration model shared by every intelligent agent in EVOLVE.
@@ -78,7 +84,8 @@ Internals (registries, factory, lifecycle) are not part of the public applicatio
 | Consumer | Integration |
 |----------|-------------|
 | **Workout Agent** | Implements `IAgent` via `WorkoutFrameworkAgent`; `registerWithFramework` + `registerWithRuntime` |
-| **Nutrition / Recovery Agents** | Same `IAgent` adapter pattern |
+| **Nutrition Agent** | Implements `IAgent` via `NutritionFrameworkAgent`; domain gateway + capability selector orchestration |
+| **Recovery Agents** | Same `IAgent` adapter pattern |
 | Future Goal / Coach Supervisor | Extend `IAgent` + register with framework / runtime |
 
 ---

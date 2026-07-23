@@ -4,6 +4,7 @@ import type { NutritionAgentStatistics } from "./NutritionStatistics";
 import type { NutritionContext } from "./NutritionContext";
 import type { NutritionConversation } from "./NutritionConversation";
 import type { NutritionDecision } from "./NutritionDecision";
+import type { NutritionDomainInvocation } from "./NutritionDomainInvocation";
 import type { NutritionExplanation } from "./NutritionExplanation";
 import type { NutritionReasoning } from "./NutritionReasoning";
 import type { NutritionRecommendation } from "./NutritionRecommendation";
@@ -25,6 +26,7 @@ export interface NutritionAgentResult {
   readonly validation: NutritionValidation;
   readonly snapshot: NutritionAgentSnapshot;
   readonly statistics: NutritionAgentStatistics;
+  readonly domainInvocations: readonly NutritionDomainInvocation[];
   readonly success: boolean;
   readonly message: string | null;
   readonly metadata: NutritionAgentMetadata;

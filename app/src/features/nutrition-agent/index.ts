@@ -3,18 +3,19 @@
  *
  * Sprint 21.2 — Nutrition Agent Foundation.
  *
- * User Request → Conversation Runtime → Nutrition Agent → Coach Intelligence
- *   → Prompt Builder → AI Provider → Response Formatter → Action Engine
- *   → Tool Runtime → Nutrition Domain
+ * Agent Runtime → Nutrition Framework Agent → Nutrition Domain Gateway →
+ * Domain Capability Selector → Nutrition Domain → NutritionAgentResult
  *
- * Orchestrates existing components. Does not generate prompts, call providers,
- * or execute tools. No networking. No persistence. No UI.
+ * Orchestrates existing Nutrition Domain contracts. Does not generate prompts,
+ * call providers, or execute tools. No networking. No persistence. No UI.
+ * No business logic.
  */
 
 export * from "./models";
 export {
   processNutritionRequest,
   buildNutritionPlan,
+  adjustNutritionPlan,
   evaluateNutrition,
   describeNutritionCapabilities,
   validateNutritionPlan,

@@ -27,6 +27,7 @@ describe("nutrition-agent integration", () => {
     expect(result.reasoning.length).toBeGreaterThan(0);
     expect(result.recommendations.length).toBeGreaterThan(0);
     expect(result.success).toBe(true);
+    expect(result.domainInvocations.length).toBeGreaterThan(0);
   });
 
   it("muscle gain request selects surplus-oriented plan", () => {

@@ -8,3 +8,7 @@ export { RecommendationSelector } from "./RecommendationSelector";
 export { PreferenceSelector } from "./PreferenceSelector";
 export { ConstraintSelector } from "./ConstraintSelector";
 export { PlannerSelector } from "./PlannerSelector";
+export {
+  NutritionCapabilitySelector,
+  DomainCapabilitySelector,
+} from "./NutritionCapabilitySelector";

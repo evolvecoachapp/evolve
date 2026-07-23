@@ -26,6 +26,7 @@ describe("nutrition-agent regression", () => {
     expect(Object.isFrozen(result)).toBe(true);
     expect(Object.isFrozen(result.decision)).toBe(true);
     expect(Object.isFrozen(result.context)).toBe(true);
+    expect(Object.isFrozen(result.domainInvocations)).toBe(true);
     const before = result.success;
     try {
       // @ts-expect-error intentional mutation attempt

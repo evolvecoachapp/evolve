@@ -4,8 +4,8 @@
 **Version:** 0.6.0  
 **Status:** Living Document  
 **Last Updated:** 2026-07-23  
-**Purpose:** Document the Nutrition Agent foundation (Sprint 21.2).  
-**Source of Truth:** Yes — for Nutrition Agent layout, reasoning / planning layers, and public API on mobile.
+**Purpose:** Document the Nutrition Agent as a specialized framework agent that orchestrates the nutrition domain.  
+**Source of Truth:** Yes — for Nutrition Agent layout, domain orchestration, reasoning / planning layers, and public API on mobile.
 
 Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md), [AGENT_RUNTIME.md](./AGENT_RUNTIME.md), [NUTRITION_INTELLIGENCE.md](./NUTRITION_INTELLIGENCE.md), [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md), [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md), [ACTION_ENGINE.md](./ACTION_ENGINE.md), [TOOL_RUNTIME.md](./TOOL_RUNTIME.md), [DECISIONS.md](./DECISIONS.md) (ADR-061).
 
@@ -14,69 +14,95 @@ Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [AGENT_FRAMEWORK.md](./AGENT_FRAM
 ## Architecture Summary
 
 ```
-User Request
+Agent Runtime
       ↓
-Conversation Runtime
+Nutrition Framework Agent
       ↓
-Nutrition Agent
+Nutrition Domain Gateway
       ↓
-Coach Intelligence
-      ↓
-Prompt Builder
-      ↓
-AI Provider
-      ↓
-Response Formatter
-      ↓
-Action Engine
-      ↓
-Tool Runtime
+Domain Capability Selector
       ↓
 Nutrition Domain
+      ↓
+NutritionAgentResult
 ```
 
 Module: `app/src/features/nutrition-agent/`.
 
-The Nutrition Agent is the intelligent nutrition specialist of EVOLVE. It specializes in nutritional reasoning, meal planning, macro distribution, dietary strategy, supplementation guidance, body composition support, and nutritional education.
+The Nutrition Agent is a specialized framework agent. It orchestrates existing (or future) nutrition domain capabilities and returns an immutable `NutritionAgentResult`.
 
-It extends the Agent Framework via `NutritionFrameworkAgent` (`IAgent` adapter) and registers through the Agent Registry.
+It contains **no** business logic, provider logic, prompts, networking, persistence, or memory.
 
-It consumes the complete AI Runtime but **owns no infrastructure**.
+It **does**:
 
-It does **not**:
+- receive nutrition requests
+- build execution / planning context
+- select domain capabilities
+- invoke Nutrition Domain ports when payloads are supplied
+- collect immutable orchestration results
+- return `NutritionAgentResult`
+
+It **does not**:
 
 - generate prompts
-- call providers directly
+- call AI providers
 - execute tools directly
 - network / persist / render UI
-- duplicate Nutrition Domain business logic
+- duplicate domain calculations
 
-It **orchestrates** existing components and organizes domain knowledge before AI interaction.
+---
+
+## Execution Flow
+
+1. **Agent Runtime** selects / executes `NutritionFrameworkAgent` (`IAgent`).
+2. **Nutrition Framework Agent** adapts the immutable Nutrition Agent descriptor.
+3. **Nutrition Domain Gateway** translates agent intent into domain orchestration.
+4. **NutritionCapabilitySelector** resolves intent → capabilities (`GenerateNutritionPlan`, `AdjustMacros`, `AnalyzeNutrition`, `MealTiming`, `HydrationGuidance`, `SupplementGuidance`).
+5. **Nutrition Domain** ports are invoked when matching payloads are present (otherwise skipped — contracts only when engines are not yet implemented).
+6. **Nutrition Result** is frozen as `NutritionAgentResult` (includes `domainInvocations`).
+
+---
+
+## Capability Matrix
+
+| Intent | Capabilities |
+|--------|--------------|
+| `plan_nutrition` | GenerateNutritionPlan, MealTiming, HydrationGuidance |
+| `adjust_macros` | AdjustMacros, AnalyzeNutrition |
+| `meal_timing` | MealTiming, GenerateNutritionPlan |
+| `supplementation` | SupplementGuidance, AnalyzeNutrition |
+| `hydration` | HydrationGuidance |
+| `evaluate_plan` | AnalyzeNutrition, AdjustMacros |
+| `body_composition` | AnalyzeNutrition, AdjustMacros, GenerateNutritionPlan |
+| `education` / `unknown` | AnalyzeNutrition |
+
+Future capabilities are appended to `NutritionCapabilities` and mapped in `NutritionCapabilitySelector` without changing existing entries.
 
 ---
 
 ## Integration
 
-### Consumes
+### Consumes (existing / future Nutrition Domain — not modified)
 
-| Input | Source |
-|-------|--------|
-| Conversation Context | Conversation Orchestrator |
-| Conversation Memory | Coach memory (turn counts / history) |
-| CoachResponse | Response Formatter (optional handoff) |
-| ActionPlan | Action Engine (optional handoff) |
-| ToolExecutionResult | Tool Runtime (optional feedback) |
-| Nutrition Domain facts | Existing nutrition modules (delegated, not duplicated) |
-| Workout Agent contracts | Shared context only |
+| Capability | Role |
+|------------|------|
+| GenerateNutritionPlan | Plan generation when `generatePlanRequest` + port provided |
+| AdjustMacros | Macro adjustment when `adjustMacrosRequest` + port provided |
+| AnalyzeNutrition | Analysis when `analyzeRequest` + port provided |
+| MealTiming | Meal timing when `mealTimingRequest` + port provided |
+| HydrationGuidance | Hydration when `hydrationRequest` + port provided |
+| SupplementGuidance | Supplements when `supplementRequest` + port provided |
+
+Also consumes Conversation Context / optional CoachResponse / ActionPlan / ToolExecutionResult for planning context only.
 
 ### Produces
 
 | Output | Role |
 |--------|------|
 | **NutritionAgentResult** | Immutable primary agent output |
-| NutritionPlan | Planning-only proposal |
-| NutritionDecision / Recommendations / Explanation | Decision surface |
-| NutritionValidation | Integrity checks |
+| NutritionPlan / NutritionPlanSummary | Planning-only proposal / summary |
+| NutritionDomainInvocation[] | Selected / invoked / skipped domain capability records |
+| NutritionEvaluation / NutritionValidation | Integrity checks |
 
 ---
 
@@ -84,46 +110,20 @@ It **orchestrates** existing components and organizes domain knowledge before AI
 
 | Folder | Role |
 |--------|------|
-| `models/` | Immutable agent models |
-| `agent/` | NutritionAgent, Engine, Coordinator, Session, State |
+| `models/` | Immutable agent + domain invocation models |
+| `agent/` | NutritionAgent facade, Engine, Coordinator, Session, State |
 | `framework/` | `NutritionFrameworkAgent` — Agent Framework `IAgent` adapter |
-| `orchestrator/` | Runtime artifact wiring |
+| `orchestrator/` | Runtime wiring + `NutritionDomainGateway` |
 | `reasoning/` | Deterministic reasoners (no AI) |
 | `planning/` | Planners (no execution) |
-| `strategies/` | Fat Loss / Muscle Gain / Maintenance / Recomp / Performance / Powerlifting / Hypertrophy / General Health / Contest Prep |
+| `strategies/` | Fat Loss / Muscle Gain / Maintenance / Recomp / Performance / … |
 | `policies/` | Safety / Calorie / Macro / Meal / Hydration / Supplement / Adherence / Recovery Nutrition |
-| `selectors/` | Intent / Goal / Strategy / Meal / Macro / Supplement / Recommendation / Preference / Constraint / Planner |
-| `builders/` | Context / Plan / Recommendation / Meal / Macro builders |
-| `validators/` | Calories / macros / meals / protein / fat / carbs / fiber / hydration / supplements / diet / constraints / preferences / safety |
-| `services/` | NutritionAgentService (`asFrameworkAgent` / `registerWithFramework`) |
+| `selectors/` | Intent / Goal / Strategy / Meal / Macro / Supplement / **NutritionCapabilitySelector** |
+| `builders/` | Context / Plan / Recommendation / **Request** / **Result** builders |
+| `validators/` | Request / capability / gateway / execution context / result / plan validators |
+| `services/` | NutritionAgentService |
 | `application/` | Public API only |
-| `utils/` | Calorie/Macro/Meal/Hydration/BodyComposition helpers, FreezeNutritionState |
-
----
-
-## Reasoning Layer
-
-Deterministic modules that organize domain knowledge **before** AI interaction:
-
-- CalorieReasoner, MacroReasoner, MealTimingReasoner
-- BodyCompositionReasoner, EnergyBalanceReasoner
-- ProteinReasoner, CarbohydrateReasoner, FatReasoner, FiberReasoner
-- HydrationReasoner, SupplementReasoner, AdherenceReasoner
-- EducationReasoner, GoalReasoner
-
-No AI. No provider logic.
-
----
-
-## Planning Layer
-
-Planners produce planning decisions only:
-
-- NutritionPlanner, MealPlanner, MacroPlanner, CaloriePlanner
-- HydrationPlanner, SupplementPlanner, DietPhasePlanner
-- RefeedPlanner, ReverseDietPlanner, CutPlanner, BulkPlanner, MaintenancePlanner
-
-No execution. No tool calls.
+| `utils/` | Helpers, FreezeNutritionState |
 
 ---
 
@@ -132,12 +132,13 @@ No execution. No tool calls.
 ```ts
 processNutritionRequest()
 buildNutritionPlan()
+adjustNutritionPlan()
 evaluateNutrition()
 describeNutritionCapabilities()
 validateNutritionPlan()
 ```
 
-Internals (reasoners, planners, policies, engine) are not part of the public surface.
+Internals (reasoners, planners, policies, domain gateway, engine) are not part of the public surface.
 
 ---
 
@@ -145,5 +146,6 @@ Internals (reasoners, planners, policies, engine) are not part of the public sur
 
 - No OpenAI SDK / provider-specific logic
 - No networking / persistence / UI
-- No business logic duplication — delegate to existing Nutrition Domain modules whenever possible
+- No business logic duplication — delegate to Nutrition Domain ports / contracts
 - Nutrition Agent is an **orchestrator**, not a replacement for the Nutrition Domain
+- Domain payloads are supplied by callers — the agent never fabricates engine inputs

@@ -36,24 +36,34 @@ import {
   freezeValidation,
 } from "../utils/FreezeNutritionState";
 import { computeAgentStatistics } from "../utils/statisticsHelpers";
+import { NutritionIntents } from "../models/NutritionIntent";
+import type { NutritionDomainPayloads } from "../models/NutritionDomainPayloads";
+import type { NutritionAdjustMacrosRequest } from "../models/NutritionDomainPayloads";
+import {
+  createNutritionDomainGateway,
+  NutritionDomainGateway,
+  type NutritionDomainGatewayDeps,
+} from "../orchestrator/NutritionDomainGateway";
 import { NutritionAgentSession } from "./NutritionSession";
 import { NutritionAgentStateManager } from "./NutritionState";
 
-export interface NutritionAgentCoordinatorDeps {
+export interface NutritionAgentCoordinatorDeps extends NutritionDomainGatewayDeps {
   readonly clock?: () => string;
   readonly nowMs?: () => number;
   readonly session?: NutritionAgentSession;
+  readonly domainGateway?: NutritionDomainGateway;
 }
 
 /**
- * Coordinates reason → plan → policy → validate → result.
- * No AI. No providers. No tool execution.
+ * Coordinates reason → plan → policy → validate → domain orchestration → result.
+ * No AI. No providers. No tool execution. No business logic.
  */
 export class NutritionAgentCoordinator {
   private readonly clock: () => string;
   private readonly nowMs: () => number;
   private readonly session: NutritionAgentSession;
   private readonly stateManager: NutritionAgentStateManager;
+  private readonly domainGateway: NutritionDomainGateway;
   private readonly contextBuilder = new NutritionContextBuilder();
   private readonly planBuilder = new NutritionPlanBuilder();
   private readonly recommendationBuilder = new RecommendationBuilder();
@@ -65,10 +75,21 @@ export class NutritionAgentCoordinator {
       deps.session ??
       new NutritionAgentSession("session:nutrition:default", this.clock);
     this.stateManager = new NutritionAgentStateManager(this.session);
+    this.domainGateway =
+      deps.domainGateway ??
+      createNutritionDomainGateway({
+        ports: deps.ports,
+        clock: this.clock,
+        capabilitySelector: deps.capabilitySelector,
+      });
   }
 
   getSession(): NutritionAgentSession {
     return this.session;
+  }
+
+  getDomainGateway(): NutritionDomainGateway {
+    return this.domainGateway;
   }
 
   process(input: {
@@ -276,12 +297,81 @@ export class NutritionAgentCoordinator {
       validation: mergedValidation,
       snapshot,
       statistics,
+      domainInvocations: this.domainGateway.planInvocations(
+        context.intent,
+        context.id,
+      ),
       success,
       message: explanation.summary,
       metadata: EMPTY_NUTRITION_AGENT_METADATA,
       startedAt,
       completedAt,
       frozenAt: completedAt,
+    });
+  }
+
+  /**
+   * Adjust path — plans via agent, then invokes AdjustMacros domain capability.
+   */
+  async adjust(input: {
+    readonly request: NutritionRequest;
+    readonly adjustMacrosRequest: NutritionAdjustMacrosRequest;
+    readonly conversationContext?: ConversationContext | null;
+    readonly coachResponse?: CoachResponse | null;
+    readonly actionPlan?: ActionPlan | null;
+    readonly toolExecutionResult?: ToolExecutionResult | null;
+    readonly memoryTurnCount?: number;
+    readonly domainPayloads?: NutritionDomainPayloads;
+  }): Promise<NutritionAgentResult> {
+    const base = this.process({
+      ...input,
+      request: Object.freeze({
+        ...input.request,
+        intentHint: input.request.intentHint ?? NutritionIntents.ADJUST_MACROS,
+      }),
+    });
+
+    const { invocation } = await this.domainGateway.invokeAdjustMacros(
+      input.adjustMacrosRequest,
+      base.context.id,
+    );
+
+    const extra =
+      input.domainPayloads != null
+        ? await this.domainGateway.invokeSelected(
+            base.context.intent,
+            base.context.id,
+            {
+              ...input.domainPayloads,
+              adjustMacrosRequest: input.adjustMacrosRequest,
+            },
+          )
+        : Object.freeze([invocation]);
+
+    const domainInvocations = Object.freeze(
+      input.domainPayloads != null
+        ? [...extra]
+        : [
+            ...base.domainInvocations.filter(
+              (item) => item.capability !== invocation.capability,
+            ),
+            invocation,
+          ],
+    );
+
+    const success =
+      base.success &&
+      domainInvocations.every((item) => item.status !== "failed");
+
+    return freezeAgentResult({
+      ...base,
+      domainInvocations,
+      success,
+      message: success
+        ? `Nutrition adjusted via AdjustMacros (${invocation.summary}).`
+        : base.message,
+      completedAt: this.clock(),
+      frozenAt: this.clock(),
     });
   }
 }

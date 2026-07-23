@@ -16,18 +16,20 @@ Related: [NUTRITION_AGENT.md](./NUTRITION_AGENT.md), [AGENT_RUNTIME.md](./AGENT_
 Nutrition Intelligence in EVOLVE has two complementary layers:
 
 1. **Nutrition Domain** — deterministic nutrition targets, logging, adherence, and domain services (source of truth for executable nutrition artifacts).
-2. **Nutrition Agent** — conversational / planning orchestrator that specializes nutrition dialogues and prepares decisions without replacing domain engines.
+2. **Nutrition Agent** — specialized framework agent that orchestrates Nutrition Domain capabilities without replacing domain engines.
 
 ```
-Nutrition Agent (orchestrator)
-        │
-        ├── Reasoning (deterministic knowledge organization)
-        ├── Planning (proposals only)
-        ├── Strategies / Policies / Selectors
-        └── Delegates to Nutrition Domain when execution is required
-                 │
-                 ▼
-        Action Engine → Tool Runtime → Domain Tool Adapters → Nutrition Domain
+Agent Runtime
+      ↓
+Nutrition Framework Agent
+      ↓
+Nutrition Domain Gateway
+      ↓
+NutritionCapabilitySelector
+      ↓
+Nutrition Domain (ports / contracts)
+      ↓
+NutritionAgentResult
 ```
 
 ---
@@ -36,20 +38,20 @@ Nutrition Agent (orchestrator)
 
 | Layer | Owns | Does not own |
 |-------|------|--------------|
-| **Nutrition Agent** | Intent/goal resolution, strategy selection, plan proposals, explanations | Prompts, providers, tool execution, persistence |
+| **Nutrition Agent** | Intent resolution, capability selection, plan proposals, domain invocation records | Prompts, providers, tool execution, persistence, domain algorithms |
 | **Nutrition Domain** | Target calculation, meal logging, adherence math, domain services | Conversational orchestration |
+| **NutritionDomainGateway** | Translate agent requests ↔ domain ports; skip when payloads missing | Business calculations |
 | **Tool Runtime** | Adapter orchestration for ActionPlans | Domain business rules |
-| **Coach Intelligence** | Coaching context preparation | Nutrition-specific planning |
 
 ---
 
 ## Flow
 
-1. User makes a nutrition request.
-2. Conversation Runtime prepares Conversation Context / Memory.
-3. Nutrition Agent reasons + plans → `NutritionAgentResult`.
-4. Downstream Coach / Prompt / Provider path may generate language.
-5. Response Formatter → Action Engine → Tool Runtime may execute domain tools.
+1. User / runtime makes a nutrition request.
+2. Nutrition Framework Agent builds execution context.
+3. Capability selector resolves intent → Nutrition Domain capabilities.
+4. Domain gateway plans / invokes ports when payloads are supplied.
+5. Immutable `NutritionAgentResult` (with `domainInvocations`) is returned.
 6. Nutrition Domain remains source of truth for executable nutrition artifacts.
 
 ---

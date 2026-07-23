@@ -38,7 +38,7 @@
 - [AGENT_LIFECYCLE.md](../AGENT_LIFECYCLE.md) — Agent Framework lifecycle / state machine
 - [AGENT_REGISTRY.md](../AGENT_REGISTRY.md) — Agent / capability / role / metadata registries
 - [WORKOUT_AGENT.md](../WORKOUT_AGENT.md) — Workout Agent, reasoning / planning layers, WorkoutAgentResult
-- [NUTRITION_AGENT.md](../NUTRITION_AGENT.md) — Nutrition Agent, reasoning / planning layers, NutritionAgentResult
+- [NUTRITION_AGENT.md](../NUTRITION_AGENT.md) — Nutrition Agent, domain gateway / capability selector, NutritionAgentResult
 - [RECOVERY_AGENT.md](../RECOVERY_AGENT.md) — Recovery Agent, reasoning / planning layers, RecoveryAgentResult
 - [AGENT_RUNTIME.md](../AGENT_RUNTIME.md) — Agent Runtime Foundation (registry, selection, execution entry point)
 - [WORKOUT_INTELLIGENCE.md](../WORKOUT_INTELLIGENCE.md) — Workout Domain vs Workout Agent split

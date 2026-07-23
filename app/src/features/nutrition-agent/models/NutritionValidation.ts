@@ -13,7 +13,9 @@ export type NutritionValidationCode =
   | "preference_conflict"
   | "safety_violation"
   | "policy_violation"
-  | "recommendation_invalid";
+  | "recommendation_invalid"
+  | "missing_field"
+  | "incompatible";
 
 export const NutritionValidationCodes = Object.freeze({
   INVALID_CALORIES: "invalid_calories" as const,
@@ -31,6 +33,8 @@ export const NutritionValidationCodes = Object.freeze({
   SAFETY_VIOLATION: "safety_violation" as const,
   POLICY_VIOLATION: "policy_violation" as const,
   RECOMMENDATION_INVALID: "recommendation_invalid" as const,
+  MISSING_FIELD: "missing_field" as const,
+  INCOMPATIBLE: "incompatible" as const,
 });
 
 export interface NutritionValidationIssue {
