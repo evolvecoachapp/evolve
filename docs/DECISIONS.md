@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-23  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-062). Append only — never renumber.  
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-064). Append only — never renumber.  
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -1972,4 +1972,33 @@ Add `app/src/features/agent-runtime/` with immutable runtime models (`AgentRunti
 
 ---
 
-*New decisions are appended as Decision 064, 065, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 064: Workout Agent Domain Orchestration
+
+**Date:** 2026-07-23
+
+**Status:** Accepted
+
+**Context:**
+The Workout Agent existed as a planning / conversational orchestrator on the Agent Framework, but needed an explicit specialized path through Agent Runtime that consumes existing workout domain engines (Program Generation, Programming, Progression, Training Adaptation, Workout Assembly, Exercise Knowledge Base, Decision Intelligence) without embedding business logic, prompts, providers, networking, or persistence. An `adaptWorkout` public API was required for Training Adaptation orchestration.
+
+**Decision:**
+Extend `app/src/features/workout-agent/` with `WorkoutDomainGateway` + `DomainCapabilitySelector`, immutable `WorkoutDomainInvocation` / `WorkoutDomainCapability` models, `adaptWorkout()` application API, Agent Runtime registration (`registerWithRuntime` + domain executor), and document the execution flow Agent Runtime → Workout Framework Agent → Planning → Workout Domain → Workout Result. Domain engines are invoked only when callers supply payloads / ports; missing payloads are recorded as skipped. Existing domain modules are not modified.
+
+**Why:**
+- **Specialized framework agent** keeps workout orchestration behind `IAgent` + Agent Runtime.
+- **Domain gateway** centralizes consumption of existing engines without duplicating math.
+- **No fabrication** of domain inputs preserves domain ownership of business rules.
+- **adaptWorkout** provides an explicit adaptation entry without AI / networking.
+
+**Alternatives considered:**
+- **Invoke domains only via Tool Runtime** — rejected for agent-direct adaptation / planning orchestration needs.
+- **Embed domain calculations in the agent** — rejected: violates no-business-logic rule.
+- **Rewrite Workout Agent from scratch** — rejected: preserve Sprint 21.0/21.1 planning surface and migrate behavior.
+
+**Consequences:**
+- Documentation updates: [WORKOUT_AGENT.md](./WORKOUT_AGENT.md), [WORKOUT_INTELLIGENCE.md](./WORKOUT_INTELLIGENCE.md), [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md), [AGENT_RUNTIME.md](./AGENT_RUNTIME.md), [ARCHITECTURE.md](./ARCHITECTURE.md).
+- Workout Agent remains free of providers, prompts, networking, persistence, and domain business logic.
+
+---
+
+*New decisions are appended as Decision 065, 066, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

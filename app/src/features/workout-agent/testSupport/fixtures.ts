@@ -25,11 +25,14 @@ export function createFixedClock(ts = FIXED_TIMESTAMP): () => string {
   return () => ts;
 }
 
-export function createTestAgentService() {
+export function createTestAgentService(
+  overrides: Parameters<typeof createWorkoutAgentService>[0] = {},
+) {
   return createWorkoutAgentService({
     clock: createFixedClock(),
     nowMs: () => FIXED_NOW_MS,
     agentId: "agent:workout:test",
+    ...overrides,
   });
 }
 

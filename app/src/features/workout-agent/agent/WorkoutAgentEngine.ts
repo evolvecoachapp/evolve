@@ -2,9 +2,11 @@ import type { ActionPlan } from "../../action-engine/models/ActionPlan";
 import type { ConversationContext } from "../../conversation-orchestrator/models/ConversationContext";
 import type { CoachResponse } from "../../response-formatter/models/CoachResponse";
 import type { ToolExecutionResult } from "../../tool-runtime/models/ToolExecutionResult";
+import type { TrainingAdaptationRequest } from "../../training-adaptation/models/TrainingAdaptationRequest";
 import type { WorkoutAgent } from "../models/WorkoutAgent";
 import { EMPTY_WORKOUT_AGENT_METADATA } from "../models/WorkoutAgentMetadata";
 import type { WorkoutAgentResult } from "../models/WorkoutAgentResult";
+import type { WorkoutDomainPayloads } from "../models/WorkoutDomainPayloads";
 import type { WorkoutPlanProposal } from "../models/WorkoutPlanProposal";
 import type { WorkoutRequest } from "../models/WorkoutRequest";
 import type { WorkoutValidation } from "../models/WorkoutValidation";
@@ -50,7 +52,7 @@ export class WorkoutAgentEngine {
     return freezeAgent({
       id: this.id,
       name: "Workout Agent",
-      version: "1.0.0",
+      version: "1.1.0",
       capabilities: formatCapabilities([
         "workout_planning",
         "progression_reasoning",
@@ -58,6 +60,8 @@ export class WorkoutAgentEngine {
         "split_design",
         "recovery_guidance",
         "plan_evaluation",
+        "workout_adaptation",
+        "domain_orchestration",
       ]),
       strategyIds: Object.freeze(
         createDefaultStrategies().map((s) => s.id),
@@ -115,5 +119,21 @@ export class WorkoutAgentEngine {
 
   evaluate(proposal: WorkoutPlanProposal): WorkoutValidation {
     return validatePlan(proposal);
+  }
+
+  adaptWorkout(input: {
+    readonly request: WorkoutRequest;
+    readonly adaptationRequest: TrainingAdaptationRequest;
+    readonly conversationContext?: ConversationContext | null;
+    readonly coachResponse?: CoachResponse | null;
+    readonly actionPlan?: ActionPlan | null;
+    readonly toolExecutionResult?: ToolExecutionResult | null;
+    readonly memoryTurnCount?: number;
+    readonly domainPayloads?: WorkoutDomainPayloads;
+  }): Promise<WorkoutAgentResult> {
+    return this.coordinator.adapt({
+      ...input,
+      request: freezeRequest(input.request),
+    });
   }
 }

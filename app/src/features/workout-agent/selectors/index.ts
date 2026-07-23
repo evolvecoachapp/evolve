@@ -5,3 +5,4 @@ export { SplitSelector } from "./SplitSelector";
 export { ExerciseSelector } from "./ExerciseSelector";
 export { RecommendationSelector } from "./RecommendationSelector";
 export { PlannerSelector } from "./PlannerSelector";
+export { DomainCapabilitySelector } from "./DomainCapabilitySelector";

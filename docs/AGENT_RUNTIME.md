@@ -50,7 +50,13 @@ Agent Framework contracts (IAgent)    ← Sprint 21.1
       ↓
 Domain Agent (Workout / Nutrition / Recovery)
       ↓
-Coach Intelligence → Prompt Builder → AI Provider → …
+Planning → Domain → Agent Result
+```
+
+Workout Agent specialized path:
+
+```
+Agent Runtime → Workout Framework Agent → Planning → Workout Domain → Workout Result
 ```
 
 ---
@@ -133,8 +139,9 @@ Runtime internals (coordinators, selectors, registry mutations) are not part of 
 | Consumer | Integration |
 |----------|-------------|
 | **IAgent** | Register any framework agent |
+| **WorkoutFrameworkAgent** | Register via `WorkoutAgentService.registerWithRuntime` (+ domain executor) |
 | **RecoveryFrameworkAgent** | Register without modifying recovery-agent |
-| Future Workout / Nutrition / Goal / Coach Supervisor | Same `IAgent` + optional executor |
+| Nutrition / Goal / Coach Supervisor | Same `IAgent` + optional executor |
 
 Domain agents supply optional `AgentRuntimeExecutor` handlers. Without a handler, the runtime uses a **shell executor** that returns orchestration metadata only (no domain logic).
 

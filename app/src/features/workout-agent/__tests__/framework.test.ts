@@ -1,4 +1,4 @@
-import {
+﻿import {
   describeAgent,
   registerAgent,
   resolveAgent,
@@ -6,6 +6,12 @@ import {
 import { createAgentFrameworkService } from "../../agent-framework/services/AgentFrameworkService";
 import { AgentCapabilityKeys } from "../../agent-framework/models/AgentCapabilityKey";
 import { AgentRoles } from "../../agent-framework/models/AgentRole";
+import {
+  executeAgent,
+  listAgents,
+} from "../../agent-runtime/application";
+import { createAgentRuntimeService } from "../../agent-runtime/services/AgentRuntimeService";
+import { buildAgentRuntimeRequest } from "../../agent-runtime/builders/AgentRuntimeRequestBuilder";
 import {
   processWorkoutRequest,
   describeWorkoutCapabilities,
@@ -15,6 +21,7 @@ import {
   createWorkoutRequestFixture,
   createFixedClock,
   FIXED_TIMESTAMP,
+  FIXED_NOW_MS,
 } from "../testSupport/fixtures";
 
 describe("workout-agent framework migration", () => {
@@ -65,5 +72,39 @@ describe("workout-agent framework migration", () => {
         capability: AgentCapabilityKeys.WORKOUT_PLANNING,
       }).getRole(),
     ).toBe(AgentRoles.WORKOUT);
+  });
+
+  it("registers with Agent Runtime and executes via workout executor", async () => {
+    const runtime = createAgentRuntimeService({
+      clock: createFixedClock(),
+      nowMs: () => FIXED_NOW_MS,
+      runtimeId: "runtime:workout:test",
+    });
+    const service = createTestAgentService();
+    service.registerWithRuntime(runtime);
+
+    expect(listAgents({ service: runtime }).map((a) => a.id)).toContain(
+      "agent:workout:test",
+    );
+
+    const response = await executeAgent({
+      service: runtime,
+      request: buildAgentRuntimeRequest({
+        id: "areq:workout:1",
+        agentId: "agent:workout:test",
+        intent: "plan hypertrophy",
+        attributes: Object.freeze({
+          message: "Build a hypertrophy workout plan for 4 days per week",
+          athleteId: "athlete-1",
+        }),
+        createdAt: FIXED_TIMESTAMP,
+      }),
+    });
+
+    expect(response.success).toBe(true);
+    expect(response.result?.attributes.workoutResultId).toBeTruthy();
+    expect(
+      Number(response.result?.attributes.domainInvocationCount),
+    ).toBeGreaterThan(0);
   });
 });

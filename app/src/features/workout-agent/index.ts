@@ -1,21 +1,19 @@
 /**
  * Workout Agent
  *
- * Sprint 21.0 — Workout Agent Foundation.
- * Sprint 21.1 — Migrated onto Agent Framework (IAgent adapter).
+ * Specialized framework agent for workout domain orchestration.
  *
- * User Request → Agent Framework → Workout Agent → Coach Intelligence
- *   → Prompt Builder → AI Provider → Response Formatter → Action Engine
- *   → Tool Runtime → Workout Domain
+ * Agent Runtime → Workout Framework Agent → Planning → Workout Domain → Workout Result
  *
  * Orchestrates existing components. Does not generate prompts, call providers,
- * or execute tools. No networking. No persistence. No UI.
+ * or execute tools. No networking. No persistence. No UI. No business logic.
  */
 
 export * from "./models";
 export {
   processWorkoutRequest,
   buildWorkoutPlan,
+  adaptWorkout,
   evaluateWorkout,
   describeWorkoutCapabilities,
   validateWorkoutPlan,
@@ -28,3 +26,7 @@ export {
   createWorkoutFrameworkAgent,
   WORKOUT_FRAMEWORK_CAPABILITY_KEYS,
 } from "./framework";
+export {
+  WorkoutDomainGateway,
+  createWorkoutDomainGateway,
+} from "./orchestrator/WorkoutDomainGateway";

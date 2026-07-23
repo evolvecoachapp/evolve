@@ -16,15 +16,19 @@ Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [AGENT_LIFECYCLE.md](./AGENT_LIFE
 ```
 User Request
       ↓
-Agent Framework
+Agent Runtime
       ↓
-Workout Agent / Nutrition Agent / Recovery Agent / Goal Agent / Coach Supervisor
+Agent Framework (IAgent contracts)
       ↓
-AI Runtime
+Workout Framework Agent / Nutrition / Recovery / Goal / Coach Supervisor
       ↓
-Tool Runtime
-      ↓
-Domain
+Planning → Domain → Agent Result
+```
+
+Workout Agent execution path (specialized):
+
+```
+Agent Runtime → Workout Framework Agent → Planning → Workout Domain → Workout Result
 ```
 
 Module: `app/src/features/agent-framework/`.
@@ -73,8 +77,9 @@ Internals (registries, factory, lifecycle) are not part of the public applicatio
 
 | Consumer | Integration |
 |----------|-------------|
-| **Workout Agent** | Implements `IAgent` via `WorkoutFrameworkAgent` adapter; optional `registerWithFramework` |
-| Future Nutrition / Recovery / Goal / Coach Supervisor | Extend `IAgent` + register with framework |
+| **Workout Agent** | Implements `IAgent` via `WorkoutFrameworkAgent`; `registerWithFramework` + `registerWithRuntime` |
+| **Nutrition / Recovery Agents** | Same `IAgent` adapter pattern |
+| Future Goal / Coach Supervisor | Extend `IAgent` + register with framework / runtime |
 
 ---
 

@@ -1,9 +1,15 @@
 import type { ActionPlan } from "../../action-engine/models/ActionPlan";
 import type { IAgent } from "../../agent-framework/contracts/IAgent";
 import type { AgentFrameworkService } from "../../agent-framework/services/AgentFrameworkService";
+import type { AgentRuntimeExecutor } from "../../agent-runtime/models/AgentRuntimeExecutor";
+import type { AgentRuntimeService } from "../../agent-runtime/services/AgentRuntimeService";
+import { AgentRuntimeStatuses } from "../../agent-runtime/models/AgentRuntimeStatus";
+import { createRuntimeError } from "../../agent-runtime/models/AgentRuntimeError";
+import { freezeResult } from "../../agent-runtime/utils/FreezeRuntime";
 import type { ConversationContext } from "../../conversation-orchestrator/models/ConversationContext";
 import type { CoachResponse } from "../../response-formatter/models/CoachResponse";
 import type { ToolExecutionResult } from "../../tool-runtime/models/ToolExecutionResult";
+import type { TrainingAdaptationRequest } from "../../training-adaptation/models/TrainingAdaptationRequest";
 import {
   WorkoutAgentFacade,
   WorkoutAgentEngine,
@@ -12,6 +18,8 @@ import {
 import type { WorkoutAgentEngineDeps } from "../agent/WorkoutAgentEngine";
 import type { WorkoutAgent } from "../models/WorkoutAgent";
 import type { WorkoutAgentResult } from "../models/WorkoutAgentResult";
+import type { WorkoutDomainPayloads } from "../models/WorkoutDomainPayloads";
+import { EMPTY_WORKOUT_AGENT_METADATA } from "../models/WorkoutAgentMetadata";
 import type { WorkoutPlanProposal } from "../models/WorkoutPlanProposal";
 import type { WorkoutRequest } from "../models/WorkoutRequest";
 import type { WorkoutValidation } from "../models/WorkoutValidation";
@@ -25,7 +33,8 @@ export interface WorkoutAgentServiceDeps extends WorkoutAgentEngineDeps {
 /**
  * Workout Agent Service — coordinates engine / orchestrator.
  *
- * Migrated onto Agent Framework (IAgent adapter). Processing behavior unchanged.
+ * Specialized framework agent: Agent Runtime → WorkoutFrameworkAgent →
+ * Planning → Workout Domain → WorkoutAgentResult.
  * No networking. No persistence. No provider SDKs. No prompt generation.
  */
 export class WorkoutAgentService {
@@ -62,6 +71,85 @@ export class WorkoutAgentService {
     frameworkService.registerAgent(this.asFrameworkAgent());
   }
 
+  /**
+   * Register this Workout Agent with Agent Runtime (+ domain executor).
+   */
+  registerWithRuntime(runtimeService: AgentRuntimeService): void {
+    runtimeService.registerAgent(this.asFrameworkAgent(), {
+      executor: this.createRuntimeExecutor(),
+    });
+  }
+
+  /**
+   * Runtime executor — orchestration shell that processes workout requests
+   * carried in runtime request attributes (no business logic).
+   */
+  createRuntimeExecutor(): AgentRuntimeExecutor {
+    return (input) => {
+      const requestAttr = input.request.attributes["workoutRequestId"];
+      const message =
+        typeof input.request.attributes["message"] === "string"
+          ? input.request.attributes["message"]
+          : input.request.intent ?? "Workout agent execution";
+
+      const workoutRequest: WorkoutRequest = Object.freeze({
+        id:
+          typeof requestAttr === "string"
+            ? requestAttr
+            : `wreq:${input.request.id}`,
+        athleteId:
+          typeof input.request.attributes["athleteId"] === "string"
+            ? input.request.attributes["athleteId"]
+            : null,
+        conversationId: input.request.conversationId,
+        message,
+        intentHint: null,
+        objectiveHint: null,
+        daysPerWeek: null,
+        experienceLevel: null,
+        constraints: Object.freeze([] as string[]),
+        metadata: EMPTY_WORKOUT_AGENT_METADATA,
+        createdAt: input.request.createdAt,
+      });
+
+      const result = this.processWorkoutRequest({ request: workoutRequest });
+      const completedAt = input.clock();
+      return freezeResult({
+        id: `result:${input.plan.id}`,
+        planId: input.plan.id,
+        requestId: input.request.id,
+        agentId: input.agent.id,
+        success: result.success,
+        status: result.success
+          ? AgentRuntimeStatuses.COMPLETED
+          : AgentRuntimeStatuses.FAILED,
+        message: result.message ?? "Workout agent completed",
+        attributes: Object.freeze({
+          workoutResultId: result.id,
+          domainInvocationCount: String(result.domainInvocations.length),
+        }),
+        error: result.success
+          ? null
+          : createRuntimeError({
+              code: "workout_agent_failed",
+              message: result.message ?? "Workout agent failed",
+              agentId: input.agent.id,
+              occurredAt: completedAt,
+            }),
+        metadata: {
+          tags: Object.freeze(["workout-agent", "domain-orchestration"]),
+          attributes: Object.freeze({
+            strategyId: result.decision.strategyId ?? "",
+          }),
+        },
+        startedAt: input.startedAt,
+        completedAt,
+        durationMs: Math.max(0, input.nowMs() - input.nowMs()),
+        frozenAt: completedAt,
+      });
+    };
+  }
+
   processWorkoutRequest(input: {
     readonly request: WorkoutRequest;
     readonly conversationContext?: ConversationContext | null;
@@ -82,6 +170,19 @@ export class WorkoutAgentService {
     readonly memoryTurnCount?: number;
   }): WorkoutPlanProposal {
     return this.engine.buildPlan(input);
+  }
+
+  async adaptWorkout(input: {
+    readonly request: WorkoutRequest;
+    readonly adaptationRequest: TrainingAdaptationRequest;
+    readonly conversationContext?: ConversationContext | null;
+    readonly coachResponse?: CoachResponse | null;
+    readonly actionPlan?: ActionPlan | null;
+    readonly toolExecutionResult?: ToolExecutionResult | null;
+    readonly memoryTurnCount?: number;
+    readonly domainPayloads?: WorkoutDomainPayloads;
+  }): Promise<WorkoutAgentResult> {
+    return this.orchestrator.adapt(input);
   }
 
   evaluateWorkout(proposal: WorkoutPlanProposal): WorkoutValidation {

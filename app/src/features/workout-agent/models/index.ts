@@ -1,4 +1,4 @@
-export type { WorkoutAgent } from "./WorkoutAgent";
+﻿export type { WorkoutAgent } from "./WorkoutAgent";
 export type { WorkoutAgentMetadata } from "./WorkoutAgentMetadata";
 export { EMPTY_WORKOUT_AGENT_METADATA } from "./WorkoutAgentMetadata";
 export type { WorkoutAgentResult } from "./WorkoutAgentResult";
@@ -18,6 +18,20 @@ export {
 export type { WorkoutContext } from "./WorkoutContext";
 export type { WorkoutConversation } from "./WorkoutConversation";
 export type { WorkoutDecision } from "./WorkoutDecision";
+export type { WorkoutDomainCapability } from "./WorkoutDomainCapability";
+export {
+  WorkoutDomainCapabilities,
+  ALL_WORKOUT_DOMAIN_CAPABILITIES,
+} from "./WorkoutDomainCapability";
+export type {
+  WorkoutDomainInvocation,
+  WorkoutDomainInvocationStatus,
+} from "./WorkoutDomainInvocation";
+export { WorkoutDomainInvocationStatuses } from "./WorkoutDomainInvocation";
+export type {
+  WorkoutDomainPayloads,
+  WorkoutDomainPorts,
+} from "./WorkoutDomainPayloads";
 export type { WorkoutExecutionContext } from "./WorkoutExecutionContext";
 export type { WorkoutExplanation } from "./WorkoutExplanation";
 export type { WorkoutIntent } from "./WorkoutIntent";

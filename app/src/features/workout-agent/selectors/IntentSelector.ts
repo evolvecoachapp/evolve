@@ -20,6 +20,9 @@ export class IntentSelector {
     if (/evaluat|review|check plan/.test(text)) {
       return WorkoutIntents.EVALUATE_PLAN;
     }
+    if (/adapt|readiness|fatigue/.test(text)) {
+      return WorkoutIntents.ADAPT_WORKOUT;
+    }
     if (/recover|deload/.test(text)) {
       return WorkoutIntents.RECOVERY_ADVICE;
     }

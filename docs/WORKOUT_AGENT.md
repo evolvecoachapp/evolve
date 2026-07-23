@@ -4,68 +4,77 @@
 **Version:** 0.6.0  
 **Status:** Living Document  
 **Last Updated:** 2026-07-23  
-**Purpose:** Document the Workout Agent foundation (Sprint 21.0).  
-**Source of Truth:** Yes — for Workout Agent layout, reasoning / planning layers, and public API on mobile.
+**Purpose:** Document the Workout Agent as a specialized framework agent that orchestrates the workout domain.  
+**Source of Truth:** Yes — for Workout Agent layout, domain orchestration, reasoning / planning layers, and public API on mobile.
 
-Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md), [AGENT_RUNTIME.md](./AGENT_RUNTIME.md), [WORKOUT_INTELLIGENCE.md](./WORKOUT_INTELLIGENCE.md), [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md), [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md), [ACTION_ENGINE.md](./ACTION_ENGINE.md), [TOOL_RUNTIME.md](./TOOL_RUNTIME.md), [DECISIONS.md](./DECISIONS.md) (ADR-059, ADR-060).
+Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md), [AGENT_RUNTIME.md](./AGENT_RUNTIME.md), [WORKOUT_INTELLIGENCE.md](./WORKOUT_INTELLIGENCE.md), [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md), [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md), [ACTION_ENGINE.md](./ACTION_ENGINE.md), [TOOL_RUNTIME.md](./TOOL_RUNTIME.md), [DECISIONS.md](./DECISIONS.md) (ADR-059, ADR-060, ADR-064).
 
 ---
 
 ## Architecture Summary
 
 ```
-User Request
+Agent Runtime
       ↓
-Agent Framework
+Workout Framework Agent
       ↓
-Workout Agent
-      ↓
-Coach Intelligence
-      ↓
-Prompt Builder
-      ↓
-AI Provider
-      ↓
-Response Formatter
-      ↓
-Action Engine
-      ↓
-Tool Runtime
+Planning
       ↓
 Workout Domain
+      ↓
+Workout Result
 ```
 
 Module: `app/src/features/workout-agent/`.
 
-The Workout Agent is the first intelligent domain agent of EVOLVE. It specializes in workout planning, programming, progression, exercise selection, and training conversations.
+The Workout Agent is a specialized framework agent. It orchestrates existing workout domain capabilities and returns an immutable `WorkoutAgentResult`.
 
-Sprint 21.1 migrates it onto the shared Agent Framework via `WorkoutFrameworkAgent` (`IAgent` adapter) without changing processing behavior.
+It contains **no** business logic, provider logic, prompts, networking, persistence, or memory.
 
-It consumes the complete AI Runtime but **owns no infrastructure**.
+It **does**:
 
-It does **not**:
+- receive workout requests
+- build execution / planning context
+- select planning strategy and domain capabilities
+- invoke existing workout domain engines (when payloads / ports are supplied)
+- collect immutable orchestration results
+- return `WorkoutAgentResult`
+
+It **does not**:
 
 - generate prompts
-- call providers directly
+- call AI providers
 - execute tools directly
 - network / persist / render UI
+- duplicate domain calculations
 
-It **orchestrates** existing components and organizes domain knowledge before AI interaction.
+---
+
+## Execution Flow
+
+1. **Agent Runtime** selects / executes `WorkoutFrameworkAgent` (`IAgent`).
+2. **Workout Framework Agent** adapts the immutable Workout Agent descriptor.
+3. **Planning** resolves intent → objective → strategy → planners / policies.
+4. **Workout Domain** is invoked via `WorkoutDomainGateway` (Program Generation, Programming, Progression, Training Adaptation, Workout Assembly, Exercise Knowledge Base, Decision Intelligence).
+5. **Workout Result** is frozen as `WorkoutAgentResult` (includes `domainInvocations`).
 
 ---
 
 ## Integration
 
-### Consumes
+### Consumes (existing domains — not modified)
 
-| Input | Source |
-|-------|--------|
-| Conversation Context | Conversation Orchestrator |
-| Conversation Memory | Coach memory (turn counts / history) |
-| CoachResponse | Response Formatter (optional handoff) |
-| ActionPlan | Action Engine (optional handoff) |
-| ToolExecutionResult | Tool Runtime (optional feedback) |
-| Workout Domain facts | Existing workout / selection / progression modules (delegated, not duplicated) |
+| Domain | Role |
+|--------|------|
+| Program Generation | Full pipeline generation when `generationRequest` provided |
+| Programming Engine | Prescriptions when `programmingRequest` provided |
+| Progression Engine | Progression plans when `progressionRequest` provided |
+| Training Adaptation Engine | `adaptWorkout()` / adaptation payloads |
+| Workout Assembly Engine | Session assembly when `assemblyRequest` provided |
+| Exercise Knowledge Base | Catalog queries when requested |
+| Decision Intelligence | Decision reports from generation sources |
+
+Also consumes Conversation Context / optional CoachResponse / ActionPlan / ToolExecutionResult for planning context only.
 
 ### Produces
 
@@ -73,7 +82,7 @@ It **orchestrates** existing components and organizes domain knowledge before AI
 |--------|------|
 | **WorkoutAgentResult** | Immutable primary agent output |
 | WorkoutPlanProposal | Planning-only proposal |
-| WorkoutDecision / Recommendations / Explanation | Decision surface |
+| WorkoutDomainInvocation[] | Selected / invoked / skipped domain capability records |
 | WorkoutValidation | Integrity checks |
 
 ---
@@ -82,53 +91,20 @@ It **orchestrates** existing components and organizes domain knowledge before AI
 
 | Folder | Role |
 |--------|------|
-| `models/` | Immutable agent models |
-| `agent/` | WorkoutAgent, Engine, Coordinator, Session, State |
+| `models/` | Immutable agent + domain invocation models |
+| `agent/` | WorkoutAgent facade, Engine, Coordinator, Session, State |
 | `framework/` | `WorkoutFrameworkAgent` — Agent Framework `IAgent` adapter |
-| `orchestrator/` | Runtime artifact wiring |
+| `orchestrator/` | Runtime wiring + `WorkoutDomainGateway` |
 | `reasoning/` | Deterministic reasoners (no AI) |
 | `planning/` | Planners (no execution) |
 | `strategies/` | Strength / Hypertrophy / Powerbuilding / Powerlifting / General Fitness |
 | `policies/` | Safety / Recovery / Progression / Volume / Exercise |
-| `selectors/` | Intent / Objective / Strategy / Split / Exercise / Recommendation |
+| `selectors/` | Intent / Objective / Strategy / Split / Exercise / DomainCapability |
 | `builders/` | Context / Plan / Recommendation builders |
 | `validators/` | Objective / split / exercise / volume / intensity / recovery / progression |
-| `services/` | WorkoutAgentService (`asFrameworkAgent` / `registerWithFramework`) |
+| `services/` | WorkoutAgentService (`asFrameworkAgent` / `registerWithFramework` / `registerWithRuntime`) |
 | `application/` | Public API only |
 | `utils/` | Metrics, helpers, FreezeAgentState |
-
----
-
-## Reasoning Layer
-
-Deterministic modules that organize domain knowledge **before** AI interaction:
-
-- ExerciseReasoner
-- ProgressionReasoner
-- VolumeReasoner
-- IntensityReasoner
-- FatigueReasoner
-- FrequencyReasoner
-- SplitReasoner
-- GoalReasoner
-
-No AI. No provider logic.
-
----
-
-## Planning Layer
-
-Planners produce planning decisions only:
-
-- WorkoutPlanner
-- ProgressionPlanner
-- ExercisePlanner
-- SplitPlanner
-- AccessoryPlanner
-- DeloadPlanner
-- RecoveryPlanner
-
-No execution. No tool calls.
 
 ---
 
@@ -137,12 +113,13 @@ No execution. No tool calls.
 ```ts
 processWorkoutRequest()
 buildWorkoutPlan()
+adaptWorkout()
 evaluateWorkout()
 describeWorkoutCapabilities()
 validateWorkoutPlan()
 ```
 
-Internals (reasoners, planners, policies, engine) are not part of the public surface.
+Internals (reasoners, planners, policies, domain gateway, engine) are not part of the public surface.
 
 ---
 
@@ -150,5 +127,6 @@ Internals (reasoners, planners, policies, engine) are not part of the public sur
 
 - No OpenAI SDK / provider-specific logic
 - No networking / persistence / UI
-- No business logic duplication — delegate to existing domain modules whenever possible
+- No business logic duplication — delegate to existing domain modules
 - Workout Agent is an **orchestrator**, not a replacement for the Workout Domain
+- Domain payloads are supplied by callers — the agent never fabricates engine inputs

@@ -2,8 +2,10 @@ import type { ActionPlan } from "../../action-engine/models/ActionPlan";
 import type { ConversationContext } from "../../conversation-orchestrator/models/ConversationContext";
 import type { CoachResponse } from "../../response-formatter/models/CoachResponse";
 import type { ToolExecutionResult } from "../../tool-runtime/models/ToolExecutionResult";
+import type { TrainingAdaptationRequest } from "../../training-adaptation/models/TrainingAdaptationRequest";
 import type { WorkoutAgent } from "../models/WorkoutAgent";
 import type { WorkoutAgentResult } from "../models/WorkoutAgentResult";
+import type { WorkoutDomainPayloads } from "../models/WorkoutDomainPayloads";
 import type { WorkoutPlanProposal } from "../models/WorkoutPlanProposal";
 import type { WorkoutRequest } from "../models/WorkoutRequest";
 import type { WorkoutValidation } from "../models/WorkoutValidation";
@@ -62,6 +64,30 @@ export function buildWorkoutPlan(options: {
     clock || nowMs ? { clock, nowMs } : undefined,
   );
   return resolved.buildWorkoutPlan(rest);
+}
+
+/**
+ * Public API — adapt a workout via Training Adaptation Engine orchestration.
+ */
+export async function adaptWorkout(options: {
+  readonly request: WorkoutRequest;
+  readonly adaptationRequest: TrainingAdaptationRequest;
+  readonly conversationContext?: ConversationContext | null;
+  readonly coachResponse?: CoachResponse | null;
+  readonly actionPlan?: ActionPlan | null;
+  readonly toolExecutionResult?: ToolExecutionResult | null;
+  readonly memoryTurnCount?: number;
+  readonly domainPayloads?: WorkoutDomainPayloads;
+  readonly service?: WorkoutAgentService;
+  readonly clock?: WorkoutAgentServiceDeps["clock"];
+  readonly nowMs?: WorkoutAgentServiceDeps["nowMs"];
+}): Promise<WorkoutAgentResult> {
+  const { service, clock, nowMs, ...rest } = options;
+  const resolved = resolveService(
+    service,
+    clock || nowMs ? { clock, nowMs } : undefined,
+  );
+  return resolved.adaptWorkout(rest);
 }
 
 /**

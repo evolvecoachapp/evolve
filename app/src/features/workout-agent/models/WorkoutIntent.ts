@@ -8,6 +8,7 @@ export const WorkoutIntents = Object.freeze({
   DESIGN_SPLIT: "design_split" as const,
   EVALUATE_PLAN: "evaluate_plan" as const,
   RECOVERY_ADVICE: "recovery_advice" as const,
+  ADAPT_WORKOUT: "adapt_workout" as const,
   GENERAL_TRAINING: "general_training" as const,
 });
 

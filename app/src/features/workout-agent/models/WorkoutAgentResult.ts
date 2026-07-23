@@ -4,6 +4,7 @@ import type { WorkoutAgentStatistics } from "./WorkoutAgentStatistics";
 import type { WorkoutContext } from "./WorkoutContext";
 import type { WorkoutConversation } from "./WorkoutConversation";
 import type { WorkoutDecision } from "./WorkoutDecision";
+import type { WorkoutDomainInvocation } from "./WorkoutDomainInvocation";
 import type { WorkoutExplanation } from "./WorkoutExplanation";
 import type { WorkoutReasoning } from "./WorkoutReasoning";
 import type { WorkoutRecommendation } from "./WorkoutRecommendation";
@@ -25,6 +26,7 @@ export interface WorkoutAgentResult {
   readonly validation: WorkoutValidation;
   readonly snapshot: WorkoutAgentSnapshot;
   readonly statistics: WorkoutAgentStatistics;
+  readonly domainInvocations: readonly WorkoutDomainInvocation[];
   readonly success: boolean;
   readonly message: string | null;
   readonly metadata: WorkoutAgentMetadata;

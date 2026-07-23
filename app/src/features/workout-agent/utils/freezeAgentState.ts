@@ -225,6 +225,14 @@ export function freezeAgentResult(
     validation: freezeValidation(result.validation),
     snapshot: freezeSnapshot(result.snapshot),
     statistics: freezeStatistics(result.statistics),
+    domainInvocations: Object.freeze(
+      (result.domainInvocations ?? []).map((invocation) =>
+        Object.freeze({
+          ...invocation,
+          attributes: Object.freeze({ ...invocation.attributes }),
+        }),
+      ),
+    ),
     metadata: freezeMetadata(result.metadata),
   });
 }

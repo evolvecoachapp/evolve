@@ -7,12 +7,15 @@ import { WorkoutPlanBuilder } from "../builders/WorkoutPlanBuilder";
 import { WorkoutRecommendationBuilder } from "../builders/WorkoutRecommendationBuilder";
 import { EMPTY_WORKOUT_AGENT_METADATA } from "../models/WorkoutAgentMetadata";
 import type { WorkoutAgentResult } from "../models/WorkoutAgentResult";
+import type { WorkoutDomainPayloads } from "../models/WorkoutDomainPayloads";
 import type { WorkoutRequest } from "../models/WorkoutRequest";
 import { WorkoutAgentStatuses } from "../models/WorkoutAgentStatus";
 import {
   labelFromScore,
 } from "../models/WorkoutConfidence";
+import type { TrainingAdaptationRequest } from "../../training-adaptation/models/TrainingAdaptationRequest";
 import { createDefaultReasoners } from "../reasoning";
+import { WorkoutIntents } from "../models/WorkoutIntent";
 import {
   DefaultExercisePolicy,
   DefaultProgressionPolicy,
@@ -31,13 +34,19 @@ import {
   freezeValidation,
 } from "../utils/freezeAgentState";
 import { computeAgentStatistics } from "../utils/statisticsHelpers";
+import {
+  createWorkoutDomainGateway,
+  WorkoutDomainGateway,
+  type WorkoutDomainGatewayDeps,
+} from "../orchestrator/WorkoutDomainGateway";
 import { WorkoutAgentSession } from "./WorkoutAgentSession";
 import { WorkoutAgentStateManager } from "./WorkoutAgentState";
 
-export interface WorkoutAgentCoordinatorDeps {
+export interface WorkoutAgentCoordinatorDeps extends WorkoutDomainGatewayDeps {
   readonly clock?: () => string;
   readonly nowMs?: () => number;
   readonly session?: WorkoutAgentSession;
+  readonly domainGateway?: WorkoutDomainGateway;
 }
 
 /**
@@ -49,6 +58,7 @@ export class WorkoutAgentCoordinator {
   private readonly nowMs: () => number;
   private readonly session: WorkoutAgentSession;
   private readonly stateManager: WorkoutAgentStateManager;
+  private readonly domainGateway: WorkoutDomainGateway;
   private readonly contextBuilder = new WorkoutContextBuilder();
   private readonly planBuilder = new WorkoutPlanBuilder();
   private readonly recommendationBuilder = new WorkoutRecommendationBuilder();
@@ -59,10 +69,21 @@ export class WorkoutAgentCoordinator {
     this.session =
       deps.session ?? new WorkoutAgentSession("session:workout:default", this.clock);
     this.stateManager = new WorkoutAgentStateManager(this.session);
+    this.domainGateway =
+      deps.domainGateway ??
+      createWorkoutDomainGateway({
+        ports: deps.ports,
+        clock: this.clock,
+        capabilitySelector: deps.capabilitySelector,
+      });
   }
 
   getSession(): WorkoutAgentSession {
     return this.session;
+  }
+
+  getDomainGateway(): WorkoutDomainGateway {
+    return this.domainGateway;
   }
 
   process(input: {
@@ -256,12 +277,83 @@ export class WorkoutAgentCoordinator {
       validation: mergedValidation,
       snapshot,
       statistics,
+      domainInvocations: this.domainGateway.planInvocations(
+        context.intent,
+        context.id,
+      ),
       success,
       message: explanation.summary,
       metadata: EMPTY_WORKOUT_AGENT_METADATA,
       startedAt,
       completedAt,
       frozenAt: completedAt,
+    });
+  }
+
+  /**
+   * Adapt path — plans via agent, then invokes Training Adaptation Engine.
+   */
+  async adapt(input: {
+    readonly request: WorkoutRequest;
+    readonly adaptationRequest: TrainingAdaptationRequest;
+    readonly conversationContext?: ConversationContext | null;
+    readonly coachResponse?: CoachResponse | null;
+    readonly actionPlan?: ActionPlan | null;
+    readonly toolExecutionResult?: ToolExecutionResult | null;
+    readonly memoryTurnCount?: number;
+    readonly domainPayloads?: WorkoutDomainPayloads;
+  }): Promise<WorkoutAgentResult> {
+    const base = this.process({
+      ...input,
+      request: Object.freeze({
+        ...input.request,
+        intentHint: input.request.intentHint ?? WorkoutIntents.ADAPT_WORKOUT,
+      }),
+    });
+
+    const { invocation } = await this.domainGateway.invokeAdaptation(
+      input.adaptationRequest,
+      base.context.id,
+    );
+
+    const extra =
+      input.domainPayloads != null
+        ? await this.domainGateway.invokeSelected(
+            base.context.intent,
+            base.context.id,
+            {
+              ...input.domainPayloads,
+              adaptationRequest: input.adaptationRequest,
+            },
+          )
+        : Object.freeze([invocation]);
+
+    const domainInvocations = Object.freeze(
+      input.domainPayloads != null
+        ? [...extra]
+        : [
+            ...base.domainInvocations.filter(
+              (item) => item.capability !== invocation.capability,
+            ),
+            invocation,
+          ],
+    );
+
+    const success =
+      base.success &&
+      domainInvocations.every(
+        (item) => item.status !== "failed",
+      );
+
+    return freezeAgentResult({
+      ...base,
+      domainInvocations,
+      success,
+      message: success
+        ? `Workout adapted via Training Adaptation Engine (${invocation.summary}).`
+        : base.message,
+      completedAt: this.clock(),
+      frozenAt: this.clock(),
     });
   }
 }

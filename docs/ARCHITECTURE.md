@@ -158,7 +158,7 @@ Agent Framework                  ← Sprint 21.1 (implemented) — shared agent 
 Agent Runtime                    ← Sprint 21.4 (implemented) — single execution entry point for agent workflows
   (`app/src/features/agent-runtime/`)
   ↓
-Workout Agent                    ← Sprint 21.0 (implemented) — first domain agent (orchestration only; migrated onto framework in 21.1)
+Workout Agent                    ← specialized framework agent — domain orchestration (Agent Runtime → Planning → Workout Domain → Result)
   (`app/src/features/workout-agent/`)
   ↓
 Nutrition Agent                  ← Sprint 21.2 (implemented) — nutrition specialist domain agent (orchestration only)
@@ -692,27 +692,28 @@ Full detail: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md). Lifecycle: [AGENT_LIFEC
 | **Selectors** | Deterministic `AgentSelector` (role / capability / priority / fallback; no AI) |
 | **Coordinators** | `ExecutionCoordinator`, `LifecycleCoordinator`, `ResponseCoordinator`, `EventCoordinator` |
 | **Application API** | `executeAgent`, `listAgents`, `describeAgent`, `registerAgent`, `unregisterAgent` |
-| **Integration** | Consumes `IAgent` / `RecoveryFrameworkAgent` without modifying existing agents; optional injectable executors |
+| **Integration** | Consumes `IAgent` / `WorkoutFrameworkAgent` / `RecoveryFrameworkAgent` without modifying domain agents; optional injectable executors |
 | **Design** | **No business logic, providers, networking, persistence, prompts, or memory.** Runtime orchestration only |
 
 Full detail: [AGENT_RUNTIME.md](./AGENT_RUNTIME.md).
 
-### Workout Agent (`features/workout-agent`) — Sprint 21.0 / 21.1
+### Workout Agent (`features/workout-agent`) — Specialized Framework Agent
 
 | Aspect | Implementation |
 |--------|----------------|
-| **Purpose** | First intelligent domain agent — workout planning, progression, exercise selection, training conversations |
-| **Flow** | User Request → Agent Framework → Workout Agent → Coach Intelligence → Prompt Builder → AI Provider → Response Formatter → Action Engine → Tool Runtime → Workout Domain |
-| **Models** | `WorkoutAgent`, `WorkoutRequest`, `WorkoutContext`, `WorkoutObjective`, `WorkoutIntent`, `WorkoutStrategy`, `WorkoutPlanProposal`, `WorkoutDecision`, `WorkoutRecommendation`, `WorkoutExplanation`, `WorkoutConversation`, `WorkoutAgentResult`, `WorkoutAgentSnapshot`, `WorkoutAgentMetadata`, `WorkoutConfidence`, `WorkoutReasoning`, `WorkoutPlanningContext`, `WorkoutPlanningResult`, `WorkoutExecutionContext`, `WorkoutAgentStatistics` |
+| **Purpose** | Specialized framework agent — orchestrates workout planning and existing workout domain engines |
+| **Flow** | Agent Runtime → Workout Framework Agent → Planning → Workout Domain → Workout Result |
+| **Models** | `WorkoutAgent`, `WorkoutRequest`, `WorkoutContext`, `WorkoutObjective`, `WorkoutIntent`, `WorkoutStrategy`, `WorkoutPlanProposal`, `WorkoutDecision`, `WorkoutRecommendation`, `WorkoutExplanation`, `WorkoutConversation`, `WorkoutAgentResult`, `WorkoutDomainInvocation`, `WorkoutDomainCapability`, `WorkoutAgentSnapshot`, … |
 | **Agent** | `WorkoutAgent`, `WorkoutAgentEngine`, `WorkoutAgentCoordinator`, `WorkoutAgentSession`, `WorkoutAgentState` |
-| **Framework** | `WorkoutFrameworkAgent` implements `IAgent`; optional `registerWithFramework` (Sprint 21.1) |
+| **Framework** | `WorkoutFrameworkAgent` implements `IAgent`; `registerWithFramework` + `registerWithRuntime` |
+| **Domain Gateway** | `WorkoutDomainGateway` — selects / invokes Program Generation, Programming, Progression, Training Adaptation, Workout Assembly, Exercise KB, Decision Intelligence |
 | **Reasoning** | Exercise / Progression / Volume / Intensity / Fatigue / Frequency / Split / Goal (deterministic, no AI) |
 | **Planning** | Workout / Progression / Exercise / Split / Accessory / Deload / Recovery (no execution) |
 | **Strategies** | Strength / Hypertrophy / Powerbuilding / Powerlifting / General Fitness |
 | **Policies** | Safety / Recovery / Progression / Volume / Exercise |
-| **Application API** | `processWorkoutRequest`, `buildWorkoutPlan`, `evaluateWorkout`, `describeWorkoutCapabilities`, `validateWorkoutPlan` |
-| **Integration** | Consumes Conversation Context / Memory, CoachResponse, ActionPlan, ToolExecutionResult; produces immutable `WorkoutAgentResult`; registers with Agent Framework |
-| **Design** | **No prompts, provider calls, tool execution, networking, persistence, or UI.** Orchestrator only — does not replace Workout Domain |
+| **Application API** | `processWorkoutRequest`, `buildWorkoutPlan`, `adaptWorkout`, `evaluateWorkout`, `describeWorkoutCapabilities`, `validateWorkoutPlan` |
+| **Integration** | Consumes Conversation Context + existing workout domain application APIs; produces immutable `WorkoutAgentResult`; registers with Agent Framework / Agent Runtime |
+| **Design** | **No prompts, provider calls, tool execution, networking, persistence, UI, or business logic.** Orchestrator only — does not replace Workout Domain |
 
 Full detail: [WORKOUT_AGENT.md](./WORKOUT_AGENT.md). Agent Framework: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md). Agent Runtime: [AGENT_RUNTIME.md](./AGENT_RUNTIME.md). Workout Intelligence: [WORKOUT_INTELLIGENCE.md](./WORKOUT_INTELLIGENCE.md).
 
