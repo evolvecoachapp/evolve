@@ -20,7 +20,7 @@ AI Provider Abstraction
       ↓
 Unified AI Response
       ↓
-Future Response Formatter
+Response Formatter (`features/response-formatter`)
 ```
 
 This layer defines a common contract for all future AI providers.

@@ -9,7 +9,7 @@
 
 ## Primary diagrams
 
-- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline + Composition Root + Decision Intelligence + Workout/Rest Runtime + Domain Events + Performance Engine + Achievement Engine + Athlete History + Recovery Intelligence + Insight Engine + Coach Intelligence + Conversation Orchestrator + Prompt Builder + Prompt Composition Engine + AI Provider Abstraction + OpenAI Provider + AI Execution Pipeline + Streaming Foundation + Tool Calling Foundation + Domain Tool Adapters dependency flow
+- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline + Composition Root + Decision Intelligence + Workout/Rest Runtime + Domain Events + Performance Engine + Achievement Engine + Athlete History + Recovery Intelligence + Insight Engine + Coach Intelligence + Conversation Orchestrator + Prompt Builder + Prompt Composition Engine + AI Provider Abstraction + OpenAI Provider + AI Execution Pipeline + Streaming Foundation + Tool Calling Foundation + Domain Tool Adapters + Response Formatter dependency flow
 - [COMPOSITION_ROOT.md](../COMPOSITION_ROOT.md) — Composition Root, Dependency Graph, Factories, DI, Service Lifecycle
 - [DECISION_INTELLIGENCE.md](../DECISION_INTELLIGENCE.md) — Decision graph, explainability, execution reports, Coach AI preparation
 - [WORKOUT_RUNTIME.md](../WORKOUT_RUNTIME.md) — Live WorkoutSession execution state, session lifecycle, runtime state model
@@ -30,6 +30,7 @@
 - [STREAMING_FOUNDATION.md](../STREAMING_FOUNDATION.md) — Streaming Foundation, Stream Lifecycle, Future Tool Calling Integration
 - [TOOL_CALLING_FOUNDATION.md](../TOOL_CALLING_FOUNDATION.md) — Tool Calling Foundation, Tool Registry, Execution Flow, Future Domain Tool Integration
 - [DOMAIN_TOOL_ADAPTERS.md](../DOMAIN_TOOL_ADAPTERS.md) — Domain Tool Adapters, Adapter Flow, Tool Integration, Future Adapter Extensions
+- [RESPONSE_FORMATTER.md](../RESPONSE_FORMATTER.md) — Response Formatter, Coach Response, Formatting Pipeline, Future UI / Action Engine
 - [AI_SYSTEM.md](../AI_SYSTEM.md) — Coach + mobile AI runtime pipeline
 - [INTEGRATION_TESTING.md](../INTEGRATION_TESTING.md) — Integration framework (fixtures, builders, assertions, scenarios, goldens)
 

@@ -142,9 +142,12 @@ Tool Calling Foundation          ← Sprint 20.1 (implemented) — provider-inde
   ↓
 Domain Tool Adapters             ← Sprint 20.2 (implemented) — domain capability adapters for tools
   (`app/src/features/domain-tools/`)
+  ↓
+Response Formatter               ← Sprint 19.4 (implemented) — AIResponse → immutable CoachResponse
+  (`app/src/features/response-formatter/`)
 ```
 
-Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md). Insight Engine: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md). Coach Intelligence: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md). Conversation Orchestrator: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md). Prompt Builder: [PROMPT_BUILDER.md](./PROMPT_BUILDER.md). Prompt Composition: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md). AI Provider Abstraction: [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md). OpenAI Provider: [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md). AI Execution Pipeline: [AI_EXECUTION_PIPELINE.md](./AI_EXECUTION_PIPELINE.md). Streaming Foundation: [STREAMING_FOUNDATION.md](./STREAMING_FOUNDATION.md). Tool Calling Foundation: [TOOL_CALLING_FOUNDATION.md](./TOOL_CALLING_FOUNDATION.md). Domain Tool Adapters: [DOMAIN_TOOL_ADAPTERS.md](./DOMAIN_TOOL_ADAPTERS.md).
+Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md). Insight Engine: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md). Coach Intelligence: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md). Conversation Orchestrator: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md). Prompt Builder: [PROMPT_BUILDER.md](./PROMPT_BUILDER.md). Prompt Composition: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md). AI Provider Abstraction: [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md). OpenAI Provider: [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md). AI Execution Pipeline: [AI_EXECUTION_PIPELINE.md](./AI_EXECUTION_PIPELINE.md). Streaming Foundation: [STREAMING_FOUNDATION.md](./STREAMING_FOUNDATION.md). Tool Calling Foundation: [TOOL_CALLING_FOUNDATION.md](./TOOL_CALLING_FOUNDATION.md). Domain Tool Adapters: [DOMAIN_TOOL_ADAPTERS.md](./DOMAIN_TOOL_ADAPTERS.md). Response Formatter: [RESPONSE_FORMATTER.md](./RESPONSE_FORMATTER.md).
 
 ### Exercise Knowledge Base (`features/exercise-kb`)
 
@@ -492,7 +495,7 @@ Full detail: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md) (Prompt Package + 
 | Aspect | Implementation |
 |--------|----------------|
 | **Purpose** | Define common provider contracts and orchestration primitives for future AI providers |
-| **Flow** | Prompt Package → AI Provider Abstraction → Unified AI Response → Future Response Formatter |
+| **Flow** | Prompt Package → AI Provider Abstraction → Unified AI Response → Response Formatter |
 | **Models** | `AIRequest`, `AIResponse`, `AIMessage`, `AIChoice`, `AIUsage`, `AITokenUsage`, `AIError`, `AIProvider`, `AIProviderResult`, `AIProviderSnapshot`, `AIProviderFeatures`, `AIModel`, `AIModelVersion`, `AIStreamingChunk`, `AIToolCall`, `AIToolResult`, `AIExecutionResult`, … |
 | **Contracts** | `IAIProvider`, `IAIProviderFactory`, `IAIProviderRegistry`, streaming / tool / vision / embedding / reasoning / function-calling extensions |
 | **Registry** | `AIProviderRegistry`, `ProviderRegistry`, `ProviderDescriptor`, `CapabilityRegistry`, `ModelRegistry` |
@@ -588,6 +591,23 @@ Full detail: [TOOL_CALLING_FOUNDATION.md](./TOOL_CALLING_FOUNDATION.md) (Tool Re
 | **Design** | **No business logic, algorithms, provider-specific code, or OpenAI code.** Adapters + mappings + orchestration only |
 
 Full detail: [DOMAIN_TOOL_ADAPTERS.md](./DOMAIN_TOOL_ADAPTERS.md) (Adapter Flow + Tool Integration + Future Adapter Extensions).
+
+### Response Formatter (`features/response-formatter`) — Sprint 19.4
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Transform immutable `AIResponse` into immutable structured `CoachResponse` |
+| **Flow** | AIResponse → Response Formatter → CoachResponse → Future UI / Future Action Engine |
+| **Models** | `CoachResponse`, `CoachMessage`, `CoachRecommendation`, `CoachWarning`, `CoachInsight`, `CoachAction`, `CoachExercise`, `CoachNutritionAdvice`, `CoachRecoveryAdvice`, `CoachQuestion`, `CoachCitation`, `CoachConfidence`, `CoachMetadata`, `CoachSection`, `CoachSummary`, `CoachFormatting`, `CoachResponseSnapshot`, `CoachResponseStatistics`, `CoachParsingResult`, `CoachFormattingResult`, `CoachResponsePackage` |
+| **Parsers** | Message / Recommendation / Warning / Action / Exercise / Nutrition / Recovery / Question / Citation / Metadata |
+| **Extractors** | Reasoning / Insight / Confidence / ToolCall / Reference / Section |
+| **Classifiers** | ResponseIntent / Severity / Confidence / Recommendation |
+| **Formatters** | Markdown / PlainText / RichContent / Card / FutureJson (text payloads only; no UI) |
+| **Application API** | `formatResponse`, `buildCoachResponse`, `summarizeResponse`, `validateResponse` |
+| **Integration** | Consumes `AIResponse`; produces `CoachResponse`; compatible with OpenAI + future Anthropic / Gemini / Ollama via standardized response only |
+| **Design** | **No provider SDKs, networking, prompt generation, conversation orchestration, business logic, or persistence.** Deterministic immutable transformation only |
+
+Full detail: [RESPONSE_FORMATTER.md](./RESPONSE_FORMATTER.md) (Coach Response + Formatting Pipeline).
 
 ---
 

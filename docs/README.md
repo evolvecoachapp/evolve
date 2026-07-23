@@ -54,8 +54,9 @@
 | [STREAMING_FOUNDATION.md](./STREAMING_FOUNDATION.md) | Streaming Foundation, Stream Lifecycle, Future Tool Calling Integration |
 | [TOOL_CALLING_FOUNDATION.md](./TOOL_CALLING_FOUNDATION.md) | Tool Calling Foundation, Tool Registry, Execution Flow, Future Domain Tool Integration |
 | [DOMAIN_TOOL_ADAPTERS.md](./DOMAIN_TOOL_ADAPTERS.md) | Domain Tool Adapters, Adapter Flow, Tool Integration, Future Adapter Extensions |
+| [RESPONSE_FORMATTER.md](./RESPONSE_FORMATTER.md) | Response Formatter, Coach Response, Formatting Pipeline |
 | [TECH_STACK.md](./TECH_STACK.md) | Languages, frameworks, versions, future tech |
-| [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-054 (append-only) |
+| [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-056 (append-only) |
 | [AI_SYSTEM.md](./AI_SYSTEM.md) | Coach, LLM, engines, memory, mobile workout pipeline |
 | [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md) | Integration framework for the workout pipeline |
 | [../.cursor/rules/EVOLVE_ARCHITECTURE.md](../.cursor/rules/EVOLVE_ARCHITECTURE.md) | Deep-dive architecture reference |

@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-23  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-053). Append only — never renumber.  
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-056). Append only — never renumber.  
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -1732,4 +1732,34 @@ Extend `app/src/features/prompt-builder/` with immutable Prompt Package models (
 
 ---
 
-*New decisions are appended as Decision 056, 057, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 056: Response Formatter Foundation (Sprint 19.4)
+
+**Date:** 2026-07-23
+
+**Status:** Accepted
+
+**Context:**
+Sprint 19.4 must introduce a Response Formatter that transforms an immutable `AIResponse` into an immutable `CoachResponse`. The module must remain completely provider-independent — no networking, no provider SDKs, no prompt generation, no conversation orchestration, no business logic, and no persistence. Only deterministic response transformation is allowed. Previous domains must not be modified.
+
+**Decision:**
+Add `app/src/features/response-formatter/` with immutable Coach Response models, isolated parsers / extractors / classifiers / normalizers / validators / formatters, builders (`CoachResponseBuilder`, `CoachSummaryBuilder`, `CoachResponsePackageBuilder`), `ResponseFormatterService`, and a narrow application API (`formatResponse`, `buildCoachResponse`, `summarizeResponse`, `validateResponse`). Consume only standardized `AIResponse` from AI Provider Abstraction so OpenAI and future Anthropic / Gemini / Ollama adapters remain interchangeable. Formatters emit text payloads only (no UI rendering).
+
+**Why:**
+- **Dedicated Response Formatter boundary** turns provider output into structured application responses without coupling UI or Action Engine to vendors.
+- **Independent parsers / extractors / classifiers** keep transformation units deterministic and testable.
+- **AIResponse-only integration** preserves multi-provider compatibility.
+- **Immutability** matches EVOLVE foundation patterns used by Prompt Builder / AI Provider / Streaming.
+
+**Alternatives considered:**
+- **Parse inside each provider adapter** — rejected: would duplicate formatting logic and leak provider concerns into CoachResponse.
+- **Render UI directly from AIResponse.content** — rejected: UI and Action Engine need structured CoachResponse.
+- **Add business logic / persistence in the formatter** — rejected: sprint forbids domain decisions and storage.
+
+**Consequences:**
+- Documentation references [RESPONSE_FORMATTER.md](./RESPONSE_FORMATTER.md) (Coach Response + Formatting Pipeline).
+- Consumers call `formatResponse` / `buildCoachResponse` instead of parsing provider text ad hoc.
+- Response Formatter remains free of provider SDKs, networking, and orchestration logic.
+
+---
+
+*New decisions are appended as Decision 057, 058, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

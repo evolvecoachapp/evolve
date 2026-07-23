@@ -1,0 +1,1 @@
+export { validateCoachResponse } from "./validateCoachResponse";
