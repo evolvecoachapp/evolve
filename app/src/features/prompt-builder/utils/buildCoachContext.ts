@@ -1,7 +1,7 @@
 import type { CoachInsight } from "../../coach-intelligence/models/CoachInsight";
 import type { CoachRecommendation } from "../../coach-intelligence/models/CoachRecommendation";
 import type { RiskFlag } from "../../coach-intelligence/models/RiskFlag";
-import type { CoachContext } from "../models/CoachContext";
+import type { CoachContext } from "../models/coach/CoachContext";
 
 export interface BuildCoachContextInput {
   readonly riskFlags: readonly RiskFlag[];

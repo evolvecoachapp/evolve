@@ -1,25 +1,14 @@
-import type { AthleteProfile } from "../../athlete-context/models/AthleteProfile";
-import type { AthleteContext } from "./AthleteContext";
-import type { CoachContext } from "./CoachContext";
-import type { PerformanceContext } from "./PerformanceContext";
-import type { PromptMetadata } from "./PromptMetadata";
-import type { PromptSection } from "./PromptSection";
-import type { TrainingContext } from "./TrainingContext";
-
 /**
- * Complete structured prompt object for a future AI provider.
- *
- * Assembled from coach intelligence and athlete context — never markdown,
- * never prose, never serialized prompt strings.
+ * Linkage context for a built PromptPackage.
+ * Upstream ids only — no networking or provider state.
  */
 export interface PromptContext {
-  /** Readiness / consistency derived from coach intelligence. */
-  readonly athlete: AthleteContext;
-  /** Who the athlete is — from Athlete Context domain. */
-  readonly profile: AthleteProfile;
-  readonly training: TrainingContext;
-  readonly performance: PerformanceContext;
-  readonly coach: CoachContext;
-  readonly metadata: PromptMetadata;
-  readonly sections: readonly PromptSection[];
+  readonly conversationContextId: string;
+  readonly coachingContextId: string | null;
+  readonly insightSnapshotId: string | null;
+  readonly athleteId: string | null;
+  readonly sessionId: string | null;
+  readonly audience: string;
+  readonly primaryIntent: string | null;
+  readonly composedAt: string;
 }

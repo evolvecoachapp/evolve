@@ -1,5 +1,5 @@
-import type { PromptSection } from "../models/PromptSection";
-import type { PromptSectionId } from "../models/PromptSection";
+import type { PromptSection } from "../models/coach/PromptSection";
+import type { PromptSectionId } from "../models/coach/PromptSection";
 
 /** Canonical section order for every prompt context. */
 export const PROMPT_SECTION_IDS: readonly PromptSectionId[] = Object.freeze([

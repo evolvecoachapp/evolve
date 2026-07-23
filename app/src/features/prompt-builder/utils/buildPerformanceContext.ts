@@ -1,6 +1,6 @@
 import type { CoachInsight } from "../../coach-intelligence/models/CoachInsight";
 import type { CoachSummary } from "../../coach-intelligence/models/CoachSummary";
-import type { PerformanceContext } from "../models/PerformanceContext";
+import type { PerformanceContext } from "../models/coach/PerformanceContext";
 
 export interface BuildPerformanceContextInput {
   readonly summary: CoachSummary;

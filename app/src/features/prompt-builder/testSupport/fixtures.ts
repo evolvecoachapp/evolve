@@ -3,7 +3,24 @@ import type { CoachRecommendation } from "../../coach-intelligence/models/CoachR
 import type { CoachSummary } from "../../coach-intelligence/models/CoachSummary";
 import type { RiskFlag } from "../../coach-intelligence/models/RiskFlag";
 import type { CoachIntelligenceSnapshot } from "../../coach-intelligence/repository";
+import { prepareConversation } from "../../conversation-orchestrator/application";
+import type { ConversationContext } from "../../conversation-orchestrator/models/ConversationContext";
+import {
+  createFullConversationInputs,
+  FIXED_TIMESTAMP as CONVERSATION_FIXED_TIMESTAMP,
+} from "../../conversation-orchestrator/testSupport/fixtures";
+import type { CoachingContext } from "../../coach-intelligence/models/CoachingContext";
+import type { InsightSnapshot } from "../../insight-engine/models/InsightSnapshot";
+import { PromptBlockBuilder } from "../builders/PromptBlockBuilder";
+import type { PromptBlock } from "../models/PromptBlock";
+import { PromptBlockTypes } from "../models/PromptBlockType";
+import { PromptSections } from "../models/PromptSection";
 
+export const FIXED_TIMESTAMP = CONVERSATION_FIXED_TIMESTAMP;
+
+export { createFullConversationInputs } from "../../conversation-orchestrator/testSupport/fixtures";
+
+/** Legacy coach-backed fixtures */
 export function createCoachSummary(
   overrides: Partial<CoachSummary> = {},
 ): CoachSummary {
@@ -101,4 +118,48 @@ export function createSnapshot(
     riskFlags,
     recommendations,
   });
+}
+
+/** Sprint 19.1 Prompt Builder fixtures */
+export function createFullPromptBuilderInputs(): {
+  readonly conversationContext: ConversationContext;
+  readonly coachingContext: CoachingContext;
+  readonly insightSnapshot: InsightSnapshot;
+} {
+  const conversationInputs = createFullConversationInputs();
+  const conversation = prepareConversation({
+    ...conversationInputs,
+    preparedAt: FIXED_TIMESTAMP,
+    contextId: "conversation:prompt-builder-full",
+  });
+
+  return Object.freeze({
+    conversationContext: conversation.context,
+    coachingContext: conversationInputs.coachingContext,
+    insightSnapshot: conversationInputs.insightSnapshot,
+  });
+}
+
+export function createPromptBlockFixture(
+  overrides: Partial<PromptBlock> & { readonly id?: string } = {},
+): PromptBlock {
+  const type = overrides.type ?? PromptBlockTypes.SYSTEM;
+  return new PromptBlockBuilder()
+    .withId(overrides.id ?? "prompt-block:fixture:system")
+    .withType(type)
+    .withSection(overrides.section ?? PromptSections.SYSTEM)
+    .withPriority(overrides.priority ?? 50)
+    .withOrder(overrides.order ?? 10)
+    .withTitle(overrides.title ?? "Fixture block")
+    .withStatement(overrides.statement ?? "Fixture block statement.")
+    .withRefs(overrides.refs ?? [])
+    .withMetadata(
+      overrides.metadata ??
+        Object.freeze({
+          tags: Object.freeze(["fixture"]),
+          attributes: Object.freeze({}),
+        }),
+    )
+    .withAttributes(overrides.attributes ?? Object.freeze({}))
+    .build();
 }

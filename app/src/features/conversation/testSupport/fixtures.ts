@@ -1,7 +1,7 @@
 import { createAthleteProfile } from "../../athlete-context/testSupport/fixtures";
 import { buildPromptContext } from "../../prompt-builder/utils/buildPromptContext";
 import { createSnapshot } from "../../prompt-builder/testSupport/fixtures";
-import type { PromptContext } from "../../prompt-builder/models/PromptContext";
+import type { PromptContext } from "../../prompt-builder/models/coach/PromptContext";
 import type { Conversation } from "../models/Conversation";
 import type { ConversationMessage } from "../models/ConversationMessage";
 import type { ConversationMetadata } from "../models/ConversationMetadata";

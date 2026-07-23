@@ -1,6 +1,6 @@
 import type { AthleteProfile } from "../../athlete-context/models/AthleteProfile";
 import type { CoachIntelligenceSnapshot } from "../../coach-intelligence/repository/CoachIntelligenceRepository";
-import type { PromptContext } from "../models/PromptContext";
+import type { PromptContext } from "../models/coach/PromptContext";
 import { buildAthleteContext } from "./buildAthleteContext";
 import { buildCoachContext } from "./buildCoachContext";
 import { buildMetadata } from "./buildMetadata";

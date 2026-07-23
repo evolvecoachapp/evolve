@@ -1,5 +1,5 @@
 import type { CoachSummary } from "../../coach-intelligence/models/CoachSummary";
-import type { TrainingContext } from "../models/TrainingContext";
+import type { TrainingContext } from "../models/coach/TrainingContext";
 
 /** Build training trend context from a coach summary. */
 export function buildTrainingContext(summary: CoachSummary): TrainingContext {

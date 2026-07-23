@@ -2,7 +2,7 @@ import {
   promptBuilderRepository,
   type PromptBuilderRepository,
 } from "../repository";
-import type { PromptContext } from "../models/PromptContext";
+import type { PromptContext } from "../models/coach/PromptContext";
 
 export interface GetCoachPromptOptions {
   readonly repository?: PromptBuilderRepository;

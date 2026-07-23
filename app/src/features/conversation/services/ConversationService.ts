@@ -7,7 +7,7 @@ import type { AIService } from "../../ai/services/AIService";
 import type { CoachSummary } from "../../coach-intelligence/models/CoachSummary";
 import type { MemoryContext } from "../../prompt-orchestrator/models/MemoryContext";
 import type { PromptOrchestrator } from "../../prompt-orchestrator/services/PromptOrchestrator";
-import type { PromptContext } from "../../prompt-builder/models/PromptContext";
+import type { PromptContext } from "../../prompt-builder/models/coach/PromptContext";
 import { receiveComposedPromptContext } from "../../prompt-builder/utils/receiveComposedPromptContext";
 import type { ToolContext } from "../../tool-calling/models/ToolContext";
 import type { ToolResult } from "../../tool-calling/models/ToolResult";

@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import type { StreamingSession } from "../../ai/models/StreamingSession";
-import type { PromptContext } from "../../prompt-builder/models/PromptContext";
+import type { PromptContext } from "../../prompt-builder/models/coach/PromptContext";
 import {
   closeConversation as closeConversationUseCase,
   deleteConversation as deleteConversationUseCase,

@@ -5,7 +5,7 @@ import type { AIRequest } from "../models/AIRequest";
 import type { AIResponse } from "../models/AIResponse";
 import type { ChatMessage } from "../models/ChatMessage";
 import type { ConversationContext } from "../models/ConversationContext";
-import type { PromptContext } from "../../prompt-builder/models/PromptContext";
+import type { PromptContext } from "../../prompt-builder/models/coach/PromptContext";
 
 export const FIXED_TIMESTAMP = "2026-07-22T00:00:00.000Z";
 

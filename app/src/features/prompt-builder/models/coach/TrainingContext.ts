@@ -1,4 +1,4 @@
-import type { TrainingTrend } from "../../coach-intelligence/models/TrainingTrend";
+import type { TrainingTrend } from "../../../coach-intelligence/models/TrainingTrend";
 
 /**
  * Training volume and frequency trends for the prompt context.

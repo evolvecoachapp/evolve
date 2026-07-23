@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getCoachPrompt } from "../application";
-import type { PromptContext } from "../models/PromptContext";
+import type { PromptContext } from "../models/coach/PromptContext";
 import {
   promptBuilderRepository,
   type PromptBuilderRepository,

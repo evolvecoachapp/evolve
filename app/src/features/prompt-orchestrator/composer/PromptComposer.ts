@@ -1,4 +1,4 @@
-import type { PromptContext } from "../../prompt-builder/models/PromptContext";
+import type { PromptContext } from "../../prompt-builder/models/coach/PromptContext";
 import type { PromptBudget } from "../models/PromptBudget";
 import type { PromptComposition } from "../models/PromptComposition";
 import type { PromptContextSelection } from "../models/PromptContextSelection";

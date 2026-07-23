@@ -7,7 +7,9 @@
 **Purpose:** Document the Prompt Composition Engine domain foundation (Sprint 19.1).  
 **Source of Truth:** Yes — for Prompt Composition Engine layout, Prompt Package, and handoff to AI Provider Abstraction on mobile.
 
-Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md), [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md), [AI_SYSTEM.md](./AI_SYSTEM.md), [DECISIONS.md](./DECISIONS.md) (ADR-048).
+Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROMPT_BUILDER.md](./PROMPT_BUILDER.md), [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md), [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md), [AI_SYSTEM.md](./AI_SYSTEM.md), [DECISIONS.md](./DECISIONS.md) (ADR-048).
+
+**Relationship:** Prompt Builder (`features/prompt-builder`, ADR-055) is the Conversation Context → Prompt Package foundation with independent block builders and role prompt aggregates. This Prompt Composition Engine (`features/prompt-composition`) remains the structured composition path consumed by AI Provider Abstraction.
 
 ---
 

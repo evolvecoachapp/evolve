@@ -1,7 +1,7 @@
 import type { AthleteProfile } from "../../athlete-context/models/AthleteProfile";
 import type { ConversationContext } from "../../ai/models/ConversationContext";
 import type { CoachSummary } from "../../coach-intelligence/models/CoachSummary";
-import type { PromptContext } from "../../prompt-builder/models/PromptContext";
+import type { PromptContext } from "../../prompt-builder/models/coach/PromptContext";
 import type { WorkoutSummary } from "../../workout/models/WorkoutSummary";
 import type { MemoryContext } from "./MemoryContext";
 import type { PromptBudget } from "./PromptBudget";

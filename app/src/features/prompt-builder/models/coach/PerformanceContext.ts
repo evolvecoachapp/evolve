@@ -1,5 +1,5 @@
-import type { CoachInsight } from "../../coach-intelligence/models/CoachInsight";
-import type { ProgressStatus } from "../../coach-intelligence/models/ProgressStatus";
+import type { CoachInsight } from "../../../coach-intelligence/models/CoachInsight";
+import type { ProgressStatus } from "../../../coach-intelligence/models/ProgressStatus";
 
 /**
  * Performance signals (progress, PRs, plateaus) for the prompt context.

@@ -1,4 +1,4 @@
-import type { RecoveryStatus } from "../../coach-intelligence/models/RecoveryStatus";
+import type { RecoveryStatus } from "../../../coach-intelligence/models/RecoveryStatus";
 
 /**
  * Athlete readiness and consistency state derived from coach intelligence.

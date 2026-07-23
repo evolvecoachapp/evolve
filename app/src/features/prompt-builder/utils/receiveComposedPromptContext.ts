@@ -1,4 +1,4 @@
-import type { PromptContext } from "../models/PromptContext";
+import type { PromptContext } from "../models/coach/PromptContext";
 import {
   validatePromptContext,
   type PromptValidationCode,

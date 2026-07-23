@@ -1,5 +1,5 @@
-import type { PromptContext } from "../models/PromptContext";
-import type { PromptSectionId } from "../models/PromptSection";
+import type { PromptContext } from "../models/coach/PromptContext";
+import type { PromptSectionId } from "../models/coach/PromptSection";
 import { PROMPT_SCHEMA_VERSION } from "./buildMetadata";
 import { PROMPT_SECTION_IDS } from "./buildSections";
 

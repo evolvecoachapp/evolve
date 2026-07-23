@@ -1,4 +1,4 @@
-import type { PromptContext } from "../../prompt-builder/models/PromptContext";
+import type { PromptContext } from "../../prompt-builder/models/coach/PromptContext";
 import type { AIRequest } from "../models/AIRequest";
 import type { ChatMessage } from "../models/ChatMessage";
 import type { ConversationContext } from "../models/ConversationContext";

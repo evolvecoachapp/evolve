@@ -1,5 +1,5 @@
 import type { CoachSummary } from "../../coach-intelligence/models/CoachSummary";
-import type { PromptMetadata } from "../models/PromptMetadata";
+import type { PromptMetadata } from "../models/coach/PromptMetadata";
 
 /** Current prompt context schema version. */
 export const PROMPT_SCHEMA_VERSION = 1;

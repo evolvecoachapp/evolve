@@ -1,6 +1,6 @@
 import type { AthleteContextRepository } from "../../athlete-context/repository";
 import type { CoachIntelligenceRepository } from "../../coach-intelligence/repository";
-import type { PromptContext } from "../models/PromptContext";
+import type { PromptContext } from "../models/coach/PromptContext";
 import { buildPromptContext } from "../utils/buildPromptContext";
 import type { PromptBuilderRepository } from "./PromptBuilderRepository";
 

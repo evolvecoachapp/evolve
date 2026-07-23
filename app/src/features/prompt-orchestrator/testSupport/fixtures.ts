@@ -5,7 +5,7 @@ import {
   createCoachSummary,
   createSnapshot,
 } from "../../prompt-builder/testSupport/fixtures";
-import type { PromptContext } from "../../prompt-builder/models/PromptContext";
+import type { PromptContext } from "../../prompt-builder/models/coach/PromptContext";
 import type { WorkoutSummary } from "../../workout/models/WorkoutSummary";
 import type { MemoryContext } from "../models/MemoryContext";
 import type { PromptRequest } from "../models/PromptRequest";

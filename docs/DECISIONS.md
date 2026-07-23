@@ -1701,4 +1701,34 @@ Add `app/src/features/domain-tools/` with dedicated adapters (`WorkoutToolAdapte
 
 ---
 
-*New decisions are appended as Decision 055, 056, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 055: Prompt Builder Foundation (Sprint 19.1)
+
+**Date:** 2026-07-23
+
+**Status:** Accepted
+
+**Context:**
+Sprint 19.1 must introduce Prompt Builder that transforms immutable Conversation Context into an immutable Prompt Package. This domain must prepare every block required by future AI providers without calling providers, networking, persisting, or generating responses. A legacy coach-backed PromptContext path already exists in `features/prompt-builder/` and must remain intact. Prompt Composition Engine (ADR-048) remains a parallel composition path for AI Provider Abstraction.
+
+**Decision:**
+Extend `app/src/features/prompt-builder/` with immutable Prompt Package models (`PromptPackage`, `PromptBlock`, `SystemPrompt`, `UserPrompt`, `AssistantPrompt`, `PromptTemplate`, `PromptPersona`, `PromptCapability`, `PromptKnowledge`, `PromptFormatting`, `PromptToolDefinition`, `PromptSafety`, `PromptConstraint`, `PromptInstruction`, `PromptComposition`, `PromptStatistics`, `PromptSummary`, `PromptSnapshot`, `PromptBuildResult`), independent block builders (System/Persona/Capabilities/Knowledge/Conversation/Athlete/Recovery/Insight/Constraint/Formatting/Tool/Safety/Summary), domain templates, selectors, validators, utilities, `PromptComposer`, and a narrow application API (`buildPromptPackage`, `buildSystemPrompt`, `buildUserPrompt`, `validatePromptPackage`). Legacy coach-backed models move under `models/coach/` and keep existing hooks/repository/`getCoachPrompt`. No provider SDKs, networking, persistence, or response generation.
+
+**Why:**
+- **Dedicated Prompt Builder boundary** turns Conversation Context into provider-ready structured packages without executing AI.
+- **Independent block builders** keep each composition unit testable and reusable.
+- **Domain templates** stay provider-agnostic.
+- **Legacy coexistence** avoids breaking Coach UI / conversation / AIService consumers.
+
+**Alternatives considered:**
+- **Replace Prompt Composition Engine with Prompt Builder** — rejected: ADR-048 path remains for AI Provider Abstraction; Prompt Builder is the Conversation Context → Prompt Package foundation with expanded blocks/templates/role prompts.
+- **Call OpenAI/Anthropic/Gemini now** — rejected: sprint forbids providers, networking, and execution.
+- **Overwrite legacy coach PromptContext** — rejected: existing consumers still require the coach-backed path.
+
+**Consequences:**
+- Documentation references [PROMPT_BUILDER.md](./PROMPT_BUILDER.md) (Prompt Package + Prompt Composition relationship).
+- Future AI providers can read `PromptPackage` without redesigning this foundation.
+- Prompt Builder remains in-memory composition only until a later provider sprint.
+
+---
+
+*New decisions are appended as Decision 056, 057, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

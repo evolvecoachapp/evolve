@@ -9,7 +9,7 @@
 
 ## Primary diagrams
 
-- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline + Composition Root + Decision Intelligence + Workout/Rest Runtime + Domain Events + Performance Engine + Achievement Engine + Athlete History + Recovery Intelligence + Insight Engine + Coach Intelligence + Conversation Orchestrator + Prompt Composition Engine + AI Provider Abstraction + OpenAI Provider + AI Execution Pipeline + Streaming Foundation + Tool Calling Foundation + Domain Tool Adapters dependency flow
+- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline + Composition Root + Decision Intelligence + Workout/Rest Runtime + Domain Events + Performance Engine + Achievement Engine + Athlete History + Recovery Intelligence + Insight Engine + Coach Intelligence + Conversation Orchestrator + Prompt Builder + Prompt Composition Engine + AI Provider Abstraction + OpenAI Provider + AI Execution Pipeline + Streaming Foundation + Tool Calling Foundation + Domain Tool Adapters dependency flow
 - [COMPOSITION_ROOT.md](../COMPOSITION_ROOT.md) — Composition Root, Dependency Graph, Factories, DI, Service Lifecycle
 - [DECISION_INTELLIGENCE.md](../DECISION_INTELLIGENCE.md) — Decision graph, explainability, execution reports, Coach AI preparation
 - [WORKOUT_RUNTIME.md](../WORKOUT_RUNTIME.md) — Live WorkoutSession execution state, session lifecycle, runtime state model
@@ -22,6 +22,7 @@
 - [INSIGHT_ENGINE.md](../INSIGHT_ENGINE.md) — Insight Engine domain, Insight Model, Future Coach Integration placeholder
 - [COACH_INTELLIGENCE.md](../COACH_INTELLIGENCE.md) — Coach Intelligence domain, Coaching Context, Future Prompt Builder / AI Provider placeholders
 - [CONVERSATION_ORCHESTRATOR.md](../CONVERSATION_ORCHESTRATOR.md) — Conversation Orchestrator domain, Conversation Context, handoff to Prompt Composition
+- [PROMPT_BUILDER.md](../PROMPT_BUILDER.md) — Prompt Builder domain, Prompt Package composition from Conversation Context, handoff to Future AI Provider
 - [PROMPT_COMPOSITION.md](../PROMPT_COMPOSITION.md) — Prompt Composition Engine, Prompt Package, handoff to AI Provider Abstraction
 - [AI_PROVIDER_ABSTRACTION.md](../AI_PROVIDER_ABSTRACTION.md) — AI Provider Abstraction, Provider Registry, Future OpenAI Integration, Future Multi-provider Support
 - [OPENAI_PROVIDER.md](../OPENAI_PROVIDER.md) — OpenAI Provider, Provider Flow, Configuration, Future Streaming Support

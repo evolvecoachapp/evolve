@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { createAthleteProfile } from "../../../athlete-context/testSupport/fixtures";
-import type { PromptContext } from "../../models/PromptContext";
+import type { PromptContext } from "../../models/coach/PromptContext";
 import type { PromptBuilderRepository } from "../../repository";
 import { createSnapshot } from "../../testSupport/fixtures";
 import { buildPromptContext } from "../../utils/buildPromptContext";

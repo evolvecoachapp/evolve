@@ -1,5 +1,5 @@
 import type { AIConfiguration } from "../../ai-config/models/AIConfiguration";
-import type { PromptContext } from "../../prompt-builder/models/PromptContext";
+import type { PromptContext } from "../../prompt-builder/models/coach/PromptContext";
 import type { ToolRequest } from "../../tool-calling/models/ToolRequest";
 import { isToolRequest } from "../../tool-calling/utils/isToolRequest";
 import { validateRequest as validateToolRequest } from "../../tool-calling/validators/validateRequest";
