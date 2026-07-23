@@ -1942,4 +1942,34 @@ Add `app/src/features/recovery-agent/` with immutable Recovery Agent models (inc
 
 ---
 
-*New decisions are appended as Decision 063, 064, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 063: Agent Runtime Foundation (Sprint 21.4)
+
+**Date:** 2026-07-23
+
+**Status:** Accepted
+
+**Context:**
+Sprint 21.4 must introduce the Agent Runtime as the single execution entry point that coordinates specialized agents through common contracts. Domain agents (Workout, Nutrition, Recovery) already implement `IAgent`, but there was no dedicated runtime orchestration layer free of business logic for request → registry → selection → execution → result.
+
+**Decision:**
+Add `app/src/features/agent-runtime/` with immutable runtime models (`AgentRuntimeRequest`, `AgentRuntimeResponse`, `AgentRuntimeContext`, `AgentRuntimeState`, `AgentExecutionPlan`, `AgentExecutionResult`, `AgentRuntimeMetadata`, `AgentRuntimeSummary`, `AgentRuntimeSnapshot`, `AgentRuntimeError`, `AgentRuntimeEvent`), immutable `AgentRegistry`, deterministic `AgentSelector`, coordinators (`ExecutionCoordinator`, `LifecycleCoordinator`, `ResponseCoordinator`, `EventCoordinator`), builders, validators, `AgentRuntime`, `AgentRuntimeService`, and a narrow application API (`executeAgent`, `listAgents`, `describeAgent`, `registerAgent`, `unregisterAgent`). Consume existing `IAgent` / `RecoveryFrameworkAgent` without modifying them. Document runtime lifecycle, registry, selection flow, and future multi-agent collaboration placeholders.
+
+**Why:**
+- **Single execution entry point** keeps agent orchestration out of Conversation / Coach / Prompt / Provider layers.
+- **Immutable registry + deterministic selection** enable predictable routing without AI.
+- **No business logic** preserves Agent Framework / domain agent boundaries.
+- **Injectable executors** allow domain agents to supply handlers without the runtime embedding domain code.
+
+**Alternatives considered:**
+- **Fold execution into Agent Framework** — rejected: framework owns contracts/lifecycle; runtime owns request execution orchestration.
+- **Call domain agent APIs directly from Conversation Runtime** — rejected: duplicates selection / registry / lifecycle across consumers.
+- **Multi-agent collaboration in this sprint** — deferred: foundation executes one selected agent per request; collaboration is a future extension.
+
+**Consequences:**
+- Documentation references [AGENT_RUNTIME.md](./AGENT_RUNTIME.md) and updated [ARCHITECTURE.md](./ARCHITECTURE.md).
+- Agent Runtime remains free of providers, networking, persistence, prompts, and memory.
+- Existing domain agents are unchanged; they register as `IAgent` (+ optional executor).
+
+---
+
+*New decisions are appended as Decision 064, 065, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

@@ -4,81 +4,162 @@
 **Version:** 0.6.0  
 **Status:** Living Document  
 **Last Updated:** 2026-07-23  
-**Purpose:** Document the Agent Runtime boundary for domain agents (Workout, Nutrition, Recovery, …).  
-**Source of Truth:** Yes — for domain agent placement inside the AI Runtime pipeline.
+**Purpose:** Document the Agent Runtime Foundation — the single execution entry point that coordinates specialized agents through common contracts.  
+**Source of Truth:** Yes — for Agent Runtime orchestration, registry, selection, and public API.
 
-Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [WORKOUT_AGENT.md](./WORKOUT_AGENT.md), [NUTRITION_AGENT.md](./NUTRITION_AGENT.md), [RECOVERY_AGENT.md](./RECOVERY_AGENT.md), [WORKOUT_INTELLIGENCE.md](./WORKOUT_INTELLIGENCE.md), [NUTRITION_INTELLIGENCE.md](./NUTRITION_INTELLIGENCE.md), [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md), [AI_SYSTEM.md](./AI_SYSTEM.md), [DECISIONS.md](./DECISIONS.md) (ADR-059, ADR-061, ADR-062).
+Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md), [AGENT_LIFECYCLE.md](./AGENT_LIFECYCLE.md), [AGENT_REGISTRY.md](./AGENT_REGISTRY.md), [WORKOUT_AGENT.md](./WORKOUT_AGENT.md), [NUTRITION_AGENT.md](./NUTRITION_AGENT.md), [RECOVERY_AGENT.md](./RECOVERY_AGENT.md), [DECISIONS.md](./DECISIONS.md) (ADR-063).
 
 ---
 
 ## Purpose
 
-Agent Runtime is the orchestration tier where specialized domain agents sit between Conversation Runtime and downstream Coach / Prompt / Provider / Action / Tool pipelines.
+Agent Runtime is the orchestration tier that coordinates specialized domain agents (`IAgent` implementations) and is the **single execution entry point** for agent-based workflows.
 
-Domain agents:
+It contains **no** business logic, provider logic, networking, persistence, prompts, or memory — only runtime orchestration through common contracts.
 
-- specialize conversations (e.g. workouts)
-- organize deterministic domain knowledge
-- prepare decisions for Coach Intelligence / Prompt Builder
-- consume Action / Tool results as feedback
-- never own providers, networking, persistence, or UI
+Module: `app/src/features/agent-runtime/`.
 
 ---
 
-## Placement
+## Architecture
+
+```
+User Request
+      ↓
+Agent Runtime
+      ↓
+Agent Registry
+      ↓
+Agent Selection
+      ↓
+Agent Execution
+      ↓
+Agent Result
+```
+
+Placement in the broader pipeline:
 
 ```
 User Request
       ↓
 Conversation Runtime
       ↓
-Agent Framework                     ← Sprint 21.1 shared contracts / registry
+Agent Runtime                         ← this module (Sprint 21.4)
       ↓
-Domain Agent (Workout / Nutrition / Recovery)  ← Agent Runtime
+Agent Framework contracts (IAgent)    ← Sprint 21.1
       ↓
-Coach Intelligence
+Domain Agent (Workout / Nutrition / Recovery)
       ↓
-Prompt Builder
-      ↓
-AI Provider
-      ↓
-Response Formatter
-      ↓
-Action Engine
-      ↓
-Tool Runtime
-      ↓
-Domain Platform
+Coach Intelligence → Prompt Builder → AI Provider → …
 ```
-
-Shared infrastructure: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md), [AGENT_LIFECYCLE.md](./AGENT_LIFECYCLE.md), [AGENT_REGISTRY.md](./AGENT_REGISTRY.md).
 
 ---
 
-## Domain Agents
+## Runtime Lifecycle
 
-| Agent | Module | Sprint |
-|-------|--------|--------|
-| **Workout Agent** | `features/workout-agent/` | 21.0 (migrated onto Agent Framework in 21.1) |
-| **Nutrition Agent** | `features/nutrition-agent/` | 21.2 |
-| **Recovery Agent** | `features/recovery-agent/` | 21.3 |
+1. **Receive** immutable `AgentRuntimeRequest`
+2. **Validate** request + registry integrity
+3. **Select** agent (role / capability / priority / fallback)
+4. **Plan** immutable `AgentExecutionPlan`
+5. **Execute** via registered executor (or default shell executor)
+6. **Collect** `AgentExecutionResult` + runtime events
+7. **Return** immutable `AgentRuntimeResponse` (includes snapshot + summary)
 
-Future agents (goals, coach supervisor) must extend the Agent Framework:
+Lifecycle statuses: `idle` → `validating` → `selecting` → `planning` → `executing` → `collecting` → `completed` | `failed`.
 
-- implement `IAgent`
-- register via `registerAgent`
-- immutable result models
-- deterministic reasoning + planning
-- strategy / policy / selector architecture
-- narrow public application API
-- mockable downstream integration
+---
+
+## Registry
+
+`AgentRegistry` is **immutable**:
+
+- `register` / `unregister` return a **new** registry instance
+- Lookup by **identifier**, **role**, and **capability**
+- List registered agents / entries
+- Capability index for integrity checks
+
+Consumes existing `IAgent` (including `RecoveryFrameworkAgent`) without modifying domain agents.
+
+---
+
+## Selection Flow
+
+`AgentSelector` is pure deterministic selection (no AI):
+
+1. Explicit `agentId` (if present)
+2. `role` (priority-ranked among matches)
+3. `capability` (priority-ranked among matches)
+4. `fallbackRole`
+5. `fallbackCapability`
+6. Exact `priority` match (last resort)
+
+Priority ties break by stable `agentId` sort.
+
+---
+
+## Module Layout
+
+| Folder | Role |
+|--------|------|
+| `models/` | Immutable request / response / context / state / plan / result / snapshot / event / error |
+| `runtime/` | `AgentRuntime` — orchestration entry |
+| `registry/` | Immutable `AgentRegistry` |
+| `selectors/` | Deterministic `AgentSelector` |
+| `coordinators/` | Execution / Lifecycle / Response / Event |
+| `builders/` | Request / Context / Response builders |
+| `validators/` | Request, registry, selected agent, plan, lifecycle, response |
+| `services/` | `AgentRuntimeService` |
+| `application/` | Public API only |
+| `utils/` | Freeze / formatting / statistics / helpers |
+
+---
+
+## Public API
+
+| Function | Role |
+|----------|------|
+| `executeAgent` | Run complete runtime flow → immutable `AgentRuntimeResponse` |
+| `listAgents` | List registered `IAgent` instances |
+| `describeAgent` | Immutable `AgentRuntimeDescriptor` |
+| `registerAgent` | Register `IAgent` (+ optional executor) |
+| `unregisterAgent` | Remove agent from runtime registry |
+
+Runtime internals (coordinators, selectors, registry mutations) are not part of the public application surface.
+
+---
+
+## Integration
+
+| Consumer | Integration |
+|----------|-------------|
+| **IAgent** | Register any framework agent |
+| **RecoveryFrameworkAgent** | Register without modifying recovery-agent |
+| Future Workout / Nutrition / Goal / Coach Supervisor | Same `IAgent` + optional executor |
+
+Domain agents supply optional `AgentRuntimeExecutor` handlers. Without a handler, the runtime uses a **shell executor** that returns orchestration metadata only (no domain logic).
+
+---
+
+## Future Multi-Agent Collaboration
+
+Placeholders for later sprints (not implemented here):
+
+- Multi-agent execution plans (ordered / parallel fan-out)
+- Collaboration policies (handoff, supervisor arbitration)
+- Shared runtime context across agents
+- Event subscribers for Conversation / Coach pipelines
+
+Current foundation executes **one selected agent per request**.
+
 ---
 
 ## Non-Goals
 
 Agent Runtime does **not**:
 
-- replace Prompt Builder or AI Provider
+- contain domain / business logic
+- generate prompts or call providers
 - execute tools (Tool Runtime owns that)
-- duplicate Workout Domain / Nutrition Domain / Recovery Domain business logic
 - introduce networking or persistence
+- own conversation memory
+- replace Agent Framework contracts (`IAgent`, lifecycle, framework registry)

@@ -155,6 +155,9 @@ Tool Runtime Engine              ← Sprint 20.1 (implemented) — ActionPlan �
 Agent Framework                  ← Sprint 21.1 (implemented) — shared agent contracts / lifecycle / registry
   (`app/src/features/agent-framework/`)
   ↓
+Agent Runtime                    ← Sprint 21.4 (implemented) — single execution entry point for agent workflows
+  (`app/src/features/agent-runtime/`)
+  ↓
 Workout Agent                    ← Sprint 21.0 (implemented) — first domain agent (orchestration only; migrated onto framework in 21.1)
   (`app/src/features/workout-agent/`)
   ↓
@@ -676,6 +679,23 @@ Full detail: [TOOL_RUNTIME.md](./TOOL_RUNTIME.md) (Execution Pipeline + Executio
 | **Design** | **No domain logic, prompts, providers, networking, or persistence.** Framework infrastructure only |
 
 Full detail: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md). Lifecycle: [AGENT_LIFECYCLE.md](./AGENT_LIFECYCLE.md). Registry: [AGENT_REGISTRY.md](./AGENT_REGISTRY.md).
+
+### Agent Runtime (`features/agent-runtime`) — Sprint 21.4
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Single execution entry point coordinating specialized agents through common contracts |
+| **Flow** | User Request → Agent Runtime → Agent Registry → Agent Selection → Agent Execution → Agent Result |
+| **Models** | `AgentRuntimeRequest`, `AgentRuntimeResponse`, `AgentRuntimeContext`, `AgentRuntimeState`, `AgentExecutionPlan`, `AgentExecutionResult`, `AgentRuntimeMetadata`, `AgentRuntimeSummary`, `AgentRuntimeSnapshot`, `AgentRuntimeError`, `AgentRuntimeEvent` |
+| **Runtime** | `AgentRuntime` — validate → select → plan → execute → collect → immutable response |
+| **Registry** | Immutable `AgentRegistry` (register/unregister return new instances; lookup by id / role / capability) |
+| **Selectors** | Deterministic `AgentSelector` (role / capability / priority / fallback; no AI) |
+| **Coordinators** | `ExecutionCoordinator`, `LifecycleCoordinator`, `ResponseCoordinator`, `EventCoordinator` |
+| **Application API** | `executeAgent`, `listAgents`, `describeAgent`, `registerAgent`, `unregisterAgent` |
+| **Integration** | Consumes `IAgent` / `RecoveryFrameworkAgent` without modifying existing agents; optional injectable executors |
+| **Design** | **No business logic, providers, networking, persistence, prompts, or memory.** Runtime orchestration only |
+
+Full detail: [AGENT_RUNTIME.md](./AGENT_RUNTIME.md).
 
 ### Workout Agent (`features/workout-agent`) — Sprint 21.0 / 21.1
 
