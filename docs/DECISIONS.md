@@ -1762,4 +1762,34 @@ Add `app/src/features/response-formatter/` with immutable Coach Response models,
 
 ---
 
-*New decisions are appended as Decision 057, 058, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 057: AI Action Engine Foundation (Sprint 20.3 / Sprint 20.0 scope)
+
+**Date:** 2026-07-23
+
+**Status:** Accepted
+
+**Context:**
+Sprint 20.0 must introduce an Action Engine that transforms an immutable `CoachResponse` into an immutable `ActionPlan`. The module bridges AI reasoning and executable application behavior but must not execute domain logic, modify application state, call tools, network, persist, use provider SDKs, or invoke AI. Only immutable action planning is allowed.
+
+**Decision:**
+Add `app/src/features/action-engine/` with immutable Action Plan models, action definitions (metadata only), deterministic planners (Workout/Nutrition/Recovery/Goal/Reminder/Composite), builders, validators, selectors, structural policies, execution abstractions (contracts only), `ActionEngineService`, and a narrow application API (`buildActionPlan`, `validateActionPlan`, `summarizeActionPlan`, `estimateExecution`, `describeActions`). Consume only `CoachResponse` from Response Formatter. Produce `ActionPlan` / `ActionPackage` for Future Tool Runtime.
+
+**Why:**
+- **Dedicated Action Engine boundary** keeps planning separate from tool execution and domain adapters.
+- **Immutable ActionPlan** matches EVOLVE foundation patterns used by Response Formatter / Prompt Builder.
+- **Planner architecture** keeps mapping units deterministic and testable.
+- **Execution contracts only** defer real runtime to Future Tool Runtime without leaking domain logic.
+
+**Alternatives considered:**
+- **Execute tools inside Action Engine** — rejected: sprint forbids domain execution and tool calls.
+- **Embed planning inside Response Formatter** — rejected: Formatter owns CoachResponse structure; Action Engine owns executable plan preparation.
+- **Call providers / AI for planning** — rejected: sprint forbids networking, SDKs, and AI calls.
+
+**Consequences:**
+- Documentation references [ACTION_ENGINE.md](./ACTION_ENGINE.md) and [ACTION_PLANNING.md](./ACTION_PLANNING.md).
+- Consumers call `buildActionPlan` instead of deriving ad hoc steps from CoachResponse.
+- Action Engine remains free of domain execution, networking, persistence, and provider SDKs.
+
+---
+
+*New decisions are appended as Decision 058, 059, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

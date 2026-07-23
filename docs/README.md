@@ -55,8 +55,10 @@
 | [TOOL_CALLING_FOUNDATION.md](./TOOL_CALLING_FOUNDATION.md) | Tool Calling Foundation, Tool Registry, Execution Flow, Future Domain Tool Integration |
 | [DOMAIN_TOOL_ADAPTERS.md](./DOMAIN_TOOL_ADAPTERS.md) | Domain Tool Adapters, Adapter Flow, Tool Integration, Future Adapter Extensions |
 | [RESPONSE_FORMATTER.md](./RESPONSE_FORMATTER.md) | Response Formatter, Coach Response, Formatting Pipeline |
+| [ACTION_ENGINE.md](./ACTION_ENGINE.md) | Action Engine, ActionPlan, Action Planning, Execution Pipeline |
+| [ACTION_PLANNING.md](./ACTION_PLANNING.md) | Action Planning planners, selectors, policies |
 | [TECH_STACK.md](./TECH_STACK.md) | Languages, frameworks, versions, future tech |
-| [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-056 (append-only) |
+| [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-057 (append-only) |
 | [AI_SYSTEM.md](./AI_SYSTEM.md) | Coach, LLM, engines, memory, mobile workout pipeline |
 | [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md) | Integration framework for the workout pipeline |
 | [../.cursor/rules/EVOLVE_ARCHITECTURE.md](../.cursor/rules/EVOLVE_ARCHITECTURE.md) | Deep-dive architecture reference |

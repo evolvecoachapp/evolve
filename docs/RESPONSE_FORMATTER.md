@@ -7,7 +7,7 @@
 **Purpose:** Document the Response Formatter domain (Sprint 19.4).  
 **Source of Truth:** Yes — for Response Formatter layout, Coach Response model, and Formatting Pipeline on mobile.
 
-Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md), [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md), [AI_EXECUTION_PIPELINE.md](./AI_EXECUTION_PIPELINE.md), [AI_SYSTEM.md](./AI_SYSTEM.md), [DECISIONS.md](./DECISIONS.md) (ADR-056).
+Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md), [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md), [AI_EXECUTION_PIPELINE.md](./AI_EXECUTION_PIPELINE.md), [ACTION_ENGINE.md](./ACTION_ENGINE.md), [AI_SYSTEM.md](./AI_SYSTEM.md), [DECISIONS.md](./DECISIONS.md) (ADR-056).
 
 ---
 
@@ -20,9 +20,9 @@ Response Formatter
       ↓
 CoachResponse
       ↓
-Future UI
+UI
       ↓
-Future Action Engine
+Action Engine
 ```
 
 Module: `app/src/features/response-formatter/`.

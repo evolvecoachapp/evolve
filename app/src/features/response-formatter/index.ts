@@ -3,7 +3,7 @@
  *
  * Sprint 19.4 — Response Formatter.
  *
- * AIResponse → Response Formatter → CoachResponse → Future UI / Future Action Engine
+ * AIResponse → Response Formatter → CoachResponse → UI / Action Engine
  *
  * Transforms an immutable AIResponse into an immutable CoachResponse.
  * Completely provider-independent. No networking. No SDKs. No prompt generation.

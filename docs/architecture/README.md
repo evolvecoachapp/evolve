@@ -30,7 +30,9 @@
 - [STREAMING_FOUNDATION.md](../STREAMING_FOUNDATION.md) — Streaming Foundation, Stream Lifecycle, Future Tool Calling Integration
 - [TOOL_CALLING_FOUNDATION.md](../TOOL_CALLING_FOUNDATION.md) — Tool Calling Foundation, Tool Registry, Execution Flow, Future Domain Tool Integration
 - [DOMAIN_TOOL_ADAPTERS.md](../DOMAIN_TOOL_ADAPTERS.md) — Domain Tool Adapters, Adapter Flow, Tool Integration, Future Adapter Extensions
-- [RESPONSE_FORMATTER.md](../RESPONSE_FORMATTER.md) — Response Formatter, Coach Response, Formatting Pipeline, Future UI / Action Engine
+- [RESPONSE_FORMATTER.md](../RESPONSE_FORMATTER.md) — Response Formatter, Coach Response, Formatting Pipeline, UI / Action Engine
+- [ACTION_ENGINE.md](../ACTION_ENGINE.md) — Action Engine, ActionPlan, Action Planning, Execution Pipeline contracts
+- [ACTION_PLANNING.md](../ACTION_PLANNING.md) — Action Planning planners, selectors, policies
 - [AI_SYSTEM.md](../AI_SYSTEM.md) — Coach + mobile AI runtime pipeline
 - [INTEGRATION_TESTING.md](../INTEGRATION_TESTING.md) — Integration framework (fixtures, builders, assertions, scenarios, goldens)
 

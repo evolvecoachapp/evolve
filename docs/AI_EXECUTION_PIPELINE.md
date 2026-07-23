@@ -187,6 +187,21 @@ Tool execution is owned by [TOOL_CALLING_FOUNDATION.md](./TOOL_CALLING_FOUNDATIO
 
 ---
 
+## Action Engine Handoff
+
+Downstream of provider execution, Response Formatter produces `CoachResponse`, then [ACTION_ENGINE.md](./ACTION_ENGINE.md) prepares an immutable `ActionPlan` for Future Tool Runtime. AI Execution Pipeline does **not** plan or execute domain actions — Action Engine owns planning; Tool Calling / Domain Tool Adapters own future execution.
+
+| Concern | Owner |
+|---------|-------|
+| Prompt → AIResponse | AI Execution Pipeline |
+| AIResponse → CoachResponse | Response Formatter |
+| CoachResponse → ActionPlan | Action Engine |
+| ActionPlan → domain tools | Future Tool Runtime + Domain Tool Adapters |
+
+See also: [ACTION_PLANNING.md](./ACTION_PLANNING.md).
+
+---
+
 ## Explicit Non-Goals
 
-No streaming implementation inside the pipeline (see Streaming Foundation). No retry implementation. No tool calling. No memory. No HTTP. No provider-specific code. Pipeline only. Does not modify Prompt Composition, AI Provider Abstraction, or OpenAI Provider.
+No streaming implementation inside the pipeline (see Streaming Foundation). No retry implementation. No tool calling. No memory. No HTTP. No provider-specific code. Pipeline only. Does not modify Prompt Composition, AI Provider Abstraction, or OpenAI Provider. Does not implement Action Engine planning.
