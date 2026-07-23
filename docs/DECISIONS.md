@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-23  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-059). Append only — never renumber.  
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-061). Append only — never renumber.  
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -1882,4 +1882,34 @@ Add `app/src/features/agent-framework/` with immutable contracts (`IAgent`, `IAg
 
 ---
 
-*New decisions are appended as Decision 061, 062, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 061: Nutrition Agent Foundation (Sprint 21.2)
+
+**Date:** 2026-07-23
+
+**Status:** Accepted
+
+**Context:**
+Sprint 21.2 must introduce the Nutrition Agent as the intelligent nutrition specialist of EVOLVE. It specializes in nutritional reasoning, meal planning, macro distribution, dietary strategy, supplementation guidance, body composition support, and nutritional education. It must extend the Agent Framework, own no infrastructure, must not generate prompts, must not call providers, must not execute tools, and must not duplicate Nutrition Domain business logic.
+
+**Decision:**
+Add `app/src/features/nutrition-agent/` with immutable Nutrition Agent models (including `NutritionAgentResult`), agent orchestration (`NutritionAgentEngine`, `NutritionAgentCoordinator`, session/state), deterministic reasoning and planning layers, strategy / policy / selector architecture, builders, validators, `NutritionAgentService`, `NutritionFrameworkAgent` (`IAgent` adapter), and a narrow application API (`processNutritionRequest`, `buildNutritionPlan`, `evaluateNutrition`, `describeNutritionCapabilities`, `validateNutritionPlan`). Consume Conversation Context / Memory, optional `CoachResponse` / `ActionPlan` / `ToolExecutionResult`. Produce immutable `NutritionAgentResult`. Document Nutrition Agent, Agent Runtime, and Nutrition Intelligence boundaries.
+
+**Why:**
+- **Specialized nutrition orchestration** keeps conversational / planning logic out of the Nutrition Domain and out of Coach / Prompt / Provider layers.
+- **Agent Framework reuse** avoids a second incompatible agent stack.
+- **Deterministic reasoning + planning** organizes knowledge before AI without embedding prompts or provider SDKs.
+- **Narrow public API** prevents leaking internals while enabling tests with mocked downstream dependencies.
+
+**Alternatives considered:**
+- **Fold nutrition planning into Workout Agent** — rejected: different domain specialist with distinct strategies / policies.
+- **Put calorie/macro math only in Coach / Prompt Builder** — rejected: agent must own deterministic nutrition reasoning surface.
+- **Duplicate Nutrition Engine business logic in the agent** — rejected: sprint forbids domain duplication; agent orchestrates only.
+
+**Consequences:**
+- Documentation references [NUTRITION_AGENT.md](./NUTRITION_AGENT.md), [NUTRITION_INTELLIGENCE.md](./NUTRITION_INTELLIGENCE.md), and updated [AGENT_RUNTIME.md](./AGENT_RUNTIME.md).
+- Nutrition Agent remains free of provider SDKs, networking, persistence, and UI.
+- Nutrition Domain remains source of truth for executable nutrition artifacts.
+
+---
+
+*New decisions are appended as Decision 062, 063, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

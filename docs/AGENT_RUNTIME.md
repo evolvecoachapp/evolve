@@ -4,10 +4,10 @@
 **Version:** 0.6.0  
 **Status:** Living Document  
 **Last Updated:** 2026-07-23  
-**Purpose:** Document the Agent Runtime boundary introduced with the Workout Agent (Sprint 21.0).  
+**Purpose:** Document the Agent Runtime boundary for domain agents (Workout, Nutrition, …).  
 **Source of Truth:** Yes — for domain agent placement inside the AI Runtime pipeline.
 
-Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [WORKOUT_AGENT.md](./WORKOUT_AGENT.md), [WORKOUT_INTELLIGENCE.md](./WORKOUT_INTELLIGENCE.md), [AI_SYSTEM.md](./AI_SYSTEM.md), [DECISIONS.md](./DECISIONS.md) (ADR-059).
+Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [WORKOUT_AGENT.md](./WORKOUT_AGENT.md), [NUTRITION_AGENT.md](./NUTRITION_AGENT.md), [WORKOUT_INTELLIGENCE.md](./WORKOUT_INTELLIGENCE.md), [NUTRITION_INTELLIGENCE.md](./NUTRITION_INTELLIGENCE.md), [AI_SYSTEM.md](./AI_SYSTEM.md), [DECISIONS.md](./DECISIONS.md) (ADR-059, ADR-061).
 
 ---
 
@@ -30,9 +30,11 @@ Domain agents:
 ```
 User Request
       ↓
+Conversation Runtime
+      ↓
 Agent Framework                     ← Sprint 21.1 shared contracts / registry
       ↓
-Domain Agent (e.g. Workout Agent)   ← Agent Runtime
+Domain Agent (Workout / Nutrition)  ← Agent Runtime
       ↓
 Coach Intelligence
       ↓
@@ -53,13 +55,14 @@ Shared infrastructure: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md), [AGENT_LIFECY
 
 ---
 
-## First Agent
+## Domain Agents
 
 | Agent | Module | Sprint |
 |-------|--------|--------|
 | **Workout Agent** | `features/workout-agent/` | 21.0 (migrated onto Agent Framework in 21.1) |
+| **Nutrition Agent** | `features/nutrition-agent/` | 21.2 |
 
-Future agents (nutrition, recovery, goals, coach supervisor) must extend the Agent Framework:
+Future agents (recovery, goals, coach supervisor) must extend the Agent Framework:
 
 - implement `IAgent`
 - register via `registerAgent`

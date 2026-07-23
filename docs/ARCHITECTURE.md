@@ -157,9 +157,12 @@ Agent Framework                  ← Sprint 21.1 (implemented) — shared agent 
   ↓
 Workout Agent                    ← Sprint 21.0 (implemented) — first domain agent (orchestration only; migrated onto framework in 21.1)
   (`app/src/features/workout-agent/`)
+  ↓
+Nutrition Agent                  ← Sprint 21.2 (implemented) — nutrition specialist domain agent (orchestration only)
+  (`app/src/features/nutrition-agent/`)
 ```
 
-Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md). Insight Engine: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md). Coach Intelligence: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md). Conversation Orchestrator: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md). Prompt Builder: [PROMPT_BUILDER.md](./PROMPT_BUILDER.md). Prompt Composition: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md). AI Provider Abstraction: [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md). OpenAI Provider: [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md). AI Execution Pipeline: [AI_EXECUTION_PIPELINE.md](./AI_EXECUTION_PIPELINE.md). Streaming Foundation: [STREAMING_FOUNDATION.md](./STREAMING_FOUNDATION.md). Tool Calling Foundation: [TOOL_CALLING_FOUNDATION.md](./TOOL_CALLING_FOUNDATION.md). Domain Tool Adapters: [DOMAIN_TOOL_ADAPTERS.md](./DOMAIN_TOOL_ADAPTERS.md). Response Formatter: [RESPONSE_FORMATTER.md](./RESPONSE_FORMATTER.md). Action Engine: [ACTION_ENGINE.md](./ACTION_ENGINE.md). Tool Runtime: [TOOL_RUNTIME.md](./TOOL_RUNTIME.md). Agent Framework: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md). Agent Lifecycle: [AGENT_LIFECYCLE.md](./AGENT_LIFECYCLE.md). Agent Registry: [AGENT_REGISTRY.md](./AGENT_REGISTRY.md). Workout Agent: [WORKOUT_AGENT.md](./WORKOUT_AGENT.md). Agent Runtime: [AGENT_RUNTIME.md](./AGENT_RUNTIME.md). Workout Intelligence: [WORKOUT_INTELLIGENCE.md](./WORKOUT_INTELLIGENCE.md).
+Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md). Insight Engine: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md). Coach Intelligence: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md). Conversation Orchestrator: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md). Prompt Builder: [PROMPT_BUILDER.md](./PROMPT_BUILDER.md). Prompt Composition: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md). AI Provider Abstraction: [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md). OpenAI Provider: [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md). AI Execution Pipeline: [AI_EXECUTION_PIPELINE.md](./AI_EXECUTION_PIPELINE.md). Streaming Foundation: [STREAMING_FOUNDATION.md](./STREAMING_FOUNDATION.md). Tool Calling Foundation: [TOOL_CALLING_FOUNDATION.md](./TOOL_CALLING_FOUNDATION.md). Domain Tool Adapters: [DOMAIN_TOOL_ADAPTERS.md](./DOMAIN_TOOL_ADAPTERS.md). Response Formatter: [RESPONSE_FORMATTER.md](./RESPONSE_FORMATTER.md). Action Engine: [ACTION_ENGINE.md](./ACTION_ENGINE.md). Tool Runtime: [TOOL_RUNTIME.md](./TOOL_RUNTIME.md). Agent Framework: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md). Agent Lifecycle: [AGENT_LIFECYCLE.md](./AGENT_LIFECYCLE.md). Agent Registry: [AGENT_REGISTRY.md](./AGENT_REGISTRY.md). Workout Agent: [WORKOUT_AGENT.md](./WORKOUT_AGENT.md). Nutrition Agent: [NUTRITION_AGENT.md](./NUTRITION_AGENT.md). Agent Runtime: [AGENT_RUNTIME.md](./AGENT_RUNTIME.md). Workout Intelligence: [WORKOUT_INTELLIGENCE.md](./WORKOUT_INTELLIGENCE.md). Nutrition Intelligence: [NUTRITION_INTELLIGENCE.md](./NUTRITION_INTELLIGENCE.md).
 
 ### Exercise Knowledge Base (`features/exercise-kb`)
 
@@ -689,6 +692,25 @@ Full detail: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md). Lifecycle: [AGENT_LIFEC
 | **Design** | **No prompts, provider calls, tool execution, networking, persistence, or UI.** Orchestrator only — does not replace Workout Domain |
 
 Full detail: [WORKOUT_AGENT.md](./WORKOUT_AGENT.md). Agent Framework: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md). Agent Runtime: [AGENT_RUNTIME.md](./AGENT_RUNTIME.md). Workout Intelligence: [WORKOUT_INTELLIGENCE.md](./WORKOUT_INTELLIGENCE.md).
+
+### Nutrition Agent (`features/nutrition-agent`) — Sprint 21.2
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Intelligent nutrition specialist — meal planning, macros, dietary strategy, supplementation, body composition, education |
+| **Flow** | User Request → Conversation Runtime → Nutrition Agent → Coach Intelligence → Prompt Builder → AI Provider → Response Formatter → Action Engine → Tool Runtime → Nutrition Domain |
+| **Models** | `NutritionAgent`, `NutritionRequest`, `NutritionContext`, `NutritionGoal`, `NutritionIntent`, `NutritionStrategy`, `NutritionPlan`, `NutritionDecision`, `NutritionRecommendation`, `NutritionExplanation`, `NutritionConversation`, `NutritionAgentResult`, `NutritionAgentSnapshot`, `NutritionMetadata`, `NutritionConfidence`, `NutritionReasoning`, `NutritionPlanningContext`, `NutritionPlanningResult`, `NutritionExecutionContext`, `NutritionStatistics`, `MacroTargets`, `CalorieTargets`, `MealDistribution`, `HydrationPlan`, `SupplementPlan`, `BodyCompositionState` |
+| **Agent** | `NutritionAgent`, `NutritionAgentEngine`, `NutritionAgentCoordinator`, `NutritionAgentSession`, `NutritionAgentState` |
+| **Framework** | `NutritionFrameworkAgent` implements `IAgent`; optional `registerWithFramework` |
+| **Reasoning** | Calorie / Macro / Meal Timing / Body Composition / Energy Balance / Protein / Carb / Fat / Fiber / Hydration / Supplement / Adherence / Education / Goal (deterministic, no AI) |
+| **Planning** | Nutrition / Meal / Macro / Calorie / Hydration / Supplement / Diet Phase / Refeed / Reverse / Cut / Bulk / Maintenance (no execution) |
+| **Strategies** | Fat Loss / Muscle Gain / Maintenance / Recomposition / Performance / Powerlifting / Hypertrophy / General Health / Contest Prep |
+| **Policies** | Safety / Calorie / Macro / Meal / Hydration / Supplement / Adherence / Recovery Nutrition |
+| **Application API** | `processNutritionRequest`, `buildNutritionPlan`, `evaluateNutrition`, `describeNutritionCapabilities`, `validateNutritionPlan` |
+| **Integration** | Consumes Conversation Context / Memory, CoachResponse, ActionPlan, ToolExecutionResult; produces immutable `NutritionAgentResult`; registers with Agent Framework |
+| **Design** | **No prompts, provider calls, tool execution, networking, persistence, or UI.** Orchestrator only — does not replace Nutrition Domain |
+
+Full detail: [NUTRITION_AGENT.md](./NUTRITION_AGENT.md). Agent Framework: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md). Agent Runtime: [AGENT_RUNTIME.md](./AGENT_RUNTIME.md). Nutrition Intelligence: [NUTRITION_INTELLIGENCE.md](./NUTRITION_INTELLIGENCE.md).
 
 ---
 
