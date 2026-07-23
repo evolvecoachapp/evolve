@@ -898,3 +898,18 @@
 | **Status** | Complete |
 | **Notes** | No Workout/Recovery/Nutrition/Coach implementations, business logic, or provider-specific code. Legacy Conversation/Workflow tool surfaces preserved. Does not modify Streaming Foundation, AI Execution Pipeline, or AI Provider Abstraction internals |
 
+### Sprint 20.2 — Domain Tool Adapters
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 20.2.0 |
+| **Title** | Domain Tool Adapters |
+| **Date** | 2026-07-23 |
+| **Goal** | Expose existing domain capabilities to Tool Calling Foundation via thin adapters |
+| **Architecture** | Tool Calling Engine → **Domain Tool Adapters** → Existing Domain → Foundation Tool Result. Module: `app/src/features/domain-tools/`. |
+| **Main components** | **Adapters:** WorkoutToolAdapter, RecoveryToolAdapter, CoachToolAdapter, AthleteToolAdapter. **Mappers:** Workout/Recovery/Coach/Athlete Request+Result mappers. **Builders:** FoundationToolResultBuilder, AdapterContextBuilder. **Service:** DomainToolService. **Application API:** `executeDomainTool`, `listDomainTools`, `describeDomainTool`. |
+| **Tests** | Adapters, mappers, builders, validators, application, integration, regression |
+| **Results** | Dedicated Domain Tool Adapters. ADR-054 recorded. Docs: DOMAIN_TOOL_ADAPTERS.md (Adapter Flow, Tool Integration, Future Adapter Extensions). |
+| **Status** | Complete |
+| **Notes** | No business logic, algorithms, provider-specific code, or OpenAI code. Does not modify existing domain modules or Tool Calling Foundation internals. Future Nutrition/Mobility/Sleep/Goal adapters register via DomainToolService. |
+

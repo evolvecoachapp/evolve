@@ -195,19 +195,20 @@ The registry is the catalog boundary between AI tool requests and domain tools.
 
 ## Future Domain Tool Integration
 
-Reserved architecture only in this sprint.
+**Implemented in Sprint 20.2** as `app/src/features/domain-tools/` — see [DOMAIN_TOOL_ADAPTERS.md](./DOMAIN_TOOL_ADAPTERS.md).
 
-| Concern | Future |
+| Concern | Status |
 |---------|--------|
-| Workout tools | Register `ITool` adapters over Workout Runtime / Assembly |
-| Recovery tools | Register Recovery Intelligence query tools |
-| Nutrition tools | Register nutrition domain tools |
-| Coach tools | Register Coach Intelligence / notes tools |
-| Composition | Wire tools in Composition Root — keep foundation free of domain logic |
+| Workout tools | `WorkoutToolAdapter` over Program Generation + Performance Engine |
+| Recovery tools | `RecoveryToolAdapter` over Recovery Intelligence |
+| Athlete tools | `AthleteToolAdapter` over Athlete History + Achievement Engine |
+| Coach tools | `CoachToolAdapter` over Coach Intelligence + Insight Engine |
+| Nutrition / mobility / sleep / goal | Reserved — register via `DomainToolService.registerAdapter` |
+| Composition | Wire adapters in Composition Root — keep foundation free of domain logic |
 | Streaming | Optional tool-call / tool-result stream events (Streaming Foundation) |
 | Providers | Map vendor function-calls → `ToolCallRequest` outside this module |
 
-Existing placeholder `AITool` classes under `tools/placeholders/` remain for legacy workflow tests only; they are **not** the Sprint 20.1 foundation surface.
+Existing placeholder `AITool` classes under `tools/placeholders/` remain for legacy workflow tests only; they are **not** the Sprint 20.1 foundation surface. Domain Tool Adapters live outside this foundation.
 
 ---
 

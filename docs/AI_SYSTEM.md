@@ -123,6 +123,7 @@ Supporting orchestration pieces also present: Memory (conversation persistence a
 - AI Execution Pipeline (19.4) orchestrates provider-agnostic execution: `PromptPackage` → validate/context/resolve/execute/result → `AIResponse` — **no** streaming implementation, retry algorithms, tool calling, memory, HTTP, or provider-specific code inside the pipeline.
 - Streaming Foundation (20.0) coordinates provider-agnostic streaming: AI Execution Pipeline → Streaming Engine → Streaming Provider → Provider Stream → Stream State — immutable stream state + event-driven handlers; **no** OpenAI streaming implementation, memory, tool calling, or conversation history.
 - Tool Calling Foundation (20.1) coordinates provider-independent tool execution: Streaming Engine → Tool Calling Engine → Tool Registry → Tool Executor → Domain Tools → Tool Result — LLM only requests tools; **no** Workout/Recovery/Nutrition/Coach implementations, business logic, or provider-specific code inside the foundation.
+- Domain Tool Adapters (20.2) translate ToolCallRequest ↔ existing domain application APIs (`Workout` / `Recovery` / `Coach` / `Athlete` adapters) → immutable `FoundationToolResult` — **no** business logic, algorithms, provider-specific code, or OpenAI code; domain remains the source of truth.
 
 ---
 

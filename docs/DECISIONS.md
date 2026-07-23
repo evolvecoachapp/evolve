@@ -1671,4 +1671,34 @@ Evolve `app/src/features/tool-calling/` into a dedicated Tool Calling Foundation
 
 ---
 
-*New decisions are appended as Decision 054, 055, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 054: Domain Tool Adapters (Sprint 20.2)
+
+**Date:** 2026-07-23
+
+**Status:** Accepted
+
+**Context:**
+Sprint 20.2 must create Domain Tool Adapters that expose existing domain capabilities to the Tool Calling Foundation. Adapters must contain no business logic — only translate between Tool Calling models and existing domain models. The domain remains the source of truth. Future domains (nutrition, mobility, sleep, goal) must be easy to add.
+
+**Decision:**
+Add `app/src/features/domain-tools/` with dedicated adapters (`WorkoutToolAdapter`, `RecoveryToolAdapter`, `CoachToolAdapter`, `AthleteToolAdapter`), isolated request/result mappers, builders (`FoundationToolResultBuilder`, `AdapterContextBuilder`), validators, `DomainToolService` (resolve → execute → immutable `FoundationToolResult`), and a narrow application API (`executeDomainTool`, `listDomainTools`, `describeDomainTool`). Adapters invoke existing domain application APIs only. Future adapters register via `DomainToolService.registerAdapter`. Existing domain modules are not modified.
+
+**Why:**
+- **Adapter-per-domain** keeps Tool Calling Foundation free of domain implementations.
+- **Mapper isolation** keeps request/result translation single-responsibility and immutable.
+- **Service orchestration** resolves adapters without embedding business logic.
+- **Extensible registration** supports Nutrition/Mobility/Sleep/Goal without redesign.
+
+**Alternatives considered:**
+- **Implement domain tools inside `features/tool-calling`** — rejected: foundation must remain domain-free (ADR-053).
+- **Put adapter logic inside each domain module** — rejected: would couple domains to tool-calling models and complicate future provider wiring.
+- **Add business logic in adapters** — rejected: domain remains the source of truth.
+
+**Consequences:**
+- Documentation references [DOMAIN_TOOL_ADAPTERS.md](./DOMAIN_TOOL_ADAPTERS.md) (Adapter Flow + Tool Integration + Future Adapter Extensions).
+- Consumers call `executeDomainTool` / `listDomainTools` / `describeDomainTool` instead of talking to adapters directly.
+- Domain Tool Adapters remain free of algorithms, provider SDKs, and OpenAI code.
+
+---
+
+*New decisions are appended as Decision 055, 056, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
