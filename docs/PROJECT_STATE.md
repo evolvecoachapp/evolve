@@ -156,19 +156,19 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 
 ## Last Completed Sprint
 
-**21.7 — Supervisor Routing Engine Foundation** (2026-07-24)
+**21.8 — Coach Supervisor Foundation** (2026-07-24)
 
-- `features/supervisor-routing` deterministic routing plans (request → capability resolve → dependency graph → immutable `RoutingPlan`)
-- Immutable models, planners, selectors, policies, validators, builders, `SupervisorRoutingService`, minimal public API
-- Integrates Capability Registry via port/adapter; unit + integration tests — no AI, prompts, networking, persistence, agent execution, or collaboration execution; Coach Supervisor / Collaboration unchanged
+- `features/coach-supervisor` central multi-agent orchestrator (request → routing → collaboration → aggregation → `UnifiedCoachResponse`)
+- Immutable models, planners, coordination, aggregation, selectors, policies, validators, builders, `CoachSupervisorService`, Agent Framework `IAgent` (`coach_supervisor`)
+- Consumes Routing + Collaboration via ports (mocks in tests); no AI, prompts, networking, persistence, or domain business logic
 
-Previous: **21.6 — Agent Capability Registry Foundation**, **21.5 — Agent Collaboration Foundation**, **21.4 — Conversation Memory Foundation**
+Previous: **21.7 — Supervisor Routing Engine Foundation**, **21.6 — Agent Capability Registry Foundation**, **21.5 — Agent Collaboration Foundation**
 
 ---
 
 ## Next Sprint
 
-Wire Coach Supervisor to Supervisor Routing Engine, then hand `RoutingPlan` to Agent Collaboration — without embedding specialist names in Supervisor reasoning.
+Wire live Supervisor Routing + Agent Collaboration adapters into Coach Supervisor (replace mocks) and connect Conversation Runtime consumers to `processCoachRequest` — still without embedding specialist names or domain logic in Supervisor.
 
 ---
 

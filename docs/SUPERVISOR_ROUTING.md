@@ -66,7 +66,7 @@ Agent Collaboration           ← consumes RoutingPlan later
 Specialist Agents
 ```
 
-This sprint introduces the foundation module only. Coach Supervisor / Collaboration execution are **not** modified yet.
+Sprint 21.7 introduced the foundation module. Sprint 21.8 Coach Supervisor consumes routing via `RoutingPort` (see [COACH_SUPERVISOR.md](./COACH_SUPERVISOR.md)).
 
 ---
 

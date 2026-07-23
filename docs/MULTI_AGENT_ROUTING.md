@@ -20,8 +20,9 @@ User / Coach Request
   → dependency graph (acyclic)
   → deterministic execution order (topological + declared priority ties)
   → immutable RoutingPlan
-  → (future) Agent Collaboration consumes plan targets / order
+  → Coach Supervisor / Agent Collaboration consume plan targets / order
   → Specialist Agents
+  → Aggregation → UnifiedCoachResponse
 ```
 
 ---

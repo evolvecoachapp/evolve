@@ -2119,4 +2119,34 @@ Introduce `app/src/features/supervisor-routing/` with immutable routing models (
 
 ---
 
-*New decisions are appended as Decision 069, 070, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 069: Coach Supervisor Foundation (Sprint 21.8)
+
+**Date:** 2026-07-24  
+**Status:** Accepted  
+
+**Context:**
+Sprint 21.8 must introduce the Coach Supervisor as the central orchestrator of EVOLVE’s multi-agent workflow. It must coordinate Routing → Capability Registry → Agent Collaboration → Specialists → Aggregation into a `UnifiedCoachResponse`, without performing workout / nutrition / recovery / goal / business logic, AI, prompts, networking, persistence, or UI. It must integrate with the Agent Framework as `IAgent` with role `coach_supervisor`.
+
+**Decision:**
+Introduce `app/src/features/coach-supervisor/` with immutable models (`CoachSupervisorRequest`, `CoachSupervisorContext`, `CoachSupervisorPlan`, `CoordinationPlan`, `AggregationResult`, `UnifiedCoachResponse`, `CoachSupervisorResult`, …), `CoachSupervisorEngine` / `CoachCoordinator`, deterministic planners / coordination / aggregation / selectors / policies / validators / builders, `RoutingPort` + `CollaborationPort` (with mocks), `CoachSupervisorFrameworkAgent` (`IAgent`, role `coach_supervisor`), `CoachSupervisorService`, and a narrow application API (`processCoachRequest`, `buildCoordinationPlan`, `aggregateResults`, `describeSupervisorCapabilities`, `validateSupervisorPlan`). Document boundaries and ADR-069.
+
+**Why:**
+- **Orchestration ≠ domain logic** keeps specialist ownership intact.
+- **Ports for Routing / Collaboration** enable deterministic tests without hard-wiring specialists.
+- **Framework role reuse** (`coach_supervisor`) avoids a custom agent framework.
+- **Immutable UnifiedCoachResponse** gives a single coach-facing output for runtime / UI consumers later.
+
+**Alternatives considered:**
+- **Extend coach-agent only** — rejected: Supervisor Runtime needs a dedicated orchestration module above Routing + Collaboration.
+- **Embed domain calculations in Supervisor** — rejected: sprint forbids business logic.
+- **AI-based aggregation** — rejected: sprint forbids AI / prompts / scoring.
+- **Custom supervisor framework** — rejected: must reuse Agent Framework `IAgent` lifecycle.
+
+**Consequences:**
+- Documentation updates: [COACH_SUPERVISOR.md](./COACH_SUPERVISOR.md), [SUPERVISOR_RUNTIME.md](./SUPERVISOR_RUNTIME.md), [MULTI_AGENT_RUNTIME.md](./MULTI_AGENT_RUNTIME.md), [AGENT_PLATFORM.md](./AGENT_PLATFORM.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [architecture/README.md](./architecture/README.md).
+- Coach Supervisor remains free of AI, prompts, providers, networking, persistence, and domain business logic.
+- Existing specialist agents are unchanged; consumed through collaboration/routing ports.
+
+---
+
+*New decisions are appended as Decision 070, 071, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

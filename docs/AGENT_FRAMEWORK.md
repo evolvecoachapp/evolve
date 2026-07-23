@@ -22,7 +22,13 @@ Agent Framework (IAgent contracts)
       ↓
 Coach Supervisor (meta) / Workout / Nutrition / Recovery / Goal
       ↓
-Specialists → Merge (Coach) or Planning → Domain → Agent Result
+Specialists → Aggregation (Coach Supervisor) or Merge (Coach Agent) or Planning → Domain → Agent Result
+```
+
+Coach Supervisor execution path (Sprint 21.8):
+
+```
+Agent Runtime → Coach Supervisor Framework Agent → Routing → Collaboration → Specialists → Aggregation → UnifiedCoachResponse
 ```
 
 Workout Agent execution path (specialized):
