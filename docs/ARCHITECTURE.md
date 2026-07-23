@@ -151,9 +151,12 @@ Action Engine                    ← Sprint 20.3 (implemented) — CoachResponse
   ↓
 Tool Runtime Engine              ← Sprint 20.1 (implemented) — ActionPlan → Domain Tool Adapters
   (`app/src/features/tool-runtime/`)
+  ↓
+Workout Agent                    ← Sprint 21.0 (implemented) — first domain agent (orchestration only)
+  (`app/src/features/workout-agent/`)
 ```
 
-Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md). Insight Engine: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md). Coach Intelligence: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md). Conversation Orchestrator: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md). Prompt Builder: [PROMPT_BUILDER.md](./PROMPT_BUILDER.md). Prompt Composition: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md). AI Provider Abstraction: [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md). OpenAI Provider: [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md). AI Execution Pipeline: [AI_EXECUTION_PIPELINE.md](./AI_EXECUTION_PIPELINE.md). Streaming Foundation: [STREAMING_FOUNDATION.md](./STREAMING_FOUNDATION.md). Tool Calling Foundation: [TOOL_CALLING_FOUNDATION.md](./TOOL_CALLING_FOUNDATION.md). Domain Tool Adapters: [DOMAIN_TOOL_ADAPTERS.md](./DOMAIN_TOOL_ADAPTERS.md). Response Formatter: [RESPONSE_FORMATTER.md](./RESPONSE_FORMATTER.md). Action Engine: [ACTION_ENGINE.md](./ACTION_ENGINE.md). Tool Runtime: [TOOL_RUNTIME.md](./TOOL_RUNTIME.md).
+Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md). Insight Engine: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md). Coach Intelligence: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md). Conversation Orchestrator: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md). Prompt Builder: [PROMPT_BUILDER.md](./PROMPT_BUILDER.md). Prompt Composition: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md). AI Provider Abstraction: [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md). OpenAI Provider: [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md). AI Execution Pipeline: [AI_EXECUTION_PIPELINE.md](./AI_EXECUTION_PIPELINE.md). Streaming Foundation: [STREAMING_FOUNDATION.md](./STREAMING_FOUNDATION.md). Tool Calling Foundation: [TOOL_CALLING_FOUNDATION.md](./TOOL_CALLING_FOUNDATION.md). Domain Tool Adapters: [DOMAIN_TOOL_ADAPTERS.md](./DOMAIN_TOOL_ADAPTERS.md). Response Formatter: [RESPONSE_FORMATTER.md](./RESPONSE_FORMATTER.md). Action Engine: [ACTION_ENGINE.md](./ACTION_ENGINE.md). Tool Runtime: [TOOL_RUNTIME.md](./TOOL_RUNTIME.md). Workout Agent: [WORKOUT_AGENT.md](./WORKOUT_AGENT.md). Agent Runtime: [AGENT_RUNTIME.md](./AGENT_RUNTIME.md). Workout Intelligence: [WORKOUT_INTELLIGENCE.md](./WORKOUT_INTELLIGENCE.md).
 
 ### Exercise Knowledge Base (`features/exercise-kb`)
 
@@ -649,6 +652,24 @@ Full detail: [ACTION_ENGINE.md](./ACTION_ENGINE.md) (Action Planning + Execution
 | **Design** | **No domain business logic, networking, persistence, provider SDK, OpenAI, Prompt Builder, or Conversation logic.** Orchestration only |
 
 Full detail: [TOOL_RUNTIME.md](./TOOL_RUNTIME.md) (Execution Pipeline + Execution Flow).
+
+### Workout Agent (`features/workout-agent`) — Sprint 21.0
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | First intelligent domain agent — workout planning, progression, exercise selection, training conversations |
+| **Flow** | User Request → Conversation Runtime → Workout Agent → Coach Intelligence → Prompt Builder → AI Provider → Response Formatter → Action Engine → Tool Runtime → Workout Domain |
+| **Models** | `WorkoutAgent`, `WorkoutRequest`, `WorkoutContext`, `WorkoutObjective`, `WorkoutIntent`, `WorkoutStrategy`, `WorkoutPlanProposal`, `WorkoutDecision`, `WorkoutRecommendation`, `WorkoutExplanation`, `WorkoutConversation`, `WorkoutAgentResult`, `WorkoutAgentSnapshot`, `WorkoutAgentMetadata`, `WorkoutConfidence`, `WorkoutReasoning`, `WorkoutPlanningContext`, `WorkoutPlanningResult`, `WorkoutExecutionContext`, `WorkoutAgentStatistics` |
+| **Agent** | `WorkoutAgent`, `WorkoutAgentEngine`, `WorkoutAgentCoordinator`, `WorkoutAgentSession`, `WorkoutAgentState` |
+| **Reasoning** | Exercise / Progression / Volume / Intensity / Fatigue / Frequency / Split / Goal (deterministic, no AI) |
+| **Planning** | Workout / Progression / Exercise / Split / Accessory / Deload / Recovery (no execution) |
+| **Strategies** | Strength / Hypertrophy / Powerbuilding / Powerlifting / General Fitness |
+| **Policies** | Safety / Recovery / Progression / Volume / Exercise |
+| **Application API** | `processWorkoutRequest`, `buildWorkoutPlan`, `evaluateWorkout`, `describeWorkoutCapabilities`, `validateWorkoutPlan` |
+| **Integration** | Consumes Conversation Context / Memory, CoachResponse, ActionPlan, ToolExecutionResult; produces immutable `WorkoutAgentResult` |
+| **Design** | **No prompts, provider calls, tool execution, networking, persistence, or UI.** Orchestrator only — does not replace Workout Domain |
+
+Full detail: [WORKOUT_AGENT.md](./WORKOUT_AGENT.md). Agent Runtime: [AGENT_RUNTIME.md](./AGENT_RUNTIME.md). Workout Intelligence: [WORKOUT_INTELLIGENCE.md](./WORKOUT_INTELLIGENCE.md).
 
 ---
 

@@ -91,6 +91,7 @@ Coach Intelligence  (immutable Coaching Context — no AI / no prompts)
 | Prompt Orchestrator | `features/prompt-orchestrator` | Implemented | Composes prompts for AI-assisted blueprint steps |
 | Tool Engine | `features/tool-calling` | Implemented (20.1) | Provider-independent Tool Calling Foundation — registry/executor/engine; LLM requests only |
 | Athlete Context | `features/athlete-context` | Implemented | Structured athlete context for orchestration inputs |
+| Workout Agent | `features/workout-agent` | Implemented (21.0) | First domain agent — workout planning/orchestration only |
 
 Supporting orchestration pieces also present: Memory (conversation persistence adapters), Prompt Builder, AIService / AI providers — see feature modules under `app/src/features/`.
 
@@ -124,6 +125,7 @@ Supporting orchestration pieces also present: Memory (conversation persistence a
 - Streaming Foundation (20.0) coordinates provider-agnostic streaming: AI Execution Pipeline → Streaming Engine → Streaming Provider → Provider Stream → Stream State — immutable stream state + event-driven handlers; **no** OpenAI streaming implementation, memory, tool calling, or conversation history.
 - Tool Calling Foundation (20.1) coordinates provider-independent tool execution: Streaming Engine → Tool Calling Engine → Tool Registry → Tool Executor → Domain Tools → Tool Result — LLM only requests tools; **no** Workout/Recovery/Nutrition/Coach implementations, business logic, or provider-specific code inside the foundation.
 - Domain Tool Adapters (20.2) translate ToolCallRequest ↔ existing domain application APIs (`Workout` / `Recovery` / `Coach` / `Athlete` adapters) → immutable `FoundationToolResult` — **no** business logic, algorithms, provider-specific code, or OpenAI code; domain remains the source of truth.
+- Workout Agent (21.0) is the first domain agent: Conversation Runtime → Workout Agent → Coach / Prompt / Provider / Formatter / Action / Tool path — **no** prompts, provider calls, tool execution, networking, persistence, or UI; orchestrates only and does not replace Workout Domain.
 
 ---
 

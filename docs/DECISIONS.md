@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-23  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-056). Append only — never renumber.  
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-059). Append only — never renumber.  
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -1822,4 +1822,34 @@ Add `app/src/features/tool-runtime/` with immutable execution models, runtime or
 
 ---
 
-*New decisions are appended as Decision 059, 060, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 059: Workout Agent Foundation (Sprint 21.0)
+
+**Date:** 2026-07-23
+
+**Status:** Accepted
+
+**Context:**
+Sprint 21.0 must introduce the Workout Agent as the first intelligent domain agent of EVOLVE. It specializes in workout planning, programming, progression, exercise selection, and training conversations. It consumes the AI Runtime but must own no infrastructure, must not generate prompts, must not call providers, and must not execute tools. It orchestrates existing components and must not replace the Workout Domain.
+
+**Decision:**
+Add `app/src/features/workout-agent/` with immutable Workout Agent models (including `WorkoutAgentResult`), agent orchestration (`WorkoutAgentEngine`, `WorkoutAgentCoordinator`, session/state), deterministic reasoning and planning layers, strategy / policy / selector architecture, builders, validators, `WorkoutAgentService`, and a narrow application API (`processWorkoutRequest`, `buildWorkoutPlan`, `evaluateWorkout`, `describeWorkoutCapabilities`, `validateWorkoutPlan`). Consume Conversation Context / Memory, optional `CoachResponse` / `ActionPlan` / `ToolExecutionResult`. Produce immutable `WorkoutAgentResult`. Document Agent Runtime and Workout Intelligence boundaries.
+
+**Why:**
+- **Dedicated domain agent boundary** keeps conversational workout orchestration separate from Prompt Builder, providers, and Tool Runtime.
+- **Deterministic reasoning / planning** organizes domain knowledge before AI interaction without embedding provider logic.
+- **Immutable WorkoutAgentResult** matches EVOLVE foundation patterns.
+- **Orchestrator-only design** prevents duplicating Workout Domain business logic.
+
+**Alternatives considered:**
+- **Generate prompts / call providers inside the agent** — rejected: Prompt Builder and AI Provider own that path.
+- **Execute tools inside the agent** — rejected: Tool Runtime + Domain Tool Adapters own execution.
+- **Replace Workout Domain engines** — rejected: domain remains source of truth; agent only orchestrates.
+
+**Consequences:**
+- Documentation references [WORKOUT_AGENT.md](./WORKOUT_AGENT.md), [AGENT_RUNTIME.md](./AGENT_RUNTIME.md), and [WORKOUT_INTELLIGENCE.md](./WORKOUT_INTELLIGENCE.md).
+- Consumers call `processWorkoutRequest` instead of ad hoc workout conversation planning.
+- Workout Agent remains free of provider SDKs, networking, persistence, and UI.
+
+---
+
+*New decisions are appended as Decision 060, 061, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
