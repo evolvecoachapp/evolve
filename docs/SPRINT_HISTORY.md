@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
-**Last Updated:** 2026-07-23  
+**Last Updated:** 2026-07-24  
 **Purpose:** Chronological record of every sprint. Append new entries at the bottom — never rewrite past entries.  
 **Source of Truth:** Yes — for sprint chronology and completion dates.
 ---
@@ -912,4 +912,19 @@
 | **Results** | Dedicated Domain Tool Adapters. ADR-054 recorded. Docs: DOMAIN_TOOL_ADAPTERS.md (Adapter Flow, Tool Integration, Future Adapter Extensions). |
 | **Status** | Complete |
 | **Notes** | No business logic, algorithms, provider-specific code, or OpenAI code. Does not modify existing domain modules or Tool Calling Foundation internals. Future Nutrition/Mobility/Sleep/Goal adapters register via DomainToolService. |
+
+### Sprint 21.5 — Agent Collaboration Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 21.5 |
+| **Title** | Agent Collaboration Foundation |
+| **Date** | 2026-07-24 |
+| **Goal** | Deterministic orchestration layer for planning, coordinating, and aggregating work between Coach Agent and specialist agents |
+| **Architecture** | Coach Agent → **Agent Collaboration** → Planning → Dispatch → Execution → Aggregation → Coach Result. Module: `app/src/features/agent-collaboration/`. |
+| **Main components** | **Models:** CollaborationRequest, CollaborationPlan, CollaborationParticipant, CollaborationTask, ExecutionBatch, ExecutionResult, AggregationContext, AggregationResult, CollaborationSnapshot, CollaborationResult, … **Planning:** CollaborationPlanner, ParticipantSelector, ExecutionPlanner. **Dispatch:** CollaborationDispatcher (sequential). **Execution:** CollaborationEngine. **Aggregation:** ResultAggregator. **Policies:** Ordering / Duplicate / Eligibility / Aggregation rules. **Service:** AgentCollaborationService. **Application API:** `createCollaborationPlan`, `dispatchCollaboration`, `executeCollaboration`, `aggregateResults`, `buildCollaborationSnapshot`. |
+| **Tests** | Planning, dispatch, execution, aggregation, builders, validators, policies, application, integration, regression (30 tests) |
+| **Results** | Dedicated Agent Collaboration Foundation. ADR-066 recorded. Docs: AGENT_COLLABORATION.md. |
+| **Status** | Complete |
+| **Notes** | Orchestration only. No AI, prompts, networking, persistence, conversation memory, or specialist business logic. Existing agents unchanged; handlers are injectable. |
 

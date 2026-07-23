@@ -149,14 +149,14 @@ Domain agents supply optional `AgentRuntimeExecutor` handlers. Without a handler
 
 ## Future Multi-Agent Collaboration
 
-Placeholders for later sprints (not implemented here):
+Implemented in Sprint 21.5 as [AGENT_COLLABORATION.md](./AGENT_COLLABORATION.md) (`features/agent-collaboration`):
 
-- Multi-agent execution plans (ordered / parallel fan-out)
-- Collaboration policies (handoff, supervisor arbitration)
-- Shared runtime context across agents
-- Event subscribers for Conversation / Coach pipelines
+- Multi-agent execution plans (ordered sequential batches)
+- Collaboration policies (ordering, duplicates, eligibility, aggregation rules)
+- Deterministic dispatch + aggregation for Coach Agent
+- Injectable specialist participant handlers
 
-Current foundation executes **one selected agent per request**.
+Agent Runtime remains the **single-agent** execution entry point. Agent Collaboration owns Coach **multi-specialist** orchestration.
 
 ---
 

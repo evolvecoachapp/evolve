@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-23  
+**Last Updated:** 2026-07-24  
 **Purpose:** Snapshot of the current project state only.  
 **Source of Truth:** Yes — for current sprint, completion %, and live system status.
 
@@ -19,7 +19,7 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Navigation | 6-tab bottom bar (Home, Workout, Nutrition, Coach, Progress, Profile) |
 | Design system | Token-based theme with light/dark/system preference (`ThemeContext`) |
 | Feature modules | coach, workout, nutrition, progress, analytics, home, dashboard, profile, shared; plus AI/training domains below |
-| Data layer | Service factory pattern; Composition Root DI for Training Intelligence pipeline (`core/composition`, Sprint 17.9); Decision Intelligence explanations (`core/decision-intelligence`, Sprint 17.10); Workout Runtime execution state (`features/workout-runtime`, Sprint 18.0); Rest Runtime rest periods (`features/rest-runtime`, Sprint 18.1); Domain Events execution substrate (`core/domain-events`, Sprint 18.2); Performance Engine single-session snapshots (`features/performance-engine`, Sprint 18.3); Achievement Engine Personal Records (`features/achievement-engine`, Sprint 18.4); Athlete History immutable chronological record (`features/athlete-history`, Sprint 18.5); Recovery Intelligence deterministic recovery snapshots (`features/recovery-intelligence`, Sprint 18.6); Insight Engine deterministic domain insight snapshots (`features/insight-engine`, Sprint 18.7); Coach Intelligence immutable Coaching Context preparation (`features/coach-intelligence`, Sprint 18.8); Conversation Orchestrator immutable Conversation Context preparation (`features/conversation-orchestrator`, Sprint 19.0); Prompt Composition Engine immutable Prompt Package composition (`features/prompt-composition`, Sprint 19.1); user/workout backend providers; on-device workout history via `WorkoutHistoryRepository` + `StorageAdapter` (Sprint 13.0); analytics via `WorkoutAnalyticsRepository` (Sprint 14.0) |
+| Data layer | Service factory pattern; Composition Root DI for Training Intelligence pipeline (`core/composition`, Sprint 17.9); Decision Intelligence explanations (`core/decision-intelligence`, Sprint 17.10); Workout Runtime execution state (`features/workout-runtime`, Sprint 18.0); Rest Runtime rest periods (`features/rest-runtime`, Sprint 18.1); Domain Events execution substrate (`core/domain-events`, Sprint 18.2); Performance Engine single-session snapshots (`features/performance-engine`, Sprint 18.3); Achievement Engine Personal Records (`features/achievement-engine`, Sprint 18.4); Athlete History immutable chronological record (`features/athlete-history`, Sprint 18.5); Recovery Intelligence deterministic recovery snapshots (`features/recovery-intelligence`, Sprint 18.6); Insight Engine deterministic domain insight snapshots (`features/insight-engine`, Sprint 18.7); Coach Intelligence immutable Coaching Context preparation (`features/coach-intelligence`, Sprint 18.8); Conversation Orchestrator immutable Conversation Context preparation (`features/conversation-orchestrator`, Sprint 19.0); Prompt Composition Engine immutable Prompt Package composition (`features/prompt-composition`, Sprint 19.1); Agent Framework / Runtime / Collaboration foundations (Sprint 21.x); Conversation Memory (`features/conversation-memory`, Sprint 21.4); user/workout backend providers; on-device workout history via `WorkoutHistoryRepository` + `StorageAdapter` (Sprint 13.0); analytics via `WorkoutAnalyticsRepository` (Sprint 14.0) |
 | Backend providers | `BackendUserService`, `BackendWorkoutService` live; other `Backend*Service` classes throw `notConfigured()` |
 | Tests | Jest + jest-expo |
 | Sprint status | History + detail shipped (13.1–13.2); workout analytics foundation (14.0); AI workout pipeline foundations through Training Adaptation (17.1–17.5) |
@@ -156,19 +156,19 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 
 ## Last Completed Sprint
 
-**17.6.0 — Workout Assembly Engine Foundation** (2026-07-22)
+**21.5 — Agent Collaboration Foundation** (2026-07-24)
 
-- `features/workout-assembly` assembles immutable `WorkoutSession` from Blueprint + Selection + Programming + Progression + Adaptation
-- Resolves adaptation recommendations, builds blocks/execution order/summary; in-memory cache; application use-cases
-- Unit tests across engine/validators/utils/application/repository/service — no strategy, programming, progression, readiness, execution state, timers, analytics, UI, or networking
+- `features/agent-collaboration` deterministic Coach ↔ specialist orchestration (plan → dispatch → execute → aggregate)
+- Immutable models, policies, builders, validators, `AgentCollaborationService`, minimal public API
+- Unit tests (planning / dispatch / execution / aggregation / builders / validators / policies) — no AI, prompts, networking, persistence, memory, or domain business logic
 
-Previous: **17.5.0 — Training Adaptation Engine Foundation**, **17.4.0 — Progression Engine Foundation**, **17.3.0 — Programming Engine Foundation**, **17.2.0 — Exercise Selection Engine Foundation**, **17.1.0 — Exercise Knowledge Base Foundation**, **17.0.0 — Workout Blueprint Generator Foundation**
+Previous: **21.4 — Conversation Memory Foundation**, **21.4 — Agent Runtime Foundation**, **21.3 — Recovery Agent / Coach Agent**
 
 ---
 
 ## Next Sprint
 
-**17.7.0 — Program Generation Orchestrator** — single public entry point coordinating Blueprint→…→Assembly; immutable `WorkoutGenerationResult` with pipeline summary/trace.
+Wire Coach Agent to Agent Collaboration handlers / Agent Runtime specialist executors (integration), keeping domain logic inside specialists.
 
 ---
 

@@ -3,8 +3,8 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
-**Last Updated:** 2026-07-23  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-064). Append only — never renumber.  
+**Last Updated:** 2026-07-24  
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-066). Append only — never renumber.  
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -2029,4 +2029,34 @@ Introduce `app/src/features/conversation-memory/` with immutable memory models, 
 
 ---
 
-*New decisions are appended as Decision 066, 067, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 066: Agent Collaboration Foundation (Sprint 21.5)
+
+**Date:** 2026-07-24  
+**Status:** Accepted  
+
+**Context:**
+Sprint 21.5 must introduce a deterministic orchestration layer between the Coach Agent and specialist agents (Workout / Nutrition / Recovery). Agent Runtime executes one selected agent per request. Coach Agent needs ordered multi-specialist collaboration without embedding AI, prompts, networking, persistence, conversation memory, or domain business logic.
+
+**Decision:**
+Introduce `app/src/features/agent-collaboration/` with immutable collaboration models (`CollaborationRequest`, `CollaborationPlan`, `CollaborationParticipant`, `CollaborationTask`, `ExecutionBatch`, `ExecutionResult`, `AggregationContext`, `AggregationResult`, `CollaborationMetadata`, `CollaborationSnapshot`, `CollaborationResult`, …), planning (`CollaborationPlanner`, `ParticipantSelector`, `ExecutionPlanner`), deterministic sequential `CollaborationDispatcher`, `CollaborationEngine` lifecycle, `ResultAggregator`, builders, validators, policies (execution ordering / duplicate handling / participant eligibility / aggregation rules), `AgentCollaborationService`, and a narrow application API (`createCollaborationPlan`, `dispatchCollaboration`, `executeCollaboration`, `aggregateResults`, `buildCollaborationSnapshot`). Specialist work is invoked only through injectable participant handlers (default shell returns orchestration metadata). Document boundaries and ADR-066.
+
+**Why:**
+- **Orchestration ≠ business logic** keeps specialist domain ownership intact.
+- **Deterministic plan → dispatch → aggregate** gives Coach Agent predictable multi-agent coordination without AI.
+- **Sequential dispatch only** avoids retries, queues, and concurrency frameworks out of sprint scope.
+- **Aggregation preserves order + provenance** without scoring, ranking, or inference.
+
+**Alternatives considered:**
+- **Fold multi-agent collaboration into Agent Runtime** — rejected: Runtime owns single-agent execution; Collaboration owns Coach multi-specialist orchestration.
+- **Embed fan-out inside Coach Agent** — rejected: duplicates planning / dispatch / aggregation; harder to test and extend.
+- **Async / parallel orchestration frameworks** — rejected: sprint forbids concurrency abstractions; sequential deterministic dispatch is required.
+- **AI-based aggregation / ranking** — rejected: sprint forbids AI, scoring, heuristics, and inference.
+
+**Consequences:**
+- Documentation updates: [AGENT_COLLABORATION.md](./AGENT_COLLABORATION.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [architecture/README.md](./architecture/README.md), [AGENT_RUNTIME.md](./AGENT_RUNTIME.md).
+- Agent Collaboration remains free of AI, prompts, providers, networking, persistence, conversation memory, and domain business logic.
+- Existing specialist agents are unchanged; handlers may be registered later.
+
+---
+
+*New decisions are appended as Decision 067, 068, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
