@@ -19,7 +19,7 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Navigation | 6-tab bottom bar (Home, Workout, Nutrition, Coach, Progress, Profile) |
 | Design system | Token-based theme with light/dark/system preference (`ThemeContext`) |
 | Feature modules | coach, workout, nutrition, progress, analytics, home, dashboard, profile, shared; plus AI/training domains below |
-| Data layer | Service factory pattern; Composition Root DI for Training Intelligence pipeline (`core/composition`, Sprint 17.9); Decision Intelligence explanations (`core/decision-intelligence`, Sprint 17.10); Workout Runtime execution state (`features/workout-runtime`, Sprint 18.0); Rest Runtime rest periods (`features/rest-runtime`, Sprint 18.1); Domain Events execution substrate (`core/domain-events`, Sprint 18.2); Performance Engine single-session snapshots (`features/performance-engine`, Sprint 18.3); Achievement Engine Personal Records (`features/achievement-engine`, Sprint 18.4); Athlete History immutable chronological record (`features/athlete-history`, Sprint 18.5); Recovery Intelligence deterministic recovery snapshots (`features/recovery-intelligence`, Sprint 18.6); Insight Engine deterministic domain insight snapshots (`features/insight-engine`, Sprint 18.7); Coach Intelligence immutable Coaching Context preparation (`features/coach-intelligence`, Sprint 18.8); Conversation Orchestrator immutable Conversation Context preparation (`features/conversation-orchestrator`, Sprint 19.0); Prompt Composition Engine immutable Prompt Package composition (`features/prompt-composition`, Sprint 19.1); Agent Framework / Runtime / Collaboration foundations (Sprint 21.x); Conversation Memory (`features/conversation-memory`, Sprint 21.4); user/workout backend providers; on-device workout history via `WorkoutHistoryRepository` + `StorageAdapter` (Sprint 13.0); analytics via `WorkoutAnalyticsRepository` (Sprint 14.0) |
+| Data layer | Service factory pattern; Composition Root DI for Training Intelligence pipeline (`core/composition`, Sprint 17.9); Decision Intelligence explanations (`core/decision-intelligence`, Sprint 17.10); Workout Runtime execution state (`features/workout-runtime`, Sprint 18.0); Rest Runtime rest periods (`features/rest-runtime`, Sprint 18.1); Domain Events execution substrate (`core/domain-events`, Sprint 18.2); Performance Engine single-session snapshots (`features/performance-engine`, Sprint 18.3); Achievement Engine Personal Records (`features/achievement-engine`, Sprint 18.4); Athlete History immutable chronological record (`features/athlete-history`, Sprint 18.5); Recovery Intelligence deterministic recovery snapshots (`features/recovery-intelligence`, Sprint 18.6); Insight Engine deterministic domain insight snapshots (`features/insight-engine`, Sprint 18.7); Coach Intelligence immutable Coaching Context preparation (`features/coach-intelligence`, Sprint 18.8); Conversation Orchestrator immutable Conversation Context preparation (`features/conversation-orchestrator`, Sprint 19.0); Prompt Composition Engine immutable Prompt Package composition (`features/prompt-composition`, Sprint 19.1); Agent Framework / Runtime / Collaboration / Capability foundations (Sprint 21.x); Conversation Memory (`features/conversation-memory`, Sprint 21.4); user/workout backend providers; on-device workout history via `WorkoutHistoryRepository` + `StorageAdapter` (Sprint 13.0); analytics via `WorkoutAnalyticsRepository` (Sprint 14.0) |
 | Backend providers | `BackendUserService`, `BackendWorkoutService` live; other `Backend*Service` classes throw `notConfigured()` |
 | Tests | Jest + jest-expo |
 | Sprint status | History + detail shipped (13.1–13.2); workout analytics foundation (14.0); AI workout pipeline foundations through Training Adaptation (17.1–17.5) |
@@ -156,19 +156,19 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 
 ## Last Completed Sprint
 
-**21.5 — Agent Collaboration Foundation** (2026-07-24)
+**21.6 — Agent Capability Registry Foundation** (2026-07-24)
 
-- `features/agent-collaboration` deterministic Coach ↔ specialist orchestration (plan → dispatch → execute → aggregate)
-- Immutable models, policies, builders, validators, `AgentCollaborationService`, minimal public API
-- Unit tests (planning / dispatch / execution / aggregation / builders / validators / policies) — no AI, prompts, networking, persistence, memory, or domain business logic
+- `features/agent-capability` deterministic capability registry (register → resolve → query → snapshot)
+- Immutable models, policies, builders, validators, `AgentCapabilityService`, minimal public API
+- Unit tests (registry / resolver / registration / querying / builders / validators / policies) — no AI, prompts, networking, persistence, memory, or agent execution; Coach Agent / Collaboration unchanged
 
-Previous: **21.4 — Conversation Memory Foundation**, **21.4 — Agent Runtime Foundation**, **21.3 — Recovery Agent / Coach Agent**
+Previous: **21.5 — Agent Collaboration Foundation**, **21.4 — Conversation Memory Foundation**, **21.4 — Agent Runtime Foundation**
 
 ---
 
 ## Next Sprint
 
-Wire Coach Agent to Agent Collaboration handlers / Agent Runtime specialist executors (integration), keeping domain logic inside specialists.
+Migrate Coach Agent to resolve specialists via Capability Registry, then hand resolved owners to Agent Collaboration — without embedding specialist names in Coach reasoning.
 
 ---
 

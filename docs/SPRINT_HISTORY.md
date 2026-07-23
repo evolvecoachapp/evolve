@@ -928,3 +928,18 @@
 | **Status** | Complete |
 | **Notes** | Orchestration only. No AI, prompts, networking, persistence, conversation memory, or specialist business logic. Existing agents unchanged; handlers are injectable. |
 
+### Sprint 21.6 — Agent Capability Registry Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 21.6 |
+| **Title** | Agent Capability Registry Foundation |
+| **Date** | 2026-07-24 |
+| **Goal** | Decouple Coach Agent / orchestration from concrete specialists via a deterministic capability registry |
+| **Architecture** | Coach Agent → **Capability Resolver** → **Capability Registry** → Agent Collaboration → Specialist Agents. Module: `app/src/features/agent-capability/`. |
+| **Main components** | **Models:** AgentCapability, CapabilityId, CapabilityDescriptor, CapabilityRegistration, CapabilityRegistry, CapabilityMatch, CapabilityResolution, CapabilitySnapshot, CapabilityQuery, CapabilityResult, CapabilityCollection, … **Registry:** CapabilityRegistryStore. **Resolver:** CapabilityResolver (exact match). **Registration:** CapabilityRegistrar. **Querying:** CapabilityQueryEngine. **Policies:** Duplicate / Ownership / Uniqueness / Consistency. **Service:** AgentCapabilityService. **Application API:** `registerCapability`, `resolveCapability`, `findCapability`, `findCapabilities`, `buildCapabilitySnapshot`, `validateRegistry`. |
+| **Tests** | Registry, resolver, registration, querying, builders, validators, policies, application, integration (24 tests) |
+| **Results** | Dedicated Agent Capability Registry Foundation. ADR-067 recorded. Docs: AGENT_CAPABILITY.md. |
+| **Status** | Complete |
+| **Notes** | Foundation only. No AI, prompts, networking, persistence, memory, or agent execution. Coach Agent and Agent Collaboration behaviour unchanged; future sprints migrate Coach to capabilities. |
+

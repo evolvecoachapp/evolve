@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-24  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-066). Append only — never renumber.  
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-067). Append only — never renumber.  
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -2059,4 +2059,34 @@ Introduce `app/src/features/agent-collaboration/` with immutable collaboration m
 
 ---
 
-*New decisions are appended as Decision 067, 068, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 067: Agent Capability Registry Foundation (Sprint 21.6)
+
+**Date:** 2026-07-24  
+**Status:** Accepted  
+
+**Context:**
+Sprint 21.6 must decouple the Coach Agent and orchestration layer from concrete specialist agents (Workout / Nutrition / Recovery) by introducing a deterministic capability registry. Coach must reason in capabilities (`GenerateWorkout`, `AnalyzeNutrition`, `EvaluateRecovery`) rather than named specialists. Future agents should register capabilities without modifying Coach Agent or Agent Collaboration. The registry must not execute agents, call AI, persist state, or embed business logic.
+
+**Decision:**
+Introduce `app/src/features/agent-capability/` with immutable capability models (`AgentCapability`, `CapabilityId`, `CapabilityDescriptor`, `CapabilityMetadata`, `CapabilityRegistration`, `CapabilityRegistry`, `CapabilityMatch`, `CapabilityResolution`, `CapabilitySnapshot`, `CapabilityQuery`, `CapabilityResult`, `CapabilityCollection`, …), `CapabilityRegistryStore`, deterministic `CapabilityResolver` (exact match only — no scoring/ranking/heuristics), `CapabilityRegistrar`, `CapabilityQueryEngine`, builders, validators, policies (duplicate handling / ownership / uniqueness / consistency), `AgentCapabilityService`, and a narrow application API (`registerCapability`, `resolveCapability`, `findCapability`, `findCapabilities`, `buildCapabilitySnapshot`, `validateRegistry`). Coach Agent and Agent Collaboration are **not** modified in this sprint — foundation module only. Document boundaries and ADR-067.
+
+**Why:**
+- **Capabilities ≠ concrete agents** lets Coach orchestrate without hard-coding specialist identities.
+- **Single source of truth** for what agents can do enables future specialist registration without Coach/Collaboration edits.
+- **Deterministic exact resolution** preserves Clean Architecture and testability (no AI, scoring, or heuristics).
+- **Foundation-first** avoids premature coupling while preparing the future Coach → Resolver → Registry → Collaboration path.
+
+**Alternatives considered:**
+- **Reuse Agent Framework CapabilityRegistry only** — rejected: framework registry serves agent contract metadata; Coach needs a dedicated capability→owner resolution foundation above Collaboration.
+- **Embed capability maps inside Coach Agent** — rejected: couples Coach to specialists; harder to extend and test.
+- **Capability scoring / ranking / ML matching** — rejected: sprint forbids scoring, ranking, heuristics, and AI.
+- **Wire Coach + Collaboration in the same sprint** — rejected: sprint explicitly requires foundation-only introduction.
+
+**Consequences:**
+- Documentation updates: [AGENT_CAPABILITY.md](./AGENT_CAPABILITY.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [architecture/README.md](./architecture/README.md).
+- Agent Capability remains free of AI, prompts, providers, networking, persistence, memory, agent execution, and domain business logic.
+- Existing Coach Agent / Agent Collaboration / specialist agents are unchanged; future sprints migrate Coach to resolve via this registry.
+
+---
+
+*New decisions are appended as Decision 068, 069, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
