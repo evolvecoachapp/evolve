@@ -868,3 +868,18 @@
 | **Status** | Complete |
 | **Notes** | No streaming, retry implementation, tool calling, memory, HTTP, or provider-specific code. Does not modify Prompt Composition, AI Provider Abstraction, or OpenAI Provider |
 
+### Sprint 20.0 — Streaming Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 20.0.0 |
+| **Title** | Streaming Foundation |
+| **Date** | 2026-07-23 |
+| **Goal** | Provider-agnostic streaming coordination producing immutable stream state |
+| **Architecture** | AI Execution Pipeline → **Streaming Engine** → Streaming Provider → Provider Stream → Stream State. Module: `app/src/features/streaming/`. |
+| **Main components** | **Models:** StreamRequest, StreamResponse, StreamChunk, StreamToken, StreamEvent, StreamEventType, StreamState, StreamStatus, StreamLifecycle, StreamMetadata, StreamMetrics, StreamTrace, StreamCancellation, StreamCompletion, StreamSummary, StreamSnapshot, StreamError. **Engine:** `StreamingEngine`. **Handlers:** Lifecycle/Chunk/Token/Completion/Cancellation/Error. **Aggregators:** Chunk/Token/Summary. **Contract:** `IStreamSource`. **Application API:** `startStream`, `cancelStream`, `summarizeStream`. |
+| **Tests** | Engine, handlers, aggregators, builders, validators, application, integration, regression |
+| **Results** | Dedicated Streaming Foundation. ADR-052 recorded. Docs: STREAMING_FOUNDATION.md (Stream Lifecycle, Future Tool Calling Integration). |
+| **Status** | Complete |
+| **Notes** | No OpenAI streaming implementation, memory, tool calling, conversation history, or provider-specific code. Does not modify AI Execution Pipeline, AI Provider Abstraction, or OpenAI Provider |
+

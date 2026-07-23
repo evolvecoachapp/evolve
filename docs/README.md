@@ -50,9 +50,10 @@
 | [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md) | Prompt Composition Engine, Prompt Package, handoff to AI Provider Abstraction |
 | [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md) | AI Provider Abstraction, Provider Registry, Future OpenAI / Multi-provider |
 | [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md) | OpenAI Provider, Provider Flow, Configuration, Future Streaming Support |
-| [AI_EXECUTION_PIPELINE.md](./AI_EXECUTION_PIPELINE.md) | AI Execution Pipeline, Execution Lifecycle, Future Streaming / Retry / Tool Calling |
+| [AI_EXECUTION_PIPELINE.md](./AI_EXECUTION_PIPELINE.md) | AI Execution Pipeline, Execution Lifecycle, Future Retry / Tool Calling |
+| [STREAMING_FOUNDATION.md](./STREAMING_FOUNDATION.md) | Streaming Foundation, Stream Lifecycle, Future Tool Calling Integration |
 | [TECH_STACK.md](./TECH_STACK.md) | Languages, frameworks, versions, future tech |
-| [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-051 (append-only) |
+| [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-052 (append-only) |
 | [AI_SYSTEM.md](./AI_SYSTEM.md) | Coach, LLM, engines, memory, mobile workout pipeline |
 | [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md) | Integration framework for the workout pipeline |
 | [../.cursor/rules/EVOLVE_ARCHITECTURE.md](../.cursor/rules/EVOLVE_ARCHITECTURE.md) | Deep-dive architecture reference |

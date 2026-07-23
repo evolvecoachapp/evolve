@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-23  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-050). Append only — never renumber.  
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-052). Append only — never renumber.  
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -1611,4 +1611,34 @@ Create `app/src/features/ai-execution/` with immutable execution models (`AIExec
 
 ---
 
-*New decisions are appended as Decision 052, 053, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 052: Streaming Foundation (Sprint 20.0)
+
+**Date:** 2026-07-23
+
+**Status:** Accepted
+
+**Context:**
+Sprint 20.0 must introduce a Streaming Foundation that coordinates provider streaming independently of any AI provider. It must receive streaming events, manage stream lifecycle, and produce immutable stream state without implementing provider-specific streaming, memory, tool calling, or conversation history. Previous domains must not be modified.
+
+**Decision:**
+Create `app/src/features/streaming/` with immutable stream models (`StreamRequest`, `StreamResponse`, `StreamChunk`, `StreamToken`, `StreamEvent`, `StreamEventType`, `StreamState`, `StreamStatus`, `StreamLifecycle`, `StreamMetadata`, `StreamMetrics`, `StreamTrace`, `StreamCancellation`, `StreamCompletion`, `StreamSummary`, `StreamSnapshot`, `StreamError`), event-driven handlers (`LifecycleHandler`, `ChunkHandler`, `TokenHandler`, `CompletionHandler`, `CancellationHandler`, `ErrorHandler`), aggregators (`ChunkAggregator`, `TokenAggregator`, `SummaryAggregator`), validators, builders, utilities, provider-agnostic `IStreamSource` boundary, `StreamingEngine`, a service facade, and a narrow application API (`startStream`, `cancelStream`, `summarizeStream`). Concrete providers are consumed via external stream-source wrappers. Tool calling remains an architecture placeholder only.
+
+**Why:**
+- **Dedicated streaming boundary** keeps the AI Execution Pipeline free of chunk/token aggregation concerns.
+- **Event-driven handlers** keep lifecycle / chunk / token / completion / cancellation / error single-responsibility and testable.
+- **Provider-agnostic stream source** allows OpenAI (and future vendors) without Streaming Foundation provider-specific code or modifying prior domains.
+- **Immutable stream state** preserves auditability and safe snapshot sharing across UI / coach layers later.
+
+**Alternatives considered:**
+- **Fold streaming into AI Execution Pipeline stages** — rejected: streaming lifecycle is a distinct coordination surface (chunks, heartbeats, cancellation) and would overload the non-streaming path.
+- **Implement OpenAI streaming in this sprint** — rejected: explicitly deferred; foundation must remain provider-agnostic.
+- **Implement tool calling now** — rejected: explicitly deferred to Future Tool Calling Integration.
+
+**Consequences:**
+- Documentation references [STREAMING_FOUNDATION.md](./STREAMING_FOUNDATION.md) (Stream Lifecycle + Future Tool Calling Integration).
+- Consumers call `startStream` / `cancelStream` / `summarizeStream` instead of talking to the engine directly.
+- Streaming Foundation remains free of HTTP and provider SDKs; adapters stay outside the engine.
+
+---
+
+*New decisions are appended as Decision 053, 054, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

@@ -5,7 +5,7 @@
 **Status:** Living Document  
 **Last Updated:** 2026-07-23  
 **Purpose:** Document the AI Execution Pipeline foundation (Sprint 19.4).  
-**Source of Truth:** Yes — for AI Execution Pipeline layout, Execution Lifecycle, Future Streaming, Future Retry, and Future Tool Calling on mobile.
+**Source of Truth:** Yes — for AI Execution Pipeline layout, Execution Lifecycle, Future Retry, and Future Tool Calling on mobile. Streaming is documented in [STREAMING_FOUNDATION.md](./STREAMING_FOUNDATION.md).
 
 Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md), [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md), [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md), [AI_SYSTEM.md](./AI_SYSTEM.md), [DECISIONS.md](./DECISIONS.md) (ADR-051).
 
@@ -148,15 +148,15 @@ Pipeline / stage internals are not part of the public API surface.
 
 ## Future Streaming
 
-Reserved architecture only in this sprint.
+Implemented as a dedicated layer in Sprint 20.0 — see [STREAMING_FOUNDATION.md](./STREAMING_FOUNDATION.md).
 
-| Concern | Future |
+| Concern | Status |
 |---------|--------|
-| Policy | Flip `ExecutionPolicy.allowStreaming` when supported |
-| Request options | Honor `AIExecutionOptions.stream` |
-| Stages | Optional streaming execution stage / chunk aggregation |
-| Provider | Use `IAIStreamingProvider` via executor extension |
-| Rules | Keep non-streaming path; do not add HTTP/SSE inside the pipeline |
+| Policy | `ExecutionPolicy.allowStreaming` remains gated in the pipeline; Streaming Foundation owns stream lifecycle |
+| Request options | Non-streaming `executeAI` path unchanged; streaming uses `startStream` |
+| Stages | Chunk aggregation lives in Streaming Foundation (not pipeline stages) |
+| Provider | Streaming Foundation consumes provider-agnostic `IStreamSource` (wraps `IAIStreamingProvider` externally) |
+| Rules | Keep non-streaming path in the pipeline; no HTTP/SSE inside the pipeline |
 
 ---
 
@@ -188,4 +188,4 @@ Reserved architecture only in this sprint.
 
 ## Explicit Non-Goals
 
-No streaming. No retry implementation. No tool calling. No memory. No HTTP. No provider-specific code. Pipeline only. Does not modify Prompt Composition, AI Provider Abstraction, or OpenAI Provider.
+No streaming implementation inside the pipeline (see Streaming Foundation). No retry implementation. No tool calling. No memory. No HTTP. No provider-specific code. Pipeline only. Does not modify Prompt Composition, AI Provider Abstraction, or OpenAI Provider.
