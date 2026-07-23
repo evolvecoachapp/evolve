@@ -9,7 +9,7 @@
 
 ## Primary diagrams
 
-- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline + Composition Root + Decision Intelligence + Workout/Rest Runtime + Domain Events + Performance Engine + Achievement Engine + Athlete History + Recovery Intelligence + Insight Engine + Coach Intelligence + Conversation Orchestrator + Prompt Builder + Prompt Composition Engine + AI Provider Abstraction + OpenAI Provider + AI Execution Pipeline + Streaming Foundation + Tool Calling Foundation + Domain Tool Adapters + Response Formatter + Action Engine + Tool Runtime + Agent Framework + Agent Runtime + Workout Agent + Nutrition Agent + Recovery Agent + Coach Agent + Agent Capability + Agent Collaboration + Conversation Memory dependency flow
+- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline + Composition Root + Decision Intelligence + Workout/Rest Runtime + Domain Events + Performance Engine + Achievement Engine + Athlete History + Recovery Intelligence + Insight Engine + Coach Intelligence + Conversation Orchestrator + Prompt Builder + Prompt Composition Engine + AI Provider Abstraction + OpenAI Provider + AI Execution Pipeline + Streaming Foundation + Tool Calling Foundation + Domain Tool Adapters + Response Formatter + Action Engine + Tool Runtime + Agent Framework + Agent Runtime + Workout Agent + Nutrition Agent + Recovery Agent + Coach Agent + Supervisor Routing + Agent Capability + Agent Collaboration + Conversation Memory dependency flow
 - [COMPOSITION_ROOT.md](../COMPOSITION_ROOT.md) — Composition Root, Dependency Graph, Factories, DI, Service Lifecycle
 - [DECISION_INTELLIGENCE.md](../DECISION_INTELLIGENCE.md) — Decision graph, explainability, execution reports, Coach AI preparation
 - [WORKOUT_RUNTIME.md](../WORKOUT_RUNTIME.md) — Live WorkoutSession execution state, session lifecycle, runtime state model
@@ -43,6 +43,9 @@
 - [COACH_AGENT.md](../COACH_AGENT.md) — Coach Agent (meta-agent), coordinator / merger, CoachAgentResult
 - [AGENT_COLLABORATION.md](../AGENT_COLLABORATION.md) — Agent Collaboration Foundation, planning / dispatch / aggregation
 - [AGENT_CAPABILITY.md](../AGENT_CAPABILITY.md) — Agent Capability Registry Foundation, resolve / register / query
+- [SUPERVISOR_ROUTING.md](../SUPERVISOR_ROUTING.md) — Supervisor Routing Engine Foundation, routing plan / dependency graph
+- [MULTI_AGENT_ROUTING.md](../MULTI_AGENT_ROUTING.md) — Multi-agent routing flow (capabilities → ordered plan)
+- [SUPERVISOR_RUNTIME.md](../SUPERVISOR_RUNTIME.md) — Coach Supervisor runtime path (Routing → Collaboration)
 - [CONVERSATION_MEMORY.md](../CONVERSATION_MEMORY.md) — Conversation Memory Foundation, lifecycle / categories / timeline / future persistence
 - [AGENT_RUNTIME.md](../AGENT_RUNTIME.md) — Agent Runtime Foundation (registry, selection, execution entry point)
 - [WORKOUT_INTELLIGENCE.md](../WORKOUT_INTELLIGENCE.md) — Workout Domain vs Workout Agent split

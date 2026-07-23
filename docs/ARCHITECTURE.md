@@ -170,6 +170,9 @@ Recovery Agent                   ← Sprint 21.3 (implemented) — recovery spec
 Coach Agent                      ← Sprint 21.3 (implemented) — meta-agent coordinating Workout / Recovery / Nutrition
   (`app/src/features/coach-agent/`)
   ↓
+Supervisor Routing Engine        ← Sprint 21.7 (implemented) — deterministic multi-agent routing plans (foundation)
+  (`app/src/features/supervisor-routing/`)
+  ↓
 Agent Capability Registry        ← Sprint 21.6 (implemented) — capability definitions / resolve / registry (foundation)
   (`app/src/features/agent-capability/`)
   ↓
@@ -180,7 +183,7 @@ Conversation Memory              ← Sprint 21.4 (implemented) — structured co
   (`app/src/features/conversation-memory/`)
 ```
 
-Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md). Insight Engine: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md). Coach Intelligence: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md). Conversation Orchestrator: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md). Prompt Builder: [PROMPT_BUILDER.md](./PROMPT_BUILDER.md). Prompt Composition: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md). AI Provider Abstraction: [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md). OpenAI Provider: [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md). AI Execution Pipeline: [AI_EXECUTION_PIPELINE.md](./AI_EXECUTION_PIPELINE.md). Streaming Foundation: [STREAMING_FOUNDATION.md](./STREAMING_FOUNDATION.md). Tool Calling Foundation: [TOOL_CALLING_FOUNDATION.md](./TOOL_CALLING_FOUNDATION.md). Domain Tool Adapters: [DOMAIN_TOOL_ADAPTERS.md](./DOMAIN_TOOL_ADAPTERS.md). Response Formatter: [RESPONSE_FORMATTER.md](./RESPONSE_FORMATTER.md). Action Engine: [ACTION_ENGINE.md](./ACTION_ENGINE.md). Tool Runtime: [TOOL_RUNTIME.md](./TOOL_RUNTIME.md). Agent Framework: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md). Agent Lifecycle: [AGENT_LIFECYCLE.md](./AGENT_LIFECYCLE.md). Agent Registry: [AGENT_REGISTRY.md](./AGENT_REGISTRY.md). Workout Agent: [WORKOUT_AGENT.md](./WORKOUT_AGENT.md). Nutrition Agent: [NUTRITION_AGENT.md](./NUTRITION_AGENT.md). Recovery Agent: [RECOVERY_AGENT.md](./RECOVERY_AGENT.md). Coach Agent: [COACH_AGENT.md](./COACH_AGENT.md). Agent Capability: [AGENT_CAPABILITY.md](./AGENT_CAPABILITY.md). Agent Collaboration: [AGENT_COLLABORATION.md](./AGENT_COLLABORATION.md). Conversation Memory: [CONVERSATION_MEMORY.md](./CONVERSATION_MEMORY.md). Agent Runtime: [AGENT_RUNTIME.md](./AGENT_RUNTIME.md). Workout Intelligence: [WORKOUT_INTELLIGENCE.md](./WORKOUT_INTELLIGENCE.md). Nutrition Intelligence: [NUTRITION_INTELLIGENCE.md](./NUTRITION_INTELLIGENCE.md).
+Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md). Insight Engine: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md). Coach Intelligence: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md). Conversation Orchestrator: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md). Prompt Builder: [PROMPT_BUILDER.md](./PROMPT_BUILDER.md). Prompt Composition: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md). AI Provider Abstraction: [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md). OpenAI Provider: [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md). AI Execution Pipeline: [AI_EXECUTION_PIPELINE.md](./AI_EXECUTION_PIPELINE.md). Streaming Foundation: [STREAMING_FOUNDATION.md](./STREAMING_FOUNDATION.md). Tool Calling Foundation: [TOOL_CALLING_FOUNDATION.md](./TOOL_CALLING_FOUNDATION.md). Domain Tool Adapters: [DOMAIN_TOOL_ADAPTERS.md](./DOMAIN_TOOL_ADAPTERS.md). Response Formatter: [RESPONSE_FORMATTER.md](./RESPONSE_FORMATTER.md). Action Engine: [ACTION_ENGINE.md](./ACTION_ENGINE.md). Tool Runtime: [TOOL_RUNTIME.md](./TOOL_RUNTIME.md). Agent Framework: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md). Agent Lifecycle: [AGENT_LIFECYCLE.md](./AGENT_LIFECYCLE.md). Agent Registry: [AGENT_REGISTRY.md](./AGENT_REGISTRY.md). Workout Agent: [WORKOUT_AGENT.md](./WORKOUT_AGENT.md). Nutrition Agent: [NUTRITION_AGENT.md](./NUTRITION_AGENT.md). Recovery Agent: [RECOVERY_AGENT.md](./RECOVERY_AGENT.md). Coach Agent: [COACH_AGENT.md](./COACH_AGENT.md). Supervisor Routing: [SUPERVISOR_ROUTING.md](./SUPERVISOR_ROUTING.md). Multi-Agent Routing: [MULTI_AGENT_ROUTING.md](./MULTI_AGENT_ROUTING.md). Supervisor Runtime: [SUPERVISOR_RUNTIME.md](./SUPERVISOR_RUNTIME.md). Agent Capability: [AGENT_CAPABILITY.md](./AGENT_CAPABILITY.md). Agent Collaboration: [AGENT_COLLABORATION.md](./AGENT_COLLABORATION.md). Conversation Memory: [CONVERSATION_MEMORY.md](./CONVERSATION_MEMORY.md). Agent Runtime: [AGENT_RUNTIME.md](./AGENT_RUNTIME.md). Workout Intelligence: [WORKOUT_INTELLIGENCE.md](./WORKOUT_INTELLIGENCE.md). Nutrition Intelligence: [NUTRITION_INTELLIGENCE.md](./NUTRITION_INTELLIGENCE.md).
 
 ### Exercise Knowledge Base (`features/exercise-kb`)
 
@@ -839,6 +842,23 @@ Full detail: [AGENT_COLLABORATION.md](./AGENT_COLLABORATION.md). Coach Agent: [C
 | **Design** | **No AI, prompts, providers, networking, persistence, memory, agent execution, or domain business logic.** Registry only |
 
 Full detail: [AGENT_CAPABILITY.md](./AGENT_CAPABILITY.md). Coach Agent: [COACH_AGENT.md](./COACH_AGENT.md). Agent Collaboration: [AGENT_COLLABORATION.md](./AGENT_COLLABORATION.md). ADR-067: [DECISIONS.md](./DECISIONS.md).
+
+### Supervisor Routing Engine (`features/supervisor-routing`) — Sprint 21.7 Foundation
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Transform user/coach requests into deterministic multi-agent routing plans |
+| **Flow** | User Request → Routing Engine → Capability Registry → Routing Plan → Agent Collaboration → Specialist Agents |
+| **Models** | `RoutingRequest`, `RoutingContext`, `RoutingPlan`, `RoutingDecision`, `RoutingTarget`, `RoutingCapability`, `RoutingDependency`, `RoutingPriority`, `RoutingPhase`, `RoutingExecutionOrder`, `RoutingGraph`, `RoutingNode`, `RoutingEdge`, `RoutingStep`, `RoutingSnapshot`, `RoutingResult`, … |
+| **Routing** | `RoutingEngine` / `RoutingCoordinator` / session / state — orchestration only (never executes) |
+| **Planner** | Capability / Dependency / Priority / Phase / ExecutionOrder / Graph / Routing planners |
+| **Resolver** | Exact Capability Registry resolution via `CapabilityRegistryPort` (no ranking / heuristics / AI) |
+| **Selectors / Policies** | Capability / Agent / Priority / Dependency / Execution / Phase; Routing / Dependency / Priority / Capability / Execution / Consistency |
+| **Application API** | `buildRoutingPlan`, `resolveRouting`, `validateRoutingPlan`, `describeRouting`, `buildRoutingSnapshot` |
+| **Integration** | Foundation only — consumes Capability Registry; does **not** modify Coach Agent or run Collaboration yet |
+| **Design** | **No AI, prompts, providers, networking, persistence, agent execution, collaboration execution, or domain business logic.** Routing only |
+
+Full detail: [SUPERVISOR_ROUTING.md](./SUPERVISOR_ROUTING.md). Multi-Agent Routing: [MULTI_AGENT_ROUTING.md](./MULTI_AGENT_ROUTING.md). Supervisor Runtime: [SUPERVISOR_RUNTIME.md](./SUPERVISOR_RUNTIME.md). ADR-068: [DECISIONS.md](./DECISIONS.md).
 
 ---
 

@@ -2089,4 +2089,34 @@ Introduce `app/src/features/agent-capability/` with immutable capability models 
 
 ---
 
-*New decisions are appended as Decision 068, 069, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 068: Supervisor Routing Engine Foundation (Sprint 21.7)
+
+**Date:** 2026-07-24  
+**Status:** Accepted  
+
+**Context:**
+Sprint 21.7 must introduce a Supervisor Routing Engine that transforms a user/coach request into a deterministic multi-agent routing plan. Coach Supervisor needs capability-aware routing (via Capability Registry) with dependency graphs and execution order, without embedding AI, prompts, provider calls, networking, persistence, business logic, or collaboration execution.
+
+**Decision:**
+Introduce `app/src/features/supervisor-routing/` with immutable routing models (`RoutingRequest`, `RoutingContext`, `RoutingPlan`, `RoutingDecision`, `RoutingTarget`, `RoutingCapability`, `RoutingDependency`, `RoutingPriority`, `RoutingPhase`, `RoutingExecutionOrder`, `RoutingGraph`, `RoutingNode`, `RoutingEdge`, `RoutingStep`, `RoutingSnapshot`, `RoutingResult`, …), `RoutingEngine` / `RoutingCoordinator`, deterministic planners / selectors / policies / validators / builders, `RoutingResolver` integrated with Capability Registry via `CapabilityRegistryPort` (exact match only — no ranking/heuristics/AI), `SupervisorRoutingService`, and a narrow application API (`buildRoutingPlan`, `resolveRouting`, `validateRoutingPlan`, `describeRouting`, `buildRoutingSnapshot`). Coach Supervisor and Agent Collaboration are **not** modified in this sprint — foundation module only. Document boundaries and ADR-068.
+
+**Why:**
+- **Routing ≠ execution** keeps plan construction free of collaboration / agent side effects.
+- **Capability Registry integration** lets Supervisor reason in capabilities, not hard-coded specialist names.
+- **Deterministic dependency order** (topological + declared priority) preserves testability without AI ranking.
+- **Foundation-first** prepares Coach Supervisor → Routing → Collaboration without premature coupling.
+
+**Alternatives considered:**
+- **Embed routing inside Coach Agent** — rejected: couples Supervisor to specialists and mixes planning with orchestration.
+- **Reuse CollaborationPlanner as routing** — rejected: collaboration owns dispatch/aggregation; routing must remain plan-only.
+- **AI / heuristic agent ranking** — rejected: sprint forbids ranking algorithms and AI reasoning.
+- **Wire Supervisor + Collaboration in the same sprint** — rejected: sprint explicitly requires routing foundation only.
+
+**Consequences:**
+- Documentation updates: [SUPERVISOR_ROUTING.md](./SUPERVISOR_ROUTING.md), [MULTI_AGENT_ROUTING.md](./MULTI_AGENT_ROUTING.md), [SUPERVISOR_RUNTIME.md](./SUPERVISOR_RUNTIME.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [architecture/README.md](./architecture/README.md).
+- Supervisor Routing remains free of AI, prompts, providers, networking, persistence, agent execution, collaboration execution, and domain business logic.
+- Existing Coach Agent / Agent Collaboration / specialist agents are unchanged; future sprints consume `RoutingPlan` from Supervisor Runtime.
+
+---
+
+*New decisions are appended as Decision 069, 070, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

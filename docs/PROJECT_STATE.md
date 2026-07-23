@@ -156,19 +156,19 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 
 ## Last Completed Sprint
 
-**21.6 — Agent Capability Registry Foundation** (2026-07-24)
+**21.7 — Supervisor Routing Engine Foundation** (2026-07-24)
 
-- `features/agent-capability` deterministic capability registry (register → resolve → query → snapshot)
-- Immutable models, policies, builders, validators, `AgentCapabilityService`, minimal public API
-- Unit tests (registry / resolver / registration / querying / builders / validators / policies) — no AI, prompts, networking, persistence, memory, or agent execution; Coach Agent / Collaboration unchanged
+- `features/supervisor-routing` deterministic routing plans (request → capability resolve → dependency graph → immutable `RoutingPlan`)
+- Immutable models, planners, selectors, policies, validators, builders, `SupervisorRoutingService`, minimal public API
+- Integrates Capability Registry via port/adapter; unit + integration tests — no AI, prompts, networking, persistence, agent execution, or collaboration execution; Coach Supervisor / Collaboration unchanged
 
-Previous: **21.5 — Agent Collaboration Foundation**, **21.4 — Conversation Memory Foundation**, **21.4 — Agent Runtime Foundation**
+Previous: **21.6 — Agent Capability Registry Foundation**, **21.5 — Agent Collaboration Foundation**, **21.4 — Conversation Memory Foundation**
 
 ---
 
 ## Next Sprint
 
-Migrate Coach Agent to resolve specialists via Capability Registry, then hand resolved owners to Agent Collaboration — without embedding specialist names in Coach reasoning.
+Wire Coach Supervisor to Supervisor Routing Engine, then hand `RoutingPlan` to Agent Collaboration — without embedding specialist names in Supervisor reasoning.
 
 ---
 
