@@ -1,8 +1,12 @@
-import { createPromptPackageFixture } from "../../prompt-composition/testSupport/fixtures";
 import type { IAIHealthProvider } from "../contracts/IAIHealthProvider";
 import type { IAIModelProvider } from "../contracts/IAIModelProvider";
 import type { IAIProvider } from "../contracts/IAIProvider";
 import type { IAIStreamingProvider } from "../contracts/IAIStreamingProvider";
+import type { IEmbeddingProvider } from "../contracts/IEmbeddingProvider";
+import type { IFunctionCallingProvider } from "../contracts/IFunctionCallingProvider";
+import type { IReasoningProvider } from "../contracts/IReasoningProvider";
+import type { IToolCallingProvider } from "../contracts/IToolCallingProvider";
+import type { IVisionProvider } from "../contracts/IVisionProvider";
 import type { AIModelInfo } from "../models/AIModelInfo";
 import type { AIProvider } from "../models/AIProvider";
 import type { AIProviderCapabilities } from "../models/AIProviderCapabilities";
@@ -17,9 +21,11 @@ import type { AIProviderStatus } from "../models/AIProviderStatus";
 import { AIProviderStatuses } from "../models/AIProviderStatus";
 import { freezeCapabilities, freezeProvider } from "../utils/freezeObjects";
 
+import { createPromptPackageFixture } from "../../prompt-composition/testSupport/fixtures";
+
 export const FIXED_TIMESTAMP = "2026-07-23T00:00:00.000Z";
 
-export { createPromptPackageFixture } from "../../prompt-composition/testSupport/fixtures";
+export { createPromptPackageFixture };
 
 export function createCapabilities(
   overrides: Partial<AIProviderCapabilities> = {},
@@ -74,7 +80,18 @@ export interface StubProviderOptions {
   readonly health?: AIProviderHealth | null;
   readonly metadata?: AIProviderMetadata;
   readonly registeredAt?: string;
+  readonly supportsReasoning?: boolean;
 }
+
+export type StubProvider = IAIProvider &
+  IAIStreamingProvider &
+  IAIHealthProvider &
+  IAIModelProvider &
+  IToolCallingProvider &
+  IVisionProvider &
+  IEmbeddingProvider &
+  IReasoningProvider &
+  IFunctionCallingProvider;
 
 /**
  * Test double implementing provider contracts.
@@ -82,7 +99,7 @@ export interface StubProviderOptions {
  */
 export function createStubProvider(
   options: StubProviderOptions = {},
-): IAIProvider & IAIStreamingProvider & IAIHealthProvider & IAIModelProvider {
+): StubProvider {
   const id = options.id ?? "test-provider";
   const capabilities = options.capabilities ?? createCapabilities();
   const configuration =
@@ -109,6 +126,7 @@ export function createStubProvider(
         })
       : options.health;
   const registeredAt = options.registeredAt ?? FIXED_TIMESTAMP;
+  const supportsReasoningFlag = options.supportsReasoning ?? false;
 
   const getInfo = (): AIProvider =>
     freezeProvider({
@@ -132,6 +150,11 @@ export function createStubProvider(
     getStatus: () => status,
     supports: (capability: AIProviderCapabilityKey) => capabilities[capability],
     supportsStreaming: () => capabilities.streaming,
+    supportsTools: () => capabilities.tools,
+    supportsVision: () => capabilities.vision,
+    supportsEmbeddings: () => capabilities.embeddings,
+    supportsReasoning: () => supportsReasoningFlag,
+    supportsFunctionCalling: () => capabilities.tools,
     getHealth: () => {
       if (!health) {
         return Object.freeze({

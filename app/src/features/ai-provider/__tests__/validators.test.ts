@@ -1,14 +1,20 @@
 import { DEFAULT_EXECUTION_OPTIONS } from "../models/AIExecutionOptions";
 import { createDefaultConfiguration } from "../models/AIProviderConfiguration";
 import { EMPTY_CAPABILITIES } from "../models/AIProviderCapabilities";
+import { AIResponseBuilder } from "../builders/AIResponseBuilder";
+import { AIFinishReasons } from "../models/AIFinishReason";
 import {
   validateCapabilities,
   validateConfiguration,
   validateExecutionOptions,
+  validateLimits,
   validateModelSelection,
+  validateModels,
   validateProviderId,
+  validateProviderRegistration,
   validateRequestIntegrity,
   validateReservedProviderId,
+  validateResponseIntegrity,
 } from "../validators";
 import {
   createPreparedPromptPackage,
@@ -103,5 +109,46 @@ describe("ai-provider validators", () => {
     expect(validateRequestIntegrity(request)).toEqual(
       expect.arrayContaining(["model_selection_missing"]),
     );
+  });
+
+  it("validates limits, models, registration, and response integrity", () => {
+    expect(
+      validateLimits(
+        Object.freeze({
+          maxInputTokens: -1,
+          maxOutputTokens: 10,
+          maxRequestsPerMinute: null,
+          maxConcurrentRequests: null,
+          maxContextWindow: 5,
+        }),
+      ),
+    ).toContain("limits_maxInputTokens_invalid");
+
+    expect(
+      validateLimits(
+        Object.freeze({
+          maxInputTokens: 100,
+          maxOutputTokens: 10,
+          maxRequestsPerMinute: null,
+          maxConcurrentRequests: null,
+          maxContextWindow: 50,
+        }),
+      ),
+    ).toContain("limits_input_exceeds_context_window");
+
+    const provider = createStubProvider({ id: "reg" });
+    expect(validateProviderRegistration(provider)).toEqual([]);
+    expect(validateModels(provider.getInfo().models)).toEqual([]);
+
+    expect(validateResponseIntegrity(null)).toContain("response_missing");
+    const response = new AIResponseBuilder()
+      .withId("ai-response:ok")
+      .withRequestId("ai-request:ok")
+      .withProviderId("reg")
+      .withContent("ok")
+      .withFinishReason(AIFinishReasons.STOP)
+      .withCreatedAt(FIXED_TIMESTAMP)
+      .build();
+    expect(validateResponseIntegrity(response)).toEqual([]);
   });
 });

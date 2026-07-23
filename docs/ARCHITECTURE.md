@@ -492,16 +492,18 @@ Full detail: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md) (Prompt Package + 
 | Aspect | Implementation |
 |--------|----------------|
 | **Purpose** | Define common provider contracts and orchestration primitives for future AI providers |
-| **Flow** | Prompt Package → AI Provider Abstraction → Future Providers (OpenAI / Anthropic / Gemini / Ollama) → Standard AI Response |
-| **Models** | `AIRequest`, `AIResponse`, `AIProvider`, `AIProviderId`, `AIProviderCapabilities`, `AIProviderConfiguration`, `AIProviderMetadata`, `AIProviderStatus`, `AIProviderHealth`, `AIProviderLimits`, `AIProviderError`, `AIProviderResult`, `AIExecutionContext`, `AIExecutionOptions`, `AITokenUsage`, `AIFinishReason`, `AIResponseChunk`, `AIModel`, `AIModelInfo` |
-| **Contracts** | `IAIProvider`, `IAIStreamingProvider`, `IAIHealthProvider`, `IAIModelProvider`, `IAIProviderRegistry` |
-| **Registry** | `AIProviderRegistry` — register / resolve / list / availability validation |
+| **Flow** | Prompt Package → AI Provider Abstraction → Unified AI Response → Future Response Formatter |
+| **Models** | `AIRequest`, `AIResponse`, `AIMessage`, `AIChoice`, `AIUsage`, `AITokenUsage`, `AIError`, `AIProvider`, `AIProviderResult`, `AIProviderSnapshot`, `AIProviderFeatures`, `AIModel`, `AIModelVersion`, `AIStreamingChunk`, `AIToolCall`, `AIToolResult`, `AIExecutionResult`, … |
+| **Contracts** | `IAIProvider`, `IAIProviderFactory`, `IAIProviderRegistry`, streaming / tool / vision / embedding / reasoning / function-calling extensions |
+| **Registry** | `AIProviderRegistry`, `ProviderRegistry`, `ProviderDescriptor`, `CapabilityRegistry`, `ModelRegistry` |
+| **Factory** | `AIProviderFactory` — resolve by id / model / capability / default |
+| **Selectors** | `ProviderSelector`, `CapabilitySelector`, `ModelSelector`, `PricingSelector` |
 | **Engine** | `AIProviderEngine` — validate request, resolve provider, prepare execution context (no execution) |
-| **Application API** | `prepareAIRequest`, `resolveProvider`, `createExecutionContext` |
-| **Integration** | Consumes `PromptPackage`; does not modify Prompt Composition |
+| **Application API** | `createAIRequest`, `validateProvider`, `resolveProvider`, `listProviders`, `describeProvider` |
+| **Integration** | Consumes `PromptPackage` → `AIRequest`; consumes `AIResponse` → `AIProviderResult` |
 | **Design** | **Interfaces and orchestration only.** No OpenAI/Anthropic/Gemini/Ollama implementations, HTTP, networking, or SDKs |
 
-Full detail: [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md) (Provider Registry + Future OpenAI Integration + Future Multi-provider Support).
+Full detail: [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md) (Provider Registry + Provider Factory + Contracts + Future OpenAI / Multi-provider Support).
 
 ### OpenAI Provider (`features/openai-provider`) — Sprint 19.3
 

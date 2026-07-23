@@ -3,6 +3,11 @@ export {
   intersectCapabilities,
   listEnabledCapabilities,
 } from "./aggregateCapabilities";
+export { estimatePricing } from "./estimatePricing";
+export {
+  estimateTokens,
+  estimateTokensFromParts,
+} from "./estimateTokens";
 export {
   formatCapabilityLabel,
   formatCountPhrase,
@@ -25,10 +30,16 @@ export {
   freezeResponseChunk,
   freezeTokenUsage,
 } from "./freezeObjects";
+export { normalizeUsage } from "./normalizeUsage";
 export {
   normalizeProviderId,
   normalizeProviderIdOrNull,
 } from "./normalizeProviderId";
+export {
+  buildProviderStatistics,
+  countEnabledCapabilities,
+  toProviderFeatures,
+} from "./statisticsHelpers";
 export {
   summarizeProvider,
   summarizeProviderResult,

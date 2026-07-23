@@ -1,6 +1,7 @@
 import { AIExecutionContextBuilder } from "../builders/AIExecutionContextBuilder";
 import { AIRequestBuilder } from "../builders/AIRequestBuilder";
 import { AIResponseBuilder } from "../builders/AIResponseBuilder";
+import { ProviderConfigurationBuilder } from "../builders/ProviderConfigurationBuilder";
 import { AIFinishReasons } from "../models/AIFinishReason";
 import {
   createPreparedPromptPackage,
@@ -73,5 +74,17 @@ describe("ai-provider builders", () => {
     expect(Object.isFrozen(response)).toBe(true);
     expect(response.content).toBe("Hello");
     expect(response.finishReason).toBe("stop");
+  });
+
+  it("ProviderConfigurationBuilder builds a frozen configuration", () => {
+    const configuration = new ProviderConfigurationBuilder()
+      .withProviderId("builder-cfg")
+      .withDisplayName("Builder Config")
+      .withEnabled(true)
+      .withDefaultModelId("m1")
+      .build();
+
+    expect(Object.isFrozen(configuration)).toBe(true);
+    expect(configuration.providerId).toBe("builder-cfg");
   });
 });
