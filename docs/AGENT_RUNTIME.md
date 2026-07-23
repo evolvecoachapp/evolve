@@ -4,10 +4,10 @@
 **Version:** 0.6.0  
 **Status:** Living Document  
 **Last Updated:** 2026-07-23  
-**Purpose:** Document the Agent Runtime boundary for domain agents (Workout, Nutrition, …).  
+**Purpose:** Document the Agent Runtime boundary for domain agents (Workout, Nutrition, Recovery, …).  
 **Source of Truth:** Yes — for domain agent placement inside the AI Runtime pipeline.
 
-Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [WORKOUT_AGENT.md](./WORKOUT_AGENT.md), [NUTRITION_AGENT.md](./NUTRITION_AGENT.md), [WORKOUT_INTELLIGENCE.md](./WORKOUT_INTELLIGENCE.md), [NUTRITION_INTELLIGENCE.md](./NUTRITION_INTELLIGENCE.md), [AI_SYSTEM.md](./AI_SYSTEM.md), [DECISIONS.md](./DECISIONS.md) (ADR-059, ADR-061).
+Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [WORKOUT_AGENT.md](./WORKOUT_AGENT.md), [NUTRITION_AGENT.md](./NUTRITION_AGENT.md), [RECOVERY_AGENT.md](./RECOVERY_AGENT.md), [WORKOUT_INTELLIGENCE.md](./WORKOUT_INTELLIGENCE.md), [NUTRITION_INTELLIGENCE.md](./NUTRITION_INTELLIGENCE.md), [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md), [AI_SYSTEM.md](./AI_SYSTEM.md), [DECISIONS.md](./DECISIONS.md) (ADR-059, ADR-061, ADR-062).
 
 ---
 
@@ -34,7 +34,7 @@ Conversation Runtime
       ↓
 Agent Framework                     ← Sprint 21.1 shared contracts / registry
       ↓
-Domain Agent (Workout / Nutrition)  ← Agent Runtime
+Domain Agent (Workout / Nutrition / Recovery)  ← Agent Runtime
       ↓
 Coach Intelligence
       ↓
@@ -61,8 +61,9 @@ Shared infrastructure: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md), [AGENT_LIFECY
 |-------|--------|--------|
 | **Workout Agent** | `features/workout-agent/` | 21.0 (migrated onto Agent Framework in 21.1) |
 | **Nutrition Agent** | `features/nutrition-agent/` | 21.2 |
+| **Recovery Agent** | `features/recovery-agent/` | 21.3 |
 
-Future agents (recovery, goals, coach supervisor) must extend the Agent Framework:
+Future agents (goals, coach supervisor) must extend the Agent Framework:
 
 - implement `IAgent`
 - register via `registerAgent`
@@ -79,5 +80,5 @@ Agent Runtime does **not**:
 
 - replace Prompt Builder or AI Provider
 - execute tools (Tool Runtime owns that)
-- duplicate Workout Domain / Nutrition Domain business logic
+- duplicate Workout Domain / Nutrition Domain / Recovery Domain business logic
 - introduce networking or persistence

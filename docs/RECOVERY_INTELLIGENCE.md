@@ -4,14 +4,46 @@
 **Version:** 0.6.0  
 **Status:** Living Document  
 **Last Updated:** 2026-07-23  
-**Purpose:** Document the Recovery Intelligence domain foundation (Sprint 18.6).  
-**Source of Truth:** Yes — for Recovery Intelligence layout, Recovery Metrics, and Future Readiness Model placeholders on mobile.
+**Purpose:** Document how Recovery Intelligence spans domain engines and the Recovery Agent.  
+**Source of Truth:** Yes — for the split between Recovery Domain engines and Recovery Agent orchestration, plus Recovery Metrics / Future Readiness Model placeholders on mobile.
 
-Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md), [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md), [DECISIONS.md](./DECISIONS.md) (ADR-044).
+Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [RECOVERY_AGENT.md](./RECOVERY_AGENT.md), [AGENT_RUNTIME.md](./AGENT_RUNTIME.md), [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md), [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md), [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md), [DECISIONS.md](./DECISIONS.md) (ADR-044, ADR-062).
 
 ---
 
-## Architecture Summary
+## Overview
+
+Recovery Intelligence in EVOLVE has two complementary layers:
+
+1. **Recovery Domain** (`features/recovery-intelligence`) — deterministic recovery snapshots, training-load metrics, and assessments (source of truth for executable recovery artifacts).
+2. **Recovery Agent** (`features/recovery-agent`) — conversational / planning orchestrator that specializes recovery dialogues (fatigue, readiness, sleep, stress, deload) without replacing domain engines.
+
+```
+Recovery Agent (orchestrator)
+        │
+        ├── Reasoning (deterministic knowledge organization)
+        ├── Planning (proposals only)
+        ├── Strategies / Policies / Selectors
+        └── Delegates to Recovery Domain when execution is required
+                 │
+                 ▼
+        Action Engine → Tool Runtime → Domain Tool Adapters → Recovery Domain
+```
+
+---
+
+## Responsibilities
+
+| Layer | Owns | Does not own |
+|-------|------|--------------|
+| **Recovery Agent** | Intent/goal resolution, strategy selection, plan proposals, explanations | Prompts, providers, tool execution, persistence |
+| **Recovery Domain** | Training-load / fatigue / recovery-window math, snapshots | Conversational orchestration |
+| **Tool Runtime** | Adapter orchestration for ActionPlans | Domain business rules |
+| **Coach Intelligence** | Coaching context preparation | Recovery-specific planning |
+
+---
+
+## Domain Architecture Summary
 
 ```
 Athlete History
@@ -25,7 +57,7 @@ Recovery Snapshot
 Future Consumers
 ```
 
-This layer analyzes **completed training load context**.
+This domain layer analyzes **completed training load context**.
 
 It consumes:
 
@@ -42,11 +74,10 @@ It produces:
 It is **not**:
 
 - AI
-- recommendations / coaching advice
+- recommendations / coaching advice (agent owns conversational recommendations)
 - persistence / networking
 - history storage
 - predictive models
-- sleep analysis
 - wearable integration
 
 Module: `app/src/features/recovery-intelligence/`.

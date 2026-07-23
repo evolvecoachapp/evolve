@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-23  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-061). Append only — never renumber.  
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-062). Append only — never renumber.  
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -1912,4 +1912,34 @@ Add `app/src/features/nutrition-agent/` with immutable Nutrition Agent models (i
 
 ---
 
-*New decisions are appended as Decision 062, 063, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 062: Recovery Agent Foundation (Sprint 21.3)
+
+**Date:** 2026-07-23
+
+**Status:** Accepted
+
+**Context:**
+Sprint 21.3 must introduce the Recovery Agent as the intelligent recovery specialist of EVOLVE. It evaluates recovery status, fatigue, readiness, sleep, stress, soreness, workload tolerance, and recovery recommendations. It must extend the Agent Framework, own no infrastructure, must not generate prompts, must not call providers, must not execute tools, and must not duplicate Recovery Domain business logic.
+
+**Decision:**
+Add `app/src/features/recovery-agent/` with immutable Recovery Agent models (including `RecoveryAgentResult`), agent orchestration (`RecoveryAgentEngine`, `RecoveryAgentCoordinator`, session/state), deterministic reasoning and planning layers, strategy / policy / selector architecture, builders, validators, `RecoveryAgentService`, `RecoveryFrameworkAgent` (`IAgent` adapter), and a narrow application API (`processRecoveryRequest`, `buildRecoveryPlan`, `evaluateRecovery`, `describeRecoveryCapabilities`, `validateRecoveryPlan`). Consume Conversation Context / Memory, optional `CoachResponse` / `ActionPlan` / `ToolExecutionResult`, and shared context contracts from Workout / Nutrition Agents. Produce immutable `RecoveryAgentResult`. Document Recovery Agent, Agent Runtime, and Recovery Intelligence boundaries.
+
+**Why:**
+- **Specialized recovery orchestration** keeps conversational / planning logic out of the Recovery Domain and out of Coach / Prompt / Provider layers.
+- **Agent Framework reuse** avoids a second incompatible agent stack.
+- **Deterministic reasoning + planning** organizes knowledge before AI without embedding prompts or provider SDKs.
+- **Narrow public API** prevents leaking internals while enabling tests with mocked downstream dependencies.
+
+**Alternatives considered:**
+- **Fold recovery planning into Workout Agent** — rejected: different domain specialist with distinct strategies / policies.
+- **Put fatigue/readiness math only in Coach / Prompt Builder** — rejected: agent must own deterministic recovery reasoning surface.
+- **Duplicate Recovery Intelligence business logic in the agent** — rejected: sprint forbids domain duplication; agent orchestrates only.
+
+**Consequences:**
+- Documentation references [RECOVERY_AGENT.md](./RECOVERY_AGENT.md), [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md), and updated [AGENT_RUNTIME.md](./AGENT_RUNTIME.md).
+- Recovery Agent remains free of provider SDKs, networking, persistence, and UI.
+- Recovery Domain remains source of truth for executable recovery artifacts.
+
+---
+
+*New decisions are appended as Decision 063, 064, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
