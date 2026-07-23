@@ -1,4 +1,8 @@
-export { WorkoutAgentFacade as WorkoutAgent, WorkoutAgentEngine } from "./WorkoutAgent";
+export {
+  WorkoutAgentFacade as WorkoutAgent,
+  WorkoutAgentEngine,
+} from "./WorkoutAgent";
+export type { WorkoutAgentFacadeDeps } from "./WorkoutAgent";
 export {
   WorkoutAgentCoordinator,
   type WorkoutAgentCoordinatorDeps,

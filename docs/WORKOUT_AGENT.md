@@ -7,7 +7,7 @@
 **Purpose:** Document the Workout Agent foundation (Sprint 21.0).  
 **Source of Truth:** Yes — for Workout Agent layout, reasoning / planning layers, and public API on mobile.
 
-Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [AGENT_RUNTIME.md](./AGENT_RUNTIME.md), [WORKOUT_INTELLIGENCE.md](./WORKOUT_INTELLIGENCE.md), [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md), [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md), [ACTION_ENGINE.md](./ACTION_ENGINE.md), [TOOL_RUNTIME.md](./TOOL_RUNTIME.md), [DECISIONS.md](./DECISIONS.md) (ADR-059).
+Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md), [AGENT_RUNTIME.md](./AGENT_RUNTIME.md), [WORKOUT_INTELLIGENCE.md](./WORKOUT_INTELLIGENCE.md), [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md), [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md), [ACTION_ENGINE.md](./ACTION_ENGINE.md), [TOOL_RUNTIME.md](./TOOL_RUNTIME.md), [DECISIONS.md](./DECISIONS.md) (ADR-059, ADR-060).
 
 ---
 
@@ -16,7 +16,7 @@ Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [AGENT_RUNTIME.md](./AGENT_RUNTIM
 ```
 User Request
       ↓
-Conversation Runtime
+Agent Framework
       ↓
 Workout Agent
       ↓
@@ -38,6 +38,8 @@ Workout Domain
 Module: `app/src/features/workout-agent/`.
 
 The Workout Agent is the first intelligent domain agent of EVOLVE. It specializes in workout planning, programming, progression, exercise selection, and training conversations.
+
+Sprint 21.1 migrates it onto the shared Agent Framework via `WorkoutFrameworkAgent` (`IAgent` adapter) without changing processing behavior.
 
 It consumes the complete AI Runtime but **owns no infrastructure**.
 
@@ -82,6 +84,7 @@ It **orchestrates** existing components and organizes domain knowledge before AI
 |--------|------|
 | `models/` | Immutable agent models |
 | `agent/` | WorkoutAgent, Engine, Coordinator, Session, State |
+| `framework/` | `WorkoutFrameworkAgent` — Agent Framework `IAgent` adapter |
 | `orchestrator/` | Runtime artifact wiring |
 | `reasoning/` | Deterministic reasoners (no AI) |
 | `planning/` | Planners (no execution) |
@@ -90,7 +93,7 @@ It **orchestrates** existing components and organizes domain knowledge before AI
 | `selectors/` | Intent / Objective / Strategy / Split / Exercise / Recommendation |
 | `builders/` | Context / Plan / Recommendation builders |
 | `validators/` | Objective / split / exercise / volume / intensity / recovery / progression |
-| `services/` | WorkoutAgentService |
+| `services/` | WorkoutAgentService (`asFrameworkAgent` / `registerWithFramework`) |
 | `application/` | Public API only |
 | `utils/` | Metrics, helpers, FreezeAgentState |
 

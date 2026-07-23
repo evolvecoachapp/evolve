@@ -30,7 +30,7 @@ Domain agents:
 ```
 User Request
       ↓
-Conversation Runtime
+Agent Framework                     ← Sprint 21.1 shared contracts / registry
       ↓
 Domain Agent (e.g. Workout Agent)   ← Agent Runtime
       ↓
@@ -49,22 +49,25 @@ Tool Runtime
 Domain Platform
 ```
 
+Shared infrastructure: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md), [AGENT_LIFECYCLE.md](./AGENT_LIFECYCLE.md), [AGENT_REGISTRY.md](./AGENT_REGISTRY.md).
+
 ---
 
 ## First Agent
 
 | Agent | Module | Sprint |
 |-------|--------|--------|
-| **Workout Agent** | `features/workout-agent/` | 21.0 |
+| **Workout Agent** | `features/workout-agent/` | 21.0 (migrated onto Agent Framework in 21.1) |
 
-Future agents (nutrition, recovery, goals) should follow the same pattern:
+Future agents (nutrition, recovery, goals, coach supervisor) must extend the Agent Framework:
 
+- implement `IAgent`
+- register via `registerAgent`
 - immutable result models
 - deterministic reasoning + planning
 - strategy / policy / selector architecture
 - narrow public application API
 - mockable downstream integration
-
 ---
 
 ## Non-Goals

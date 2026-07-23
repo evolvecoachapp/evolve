@@ -1852,4 +1852,34 @@ Add `app/src/features/workout-agent/` with immutable Workout Agent models (inclu
 
 ---
 
-*New decisions are appended as Decision 060, 061, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 060: Agent Framework Foundation (Sprint 21.1)
+
+**Date:** 2026-07-23
+
+**Status:** Accepted
+
+**Context:**
+Sprint 21.1 must introduce a shared Agent Framework so every future intelligent agent (Workout, Nutrition, Recovery, Goal, Coach Supervisor) extends the same contracts, lifecycle, and orchestration model. The framework must contain no domain-specific logic, prompts, providers, networking, or persistence. Workout Agent must migrate onto the framework without behavioral changes.
+
+**Decision:**
+Add `app/src/features/agent-framework/` with immutable contracts (`IAgent`, `IAgentFactory`, `IAgentRegistry`, lifecycle / capability / result contracts), models (`Agent`, `AgentDescriptor`, `AgentContext`, `AgentSnapshot`, …), lifecycle (`AgentLifecycle`, `AgentStateMachine`, initializer / health / shutdown), registries (Agent / Capability / Role / Metadata), `AgentFactory`, capability definitions, builders, validators, selectors, policies, `AgentFrameworkService`, and a narrow application API (`registerAgent`, `resolveAgent`, `listAgents`, `describeAgent`, `validateAgent`). Migrate Workout Agent via `WorkoutFrameworkAgent` (`IAgent` adapter) + optional `registerWithFramework`. Document Agent Framework / Lifecycle / Registry.
+
+**Why:**
+- **Shared agent infrastructure** prevents each domain agent from inventing incompatible contracts.
+- **Immutable framework-only design** keeps domain logic out of the foundation.
+- **Registry + factory** enable resolve-by-id / role / capability for future multi-agent routing.
+- **Workout migration without behavior change** preserves Sprint 21.0 processing while adopting the framework.
+
+**Alternatives considered:**
+- **Keep per-agent isolated stacks** — rejected: future Nutrition / Recovery / Goal agents would diverge.
+- **Put domain execution inside the framework** — rejected: sprint forbids business logic.
+- **Embed providers / Prompt Builder / Tool Runtime** — rejected: those layers already own that path.
+
+**Consequences:**
+- Documentation references [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md), [AGENT_LIFECYCLE.md](./AGENT_LIFECYCLE.md), and [AGENT_REGISTRY.md](./AGENT_REGISTRY.md).
+- Domain agents implement `IAgent` and register via `registerAgent`.
+- Agent Framework remains free of domain logic, prompts, providers, networking, and persistence.
+
+---
+
+*New decisions are appended as Decision 061, 062, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

@@ -9,7 +9,7 @@
 
 ## Primary diagrams
 
-- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline + Composition Root + Decision Intelligence + Workout/Rest Runtime + Domain Events + Performance Engine + Achievement Engine + Athlete History + Recovery Intelligence + Insight Engine + Coach Intelligence + Conversation Orchestrator + Prompt Builder + Prompt Composition Engine + AI Provider Abstraction + OpenAI Provider + AI Execution Pipeline + Streaming Foundation + Tool Calling Foundation + Domain Tool Adapters + Response Formatter + Action Engine + Tool Runtime + Workout Agent dependency flow
+- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline + Composition Root + Decision Intelligence + Workout/Rest Runtime + Domain Events + Performance Engine + Achievement Engine + Athlete History + Recovery Intelligence + Insight Engine + Coach Intelligence + Conversation Orchestrator + Prompt Builder + Prompt Composition Engine + AI Provider Abstraction + OpenAI Provider + AI Execution Pipeline + Streaming Foundation + Tool Calling Foundation + Domain Tool Adapters + Response Formatter + Action Engine + Tool Runtime + Agent Framework + Workout Agent dependency flow
 - [COMPOSITION_ROOT.md](../COMPOSITION_ROOT.md) — Composition Root, Dependency Graph, Factories, DI, Service Lifecycle
 - [DECISION_INTELLIGENCE.md](../DECISION_INTELLIGENCE.md) — Decision graph, explainability, execution reports, Coach AI preparation
 - [WORKOUT_RUNTIME.md](../WORKOUT_RUNTIME.md) — Live WorkoutSession execution state, session lifecycle, runtime state model
@@ -34,6 +34,9 @@
 - [ACTION_ENGINE.md](../ACTION_ENGINE.md) — Action Engine, ActionPlan, Action Planning, Execution Pipeline contracts
 - [ACTION_PLANNING.md](../ACTION_PLANNING.md) — Action Planning planners, selectors, policies
 - [TOOL_RUNTIME.md](../TOOL_RUNTIME.md) — Tool Runtime Engine, Execution Pipeline, Execution Flow
+- [AGENT_FRAMEWORK.md](../AGENT_FRAMEWORK.md) — Agent Framework contracts, registry, factory, public API
+- [AGENT_LIFECYCLE.md](../AGENT_LIFECYCLE.md) — Agent Framework lifecycle / state machine
+- [AGENT_REGISTRY.md](../AGENT_REGISTRY.md) — Agent / capability / role / metadata registries
 - [WORKOUT_AGENT.md](../WORKOUT_AGENT.md) — Workout Agent, reasoning / planning layers, WorkoutAgentResult
 - [AGENT_RUNTIME.md](../AGENT_RUNTIME.md) — Agent Runtime boundary for domain agents
 - [WORKOUT_INTELLIGENCE.md](../WORKOUT_INTELLIGENCE.md) — Workout Domain vs Workout Agent split
