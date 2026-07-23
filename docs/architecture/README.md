@@ -9,7 +9,7 @@
 
 ## Primary diagrams
 
-- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline + Composition Root + Decision Intelligence + Workout/Rest Runtime + Domain Events + Performance Engine + Achievement Engine + Athlete History + Recovery Intelligence + Insight Engine + Coach Intelligence + Conversation Orchestrator + Prompt Builder + Prompt Composition Engine + AI Provider Abstraction + OpenAI Provider + AI Execution Pipeline + Streaming Foundation + Tool Calling Foundation + Domain Tool Adapters + Response Formatter + Action Engine + Tool Runtime + Agent Framework + Agent Runtime + Workout Agent + Nutrition Agent + Recovery Agent dependency flow
+- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline + Composition Root + Decision Intelligence + Workout/Rest Runtime + Domain Events + Performance Engine + Achievement Engine + Athlete History + Recovery Intelligence + Insight Engine + Coach Intelligence + Conversation Orchestrator + Prompt Builder + Prompt Composition Engine + AI Provider Abstraction + OpenAI Provider + AI Execution Pipeline + Streaming Foundation + Tool Calling Foundation + Domain Tool Adapters + Response Formatter + Action Engine + Tool Runtime + Agent Framework + Agent Runtime + Workout Agent + Nutrition Agent + Recovery Agent + Coach Agent dependency flow
 - [COMPOSITION_ROOT.md](../COMPOSITION_ROOT.md) — Composition Root, Dependency Graph, Factories, DI, Service Lifecycle
 - [DECISION_INTELLIGENCE.md](../DECISION_INTELLIGENCE.md) — Decision graph, explainability, execution reports, Coach AI preparation
 - [WORKOUT_RUNTIME.md](../WORKOUT_RUNTIME.md) — Live WorkoutSession execution state, session lifecycle, runtime state model
@@ -40,6 +40,7 @@
 - [WORKOUT_AGENT.md](../WORKOUT_AGENT.md) — Workout Agent, reasoning / planning layers, WorkoutAgentResult
 - [NUTRITION_AGENT.md](../NUTRITION_AGENT.md) — Nutrition Agent, domain gateway / capability selector, NutritionAgentResult
 - [RECOVERY_AGENT.md](../RECOVERY_AGENT.md) — Recovery Agent, reasoning / planning layers, RecoveryAgentResult
+- [COACH_AGENT.md](../COACH_AGENT.md) — Coach Agent (meta-agent), coordinator / merger, CoachAgentResult
 - [AGENT_RUNTIME.md](../AGENT_RUNTIME.md) — Agent Runtime Foundation (registry, selection, execution entry point)
 - [WORKOUT_INTELLIGENCE.md](../WORKOUT_INTELLIGENCE.md) — Workout Domain vs Workout Agent split
 - [NUTRITION_INTELLIGENCE.md](../NUTRITION_INTELLIGENCE.md) — Nutrition Domain vs Nutrition Agent split

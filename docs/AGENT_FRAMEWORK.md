@@ -20,9 +20,9 @@ Agent Runtime
       ↓
 Agent Framework (IAgent contracts)
       ↓
-Workout Framework Agent / Nutrition / Recovery / Goal / Coach Supervisor
+Coach Supervisor (meta) / Workout / Nutrition / Recovery / Goal
       ↓
-Planning → Domain → Agent Result
+Specialists → Merge (Coach) or Planning → Domain → Agent Result
 ```
 
 Workout Agent execution path (specialized):
@@ -35,6 +35,12 @@ Nutrition Agent execution path (specialized):
 
 ```
 Agent Runtime → Nutrition Framework Agent → Nutrition Domain Gateway → Capability Selector → Nutrition Domain → NutritionAgentResult
+```
+
+Coach Agent execution path (meta-agent):
+
+```
+Agent Runtime → Coach Framework Agent → Agent Coordinator → Workout / Recovery / Nutrition Agents → Merge → CoachAgentResult
 ```
 
 Module: `app/src/features/agent-framework/`.
@@ -86,7 +92,8 @@ Internals (registries, factory, lifecycle) are not part of the public applicatio
 | **Workout Agent** | Implements `IAgent` via `WorkoutFrameworkAgent`; `registerWithFramework` + `registerWithRuntime` |
 | **Nutrition Agent** | Implements `IAgent` via `NutritionFrameworkAgent`; domain gateway + capability selector orchestration |
 | **Recovery Agents** | Same `IAgent` adapter pattern |
-| Future Goal / Coach Supervisor | Extend `IAgent` + register with framework / runtime |
+| **Coach Agent** | Implements `IAgent` via `CoachFrameworkAgent` (`coach_supervisor`); meta-orchestrates Workout / Recovery / Nutrition |
+| Future Goal Agent | Extend `IAgent` + register with framework / runtime |
 
 ---
 
@@ -106,3 +113,4 @@ Internals (registries, factory, lifecycle) are not part of the public applicatio
 - [AGENT_LIFECYCLE.md](./AGENT_LIFECYCLE.md) — state machine + initialize / shutdown
 - [AGENT_REGISTRY.md](./AGENT_REGISTRY.md) — registration surfaces
 - [WORKOUT_AGENT.md](./WORKOUT_AGENT.md) — first migrated domain agent
+- [COACH_AGENT.md](./COACH_AGENT.md) — meta-agent coordinating specialists
