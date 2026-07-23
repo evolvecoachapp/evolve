@@ -23,6 +23,12 @@ Existing Domain
 Foundation Tool Result
 ```
 
+Also consumed by [TOOL_RUNTIME.md](./TOOL_RUNTIME.md):
+
+```
+ActionPlan → Tool Runtime → Domain Tool Adapters → Domain Platform
+```
+
 Adapters expose existing domain capabilities to the Tool Calling Foundation.
 
 - Adapters contain **no** business logic.

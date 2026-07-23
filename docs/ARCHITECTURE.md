@@ -148,9 +148,12 @@ Response Formatter               ← Sprint 19.4 (implemented) — AIResponse �
   ↓
 Action Engine                    ← Sprint 20.3 (implemented) — CoachResponse → immutable ActionPlan
   (`app/src/features/action-engine/`)
+  ↓
+Tool Runtime Engine              ← Sprint 20.1 (implemented) — ActionPlan → Domain Tool Adapters
+  (`app/src/features/tool-runtime/`)
 ```
 
-Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md). Insight Engine: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md). Coach Intelligence: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md). Conversation Orchestrator: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md). Prompt Builder: [PROMPT_BUILDER.md](./PROMPT_BUILDER.md). Prompt Composition: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md). AI Provider Abstraction: [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md). OpenAI Provider: [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md). AI Execution Pipeline: [AI_EXECUTION_PIPELINE.md](./AI_EXECUTION_PIPELINE.md). Streaming Foundation: [STREAMING_FOUNDATION.md](./STREAMING_FOUNDATION.md). Tool Calling Foundation: [TOOL_CALLING_FOUNDATION.md](./TOOL_CALLING_FOUNDATION.md). Domain Tool Adapters: [DOMAIN_TOOL_ADAPTERS.md](./DOMAIN_TOOL_ADAPTERS.md). Response Formatter: [RESPONSE_FORMATTER.md](./RESPONSE_FORMATTER.md). Action Engine: [ACTION_ENGINE.md](./ACTION_ENGINE.md).
+Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md). Insight Engine: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md). Coach Intelligence: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md). Conversation Orchestrator: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md). Prompt Builder: [PROMPT_BUILDER.md](./PROMPT_BUILDER.md). Prompt Composition: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md). AI Provider Abstraction: [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md). OpenAI Provider: [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md). AI Execution Pipeline: [AI_EXECUTION_PIPELINE.md](./AI_EXECUTION_PIPELINE.md). Streaming Foundation: [STREAMING_FOUNDATION.md](./STREAMING_FOUNDATION.md). Tool Calling Foundation: [TOOL_CALLING_FOUNDATION.md](./TOOL_CALLING_FOUNDATION.md). Domain Tool Adapters: [DOMAIN_TOOL_ADAPTERS.md](./DOMAIN_TOOL_ADAPTERS.md). Response Formatter: [RESPONSE_FORMATTER.md](./RESPONSE_FORMATTER.md). Action Engine: [ACTION_ENGINE.md](./ACTION_ENGINE.md). Tool Runtime: [TOOL_RUNTIME.md](./TOOL_RUNTIME.md).
 
 ### Exercise Knowledge Base (`features/exercise-kb`)
 
@@ -617,17 +620,35 @@ Full detail: [RESPONSE_FORMATTER.md](./RESPONSE_FORMATTER.md) (Coach Response + 
 | Aspect | Implementation |
 |--------|----------------|
 | **Purpose** | Transform immutable `CoachResponse` into immutable `ActionPlan` for future runtimes |
-| **Flow** | CoachResponse → Action Engine → ActionPlan → Future Tool Runtime → Domain Tool Adapters → Domain Platform |
+| **Flow** | CoachResponse → Action Engine → ActionPlan → Tool Runtime → Domain Tool Adapters → Domain Platform |
 | **Models** | `ActionPlan`, `ActionStep`, `ActionIntent`, `ActionType`, `ActionTarget`, `ActionArgument`, `ActionConstraint`, `ActionPriority`, `ActionDependency`, `ActionStatus`, `ActionMetadata`, `ActionSummary`, `ActionSnapshot`, `ActionExecutionPlan`, `ActionProposal`, `ActionCandidate`, `ActionValidation`, `ActionStatistics`, `ActionContext`, `ActionPackage` |
 | **Planners** | Workout / Nutrition / Recovery / Goal / Reminder / Composite |
 | **Selectors** | Action / Planner / Priority / Dependency |
 | **Policies** | Conflict / Priority / Dependency / Execution / Safety (structural only) |
 | **Executors** | `ActionExecutor`, `ExecutionContext`, `ExecutionStrategy`, `ExecutionRequest`, `ExecutionResult` (contracts only) |
 | **Application API** | `buildActionPlan`, `validateActionPlan`, `summarizeActionPlan`, `estimateExecution`, `describeActions` |
-| **Integration** | Consumes `CoachResponse`; produces `ActionPlan`; compatible with Conversation Memory, Response Formatter, Future Tool Runtime, Future Agent Runtime |
+| **Integration** | Consumes `CoachResponse`; produces `ActionPlan`; compatible with Conversation Memory, Response Formatter, Tool Runtime, Future Agent Runtime |
 | **Design** | **No domain execution, networking, persistence, provider SDK, AI calls, or business logic.** Immutable action planning only |
 
 Full detail: [ACTION_ENGINE.md](./ACTION_ENGINE.md) (Action Planning + Execution Pipeline).
+
+### Tool Runtime Engine (`features/tool-runtime`) — Sprint 20.1
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Orchestrate immutable `ActionPlan` execution through Domain Tool Adapters |
+| **Flow** | ActionPlan → Tool Runtime → Tool Resolver → Execution Pipeline → Domain Tool Adapters → Tool Results → Execution Result |
+| **Models** | `ToolRuntime`, `ToolExecutionPlan`, `ToolExecutionStep`, `ToolExecutionRequest`, `ToolExecutionContext`, `ToolExecutionState`, `ToolExecutionStatus`, `ToolExecutionResult`, `ToolExecutionSummary`, `ToolExecutionSnapshot`, `ToolExecutionStatistics`, `ToolExecutionMetadata`, `ToolResult`, `ToolFailure`, `ToolSuccess`, `ToolDispatchResult`, `ToolPipelineResult`, `ToolRuntimePackage` |
+| **Runtime** | `ToolRuntimeEngine`, `ExecutionPipeline`, `ExecutionCoordinator`, `ExecutionScheduler`, `ExecutionContextManager` |
+| **Resolver** | Tool / Adapter / Capability / Action |
+| **Dispatch** | `ToolDispatcher`, `DispatchContext`, `DispatchPolicy` |
+| **Executors** | Sequential / Parallel / Conditional / Composite (contracts; no real parallelism required) |
+| **Policies** | Retry / Timeout / Ordering / Failure / Recovery / Safety |
+| **Application API** | `executeActionPlan`, `buildExecutionPlan`, `validateExecution`, `estimateExecution`, `describeRuntime` |
+| **Integration** | Consumes `ActionPlan`; uses Domain Tool Adapters; produces `ToolExecutionResult` |
+| **Design** | **No domain business logic, networking, persistence, provider SDK, OpenAI, Prompt Builder, or Conversation logic.** Orchestration only |
+
+Full detail: [TOOL_RUNTIME.md](./TOOL_RUNTIME.md) (Execution Pipeline + Execution Flow).
 
 ---
 

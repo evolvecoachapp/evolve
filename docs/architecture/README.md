@@ -33,6 +33,7 @@
 - [RESPONSE_FORMATTER.md](../RESPONSE_FORMATTER.md) — Response Formatter, Coach Response, Formatting Pipeline, UI / Action Engine
 - [ACTION_ENGINE.md](../ACTION_ENGINE.md) — Action Engine, ActionPlan, Action Planning, Execution Pipeline contracts
 - [ACTION_PLANNING.md](../ACTION_PLANNING.md) — Action Planning planners, selectors, policies
+- [TOOL_RUNTIME.md](../TOOL_RUNTIME.md) — Tool Runtime Engine, Execution Pipeline, Execution Flow
 - [AI_SYSTEM.md](../AI_SYSTEM.md) — Coach + mobile AI runtime pipeline
 - [INTEGRATION_TESTING.md](../INTEGRATION_TESTING.md) — Integration framework (fixtures, builders, assertions, scenarios, goldens)
 

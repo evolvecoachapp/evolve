@@ -1792,4 +1792,34 @@ Add `app/src/features/action-engine/` with immutable Action Plan models, action 
 
 ---
 
-*New decisions are appended as Decision 058, 059, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 058: Tool Runtime Engine Foundation (Sprint 20.1)
+
+**Date:** 2026-07-23
+
+**Status:** Accepted
+
+**Context:**
+Sprint 20.1 must introduce a Tool Runtime that receives an immutable `ActionPlan` and coordinates `ActionStep` execution through existing Domain Tool Adapters. The runtime must never contain business logic, never execute domain logic directly, and must only orchestrate. Networking, persistence, provider SDKs, OpenAI, Prompt Builder, and Conversation logic are forbidden.
+
+**Decision:**
+Add `app/src/features/tool-runtime/` with immutable execution models, runtime orchestration (`ToolRuntimeEngine`, `ExecutionPipeline`, coordinator / scheduler / context manager), resolver architecture (Action / Adapter / Capability / Tool), dispatcher (routing only), builders, validators, executor contracts, structural policies, selectors, `ToolRuntimeService`, and a narrow application API (`executeActionPlan`, `buildExecutionPlan`, `validateExecution`, `estimateExecution`, `describeRuntime`). Consume `ActionPlan` from Action Engine. Use Domain Tool Adapters. Produce `ToolExecutionResult` / `ToolRuntimePackage`.
+
+**Why:**
+- **Dedicated Tool Runtime boundary** keeps orchestration separate from Action Engine planning and domain adapters.
+- **Resolver + Dispatcher split** ensures ActionSteps are bound to adapters without embedding domain logic.
+- **Execution Pipeline** provides a deterministic, testable path from plan to immutable results.
+- **Mockable adapters** keep tests free of real domain services.
+
+**Alternatives considered:**
+- **Execute inside Action Engine** — rejected: Action Engine owns planning only.
+- **Call domain services directly from runtime** — rejected: Domain Tool Adapters own translation; domain remains source of truth.
+- **Embed provider / OpenAI / networking** — rejected: sprint forbids provider SDKs and networking.
+
+**Consequences:**
+- Documentation references [TOOL_RUNTIME.md](./TOOL_RUNTIME.md).
+- Consumers call `executeActionPlan` instead of invoking adapters ad hoc from ActionPlans.
+- Tool Runtime remains free of domain business logic, networking, persistence, and provider SDKs.
+
+---
+
+*New decisions are appended as Decision 059, 060, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

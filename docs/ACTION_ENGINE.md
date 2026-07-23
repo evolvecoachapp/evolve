@@ -20,7 +20,7 @@ Action Engine
       ↓
 ActionPlan
       ↓
-Future Tool Runtime
+Tool Runtime
       ↓
 Domain Tool Adapters
       ↓
@@ -124,10 +124,12 @@ PlanningActionExecutor.prepare
       ↓
 ExecutionRequest + ActionExecutionPlan
       ↓
-Future Tool Runtime (implements ActionExecutor.execute)
+Tool Runtime (implements ActionExecutor.execute)
       ↓
 Domain Tool Adapters
 ```
+
+See [TOOL_RUNTIME.md](./TOOL_RUNTIME.md).
 
 | Contract | Role |
 |----------|------|
@@ -177,7 +179,7 @@ Internals (planners, selectors, policies) are not part of the public application
 |-----------|----------|
 | Consumes | `CoachResponse` (`features/response-formatter`) |
 | Produces | `ActionPlan` / `ActionPackage` |
-| Compatible with | Conversation Memory, Response Formatter, Future Tool Runtime, Future Agent Runtime |
+| Compatible with | Conversation Memory, Response Formatter, Tool Runtime, Future Agent Runtime |
 | Must not | Execute domain tools, call providers, persist state |
 
 ---
