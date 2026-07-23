@@ -54,9 +54,19 @@ export class InMemoryToolRepository implements ToolRepository {
 
 function cloneDefinition(definition: ToolDefinition): ToolDefinition {
   return Object.freeze({
+    id: definition.id,
     name: definition.name,
     description: definition.description,
+    category: definition.category,
     capabilities: Object.freeze([...definition.capabilities]),
+    schema: Object.freeze({
+      parameters: Object.freeze(
+        definition.schema.parameters.map((parameter) =>
+          Object.freeze({ ...parameter }),
+        ),
+      ),
+      returns: definition.schema.returns,
+    }),
     metadata: Object.freeze({
       version: definition.metadata.version,
       tags: Object.freeze([...definition.metadata.tags]),

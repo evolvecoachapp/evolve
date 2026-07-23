@@ -3,9 +3,9 @@ import type { ToolDefinition } from "../models/ToolDefinition";
 import type { AITool } from "../tools/AITool";
 
 /**
- * Immutable catalog of executable tools.
+ * Legacy registry surface used by Conversation / Workflow.
  *
- * Registration happens before freeze; lookups never mutate.
+ * Foundation consumers prefer `IToolRegistry`.
  */
 export interface ToolRegistry {
   /** Register a tool before the registry is frozen. */
@@ -18,3 +18,5 @@ export interface ToolRegistry {
   /** Whether further registration is blocked. */
   isFrozen(): boolean;
 }
+
+export type { IToolRegistry } from "../contracts/IToolRegistry";

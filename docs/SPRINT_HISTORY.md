@@ -883,3 +883,18 @@
 | **Status** | Complete |
 | **Notes** | No OpenAI streaming implementation, memory, tool calling, conversation history, or provider-specific code. Does not modify AI Execution Pipeline, AI Provider Abstraction, or OpenAI Provider |
 
+### Sprint 20.1 — Tool Calling Foundation
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | 20.1.0 |
+| **Title** | Tool Calling Foundation |
+| **Date** | 2026-07-23 |
+| **Goal** | Provider-independent tool execution layer — LLM requests tools; domain remains source of truth |
+| **Architecture** | Streaming Engine → **Tool Calling Engine** → Tool Registry → Tool Executor → Domain Tools → Tool Result → AI Response. Module: `app/src/features/tool-calling/`. |
+| **Main components** | **Models:** ToolDefinition, ToolDescriptor, ToolCategory, ToolCapability, ToolCall, ToolCallRequest, ToolCallResponse, ToolExecution, ToolExecutionContext, ToolExecutionStatus, ToolExecutionResult, ToolExecutionMetadata, ToolExecutionError, ToolInput, ToolOutput, ToolParameter, ToolSchema, ToolRegistrySnapshot, ToolEngineResult. **Contracts:** ITool, IToolExecutor, IToolRegistry, IToolValidator, IToolProvider. **Engine:** `ToolCallingEngine`. **Executor:** `FoundationToolExecutor`. **Registry:** `FoundationToolRegistry`. **Application API:** `executeTool`, `listTools`, `describeTool`. |
+| **Tests** | Registry, engine, executor, validators, builders, application, integration, regression |
+| **Results** | Dedicated Tool Calling Foundation. ADR-053 recorded. Docs: TOOL_CALLING_FOUNDATION.md (Tool Registry + Execution Flow + Future Domain Tool Integration). |
+| **Status** | Complete |
+| **Notes** | No Workout/Recovery/Nutrition/Coach implementations, business logic, or provider-specific code. Legacy Conversation/Workflow tool surfaces preserved. Does not modify Streaming Foundation, AI Execution Pipeline, or AI Provider Abstraction internals |
+

@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-23  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-052). Append only — never renumber.  
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-053). Append only — never renumber.  
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -1641,4 +1641,34 @@ Create `app/src/features/streaming/` with immutable stream models (`StreamReques
 
 ---
 
-*New decisions are appended as Decision 053, 054, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 053: Tool Calling Foundation (Sprint 20.1)
+
+**Date:** 2026-07-23
+
+**Status:** Accepted
+
+**Context:**
+Sprint 20.1 must introduce a Tool Calling Foundation that lets AI providers invoke domain capabilities through a provider-independent tool execution layer. The LLM must only request tool execution; the domain remains the source of truth. The foundation must not implement Workout / Recovery / Nutrition / Coach tools, business logic, or provider-specific logic.
+
+**Decision:**
+Evolve `app/src/features/tool-calling/` into a dedicated Tool Calling Foundation with immutable models (`ToolDefinition`, `ToolDescriptor`, `ToolCategory`, `ToolCapability`, `ToolCall`, `ToolCallRequest`, `ToolCallResponse`, `ToolExecution`, `ToolExecutionContext`, `ToolExecutionStatus`, `ToolExecutionResult`, `ToolExecutionMetadata`, `ToolExecutionError`, `ToolInput`, `ToolOutput`, `ToolParameter`, `ToolSchema`, `ToolRegistrySnapshot`, `ToolEngineResult`), contracts (`ITool`, `IToolExecutor`, `IToolRegistry`, `IToolValidator`, `IToolProvider`), `ToolCallingEngine`, `FoundationToolExecutor`, `FoundationToolRegistry`, validators, builders, utilities, a service facade, and a narrow application API (`executeTool`, `listTools`, `describeTool`). Legacy Conversation/Workflow `AITool` / `ToolExecutor` / `ToolRequest` / `ToolResult` surfaces remain for compatibility. Domain tool implementations stay outside this foundation.
+
+**Why:**
+- **Dedicated tool boundary** keeps Streaming / AI Execution / providers free of domain execution.
+- **Provider-independent contracts** allow OpenAI (and future vendors) to map function-calls externally without foundation vendor code.
+- **Registry + executor split** keeps catalog concerns separate from orchestration.
+- **Immutable results** preserve auditability for coach / conversation layers.
+
+**Alternatives considered:**
+- **Execute tools inside Streaming Foundation** — rejected: streaming owns chunks/tokens; tool execution is a distinct domain boundary.
+- **Implement Workout/Coach tools in this sprint** — rejected: explicitly deferred to Future Domain Tool Integration.
+- **Vendor-specific tool schemas in the foundation** — rejected: provider mapping must stay outside.
+
+**Consequences:**
+- Documentation references [TOOL_CALLING_FOUNDATION.md](./TOOL_CALLING_FOUNDATION.md) (Tool Registry + Execution Flow + Future Domain Tool Integration).
+- Consumers call `executeTool` / `listTools` / `describeTool` instead of talking to the engine directly.
+- Tool Calling Foundation remains free of domain business logic and provider SDKs; adapters and domain tools stay outside.
+
+---
+
+*New decisions are appended as Decision 054, 055, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

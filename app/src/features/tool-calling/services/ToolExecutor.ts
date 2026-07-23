@@ -69,10 +69,14 @@ export class ToolExecutor {
     const execution: ToolExecution = Object.freeze({
       id: createId("exec"),
       requestId: cloned.id,
+      callId: cloned.id,
+      toolId: cloned.toolName,
       toolName: cloned.toolName,
       status: "running",
+      context: null,
       startedAt: context.now,
       completedAt: null,
+      result: null,
     });
 
     try {

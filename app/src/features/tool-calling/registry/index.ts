@@ -1,2 +1,5 @@
-export type { ToolRegistry } from "./ToolRegistry";
-export { InMemoryToolRegistry } from "./InMemoryToolRegistry";
+export type { ToolRegistry, IToolRegistry } from "./ToolRegistry";
+export {
+  FoundationToolRegistry,
+  InMemoryToolRegistry,
+} from "./InMemoryToolRegistry";

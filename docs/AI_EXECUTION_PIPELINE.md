@@ -175,14 +175,15 @@ Reserved architecture only in this sprint.
 
 ## Future Tool Calling
 
-Reserved architecture only in this sprint.
+Tool execution is owned by [TOOL_CALLING_FOUNDATION.md](./TOOL_CALLING_FOUNDATION.md) (Sprint 20.1).
 
-| Concern | Future |
-|---------|--------|
-| Policy | Flip `ExecutionPolicy.allowTools` when supported |
-| Stages | Optional tool-loop stage after provider response |
+| Concern | Status / Future |
+|---------|-----------------|
+| Foundation | Implemented in `features/tool-calling` |
+| Policy | Flip `ExecutionPolicy.allowTools` when pipeline tool-loop is wired |
+| Stages | Optional tool-loop stage after provider response (future) |
 | Provider | Capability-gated tools via abstraction contracts |
-| Rules | No tool registry / execution in this foundation |
+| Rules | No tool registry / execution inside AI Execution Pipeline — delegate to Tool Calling Foundation |
 
 ---
 

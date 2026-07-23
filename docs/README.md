@@ -52,8 +52,9 @@
 | [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md) | OpenAI Provider, Provider Flow, Configuration, Future Streaming Support |
 | [AI_EXECUTION_PIPELINE.md](./AI_EXECUTION_PIPELINE.md) | AI Execution Pipeline, Execution Lifecycle, Future Retry / Tool Calling |
 | [STREAMING_FOUNDATION.md](./STREAMING_FOUNDATION.md) | Streaming Foundation, Stream Lifecycle, Future Tool Calling Integration |
+| [TOOL_CALLING_FOUNDATION.md](./TOOL_CALLING_FOUNDATION.md) | Tool Calling Foundation, Tool Registry, Execution Flow, Future Domain Tool Integration |
 | [TECH_STACK.md](./TECH_STACK.md) | Languages, frameworks, versions, future tech |
-| [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-052 (append-only) |
+| [DECISIONS.md](./DECISIONS.md) | ADR-001 through ADR-053 (append-only) |
 | [AI_SYSTEM.md](./AI_SYSTEM.md) | Coach, LLM, engines, memory, mobile workout pipeline |
 | [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md) | Integration framework for the workout pipeline |
 | [../.cursor/rules/EVOLVE_ARCHITECTURE.md](../.cursor/rules/EVOLVE_ARCHITECTURE.md) | Deep-dive architecture reference |

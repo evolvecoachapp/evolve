@@ -169,15 +169,16 @@ Engine / handler internals are not part of the public API surface.
 
 ## Future Tool Calling Integration
 
-Reserved architecture only in this sprint.
+Tool execution is owned by [TOOL_CALLING_FOUNDATION.md](./TOOL_CALLING_FOUNDATION.md) (Sprint 20.1).
 
-| Concern | Future |
-|---------|--------|
-| Events | Optional tool-call / tool-result stream events |
-| Handlers | ToolCallHandler after token/chunk aggregation |
-| State | Tool call buffers on `StreamState` (separate from content) |
-| Rules | Keep tool execution out of Streaming Foundation; Conversation / Execution layers own tools |
-| Provider | Capability-gated via AI Provider Abstraction |
+| Concern | Status / Future |
+|---------|-----------------|
+| Foundation | Implemented in `features/tool-calling` (`executeTool` / registry / executor) |
+| Events | Optional tool-call / tool-result stream events (still future on Streaming Foundation) |
+| Handlers | ToolCallHandler after token/chunk aggregation (future) |
+| State | Tool call buffers on `StreamState` (separate from content) (future) |
+| Rules | Keep tool execution out of Streaming Foundation; Tool Calling Foundation owns tools |
+| Provider | Capability-gated via AI Provider Abstraction; map vendor calls → `ToolCallRequest` externally |
 
 ---
 
