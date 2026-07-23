@@ -127,9 +127,12 @@ AI Provider Abstraction          ← Sprint 19.2 (implemented) — provider cont
   ↓
 OpenAI Provider                  ← Sprint 19.3 (implemented) — concrete OpenAI adapter → AIResponse
   (`app/src/features/openai-provider/`)
+  ↓
+AI Execution Pipeline            ← Sprint 19.4 (implemented) — provider-agnostic execution orchestration
+  (`app/src/features/ai-execution/`)
 ```
 
-Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md). Insight Engine: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md). Coach Intelligence: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md). Conversation Orchestrator: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md). Prompt Composition: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md). AI Provider Abstraction: [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md). OpenAI Provider: [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md).
+Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). Integration tests: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md). DI: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Decision Intelligence: [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md). Workout Runtime: [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md). Rest Runtime: [REST_RUNTIME.md](./REST_RUNTIME.md). Domain Events: [DOMAIN_EVENTS.md](./DOMAIN_EVENTS.md). Performance Engine: [PERFORMANCE_ENGINE.md](./PERFORMANCE_ENGINE.md). Achievement Engine: [ACHIEVEMENT_ENGINE.md](./ACHIEVEMENT_ENGINE.md). Athlete History: [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md). Insight Engine: [INSIGHT_ENGINE.md](./INSIGHT_ENGINE.md). Coach Intelligence: [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md). Conversation Orchestrator: [CONVERSATION_ORCHESTRATOR.md](./CONVERSATION_ORCHESTRATOR.md). Prompt Composition: [PROMPT_COMPOSITION.md](./PROMPT_COMPOSITION.md). AI Provider Abstraction: [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md). OpenAI Provider: [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md). AI Execution Pipeline: [AI_EXECUTION_PIPELINE.md](./AI_EXECUTION_PIPELINE.md).
 
 ### Exercise Knowledge Base (`features/exercise-kb`)
 
@@ -489,6 +492,22 @@ Full detail: [AI_PROVIDER_ABSTRACTION.md](./AI_PROVIDER_ABSTRACTION.md) (Provide
 | **Design** | **No streaming, memory, tool calling, or conversation history.** Provider-specific logic stays in this layer |
 
 Full detail: [OPENAI_PROVIDER.md](./OPENAI_PROVIDER.md) (Provider Flow + Configuration + Future Streaming Support).
+
+### AI Execution Pipeline (`features/ai-execution`) — Sprint 19.4
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Provider-agnostic orchestration of AI execution over Prompt Packages |
+| **Flow** | Prompt Package → AI Execution Pipeline → AI Provider → AI Response |
+| **Models** | `AIExecutionRequest`, `AIExecutionResult`, `AIExecutionContext`, `AIExecutionStage`, `AIExecutionState`, `AIExecutionStatus`, `AIExecutionLifecycle`, `AIExecutionTrace`, `AIExecutionMetrics`, `AIExecutionMetadata`, `AIExecutionError`, `AIExecutionEvent`, `AIExecutionCancellation`, `AIExecutionTimeout`, `AIExecutionPolicy`, `AIExecutionSummary` |
+| **Pipeline** | `AIExecutionPipeline` — validate → context → resolve provider → execute → metrics → result |
+| **Stages** | Validation / Context / ProviderResolution / Execution / Result / Lifecycle |
+| **Policies** | `RetryPolicy`, `TimeoutPolicy`, `CancellationPolicy`, `ExecutionPolicy` (interfaces only; no algorithms) |
+| **Application API** | `executeAI`, `createExecutionContext`, `summarizeExecution` |
+| **Integration** | Consumes `PromptPackage` + AI Provider Abstraction + OpenAI via `IAIProviderExecutor` wrapper; does not modify previous domains |
+| **Design** | **No streaming, retry implementation, tool calling, memory, HTTP, or provider-specific code.** Pipeline only |
+
+Full detail: [AI_EXECUTION_PIPELINE.md](./AI_EXECUTION_PIPELINE.md) (Execution Lifecycle + Future Streaming / Retry / Tool Calling).
 
 ---
 

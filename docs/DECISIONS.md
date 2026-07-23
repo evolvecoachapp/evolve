@@ -1581,4 +1581,34 @@ Create `app/src/features/openai-provider/` with immutable OpenAI models (`OpenAI
 
 ---
 
-*New decisions are appended as Decision 051, 052, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 051: AI Execution Pipeline Foundation (Sprint 19.4)
+
+**Date:** 2026-07-23
+
+**Status:** Accepted
+
+**Context:**
+Sprint 19.4 must introduce an AI Execution Pipeline that orchestrates AI execution independently of any provider. The pipeline must coordinate validation, execution context, provider resolution, and execution lifecycle without implementing business logic, provider logic, streaming, retry algorithms, tool calling, memory, or HTTP. Previous domains must not be modified.
+
+**Decision:**
+Create `app/src/features/ai-execution/` with immutable execution models (`AIExecutionRequest`, `AIExecutionResult`, `AIExecutionContext`, `AIExecutionStage`, `AIExecutionState`, `AIExecutionStatus`, `AIExecutionLifecycle`, `AIExecutionTrace`, `AIExecutionMetrics`, `AIExecutionMetadata`, `AIExecutionError`, `AIExecutionEvent`, `AIExecutionCancellation`, `AIExecutionTimeout`, `AIExecutionPolicy`, `AIExecutionSummary`), modular stages (`ValidationStage`, `ContextStage`, `ProviderResolutionStage`, `ExecutionStage`, `ResultStage`, `LifecycleStage`), policy interfaces only (`RetryPolicy`, `TimeoutPolicy`, `CancellationPolicy`, `ExecutionPolicy`), provider-agnostic `IAIProviderExecutor` boundary, `AIExecutionPipeline`, validators, builders, utilities, a service facade, and a narrow application API (`executeAI`, `createExecutionContext`, `summarizeExecution`). Concrete providers (including OpenAI) are consumed via external executor wrappers. Streaming, retry algorithms, and tool calling remain architecture placeholders only.
+
+**Why:**
+- **Dedicated execution boundary** keeps providers free of orchestration lifecycle concerns.
+- **Modular stages** keep validation / context / resolution / execution / result / lifecycle single-responsibility and testable.
+- **Provider-agnostic executor** allows OpenAI (and future vendors) without pipeline provider-specific code or modifying prior domains.
+- **Policy interfaces first** reserve retry / timeout / cancellation / streaming / tools without shipping algorithms prematurely.
+
+**Alternatives considered:**
+- **Fold execution into OpenAI Provider** — rejected: execution lifecycle is provider-agnostic and must work across future vendors.
+- **Add `execute()` to `IAIProvider` now** — rejected: would modify AI Provider Abstraction; sprint forbids changing previous domains.
+- **Implement streaming / retry / tools now** — rejected: explicitly deferred to Future Streaming / Retry / Tool Calling.
+
+**Consequences:**
+- Documentation references [AI_EXECUTION_PIPELINE.md](./AI_EXECUTION_PIPELINE.md) (Execution Lifecycle + Future Streaming / Retry / Tool Calling).
+- Consumers call `executeAI` instead of talking to pipeline stages directly.
+- AI Execution Pipeline remains free of HTTP and provider SDKs; adapters stay outside stages.
+
+---
+
+*New decisions are appended as Decision 052, 053, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

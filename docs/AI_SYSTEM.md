@@ -120,6 +120,7 @@ Supporting orchestration pieces also present: Memory (conversation persistence a
 - Prompt Composition Engine (19.1) transforms `ConversationContext` into an immutable `PromptPackage` of structured blocks — **no AI**, networking, HTTP, OpenAI/Anthropic/Gemini/Ollama, or provider-specific string prompt generation.
 - AI Provider Abstraction (19.2) defines immutable provider contracts, registry, and orchestration primitives over `PromptPackage` — vendor-neutral; no SDK leakage into the abstraction layer.
 - OpenAI Provider (19.3) is the first concrete adapter: `PromptPackage` → OpenAI Client (SDK) → standardized `AIResponse` — **no** streaming, memory, tool calling, or conversation history; Anthropic / Gemini / Ollama remain future adapters.
+- AI Execution Pipeline (19.4) orchestrates provider-agnostic execution: `PromptPackage` → validate/context/resolve/execute/result → `AIResponse` — **no** streaming, retry algorithms, tool calling, memory, HTTP, or provider-specific code inside the pipeline.
 
 ---
 
