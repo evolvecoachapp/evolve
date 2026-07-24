@@ -2178,4 +2178,33 @@ Introduce `app/src/features/coaching-session/` with immutable models (`CoachingS
 
 ---
 
-*New decisions are appended as Decision 071, 072, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 071: Athlete State Engine Foundation (Sprint 22.1)
+
+**Date:** 2026-07-25  
+**Status:** Accepted  
+
+**Context:**
+Sprint 22.1 must introduce an Athlete State Engine as the single immutable source of truth describing the current state of an athlete. It must aggregate physical, physiological, nutritional, recovery, and coaching information into a unified athlete model — without business calculations, AI reasoning, persistence, networking, or UI.
+
+**Decision:**
+Introduce `app/src/features/athlete-state/` with immutable models (`AthleteState`, `AthleteSnapshot`, `AthleteHistory`, `AthleteTimeline`, `StateSummary`, `CoachSupervisorContext`, …), `AthleteStateEngine` / `AthleteStateCoordinator` / `AthleteStateManager`, deterministic aggregation / evolution / builders / validators / policies / selectors, specialist + coaching-session ports (with mocks), `AthleteStateService`, and a narrow application API (`buildAthleteState`, `updateAthleteState`, `createSnapshot`, `describeAthleteState`, `validateAthleteState`). Document boundaries and ADR-071.
+
+**Why:**
+- **State representation ≠ domain calculation** keeps readiness / load / nutrition math in specialist engines.
+- **Ports for specialists + session** enable deterministic tests without provider SDKs or hard-wiring agents.
+- **Immutable versioned evolution** gives a stable athlete truth for Coach Supervisor and later consumers.
+- **Narrow public API** prevents leaking internal aggregation / evolution modules.
+
+**Alternatives considered:**
+- **Extend athlete-context / athlete-history only** — rejected: those modules own profile inputs and chronological journey facts, not unified current-state aggregation.
+- **Embed athlete aggregate inside Coach Supervisor** — rejected: Supervisor owns multi-agent orchestration, not athlete state truth.
+- **AI-based state inference** — rejected: sprint forbids AI reasoning / prompts / calculations.
+
+**Consequences:**
+- Documentation updates: [ATHLETE_STATE_ENGINE.md](./ATHLETE_STATE_ENGINE.md), [STATE_MANAGEMENT.md](./STATE_MANAGEMENT.md), [AI_RUNTIME.md](./AI_RUNTIME.md), [AGENT_PLATFORM.md](./AGENT_PLATFORM.md), [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [architecture/README.md](./architecture/README.md).
+- Athlete State Engine remains free of AI, prompts, providers, networking, persistence, UI, and business calculations.
+- Specialist agents and Coaching Session Runtime are unchanged; consumed via ports.
+
+---
+
+*New decisions are appended as Decision 072, 073, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

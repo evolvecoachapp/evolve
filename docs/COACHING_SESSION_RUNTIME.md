@@ -123,6 +123,8 @@ Root export: models + application + `CoachingSessionService` only — internal m
 |----------|-------|
 | Session outputs | `SessionResult`, `SessionContext`, `SessionSummary` |
 
+Athlete State Engine (Sprint 22.1) consumes coaching-session contributions via `CoachingSessionPort` and produces `AthleteState` / `CoachSupervisorContext` for supervisor handoff. See [ATHLETE_STATE_ENGINE.md](./ATHLETE_STATE_ENGINE.md).
+
 ---
 
 ## Design Rules
@@ -134,4 +136,4 @@ Root export: models + application + `CoachingSessionService` only — internal m
 - No networking
 - No persistence
 - Session orchestration only
-`}
+}
