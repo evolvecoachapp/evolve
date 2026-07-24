@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-23  
+**Last Updated:** 2026-07-25  
 **Purpose:** Coach architecture, LLM abstraction, engines, memory, and conversation flow.  
 **Source of Truth:** Yes — for AI subsystem design (endpoints: [API_STATUS.md](./API_STATUS.md)).
 ---
@@ -13,6 +13,8 @@
 Users interact with **one Coach** — a unified conversational interface. Multiple specialized engines operate behind the scenes; the user never selects engines or receives fragmented responses.
 
 On mobile, the Coach conversation path can drive a **deterministic workout pipeline** coordinated by the Program Generation Orchestrator (blueprint → knowledge → selection → programming → progression → adaptation → assembly).
+
+Coach interaction orchestration (Sprint 22.0): Conversation Runtime → [Coaching Session Runtime](./COACHING_SESSION_RUNTIME.md) → Coach Supervisor → Multi-Agent Platform → Unified Coach Response. See [AI_RUNTIME.md](./AI_RUNTIME.md) and [SESSION_LIFECYCLE.md](./SESSION_LIFECYCLE.md).
 
 ---
 

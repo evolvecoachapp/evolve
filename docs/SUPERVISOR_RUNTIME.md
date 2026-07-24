@@ -16,9 +16,11 @@ Related: [COACH_SUPERVISOR.md](./COACH_SUPERVISOR.md), [SUPERVISOR_ROUTING.md](.
 ```
 User Request
       ↓
-Agent Runtime                    (select / execute Coach Supervisor agent)
+Conversation Runtime
       ↓
-Coach Supervisor                 ← Sprint 21.8 foundation (implemented)
+Coaching Session Runtime         ← Sprint 22.0 (session lifecycle; coordinates Supervisor)
+      ↓
+Agent Runtime / Coach Supervisor ← Sprint 21.8 foundation (implemented)
       ↓
 Supervisor Routing Engine        ← Sprint 21.7 foundation (plan only)
       ↓
@@ -71,8 +73,11 @@ Coach Supervisor remains:
 
 | Module | Public entry |
 |--------|----------------|
+| Coaching Session Runtime | `startSession`, `continueSession`, `endSession`, `describeSession`, `validateSession` |
 | Coach Supervisor | `processCoachRequest`, `buildCoordinationPlan`, `aggregateResults`, `describeSupervisorCapabilities`, `validateSupervisorPlan` |
 | Supervisor Routing | `buildRoutingPlan`, `resolveRouting`, `validateRoutingPlan`, `describeRouting`, `buildRoutingSnapshot` |
 | Agent Capability | `registerCapability`, `resolveCapability`, … |
 | Agent Collaboration | `createCollaborationPlan`, `dispatchCollaboration`, … |
 | Agent Runtime | `executeAgent`, … |
+
+See also: [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [SESSION_LIFECYCLE.md](./SESSION_LIFECYCLE.md), [AI_RUNTIME.md](./AI_RUNTIME.md).

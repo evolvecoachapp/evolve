@@ -3,13 +3,13 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-24  
+**Last Updated:** 2026-07-25  
 **Purpose:** Index of subsystem architecture diagrams and DI / Composition Root docs.  
 **Source of Truth:** Partial — summary diagrams live in linked docs.
 
 ## Primary diagrams
 
-- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline + Composition Root + Decision Intelligence + Workout/Rest Runtime + Domain Events + Performance Engine + Achievement Engine + Athlete History + Recovery Intelligence + Insight Engine + Coach Intelligence + Conversation Orchestrator + Prompt Builder + Prompt Composition Engine + AI Provider Abstraction + OpenAI Provider + AI Execution Pipeline + Streaming Foundation + Tool Calling Foundation + Domain Tool Adapters + Response Formatter + Action Engine + Tool Runtime + Agent Framework + Agent Runtime + Workout Agent + Nutrition Agent + Recovery Agent + Coach Agent + Coach Supervisor + Supervisor Routing + Agent Capability + Agent Collaboration + Conversation Memory dependency flow
+- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline + Composition Root + Decision Intelligence + Workout/Rest Runtime + Domain Events + Performance Engine + Achievement Engine + Athlete History + Recovery Intelligence + Insight Engine + Coach Intelligence + Conversation Orchestrator + Prompt Builder + Prompt Composition Engine + AI Provider Abstraction + OpenAI Provider + AI Execution Pipeline + Streaming Foundation + Tool Calling Foundation + Domain Tool Adapters + Response Formatter + Action Engine + Tool Runtime + Agent Framework + Agent Runtime + Workout Agent + Nutrition Agent + Recovery Agent + Coach Agent + Coaching Session Runtime + Coach Supervisor + Supervisor Routing + Agent Capability + Agent Collaboration + Conversation Memory dependency flow
 - [COMPOSITION_ROOT.md](../COMPOSITION_ROOT.md) — Composition Root, Dependency Graph, Factories, DI, Service Lifecycle
 - [DECISION_INTELLIGENCE.md](../DECISION_INTELLIGENCE.md) — Decision graph, explainability, execution reports, Coach AI preparation
 - [WORKOUT_RUNTIME.md](../WORKOUT_RUNTIME.md) — Live WorkoutSession execution state, session lifecycle, runtime state model
@@ -42,6 +42,9 @@
 - [RECOVERY_AGENT.md](../RECOVERY_AGENT.md) — Recovery Agent, reasoning / planning layers, RecoveryAgentResult
 - [COACH_AGENT.md](../COACH_AGENT.md) — Coach Agent (meta-agent), coordinator / merger, CoachAgentResult
 - [COACH_SUPERVISOR.md](../COACH_SUPERVISOR.md) — Coach Supervisor Foundation, orchestration → UnifiedCoachResponse
+- [COACHING_SESSION_RUNTIME.md](../COACHING_SESSION_RUNTIME.md) — Coaching Session Runtime, session lifecycle between Conversation Runtime and Coach Supervisor
+- [SESSION_LIFECYCLE.md](../SESSION_LIFECYCLE.md) — Coaching session statuses, phases, and transitions
+- [AI_RUNTIME.md](../AI_RUNTIME.md) — Mobile AI / coach runtime stack (Conversation → Session → Supervisor)
 - [AGENT_PLATFORM.md](../AGENT_PLATFORM.md) — Multi-agent platform stack index
 - [AGENT_COLLABORATION.md](../AGENT_COLLABORATION.md) — Agent Collaboration Foundation, planning / dispatch / aggregation
 - [AGENT_CAPABILITY.md](../AGENT_CAPABILITY.md) — Agent Capability Registry Foundation, resolve / register / query

@@ -156,19 +156,19 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 
 ## Last Completed Sprint
 
-**21.8 — Coach Supervisor Foundation** (2026-07-24)
+**22.0 — Coaching Session Runtime** (2026-07-25)
 
-- `features/coach-supervisor` central multi-agent orchestrator (request → routing → collaboration → aggregation → `UnifiedCoachResponse`)
-- Immutable models, planners, coordination, aggregation, selectors, policies, validators, builders, `CoachSupervisorService`, Agent Framework `IAgent` (`coach_supervisor`)
-- Consumes Routing + Collaboration via ports (mocks in tests); no AI, prompts, networking, persistence, or domain business logic
+- `features/coaching-session` session orchestration between Conversation Runtime and Coach Supervisor (`startSession` / `continueSession` / `endSession`)
+- Immutable models, lifecycle state machine, context/history/checkpoints, planners, policies, validators, builders, `CoachingSessionService`
+- Consumes Conversation Runtime + Coach Supervisor via ports (mocks in tests); produces `SessionResult` / `SessionContext` / `SessionSummary` — no AI, prompts, networking, persistence, or domain business logic
 
-Previous: **21.7 — Supervisor Routing Engine Foundation**, **21.6 — Agent Capability Registry Foundation**, **21.5 — Agent Collaboration Foundation**
+Previous: **21.8 — Coach Supervisor Foundation**, **21.7 — Supervisor Routing Engine Foundation**, **21.6 — Agent Capability Registry Foundation**
 
 ---
 
 ## Next Sprint
 
-Wire live Supervisor Routing + Agent Collaboration adapters into Coach Supervisor (replace mocks) and connect Conversation Runtime consumers to `processCoachRequest` — still without embedding specialist names or domain logic in Supervisor.
+Wire Conversation Runtime consumers to Coaching Session Runtime (`startSession` / `continueSession` / `endSession`) and live Coach Supervisor adapter (replace mock port) — still without embedding domain logic in the session runtime.
 
 ---
 

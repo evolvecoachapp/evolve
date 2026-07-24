@@ -2149,4 +2149,33 @@ Introduce `app/src/features/coach-supervisor/` with immutable models (`CoachSupe
 
 ---
 
-*New decisions are appended as Decision 070, 071, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 070: Coaching Session Runtime (Sprint 22.0)
+
+**Date:** 2026-07-25  
+**Status:** Accepted  
+
+**Context:**
+Sprint 22.0 must introduce a Coaching Session Runtime that represents a complete coaching interaction. It must own session lifecycle, maintain immutable session context, and coordinate Coach Supervisor during a session — without performing business/domain logic, replacing Conversation Runtime, calling AI providers, networking, persistence, or UI.
+
+**Decision:**
+Introduce `app/src/features/coaching-session/` with immutable models (`CoachingSession`, `SessionContext`, `SessionState`, `SessionRequest`, `SessionResponse`, `SessionHistory`, `SessionSnapshot`, `SessionResult`, …), `CoachingSessionEngine` / `SessionCoordinator` / `SessionManager` / `SessionStateMachine` / `SessionLifecycleManager`, deterministic planners / builders / validators / policies, `CoachSupervisorPort` + `ConversationRuntimePort` (mocks), `CoachingSessionService`, and a narrow application API (`startSession`, `continueSession`, `endSession`, `describeSession`, `validateSession`). Document boundaries and ADR-070.
+
+**Why:**
+- **Session orchestration ≠ Conversation Runtime** keeps chat lifecycle separate from coaching-session lifecycle.
+- **Session orchestration ≠ Coach Supervisor** keeps multi-agent coordination behind a port.
+- **Immutable context / history / checkpoints** give a stable session record for later consumers.
+- **Ports for Conversation + Supervisor** enable deterministic tests without provider SDKs.
+
+**Alternatives considered:**
+- **Fold session lifecycle into Coach Supervisor** — rejected: Supervisor owns multi-agent orchestration, not conversation-facing session lifecycle.
+- **Extend Conversation Runtime with supervisor calls** — rejected: blurs boundaries; session runtime is the dedicated orchestration layer.
+- **Embed domain / AI logic in session runtime** — rejected: sprint forbids business logic, prompts, providers, Tool Runtime.
+
+**Consequences:**
+- Documentation updates: [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [SESSION_LIFECYCLE.md](./SESSION_LIFECYCLE.md), [AI_RUNTIME.md](./AI_RUNTIME.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [architecture/README.md](./architecture/README.md), [SUPERVISOR_RUNTIME.md](./SUPERVISOR_RUNTIME.md), [AGENT_PLATFORM.md](./AGENT_PLATFORM.md).
+- Coaching Session Runtime remains free of AI, prompts, providers, networking, persistence, Tool Runtime, and domain business logic.
+- Conversation Runtime and Coach Supervisor modules are unchanged; consumed via ports.
+
+---
+
+*New decisions are appended as Decision 071, 072, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

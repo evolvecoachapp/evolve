@@ -3,20 +3,22 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-24  
+**Last Updated:** 2026-07-25  
 **Purpose:** Index the EVOLVE multi-agent platform layers and how Coach Supervisor sits above specialists.  
 **Source of Truth:** Partial — detailed behavior lives in linked subsystem docs.
 
-Related: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md), [AGENT_RUNTIME.md](./AGENT_RUNTIME.md), [COACH_SUPERVISOR.md](./COACH_SUPERVISOR.md), [SUPERVISOR_ROUTING.md](./SUPERVISOR_ROUTING.md), [AGENT_CAPABILITY.md](./AGENT_CAPABILITY.md), [AGENT_COLLABORATION.md](./AGENT_COLLABORATION.md), [ARCHITECTURE.md](./ARCHITECTURE.md).
+Related: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md), [AGENT_RUNTIME.md](./AGENT_RUNTIME.md), [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [AI_RUNTIME.md](./AI_RUNTIME.md), [COACH_SUPERVISOR.md](./COACH_SUPERVISOR.md), [SUPERVISOR_ROUTING.md](./SUPERVISOR_ROUTING.md), [AGENT_CAPABILITY.md](./AGENT_CAPABILITY.md), [AGENT_COLLABORATION.md](./AGENT_COLLABORATION.md), [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ---
 
 ## Platform Stack
 
 ```
-Conversation / Agent Runtime
+Conversation Runtime
       ↓
-Coach Supervisor                 ← Sprint 21.8 (central orchestrator)
+Coaching Session Runtime         ← Sprint 22.0 (session lifecycle)
+      ↓
+Coach Supervisor                 ← Sprint 21.8 (central multi-agent orchestrator)
       ↓
 Supervisor Routing Engine        ← Sprint 21.7
       ↓
@@ -33,6 +35,7 @@ Supporting infrastructure:
 
 | Layer | Module | Role |
 |-------|--------|------|
+| Coaching Session Runtime | `features/coaching-session` | Session lifecycle + immutable context; coordinates Supervisor |
 | Agent Framework | `features/agent-framework` | Shared `IAgent` contracts, lifecycle, registry |
 | Agent Runtime | `features/agent-runtime` | Single-agent execution entry |
 | Coach Supervisor | `features/coach-supervisor` | Multi-agent orchestration → `UnifiedCoachResponse` |
