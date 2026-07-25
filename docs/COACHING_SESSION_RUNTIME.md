@@ -125,6 +125,8 @@ Root export: models + application + `CoachingSessionService` only — internal m
 
 Athlete State Engine (Sprint 22.1) consumes coaching-session contributions via `CoachingSessionPort` and produces `AthleteState` / `CoachSupervisorContext` for supervisor handoff. See [ATHLETE_STATE_ENGINE.md](./ATHLETE_STATE_ENGINE.md).
 
+Context Fusion Engine (Sprint 22.2) consumes Coaching Session Runtime (among other sources) via ports and fuses them into `UnifiedCoachingContext` for the Decision Engine. See [CONTEXT_FUSION_ENGINE.md](./CONTEXT_FUSION_ENGINE.md) and [DECISION_PIPELINE.md](./DECISION_PIPELINE.md).
+
 ---
 
 ## Design Rules

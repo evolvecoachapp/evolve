@@ -7,7 +7,7 @@
 **Purpose:** Index the EVOLVE multi-agent platform layers and how Coach Supervisor sits above specialists.  
 **Source of Truth:** Partial — detailed behavior lives in linked subsystem docs.
 
-Related: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md), [AGENT_RUNTIME.md](./AGENT_RUNTIME.md), [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [ATHLETE_STATE_ENGINE.md](./ATHLETE_STATE_ENGINE.md), [STATE_MANAGEMENT.md](./STATE_MANAGEMENT.md), [AI_RUNTIME.md](./AI_RUNTIME.md), [COACH_SUPERVISOR.md](./COACH_SUPERVISOR.md), [SUPERVISOR_ROUTING.md](./SUPERVISOR_ROUTING.md), [AGENT_CAPABILITY.md](./AGENT_CAPABILITY.md), [AGENT_COLLABORATION.md](./AGENT_COLLABORATION.md), [ARCHITECTURE.md](./ARCHITECTURE.md).
+Related: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md), [AGENT_RUNTIME.md](./AGENT_RUNTIME.md), [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [ATHLETE_STATE_ENGINE.md](./ATHLETE_STATE_ENGINE.md), [CONTEXT_FUSION_ENGINE.md](./CONTEXT_FUSION_ENGINE.md), [DECISION_PIPELINE.md](./DECISION_PIPELINE.md), [STATE_MANAGEMENT.md](./STATE_MANAGEMENT.md), [AI_RUNTIME.md](./AI_RUNTIME.md), [COACH_SUPERVISOR.md](./COACH_SUPERVISOR.md), [SUPERVISOR_ROUTING.md](./SUPERVISOR_ROUTING.md), [AGENT_CAPABILITY.md](./AGENT_CAPABILITY.md), [AGENT_COLLABORATION.md](./AGENT_COLLABORATION.md), [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ---
 
@@ -21,6 +21,10 @@ Coaching Session Runtime         ← Sprint 22.0 (session lifecycle)
 Specialist Agents (Workout / Nutrition / Recovery / Goal)
       ↓
 Athlete State Engine             ← Sprint 22.1 (immutable athlete truth)
+      ↓
+Context Fusion Engine            ← Sprint 22.2 (UnifiedCoachingContext)
+      ↓
+Decision Engine                  ← consumes fused context
       ↓
 Coach Supervisor                 ← Sprint 21.8 (central multi-agent orchestrator)
       ↓
@@ -39,6 +43,7 @@ Supporting infrastructure:
 |-------|--------|------|
 | Coaching Session Runtime | `features/coaching-session` | Session lifecycle + immutable context; coordinates Supervisor |
 | Athlete State Engine | `features/athlete-state` | Immutable current athlete truth; specialist aggregation |
+| Context Fusion Engine | `features/context-fusion` | Fuse runtimes/agents into `UnifiedCoachingContext` |
 | Agent Framework | `features/agent-framework` | Shared `IAgent` contracts, lifecycle, registry |
 | Agent Runtime | `features/agent-runtime` | Single-agent execution entry |
 | Coach Supervisor | `features/coach-supervisor` | Multi-agent orchestration → `UnifiedCoachResponse` |

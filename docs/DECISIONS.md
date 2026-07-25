@@ -2207,4 +2207,33 @@ Introduce `app/src/features/athlete-state/` with immutable models (`AthleteState
 
 ---
 
-*New decisions are appended as Decision 072, 073, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 072: Context Fusion Engine Foundation (Sprint 22.2)
+
+**Date:** 2026-07-25  
+**Status:** Accepted  
+
+**Context:**
+Sprint 22.2 must introduce a Context Fusion Engine that creates a unified coaching context from all available runtime sources (conversation, coaching session, athlete state, specialist agents, supervisor context). It must be the single fusion boundary before the Decision Engine — without AI reasoning, business calculations, persistence, networking, or UI.
+
+**Decision:**
+Introduce `app/src/features/context-fusion/` with immutable models (`UnifiedCoachingContext`, `ContextSnapshot`, `ContextSummary`, `ContextPackage`, `DecisionEngineContext`, …), `ContextFusionEngine` / `ContextFusionCoordinator` / `ContextFusionSession`, deterministic aggregation / resolution / builders / validators / policies / selectors, upstream ports (with mocks), `ContextFusionService`, and a narrow application API (`buildUnifiedContext`, `mergeContexts`, `validateUnifiedContext`, `describeContext`, `createContextSnapshot`). Document boundaries and ADR-072.
+
+**Why:**
+- **Fusion ≠ decisioning** keeps Decision Engine free of multi-source merge concerns.
+- **Ports for upstream runtimes/agents** enable deterministic tests without provider SDKs.
+- **Deterministic conflict resolution by fixed priority** avoids AI ranking.
+- **Narrow public API** prevents leaking internal aggregation / resolution modules.
+
+**Alternatives considered:**
+- **Fuse inside Decision Engine** — rejected: Decision Engine should consume one unified context, not own multi-source merge.
+- **Fuse inside Coach Supervisor** — rejected: Supervisor owns multi-agent orchestration, not coaching-context fusion.
+- **AI-based context ranking** — rejected: sprint forbids AI reasoning / prompts / calculations.
+
+**Consequences:**
+- Documentation updates: [CONTEXT_FUSION_ENGINE.md](./CONTEXT_FUSION_ENGINE.md), [DECISION_PIPELINE.md](./DECISION_PIPELINE.md), [STATE_MANAGEMENT.md](./STATE_MANAGEMENT.md), [AI_RUNTIME.md](./AI_RUNTIME.md), [AGENT_PLATFORM.md](./AGENT_PLATFORM.md), [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [architecture/README.md](./architecture/README.md).
+- Context Fusion Engine remains free of AI, prompts, providers, networking, persistence, UI, Tool Runtime, and business calculations.
+- Upstream modules are unchanged; consumed via ports.
+
+---
+
+*New decisions are appended as Decision 073, 074, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

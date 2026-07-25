@@ -7,7 +7,7 @@
 **Purpose:** Index immutable state ownership across the mobile coaching stack.  
 **Source of Truth:** Partial — subsystem details live in linked docs.
 
-Related: [ATHLETE_STATE_ENGINE.md](./ATHLETE_STATE_ENGINE.md), [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md), [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md), [ARCHITECTURE.md](./ARCHITECTURE.md).
+Related: [ATHLETE_STATE_ENGINE.md](./ATHLETE_STATE_ENGINE.md), [CONTEXT_FUSION_ENGINE.md](./CONTEXT_FUSION_ENGINE.md), [DECISION_PIPELINE.md](./DECISION_PIPELINE.md), [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md), [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md), [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ---
 
@@ -16,6 +16,7 @@ Related: [ATHLETE_STATE_ENGINE.md](./ATHLETE_STATE_ENGINE.md), [COACHING_SESSION
 | Concern | Module | Immutable model(s) | Notes |
 |---------|--------|--------------------|-------|
 | Current athlete truth | `features/athlete-state` | `AthleteState`, `AthleteSnapshot` | Sprint 22.1 — aggregation + evolution only |
+| Unified coaching context | `features/context-fusion` | `UnifiedCoachingContext`, `ContextSnapshot` | Sprint 22.2 — fusion only; feeds Decision Engine |
 | Coaching interaction lifecycle | `features/coaching-session` | `SessionContext`, `SessionSnapshot` | Sprint 22.0 |
 | Live workout execution | `features/workout-runtime` | workout session state | Runtime execution, not athlete aggregate |
 | Chronological journey facts | `features/athlete-history` | history entries / snapshots | Historical record; not current truth |
@@ -36,6 +37,20 @@ Coach Supervisor / Unified Coach Response
 ```
 
 Athlete State Engine is the **single immutable source of truth** describing the current athlete. It does not calculate readiness scores, predict outcomes, persist data, or call AI.
+
+---
+
+## Context Fusion Placement
+
+```
+Conversation + Session + Athlete State + Agents + Supervisor
+      ↓
+Context Fusion Engine         ← immutable UnifiedCoachingContext
+      ↓
+Decision Engine
+```
+
+Context Fusion Engine is the **single fusion boundary** combining runtime sources into one immutable coaching context. It does not reason, calculate, persist, or network.
 
 ---
 
