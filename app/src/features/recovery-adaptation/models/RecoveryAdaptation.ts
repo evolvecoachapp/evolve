@@ -1,0 +1,48 @@
+import type { SleepAdjustment } from "./SleepAdjustment";
+import type { ReadinessAdjustment } from "./ReadinessAdjustment";
+import type { RecoveryProtocolAdjustment } from "./RecoveryProtocolAdjustment";
+import type { HRVAdjustment } from "./HRVAdjustment";
+import type { CardioAdjustment } from "./CardioAdjustment";
+import type { StressAdjustment } from "./StressAdjustment";
+import type { RecoveryDayAdjustment } from "./RecoveryDayAdjustment";
+import type { RecoveryDayInsertion } from "./RecoveryDayInsertion";
+import type { RecoveryDayRemoval } from "./RecoveryDayRemoval";
+import type { RecoveryDayReplacement } from "./RecoveryDayReplacement";
+import type { MobilityAdjustment } from "./MobilityAdjustment";
+import type { RecoveryAdjustment } from "./RecoveryAdjustment";
+import type { RecoveryMetadata } from "./RecoveryMetadata";
+import type { RecoveryModification } from "./RecoveryModification";
+import type { RecoveryReplacement } from "./RecoveryReplacement";
+import type { FatigueAdjustment } from "./FatigueAdjustment";
+import type { DeloadAdjustment } from "./DeloadAdjustment";
+import type { StretchingAdjustment } from "./StretchingAdjustment";
+import type { WeeklyAdjustment } from "./WeeklyAdjustment";
+
+export interface RecoveryAdaptation {
+  readonly id: string;
+  readonly athleteId: string;
+  readonly planId: string;
+  readonly contextId: string;
+  readonly decisionKeys: readonly string[];
+  readonly signalKeys: readonly string[];
+  readonly modifications: readonly RecoveryModification[];
+  readonly adjustments: readonly RecoveryAdjustment[];
+  readonly replacements: readonly RecoveryReplacement[];
+  readonly recoveryDayAdjustments: readonly RecoveryDayAdjustment[];
+  readonly recoveryDayReplacements: readonly RecoveryDayReplacement[];
+  readonly recoveryDayRemovals: readonly RecoveryDayRemoval[];
+  readonly recoveryDayInsertions: readonly RecoveryDayInsertion[];
+  readonly sleepAdjustments: readonly SleepAdjustment[];
+  readonly fatigueAdjustments: readonly FatigueAdjustment[];
+  readonly readinessAdjustments: readonly ReadinessAdjustment[];
+  readonly hrvAdjustments: readonly HRVAdjustment[];
+  readonly cardioAdjustments: readonly CardioAdjustment[];
+  readonly stressAdjustments: readonly StressAdjustment[];
+  readonly mobilityAdjustments: readonly MobilityAdjustment[];
+  readonly stretchingAdjustments: readonly StretchingAdjustment[];
+  readonly deloadAdjustments: readonly DeloadAdjustment[];
+  readonly recoveryProtocolAdjustments: readonly RecoveryProtocolAdjustment[];
+  readonly weeklyAdjustments: readonly WeeklyAdjustment[];
+  readonly metadata: RecoveryMetadata;
+  readonly createdAt: string;
+}

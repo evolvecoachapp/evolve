@@ -61,8 +61,8 @@ Continuous Adaptation Engine
 AdaptationDecision
       ↓
 Workout Adaptation Engine   ← Sprint 24.1 (`features/workout-adaptation`)
-Nutrition Adaptation Engine (NutritionAdaptationInput) ← future
-Recovery Adaptation Engine  (RecoveryAdaptationInput)  ← future
+Nutrition Adaptation Engine (NutritionAdaptationInput) ← Sprint 24.2
+Recovery Adaptation Engine  (RecoveryAdaptationInput)  ← Sprint 24.3
 Goal Progress Engine        (GoalProgressInput)        ← future
 ```
 

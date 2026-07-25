@@ -2424,4 +2424,35 @@ Introduce `app/src/features/nutrition-adaptation/` with immutable models (`Nutri
 
 ---
 
-*New decisions are appended as Decision 079, 080, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 079: Recovery Adaptation Engine Foundation (Sprint 24.3)
+
+**Date:** 2026-07-26  
+**Status:** Accepted  
+
+**Context:**
+Sprint 24.3 must introduce a Recovery Adaptation Engine that adapts an existing recovery plan according to Continuous Adaptation decisions. It sits downstream of Recovery Plan / Recovery Runtime / Athlete State / Continuous Adaptation / Coach Context and upstream of Recovery Runtime handoff — without generating recovery from scratch, changing athlete goals, AI reasoning, provider SDKs, persistence, networking, or UI.
+
+**Decision:**
+Introduce `app/src/features/recovery-adaptation/` with immutable models (`RecoveryAdaptation`, `RecoveryModification`, `UpdatedRecoveryPlan`, `RecoveryPackage`, `RecoverySnapshot`, `RecoveryRuntimeInput`, …), `RecoveryAdaptationEngine` / `RecoveryAdaptationCoordinator` / `RecoveryAdaptationSession`, deterministic evaluation / planning / adapters / comparison / builders / validators / policies / selectors, upstream ports (Plan / Runtime / Athlete State / Continuous Adaptation / Coach Context with mocks), `RecoveryAdaptationEngineService`, and a narrow application API (`adaptRecovery`, `compareRecovery`, `describeRecoveryAdaptation`, `createRecoverySnapshot`, `validateRecoveryAdaptation`). Document boundaries and ADR-079.
+
+**Why:**
+- **Adaptation ≠ generation** keeps Recovery Plan generation free to own creation; this engine only adjusts existing structure keys.
+- **Adaptation ≠ Continuous Adaptation detection** keeps opportunity detection separate from plan mutation packaging.
+- **Ports for upstream modules** enable deterministic tests without provider SDKs.
+- **Evaluation + planning + adapters** map decision / signal keys to immutable modification records without inventing prescriptions via heuristics.
+- **Narrow public API** prevents leaking internal evaluators / planners / adapters.
+
+**Alternatives considered:**
+- **Extend Recovery Agent plan builders** — rejected: Recovery Agent orchestrates recovery domain reasoning; Sprint 24.3 requires a dedicated existing-plan adaptation engine.
+- **Mutate inside Continuous Adaptation Engine** — rejected: Continuous Adaptation must remain detection-only (ADR-076).
+- **Share Workout / Nutrition Adaptation Engines** — rejected: recovery domains (sleep / deload / mobility / stress / HRV / readiness) need a dedicated plan model and adapters.
+- **AI / generative adaptation** — rejected: sprint forbids AI reasoning / recovery generation / goal changes.
+
+**Consequences:**
+- Documentation updates: [RECOVERY_ADAPTATION_ENGINE.md](./RECOVERY_ADAPTATION_ENGINE.md), [RECOVERY_PIPELINE.md](./RECOVERY_PIPELINE.md), [ADAPTIVE_COACHING.md](./ADAPTIVE_COACHING.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [architecture/README.md](./architecture/README.md).
+- Recovery Adaptation Engine remains free of AI, prompts, providers, networking, persistence, UI, Tool Runtime, Action Engine, recovery generation, and athlete goal changes.
+- Upstream engines are unchanged; consumed via ports. Goal Progress Adaptation Engine remains future.
+
+---
+
+*New decisions are appended as Decision 080, 081, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
