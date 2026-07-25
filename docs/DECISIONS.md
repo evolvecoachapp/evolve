@@ -2236,4 +2236,36 @@ Introduce `app/src/features/context-fusion/` with immutable models (`UnifiedCoac
 
 ---
 
-*New decisions are appended as Decision 073, 074, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 073: Decision Engine Foundation (Sprint 22.3)
+
+**Date:** 2026-07-25  
+**Status:** Accepted  
+
+**Context:**
+Sprint 22.3 must introduce a Decision Engine that transforms `UnifiedCoachingContext` into immutable `CoachingDecision`s. It is the deterministic reasoning/orchestration core before Recommendation Engine and Coach Supervisor — without AI reasoning, natural language generation, domain calculations, action execution, persistence, networking, or UI.
+
+**Decision:**
+Introduce `app/src/features/decision-engine/` with immutable models (`CoachingDecision`, `DecisionCandidate`, `DecisionPackage`, `DecisionGraph`, `DecisionPlan`, `RecommendationEngineInput`, …), `DecisionEngine` / `DecisionCoordinator` / `DecisionSession`, deterministic analysis / evaluation / planning / resolution / builders / validators / policies / selectors, upstream ports (Context Fusion / Athlete State / Coach Supervisor with mocks), `DecisionEngineService`, and a narrow application API (`buildDecision`, `evaluateDecision`, `resolveDecision`, `describeDecision`, `validateDecision`). Document boundaries and ADR-073.
+
+**Why:**
+- **Decisioning ≠ fusion** keeps Context Fusion free of decision concerns.
+- **Decisioning ≠ recommendations / actions** keeps Recommendation Engine and Action Engine free of orchestration scoring.
+- **Ports for upstream fusion / athlete / supervisor** enable deterministic tests without provider SDKs.
+- **Fixed-table analysis / evaluation / resolution** avoids AI ranking and domain math.
+- **Narrow public API** prevents leaking internal analysis / resolution modules.
+
+**Alternatives considered:**
+- **Decide inside Context Fusion** — rejected: fusion must remain merge-only.
+- **Decide inside Coach Supervisor** — rejected: Supervisor owns multi-agent orchestration, not coaching-decision production.
+- **Reuse legacy `features/decisionEngine` rule calculator** — rejected: that path performs domain recommendation rules; Sprint 22.3 requires orchestration-only decisions over fused context.
+- **AI-based decision ranking** — rejected: sprint forbids AI reasoning / prompts / NL / calculations.
+
+**Consequences:**
+- Documentation updates: [DECISION_ENGINE.md](./DECISION_ENGINE.md), [DECISION_PIPELINE.md](./DECISION_PIPELINE.md), [STATE_MANAGEMENT.md](./STATE_MANAGEMENT.md), [AI_RUNTIME.md](./AI_RUNTIME.md), [AGENT_PLATFORM.md](./AGENT_PLATFORM.md), [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [architecture/README.md](./architecture/README.md).
+- Decision Engine remains free of AI, NL, prompts, providers, networking, persistence, UI, Tool Runtime, Action Engine, and domain calculations.
+- Upstream Context Fusion / Athlete State / Coach Supervisor are unchanged; consumed via ports.
+- Legacy `features/decisionEngine` remains untouched for this sprint.
+
+---
+
+*New decisions are appended as Decision 074, 075, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

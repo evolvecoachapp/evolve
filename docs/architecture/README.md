@@ -9,7 +9,7 @@
 
 ## Primary diagrams
 
-- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline + Composition Root + Decision Intelligence + Workout/Rest Runtime + Domain Events + Performance Engine + Achievement Engine + Athlete History + Athlete State Engine + Context Fusion Engine + Decision Pipeline + Recovery Intelligence + Insight Engine + Coach Intelligence + Conversation Orchestrator + Prompt Builder + Prompt Composition Engine + AI Provider Abstraction + OpenAI Provider + AI Execution Pipeline + Streaming Foundation + Tool Calling Foundation + Domain Tool Adapters + Response Formatter + Action Engine + Tool Runtime + Agent Framework + Agent Runtime + Workout Agent + Nutrition Agent + Recovery Agent + Coach Agent + Coaching Session Runtime + Athlete State Engine + Coach Supervisor + Supervisor Routing + Agent Capability + Agent Collaboration + Conversation Memory dependency flow
+- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline + Composition Root + Decision Intelligence + Workout/Rest Runtime + Domain Events + Performance Engine + Achievement Engine + Athlete History + Athlete State Engine + Context Fusion Engine + Decision Engine + Decision Pipeline + Recovery Intelligence + Insight Engine + Coach Intelligence + Conversation Orchestrator + Prompt Builder + Prompt Composition Engine + AI Provider Abstraction + OpenAI Provider + AI Execution Pipeline + Streaming Foundation + Tool Calling Foundation + Domain Tool Adapters + Response Formatter + Action Engine + Tool Runtime + Agent Framework + Agent Runtime + Workout Agent + Nutrition Agent + Recovery Agent + Coach Agent + Coaching Session Runtime + Athlete State Engine + Coach Supervisor + Supervisor Routing + Agent Capability + Agent Collaboration + Conversation Memory dependency flow
 - [COMPOSITION_ROOT.md](../COMPOSITION_ROOT.md) — Composition Root, Dependency Graph, Factories, DI, Service Lifecycle
 - [DECISION_INTELLIGENCE.md](../DECISION_INTELLIGENCE.md) — Decision graph, explainability, execution reports, Coach AI preparation
 - [WORKOUT_RUNTIME.md](../WORKOUT_RUNTIME.md) — Live WorkoutSession execution state, session lifecycle, runtime state model
@@ -45,8 +45,9 @@
 - [COACHING_SESSION_RUNTIME.md](../COACHING_SESSION_RUNTIME.md) — Coaching Session Runtime, session lifecycle between Conversation Runtime and Coach Supervisor
 - [ATHLETE_STATE_ENGINE.md](../ATHLETE_STATE_ENGINE.md) — Athlete State Engine, immutable athlete truth, aggregation + evolution
 - [CONTEXT_FUSION_ENGINE.md](../CONTEXT_FUSION_ENGINE.md) — Context Fusion Engine, immutable UnifiedCoachingContext
-- [DECISION_PIPELINE.md](../DECISION_PIPELINE.md) — Decision pipeline from fused context to Decision Engine
-- [STATE_MANAGEMENT.md](../STATE_MANAGEMENT.md) — State ownership map across athlete / session / fusion / history modules
+- [DECISION_ENGINE.md](../DECISION_ENGINE.md) — Decision Engine, immutable CoachingDecision / DecisionPackage
+- [DECISION_PIPELINE.md](../DECISION_PIPELINE.md) — Decision pipeline from fused context through Decision Engine to Recommendation Engine
+- [STATE_MANAGEMENT.md](../STATE_MANAGEMENT.md) — State ownership map across athlete / session / fusion / decision / history modules
 - [SESSION_LIFECYCLE.md](../SESSION_LIFECYCLE.md) — Coaching session statuses, phases, and transitions
 - [AI_RUNTIME.md](../AI_RUNTIME.md) — Mobile AI / coach runtime stack (Conversation → Session → Athlete State → Context Fusion → Decision Engine)
 - [AGENT_PLATFORM.md](../AGENT_PLATFORM.md) — Multi-agent platform stack index

@@ -24,7 +24,9 @@ Athlete State Engine             ← Sprint 22.1 (immutable athlete truth)
       ↓
 Context Fusion Engine            ← Sprint 22.2 (UnifiedCoachingContext)
       ↓
-Decision Engine                  ← consumes fused context
+Decision Engine                  ← Sprint 22.3 (CoachingDecision orchestration)
+      ↓
+Recommendation Engine            ← consumes RecommendationEngineInput
       ↓
 Coach Supervisor                 ← Sprint 21.8 (central multi-agent orchestrator)
       ↓

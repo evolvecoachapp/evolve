@@ -7,7 +7,7 @@
 **Purpose:** Index immutable state ownership across the mobile coaching stack.  
 **Source of Truth:** Partial — subsystem details live in linked docs.
 
-Related: [ATHLETE_STATE_ENGINE.md](./ATHLETE_STATE_ENGINE.md), [CONTEXT_FUSION_ENGINE.md](./CONTEXT_FUSION_ENGINE.md), [DECISION_PIPELINE.md](./DECISION_PIPELINE.md), [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md), [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md), [ARCHITECTURE.md](./ARCHITECTURE.md).
+Related: [ATHLETE_STATE_ENGINE.md](./ATHLETE_STATE_ENGINE.md), [CONTEXT_FUSION_ENGINE.md](./CONTEXT_FUSION_ENGINE.md), [DECISION_ENGINE.md](./DECISION_ENGINE.md), [DECISION_PIPELINE.md](./DECISION_PIPELINE.md), [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [WORKOUT_RUNTIME.md](./WORKOUT_RUNTIME.md), [ATHLETE_HISTORY.md](./ATHLETE_HISTORY.md), [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ---
 
@@ -17,6 +17,7 @@ Related: [ATHLETE_STATE_ENGINE.md](./ATHLETE_STATE_ENGINE.md), [CONTEXT_FUSION_E
 |---------|--------|--------------------|-------|
 | Current athlete truth | `features/athlete-state` | `AthleteState`, `AthleteSnapshot` | Sprint 22.1 — aggregation + evolution only |
 | Unified coaching context | `features/context-fusion` | `UnifiedCoachingContext`, `ContextSnapshot` | Sprint 22.2 — fusion only; feeds Decision Engine |
+| Coaching decisions | `features/decision-engine` | `CoachingDecision`, `DecisionPackage`, `DecisionSnapshot` | Sprint 22.3 — orchestration only; feeds Recommendation Engine |
 | Coaching interaction lifecycle | `features/coaching-session` | `SessionContext`, `SessionSnapshot` | Sprint 22.0 |
 | Live workout execution | `features/workout-runtime` | workout session state | Runtime execution, not athlete aggregate |
 | Chronological journey facts | `features/athlete-history` | history entries / snapshots | Historical record; not current truth |
@@ -51,6 +52,22 @@ Decision Engine
 ```
 
 Context Fusion Engine is the **single fusion boundary** combining runtime sources into one immutable coaching context. It does not reason, calculate, persist, or network.
+
+---
+
+## Decision Engine Placement
+
+```
+UnifiedCoachingContext
+      ↓
+Decision Engine               ← immutable CoachingDecision / DecisionPackage
+      ↓
+RecommendationEngineInput
+      ↓
+Recommendation Engine / Coach Supervisor
+```
+
+Decision Engine is the **single decision orchestration boundary**. It does not fuse sources, call AI, generate NL, execute actions, calculate domain scores, persist, or network.
 
 ---
 
