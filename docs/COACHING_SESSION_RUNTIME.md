@@ -129,7 +129,9 @@ Context Fusion Engine (Sprint 22.2) consumes Coaching Session Runtime (among oth
 
 Decision Engine (Sprint 22.3) consumes the fused context and produces immutable `CoachingDecision` / `DecisionPackage` / `RecommendationEngineInput` for downstream Recommendation Engine. See [DECISION_ENGINE.md](./DECISION_ENGINE.md).
 
-Recommendation Engine (Sprint 22.4) consumes decisions and produces immutable `CoachingRecommendation` / `RecommendationPackage` / `ExplainabilityInput` for Explainability Engine and Coach Supervisor. See [RECOMMENDATION_ENGINE.md](./RECOMMENDATION_ENGINE.md).
+Recommendation Engine (Sprint 22.4) consumes decisions and produces immutable `CoachingRecommendation` / `RecommendationPackage` / `ExplainabilityInput` for Explainability Engine. See [RECOMMENDATION_ENGINE.md](./RECOMMENDATION_ENGINE.md).
+
+Explainability Engine (Sprint 22.5) consumes decisions / recommendations and produces immutable `CoachingExplanation` / `ExplanationPackage` / `LLMFormatterInput` for Coach Supervisor / LLM Response Formatter. See [EXPLAINABILITY_ENGINE.md](./EXPLAINABILITY_ENGINE.md) and [REASONING_PIPELINE.md](./REASONING_PIPELINE.md).
 
 ---
 

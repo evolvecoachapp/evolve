@@ -2300,4 +2300,35 @@ Introduce `app/src/features/recommendation-engine/` with immutable models (`Coac
 
 ---
 
-*New decisions are appended as Decision 075, 076, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 075: Explainability Engine Foundation (Sprint 22.5)
+
+**Date:** 2026-07-25  
+**Status:** Accepted  
+
+**Context:**
+Sprint 22.5 must introduce an Explainability Engine that transforms immutable `CoachingDecision`s and `CoachingRecommendation`s into structured `CoachingExplanation`s. It sits between Recommendation Engine and Coach Supervisor / LLM Response Formatter — without AI reasoning, natural language generation, decision mutation, action execution, domain calculations, persistence, networking, or UI.
+
+**Decision:**
+Introduce `app/src/features/explainability-engine/` with immutable models (`CoachingExplanation`, `ExplanationPackage`, `ExplanationGraph`, `ExplanationTrace`, `ExplanationEvidence`, `LLMFormatterInput`, …), `ExplainabilityEngine` / `ExplainabilityCoordinator` / `ExplainabilitySession`, deterministic evidence / reasoning / trace / builders / validators / policies / selectors, upstream ports (Decision Engine / Recommendation Engine / Context Fusion / Athlete State / Coach Supervisor with mocks), `ExplainabilityEngineService`, and a narrow application API (`buildExplanation`, `validateExplanation`, `describeExplanation`, `createExplanationSnapshot`, `packageExplanation`). Document boundaries and ADR-075.
+
+**Why:**
+- **Explanations ≠ decisions / recommendations** keeps Decision / Recommendation Engines free of explanation packaging.
+- **Explanations ≠ NL** keeps LLM Response Formatter / Prompt Builder free of structured why-traces.
+- **Ports for upstream decision / recommendation / fusion / athlete / supervisor** enable deterministic tests without provider SDKs.
+- **Evidence + reasoning-trace + graph layers** provide structured why without AI inference.
+- **Narrow public API** prevents leaking internal reasoners / evidence / trace builders.
+
+**Alternatives considered:**
+- **Explain inside Recommendation Engine** — rejected: Recommendation Engine must remain recommendation-orchestration only.
+- **Explain inside Coach Supervisor** — rejected: Supervisor owns multi-agent orchestration, not explanation packaging.
+- **Reuse Decision Intelligence templates** — rejected: that path is domain-pipeline explainability; Sprint 22.5 requires coaching orchestration explanations.
+- **AI / NL explanation generation** — rejected: sprint forbids AI reasoning / prompts / NL / calculations / decision mutation.
+
+**Consequences:**
+- Documentation updates: [EXPLAINABILITY_ENGINE.md](./EXPLAINABILITY_ENGINE.md), [REASONING_PIPELINE.md](./REASONING_PIPELINE.md), [DECISION_PIPELINE.md](./DECISION_PIPELINE.md), [STATE_MANAGEMENT.md](./STATE_MANAGEMENT.md), [AI_RUNTIME.md](./AI_RUNTIME.md), [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [architecture/README.md](./architecture/README.md).
+- Explainability Engine remains free of AI, NL, prompts, providers, networking, persistence, UI, Tool Runtime, Action Engine, and domain calculations.
+- Upstream Decision Engine / Recommendation Engine / Context Fusion / Athlete State / Coach Supervisor are unchanged; consumed via ports.
+
+---
+
+*New decisions are appended as Decision 076, 077, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
