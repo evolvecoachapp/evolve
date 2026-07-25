@@ -2268,4 +2268,36 @@ Introduce `app/src/features/decision-engine/` with immutable models (`CoachingDe
 
 ---
 
-*New decisions are appended as Decision 074, 075, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 074: Recommendation Engine Foundation (Sprint 22.4)
+
+**Date:** 2026-07-25  
+**Status:** Accepted  
+
+**Context:**
+Sprint 22.4 must introduce a Recommendation Engine that transforms immutable `CoachingDecision`s into structured `CoachingRecommendation`s. It sits between Decision Engine and Explainability / Coach Supervisor — without AI reasoning, natural language generation, action execution, athlete-state mutation, domain calculations, persistence, networking, or UI.
+
+**Decision:**
+Introduce `app/src/features/recommendation-engine/` with immutable models (`CoachingRecommendation`, `RecommendationPackage`, `RecommendationPlan`, `RecommendationView`, `ExplainabilityInput`, …), `RecommendationEngine` / `RecommendationCoordinator` / `RecommendationSession`, deterministic planning / prioritization / packaging / builders / validators / policies / selectors, upstream ports (Decision Engine / Context Fusion / Athlete State / Coach Supervisor with mocks), `RecommendationEngineService`, and a narrow application API (`buildRecommendations`, `prioritizeRecommendations`, `packageRecommendations`, `describeRecommendations`, `validateRecommendations`). Document boundaries and ADR-074.
+
+**Why:**
+- **Recommendations ≠ decisions** keeps Decision Engine free of recommendation packaging concerns.
+- **Recommendations ≠ NL / actions** keeps Explainability and Action Engine free of orchestration packaging.
+- **Ports for upstream decision / fusion / athlete / supervisor** enable deterministic tests without provider SDKs.
+- **Fixed-table planning / prioritization / packaging** avoids AI ranking and domain math.
+- **Narrow public API** prevents leaking internal planners / resolvers / packagers.
+
+**Alternatives considered:**
+- **Recommend inside Decision Engine** — rejected: Decision Engine must remain decision-orchestration only.
+- **Recommend inside Coach Supervisor** — rejected: Supervisor owns multi-agent orchestration, not recommendation packaging.
+- **Reuse legacy `features/recommendations` UI widgets** — rejected: that path is presentation-oriented; Sprint 22.4 requires orchestration-only structured recommendations.
+- **AI / NL recommendation generation** — rejected: sprint forbids AI reasoning / prompts / NL / calculations / action execution.
+
+**Consequences:**
+- Documentation updates: [RECOMMENDATION_ENGINE.md](./RECOMMENDATION_ENGINE.md), [DECISION_PIPELINE.md](./DECISION_PIPELINE.md), [STATE_MANAGEMENT.md](./STATE_MANAGEMENT.md), [AI_RUNTIME.md](./AI_RUNTIME.md), [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [architecture/README.md](./architecture/README.md).
+- Recommendation Engine remains free of AI, NL, prompts, providers, networking, persistence, UI, Tool Runtime, Action Engine, and domain calculations.
+- Upstream Decision Engine / Context Fusion / Athlete State / Coach Supervisor are unchanged; consumed via ports.
+- Legacy `features/recommendations` remains untouched for this sprint.
+
+---
+
+*New decisions are appended as Decision 075, 076, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

@@ -28,12 +28,16 @@ Decision Engine                ← Sprint 22.3 (deterministic orchestration)
       ↓
 CoachingDecision / DecisionPackage
       ↓
-Recommendation Engine          ← consumes RecommendationEngineInput
+Recommendation Engine          ← Sprint 22.4 (deterministic orchestration)
+      ↓
+CoachingRecommendation / RecommendationPackage
+      ↓
+Explainability Engine          ← consumes ExplainabilityInput
       ↓
 Coach Supervisor
 ```
 
-Context Fusion Engine is the **single fusion boundary** before decisioning. Decision Engine is the **single decision orchestration boundary** — it does not fuse sources, call AI, generate NL, or execute actions.
+Context Fusion Engine is the **single fusion boundary** before decisioning. Decision Engine is the **single decision orchestration boundary**. Recommendation Engine is the **single recommendation orchestration boundary** — it does not call AI, generate NL, execute actions, or modify athlete state.
 
 ---
 
@@ -44,8 +48,8 @@ Context Fusion Engine is the **single fusion boundary** before decisioning. Deci
 | Upstream facts | Conversation / Session / Athlete State / Agents / Supervisor | Source-specific immutable context |
 | Fusion | `features/context-fusion` | `UnifiedCoachingContext`, snapshots, summaries, conflict resolution |
 | Decisioning | `features/decision-engine` | `CoachingDecision`, `DecisionPackage`, analysis / evaluation / planning / resolution |
-| Recommendations | Recommendation Engine (downstream) | Recommendation composition from `RecommendationEngineInput` |
-| Explainability | Decision Intelligence | Explanations for domain pipeline decisions (see [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md)) |
+| Recommendations | `features/recommendation-engine` | `CoachingRecommendation`, `RecommendationPackage`, planning / prioritization / packaging |
+| Explainability | Explainability Engine (downstream) + Decision Intelligence | `ExplainabilityInput` handoff; domain pipeline explanations (see [DECISION_INTELLIGENCE.md](./DECISION_INTELLIGENCE.md)) |
 
 ---
 
@@ -71,13 +75,26 @@ Decision Engine produces:
 
 Decision Engine consumes `DecisionEngineContext` / `UnifiedCoachingContext` and must not re-fuse upstream sources.
 
+Recommendation Engine produces:
+
+| Type | Role |
+|------|------|
+| `CoachingRecommendation` | Immutable structured recommendation |
+| `RecommendationPackage` | Full package (plan, groups, diagnostics, view) |
+| `RecommendationSummary` / `RecommendationSnapshot` | Compact / point-in-time views |
+| `ExplainabilityInput` | Explicit Explainability Engine handoff |
+
+Recommendation Engine consumes `CoachingDecision` / `RecommendationEngineInput` and must not re-decide or execute actions.
+
 ---
 
 ## Rules
 
 - Fusion happens once, upstream of Decision Engine
-- Decision orchestration happens once, upstream of Recommendation Engine / action execution
-- No AI reasoning inside Context Fusion or Decision Engine
-- No business / domain calculations inside Context Fusion or Decision Engine
+- Decision orchestration happens once, upstream of Recommendation Engine
+- Recommendation orchestration happens once, upstream of Explainability / Coach Supervisor / action execution
+- No AI reasoning inside Context Fusion, Decision Engine, or Recommendation Engine
+- No business / domain calculations inside Context Fusion, Decision Engine, or Recommendation Engine
+- No natural language generation or action execution inside Recommendation Engine
 - Decision Intelligence remains explanation-only for domain pipeline decisions
-- No provider SDKs, networking, or persistence in fusion or decision stages
+- No provider SDKs, networking, or persistence in fusion, decision, or recommendation stages

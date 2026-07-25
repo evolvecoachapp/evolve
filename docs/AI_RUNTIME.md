@@ -4,14 +4,14 @@
 **Version:** 0.6.0  
 **Status:** Living Document  
 **Last Updated:** 2026-07-25  
-**Purpose:** Describe the mobile AI / coach runtime stack, including Coaching Session Runtime, Athlete State, Context Fusion, and Decision Engine placement.  
+**Purpose:** Describe the mobile AI / coach runtime stack, including Coaching Session Runtime, Athlete State, Context Fusion, Decision Engine, and Recommendation Engine placement.  
 **Source of Truth:** Partial — subsystem details live in linked docs; high-level Coach design in [AI_SYSTEM.md](./AI_SYSTEM.md).
 
-Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [ATHLETE_STATE_ENGINE.md](./ATHLETE_STATE_ENGINE.md), [CONTEXT_FUSION_ENGINE.md](./CONTEXT_FUSION_ENGINE.md), [DECISION_ENGINE.md](./DECISION_ENGINE.md), [DECISION_PIPELINE.md](./DECISION_PIPELINE.md), [STATE_MANAGEMENT.md](./STATE_MANAGEMENT.md), [SESSION_LIFECYCLE.md](./SESSION_LIFECYCLE.md), [COACH_SUPERVISOR.md](./COACH_SUPERVISOR.md), [SUPERVISOR_RUNTIME.md](./SUPERVISOR_RUNTIME.md), [MULTI_AGENT_RUNTIME.md](./MULTI_AGENT_RUNTIME.md), [AGENT_RUNTIME.md](./AGENT_RUNTIME.md), [AGENT_PLATFORM.md](./AGENT_PLATFORM.md).
+Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [ATHLETE_STATE_ENGINE.md](./ATHLETE_STATE_ENGINE.md), [CONTEXT_FUSION_ENGINE.md](./CONTEXT_FUSION_ENGINE.md), [DECISION_ENGINE.md](./DECISION_ENGINE.md), [RECOMMENDATION_ENGINE.md](./RECOMMENDATION_ENGINE.md), [DECISION_PIPELINE.md](./DECISION_PIPELINE.md), [STATE_MANAGEMENT.md](./STATE_MANAGEMENT.md), [SESSION_LIFECYCLE.md](./SESSION_LIFECYCLE.md), [COACH_SUPERVISOR.md](./COACH_SUPERVISOR.md), [SUPERVISOR_RUNTIME.md](./SUPERVISOR_RUNTIME.md), [MULTI_AGENT_RUNTIME.md](./MULTI_AGENT_RUNTIME.md), [AGENT_RUNTIME.md](./AGENT_RUNTIME.md), [AGENT_PLATFORM.md](./AGENT_PLATFORM.md).
 
 ---
 
-## Coach Interaction Path (Sprint 22.3)
+## Coach Interaction Path (Sprint 22.4)
 
 ```
 User
@@ -28,7 +28,9 @@ Context Fusion Engine             ← Sprint 22.2 (immutable UnifiedCoachingCont
   ↓
 Decision Engine                   ← Sprint 22.3 (CoachingDecision / DecisionPackage)
   ↓
-Recommendation Engine             ← consumes RecommendationEngineInput
+Recommendation Engine             ← Sprint 22.4 (CoachingRecommendation / RecommendationPackage)
+  ↓
+Explainability Engine             ← consumes ExplainabilityInput
   ↓
 Coach Supervisor                  ← Sprint 21.8 (multi-agent orchestration)
   ↓
@@ -38,7 +40,7 @@ Aggregation
   ↓
 Unified Coach Response
   ↓
-SessionResult / AthleteState / UnifiedCoachingContext / CoachingDecision
+SessionResult / AthleteState / UnifiedCoachingContext / CoachingDecision / CoachingRecommendation
 ```
 
 ---
@@ -52,6 +54,7 @@ SessionResult / AthleteState / UnifiedCoachingContext / CoachingDecision
 | Athlete State Engine | `features/athlete-state` | Immutable current athlete truth; aggregation + evolution only |
 | Context Fusion Engine | `features/context-fusion` | Fuse runtimes/agents into `UnifiedCoachingContext` only |
 | Decision Engine | `features/decision-engine` | Orchestrate fused context → immutable `CoachingDecision`s |
+| Recommendation Engine | `features/recommendation-engine` | Orchestrate decisions → immutable `CoachingRecommendation`s |
 | Coach Supervisor | `features/coach-supervisor` | Multi-agent orchestration → `UnifiedCoachResponse` |
 | Supervisor Routing | `features/supervisor-routing` | Deterministic routing plans |
 | Capability Registry | `features/agent-capability` | Capability resolve / register |
@@ -92,6 +95,13 @@ Decision Engine:
 - **produces** `CoachingDecision` / `DecisionPackage` / `DecisionSummary` / `RecommendationEngineInput`
 - **does not** fuse sources, call providers, execute actions, persist, or network
 
+Recommendation Engine:
+
+- **owns** deterministic orchestration from coaching decisions to structured recommendations
+- **plans / prioritizes / packages** structurally (no domain math, no AI, no NL, no action execution)
+- **produces** `CoachingRecommendation` / `RecommendationPackage` / `RecommendationSummary` / `ExplainabilityInput`
+- **does not** call providers, generate NL, execute actions, modify athlete state, persist, or network
+
 Coach Supervisor remains responsible for Routing → Collaboration → Aggregation into a unified coach response.
 
 ---
@@ -104,6 +114,7 @@ Coach Supervisor remains responsible for Routing → Collaboration → Aggregati
 | Athlete State Engine | `buildAthleteState`, `updateAthleteState`, `createSnapshot`, `describeAthleteState`, `validateAthleteState` |
 | Context Fusion Engine | `buildUnifiedContext`, `mergeContexts`, `validateUnifiedContext`, `describeContext`, `createContextSnapshot` |
 | Decision Engine | `buildDecision`, `evaluateDecision`, `resolveDecision`, `describeDecision`, `validateDecision` |
+| Recommendation Engine | `buildRecommendations`, `prioritizeRecommendations`, `packageRecommendations`, `describeRecommendations`, `validateRecommendations` |
 | Coach Supervisor | `processCoachRequest`, `buildCoordinationPlan`, `aggregateResults`, `describeSupervisorCapabilities`, `validateSupervisorPlan` |
 
 ---
@@ -113,6 +124,8 @@ Coach Supervisor remains responsible for Routing → Collaboration → Aggregati
 - Session details: [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md)
 - Athlete state: [ATHLETE_STATE_ENGINE.md](./ATHLETE_STATE_ENGINE.md)
 - Context fusion: [CONTEXT_FUSION_ENGINE.md](./CONTEXT_FUSION_ENGINE.md)
+- Decision engine: [DECISION_ENGINE.md](./DECISION_ENGINE.md)
+- Recommendation engine: [RECOMMENDATION_ENGINE.md](./RECOMMENDATION_ENGINE.md)
 - Decision pipeline: [DECISION_PIPELINE.md](./DECISION_PIPELINE.md)
 - State ownership: [STATE_MANAGEMENT.md](./STATE_MANAGEMENT.md)
 - Transitions: [SESSION_LIFECYCLE.md](./SESSION_LIFECYCLE.md)

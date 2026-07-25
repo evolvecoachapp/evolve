@@ -26,7 +26,9 @@ Context Fusion Engine            ← Sprint 22.2 (UnifiedCoachingContext)
       ↓
 Decision Engine                  ← Sprint 22.3 (CoachingDecision orchestration)
       ↓
-Recommendation Engine            ← consumes RecommendationEngineInput
+Recommendation Engine            ← Sprint 22.4 (CoachingRecommendation orchestration)
+      ↓
+Explainability Engine            ← consumes ExplainabilityInput
       ↓
 Coach Supervisor                 ← Sprint 21.8 (central multi-agent orchestrator)
       ↓

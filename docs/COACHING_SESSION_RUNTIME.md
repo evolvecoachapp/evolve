@@ -127,7 +127,9 @@ Athlete State Engine (Sprint 22.1) consumes coaching-session contributions via `
 
 Context Fusion Engine (Sprint 22.2) consumes Coaching Session Runtime (among other sources) via ports and fuses them into `UnifiedCoachingContext` for the Decision Engine. See [CONTEXT_FUSION_ENGINE.md](./CONTEXT_FUSION_ENGINE.md) and [DECISION_PIPELINE.md](./DECISION_PIPELINE.md).
 
-Decision Engine (Sprint 22.3) consumes the fused context and produces immutable `CoachingDecision` / `DecisionPackage` / `RecommendationEngineInput` for downstream Recommendation Engine and Coach Supervisor. See [DECISION_ENGINE.md](./DECISION_ENGINE.md).
+Decision Engine (Sprint 22.3) consumes the fused context and produces immutable `CoachingDecision` / `DecisionPackage` / `RecommendationEngineInput` for downstream Recommendation Engine. See [DECISION_ENGINE.md](./DECISION_ENGINE.md).
+
+Recommendation Engine (Sprint 22.4) consumes decisions and produces immutable `CoachingRecommendation` / `RecommendationPackage` / `ExplainabilityInput` for Explainability Engine and Coach Supervisor. See [RECOMMENDATION_ENGINE.md](./RECOMMENDATION_ENGINE.md).
 
 ---
 
