@@ -3,11 +3,11 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-25  
+**Last Updated:** 2026-07-26  
 **Purpose:** Index the EVOLVE multi-agent platform layers and how Coach Supervisor sits above specialists.  
 **Source of Truth:** Partial — detailed behavior lives in linked subsystem docs.
 
-Related: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md), [AGENT_RUNTIME.md](./AGENT_RUNTIME.md), [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [ATHLETE_STATE_ENGINE.md](./ATHLETE_STATE_ENGINE.md), [CONTEXT_FUSION_ENGINE.md](./CONTEXT_FUSION_ENGINE.md), [DECISION_PIPELINE.md](./DECISION_PIPELINE.md), [STATE_MANAGEMENT.md](./STATE_MANAGEMENT.md), [AI_RUNTIME.md](./AI_RUNTIME.md), [COACH_SUPERVISOR.md](./COACH_SUPERVISOR.md), [SUPERVISOR_ROUTING.md](./SUPERVISOR_ROUTING.md), [AGENT_CAPABILITY.md](./AGENT_CAPABILITY.md), [AGENT_COLLABORATION.md](./AGENT_COLLABORATION.md), [ARCHITECTURE.md](./ARCHITECTURE.md).
+Related: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md), [AGENT_RUNTIME.md](./AGENT_RUNTIME.md), [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [ATHLETE_STATE_ENGINE.md](./ATHLETE_STATE_ENGINE.md), [CONTEXT_FUSION_ENGINE.md](./CONTEXT_FUSION_ENGINE.md), [DECISION_PIPELINE.md](./DECISION_PIPELINE.md), [STATE_MANAGEMENT.md](./STATE_MANAGEMENT.md), [AI_RUNTIME.md](./AI_RUNTIME.md), [CONTINUOUS_ADAPTATION_ENGINE.md](./CONTINUOUS_ADAPTATION_ENGINE.md), [WORKOUT_ADAPTATION_ENGINE.md](./WORKOUT_ADAPTATION_ENGINE.md), [COACH_SUPERVISOR.md](./COACH_SUPERVISOR.md), [SUPERVISOR_ROUTING.md](./SUPERVISOR_ROUTING.md), [AGENT_CAPABILITY.md](./AGENT_CAPABILITY.md), [AGENT_COLLABORATION.md](./AGENT_COLLABORATION.md), [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ---
 
@@ -32,6 +32,8 @@ Explainability Engine            ← Sprint 22.5 (CoachingExplanation orchestrat
       ↓
 Continuous Adaptation Engine     ← Sprint 23.1 (AdaptationDecision / opportunity detection)
       ↓
+Workout Adaptation Engine        ← Sprint 24.1 (UpdatedWorkoutBlueprint / WorkoutRuntimeInput)
+      ↓
 Coach Supervisor                 ← Sprint 21.8 (central multi-agent orchestrator)
       ↓
 Supervisor Routing Engine        ← Sprint 21.7
@@ -51,6 +53,7 @@ Supporting infrastructure:
 | Athlete State Engine | `features/athlete-state` | Immutable current athlete truth; specialist aggregation |
 | Context Fusion Engine | `features/context-fusion` | Fuse runtimes/agents into `UnifiedCoachingContext` |
 | Continuous Adaptation Engine | `features/continuous-adaptation` | Adaptation opportunity detection → `AdaptationDecision` |
+| Workout Adaptation Engine | `features/workout-adaptation` | Existing blueprint adaptation → `UpdatedWorkoutBlueprint` |
 | Agent Framework | `features/agent-framework` | Shared `IAgent` contracts, lifecycle, registry |
 | Agent Runtime | `features/agent-runtime` | Single-agent execution entry |
 | Coach Supervisor | `features/coach-supervisor` | Multi-agent orchestration → `UnifiedCoachResponse` |

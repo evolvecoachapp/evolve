@@ -2362,4 +2362,35 @@ Introduce `app/src/features/continuous-adaptation/` with immutable models (`Adap
 
 ---
 
-*New decisions are appended as Decision 077, 078, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 077: Workout Adaptation Engine Foundation (Sprint 24.1)
+
+**Date:** 2026-07-26  
+**Status:** Accepted  
+
+**Context:**
+Sprint 24.1 must introduce a Workout Adaptation Engine that adapts an existing workout blueprint according to Continuous Adaptation decisions. It sits downstream of Workout Blueprint / Workout Runtime / Athlete State / Continuous Adaptation / Coach Context and upstream of Workout Runtime handoff — without generating workouts from scratch, changing athlete goals, AI reasoning, provider SDKs, persistence, networking, or UI.
+
+**Decision:**
+Introduce `app/src/features/workout-adaptation/` with immutable models (`WorkoutAdaptation`, `WorkoutModification`, `UpdatedWorkoutBlueprint`, `WorkoutPackage`, `WorkoutSnapshot`, `WorkoutRuntimeInput`, …), `WorkoutAdaptationEngine` / `WorkoutAdaptationCoordinator` / `WorkoutAdaptationSession`, deterministic evaluation / planning / adapters / comparison / builders / validators / policies / selectors, upstream ports (Blueprint / Runtime / Athlete State / Continuous Adaptation / Coach Context with mocks), `WorkoutAdaptationEngineService`, and a narrow application API (`adaptWorkout`, `compareWorkout`, `describeWorkoutAdaptation`, `createWorkoutSnapshot`, `validateWorkoutAdaptation`). Document boundaries and ADR-077.
+
+**Why:**
+- **Adaptation ≠ generation** keeps Workout Blueprint / Program Generation free to own creation; this engine only adjusts existing structure keys.
+- **Adaptation ≠ Continuous Adaptation detection** keeps opportunity detection separate from blueprint mutation packaging.
+- **Ports for upstream modules** enable deterministic tests without provider SDKs.
+- **Evaluation + planning + adapters** map decision / signal keys to immutable modification records without inventing prescriptions via heuristics.
+- **Narrow public API** prevents leaking internal evaluators / planners / adapters.
+
+**Alternatives considered:**
+- **Extend Training Adaptation Engine** — rejected: that path is workout-readiness recommendations (Sprint 17.5); Workout Adaptation owns existing-blueprint structure adjustments from Continuous Adaptation decisions.
+- **Mutate inside Continuous Adaptation Engine** — rejected: Continuous Adaptation must remain detection-only (ADR-076).
+- **Adapt inside Workout Agent `adaptWorkout`** — rejected: Workout Agent orchestrates Training Adaptation domain; Sprint 24.1 requires a dedicated blueprint-adaptation engine.
+- **AI / generative adaptation** — rejected: sprint forbids AI reasoning / workout generation / goal changes.
+
+**Consequences:**
+- Documentation updates: [WORKOUT_ADAPTATION_ENGINE.md](./WORKOUT_ADAPTATION_ENGINE.md), [WORKOUT_PIPELINE.md](./WORKOUT_PIPELINE.md), [ADAPTIVE_COACHING.md](./ADAPTIVE_COACHING.md), [CONTINUOUS_ADAPTATION_ENGINE.md](./CONTINUOUS_ADAPTATION_ENGINE.md), [REASONING_PIPELINE.md](./REASONING_PIPELINE.md), [AI_RUNTIME.md](./AI_RUNTIME.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [architecture/README.md](./architecture/README.md), [AGENT_PLATFORM.md](./AGENT_PLATFORM.md).
+- Workout Adaptation Engine remains free of AI, prompts, providers, networking, persistence, UI, Tool Runtime, Action Engine, workout generation, and athlete goal changes.
+- Upstream engines are unchanged; consumed via ports. Nutrition / Recovery / Goal Progress Adaptation Engines remain future.
+
+---
+
+*New decisions are appended as Decision 078, 079, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

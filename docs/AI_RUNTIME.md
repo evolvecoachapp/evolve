@@ -3,15 +3,15 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-25  
-**Purpose:** Describe the mobile AI / coach runtime stack, including Coaching Session Runtime, Athlete State, Context Fusion, Decision Engine, Recommendation Engine, Explainability Engine, and Continuous Adaptation Engine placement.  
+**Last Updated:** 2026-07-26  
+**Purpose:** Describe the mobile AI / coach runtime stack, including Coaching Session Runtime, Athlete State, Context Fusion, Decision Engine, Recommendation Engine, Explainability Engine, Continuous Adaptation Engine, and Workout Adaptation Engine placement.  
 **Source of Truth:** Partial — subsystem details live in linked docs; high-level Coach design in [AI_SYSTEM.md](./AI_SYSTEM.md).
 
-Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [ATHLETE_STATE_ENGINE.md](./ATHLETE_STATE_ENGINE.md), [CONTEXT_FUSION_ENGINE.md](./CONTEXT_FUSION_ENGINE.md), [DECISION_ENGINE.md](./DECISION_ENGINE.md), [RECOMMENDATION_ENGINE.md](./RECOMMENDATION_ENGINE.md), [EXPLAINABILITY_ENGINE.md](./EXPLAINABILITY_ENGINE.md), [CONTINUOUS_ADAPTATION_ENGINE.md](./CONTINUOUS_ADAPTATION_ENGINE.md), [ADAPTIVE_COACHING.md](./ADAPTIVE_COACHING.md), [REASONING_PIPELINE.md](./REASONING_PIPELINE.md), [DECISION_PIPELINE.md](./DECISION_PIPELINE.md), [STATE_MANAGEMENT.md](./STATE_MANAGEMENT.md), [SESSION_LIFECYCLE.md](./SESSION_LIFECYCLE.md), [COACH_SUPERVISOR.md](./COACH_SUPERVISOR.md), [SUPERVISOR_RUNTIME.md](./SUPERVISOR_RUNTIME.md), [MULTI_AGENT_RUNTIME.md](./MULTI_AGENT_RUNTIME.md), [AGENT_RUNTIME.md](./AGENT_RUNTIME.md), [AGENT_PLATFORM.md](./AGENT_PLATFORM.md).
+Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [ATHLETE_STATE_ENGINE.md](./ATHLETE_STATE_ENGINE.md), [CONTEXT_FUSION_ENGINE.md](./CONTEXT_FUSION_ENGINE.md), [DECISION_ENGINE.md](./DECISION_ENGINE.md), [RECOMMENDATION_ENGINE.md](./RECOMMENDATION_ENGINE.md), [EXPLAINABILITY_ENGINE.md](./EXPLAINABILITY_ENGINE.md), [CONTINUOUS_ADAPTATION_ENGINE.md](./CONTINUOUS_ADAPTATION_ENGINE.md), [WORKOUT_ADAPTATION_ENGINE.md](./WORKOUT_ADAPTATION_ENGINE.md), [WORKOUT_PIPELINE.md](./WORKOUT_PIPELINE.md), [ADAPTIVE_COACHING.md](./ADAPTIVE_COACHING.md), [REASONING_PIPELINE.md](./REASONING_PIPELINE.md), [DECISION_PIPELINE.md](./DECISION_PIPELINE.md), [STATE_MANAGEMENT.md](./STATE_MANAGEMENT.md), [SESSION_LIFECYCLE.md](./SESSION_LIFECYCLE.md), [COACH_SUPERVISOR.md](./COACH_SUPERVISOR.md), [SUPERVISOR_RUNTIME.md](./SUPERVISOR_RUNTIME.md), [MULTI_AGENT_RUNTIME.md](./MULTI_AGENT_RUNTIME.md), [AGENT_RUNTIME.md](./AGENT_RUNTIME.md), [AGENT_PLATFORM.md](./AGENT_PLATFORM.md).
 
 ---
 
-## Coach Interaction Path (Sprint 23.1)
+## Coach Interaction Path (Sprint 24.1)
 
 ```
 User
@@ -34,6 +34,8 @@ Explainability Engine             ← Sprint 22.5 (CoachingExplanation / Explana
   ↓
 Continuous Adaptation Engine      ← Sprint 23.1 (AdaptationDecision / opportunity detection)
   ↓
+Workout Adaptation Engine         ← Sprint 24.1 (UpdatedWorkoutBlueprint / WorkoutRuntimeInput)
+  ↓
 Coach Supervisor                  ← Sprint 21.8 (multi-agent orchestration)
   ↓
 Supervisor Routing / Capability Registry / Agent Collaboration
@@ -42,7 +44,7 @@ Aggregation
   ↓
 Unified Coach Response
   ↓
-SessionResult / AthleteState / UnifiedCoachingContext / CoachingDecision / CoachingRecommendation / CoachingExplanation / AdaptationDecision
+SessionResult / AthleteState / UnifiedCoachingContext / CoachingDecision / CoachingRecommendation / CoachingExplanation / AdaptationDecision / UpdatedWorkoutBlueprint
 ```
 
 ---
@@ -59,6 +61,7 @@ SessionResult / AthleteState / UnifiedCoachingContext / CoachingDecision / Coach
 | Recommendation Engine | `features/recommendation-engine` | Orchestrate decisions → immutable `CoachingRecommendation`s |
 | Explainability Engine | `features/explainability-engine` | Orchestrate decisions + recommendations → immutable `CoachingExplanation`s |
 | Continuous Adaptation Engine | `features/continuous-adaptation` | Detect meaningful adaptation opportunities → immutable `AdaptationDecision`s |
+| Workout Adaptation Engine | `features/workout-adaptation` | Adapt existing Workout Blueprint → immutable `UpdatedWorkoutBlueprint` / `WorkoutRuntimeInput` |
 | Coach Supervisor | `features/coach-supervisor` | Multi-agent orchestration → `UnifiedCoachResponse` |
 | Supervisor Routing | `features/supervisor-routing` | Deterministic routing plans |
 | Capability Registry | `features/agent-capability` | Capability resolve / register |
@@ -117,8 +120,15 @@ Continuous Adaptation Engine:
 
 - **owns** deterministic detection of meaningful adaptation opportunities over time
 - **monitors / detects / evaluates / compares** structurally (keys / flags / fixed ordinals only)
-- **produces** `AdaptationDecision` / `AdaptationPackage` / handoff inputs for future domain adaptation engines
+- **produces** `AdaptationDecision` / `AdaptationPackage` / handoff inputs for domain adaptation engines
 - **does not** modify workout / nutrition / recovery plans, generate recommendations, call providers, persist, or network
+
+Workout Adaptation Engine:
+
+- **owns** deterministic adaptation of an existing workout blueprint from Continuous Adaptation decisions
+- **evaluates / plans / adapts** structurally (keys → modification records; no generation)
+- **produces** `WorkoutAdaptation` / `UpdatedWorkoutBlueprint` / `WorkoutAdaptationPackage` / `WorkoutRuntimeInput`
+- **does not** generate workouts from scratch, change athlete goals, call providers, persist, or network
 
 Coach Supervisor remains responsible for Routing → Collaboration → Aggregation into a unified coach response.
 
@@ -135,6 +145,7 @@ Coach Supervisor remains responsible for Routing → Collaboration → Aggregati
 | Recommendation Engine | `buildRecommendations`, `prioritizeRecommendations`, `packageRecommendations`, `describeRecommendations`, `validateRecommendations` |
 | Explainability Engine | `buildExplanation`, `validateExplanation`, `describeExplanation`, `createExplanationSnapshot`, `packageExplanation` |
 | Continuous Adaptation Engine | `evaluateAdaptation`, `detectAdaptation`, `describeAdaptation`, `createAdaptationSnapshot`, `validateAdaptation` |
+| Workout Adaptation Engine | `adaptWorkout`, `compareWorkout`, `describeWorkoutAdaptation`, `createWorkoutSnapshot`, `validateWorkoutAdaptation` |
 | Coach Supervisor | `processCoachRequest`, `buildCoordinationPlan`, `aggregateResults`, `describeSupervisorCapabilities`, `validateSupervisorPlan` |
 
 ---
@@ -148,6 +159,8 @@ Coach Supervisor remains responsible for Routing → Collaboration → Aggregati
 - Recommendation engine: [RECOMMENDATION_ENGINE.md](./RECOMMENDATION_ENGINE.md)
 - Explainability engine: [EXPLAINABILITY_ENGINE.md](./EXPLAINABILITY_ENGINE.md)
 - Continuous adaptation: [CONTINUOUS_ADAPTATION_ENGINE.md](./CONTINUOUS_ADAPTATION_ENGINE.md)
+- Workout adaptation: [WORKOUT_ADAPTATION_ENGINE.md](./WORKOUT_ADAPTATION_ENGINE.md)
+- Workout pipeline: [WORKOUT_PIPELINE.md](./WORKOUT_PIPELINE.md)
 - Adaptive coaching: [ADAPTIVE_COACHING.md](./ADAPTIVE_COACHING.md)
 - Decision pipeline: [DECISION_PIPELINE.md](./DECISION_PIPELINE.md)
 - Reasoning pipeline: [REASONING_PIPELINE.md](./REASONING_PIPELINE.md)

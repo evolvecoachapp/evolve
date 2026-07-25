@@ -3,11 +3,11 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-25  
+**Last Updated:** 2026-07-26  
 **Purpose:** Document the Continuous Adaptation Engine — deterministic detection of meaningful adaptation opportunities over time.  
 **Source of Truth:** Yes — for Continuous Adaptation Engine layout, monitoring / detection / evaluation / comparison / timeline, boundaries, and public API on mobile.
 
-Related: [ADAPTIVE_COACHING.md](./ADAPTIVE_COACHING.md), [EXPLAINABILITY_ENGINE.md](./EXPLAINABILITY_ENGINE.md), [RECOMMENDATION_ENGINE.md](./RECOMMENDATION_ENGINE.md), [DECISION_ENGINE.md](./DECISION_ENGINE.md), [REASONING_PIPELINE.md](./REASONING_PIPELINE.md), [AI_RUNTIME.md](./AI_RUNTIME.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [ATHLETE_STATE_ENGINE.md](./ATHLETE_STATE_ENGINE.md), [CONTEXT_FUSION_ENGINE.md](./CONTEXT_FUSION_ENGINE.md), [STATE_MANAGEMENT.md](./STATE_MANAGEMENT.md), [DECISIONS.md](./DECISIONS.md) (ADR-076).
+Related: [ADAPTIVE_COACHING.md](./ADAPTIVE_COACHING.md), [WORKOUT_ADAPTATION_ENGINE.md](./WORKOUT_ADAPTATION_ENGINE.md), [WORKOUT_PIPELINE.md](./WORKOUT_PIPELINE.md), [EXPLAINABILITY_ENGINE.md](./EXPLAINABILITY_ENGINE.md), [RECOMMENDATION_ENGINE.md](./RECOMMENDATION_ENGINE.md), [DECISION_ENGINE.md](./DECISION_ENGINE.md), [REASONING_PIPELINE.md](./REASONING_PIPELINE.md), [AI_RUNTIME.md](./AI_RUNTIME.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [ATHLETE_STATE_ENGINE.md](./ATHLETE_STATE_ENGINE.md), [CONTEXT_FUSION_ENGINE.md](./CONTEXT_FUSION_ENGINE.md), [STATE_MANAGEMENT.md](./STATE_MANAGEMENT.md), [DECISIONS.md](./DECISIONS.md) (ADR-076).
 
 ---
 
@@ -60,10 +60,10 @@ Continuous Adaptation Engine
       ↓
 AdaptationDecision
       ↓
-Workout Adaptation Engine   (WorkoutAdaptationInput)
-Nutrition Adaptation Engine (NutritionAdaptationInput)
-Recovery Adaptation Engine  (RecoveryAdaptationInput)
-Goal Progress Engine        (GoalProgressInput)
+Workout Adaptation Engine   ← Sprint 24.1 (`features/workout-adaptation`)
+Nutrition Adaptation Engine (NutritionAdaptationInput) ← future
+Recovery Adaptation Engine  (RecoveryAdaptationInput)  ← future
+Goal Progress Engine        (GoalProgressInput)        ← future
 ```
 
 ---
@@ -120,7 +120,7 @@ Root export: models + application + `ContinuousAdaptationEngineService` only —
 | Timeline | `AdaptationTimeline`, `AdaptationHistory`, `AdaptationWindow` |
 | Downstream handoffs | `WorkoutAdaptationInput`, `NutritionAdaptationInput`, `RecoveryAdaptationInput`, `GoalProgressInput` |
 
-Handoff inputs are **structured opportunity packages only** — they do not modify plans.
+Handoff inputs are **structured opportunity packages only** — they do not modify plans. Workout Adaptation Engine (Sprint 24.1) consumes the workout handoff and owns blueprint adaptation separately.
 
 ---
 
