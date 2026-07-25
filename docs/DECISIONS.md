@@ -2393,4 +2393,35 @@ Introduce `app/src/features/workout-adaptation/` with immutable models (`Workout
 
 ---
 
-*New decisions are appended as Decision 078, 079, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 078: Nutrition Adaptation Engine Foundation (Sprint 24.2)
+
+**Date:** 2026-07-26  
+**Status:** Accepted  
+
+**Context:**
+Sprint 24.2 must introduce a Nutrition Adaptation Engine that adapts an existing nutrition plan according to Continuous Adaptation decisions. It sits downstream of Nutrition Plan / Nutrition Runtime / Athlete State / Continuous Adaptation / Coach Context and upstream of Nutrition Runtime handoff — without generating nutrition from scratch, changing athlete goals, AI reasoning, provider SDKs, persistence, networking, or UI.
+
+**Decision:**
+Introduce `app/src/features/nutrition-adaptation/` with immutable models (`NutritionAdaptation`, `NutritionModification`, `UpdatedNutritionPlan`, `NutritionPackage`, `NutritionSnapshot`, `NutritionRuntimeInput`, …), `NutritionAdaptationEngine` / `NutritionAdaptationCoordinator` / `NutritionAdaptationSession`, deterministic evaluation / planning / adapters / comparison / builders / validators / policies / selectors, upstream ports (Plan / Runtime / Athlete State / Continuous Adaptation / Coach Context with mocks), `NutritionAdaptationEngineService`, and a narrow application API (`adaptNutrition`, `compareNutrition`, `describeNutritionAdaptation`, `createNutritionSnapshot`, `validateNutritionAdaptation`). Document boundaries and ADR-078.
+
+**Why:**
+- **Adaptation ≠ generation** keeps Nutrition Plan generation free to own creation; this engine only adjusts existing structure keys.
+- **Adaptation ≠ Continuous Adaptation detection** keeps opportunity detection separate from plan mutation packaging.
+- **Ports for upstream modules** enable deterministic tests without provider SDKs.
+- **Evaluation + planning + adapters** map decision / signal keys to immutable modification records without inventing prescriptions via heuristics.
+- **Narrow public API** prevents leaking internal evaluators / planners / adapters.
+
+**Alternatives considered:**
+- **Extend Nutrition Agent plan builders** — rejected: Nutrition Agent orchestrates nutrition domain reasoning; Sprint 24.2 requires a dedicated existing-plan adaptation engine.
+- **Mutate inside Continuous Adaptation Engine** — rejected: Continuous Adaptation must remain detection-only (ADR-076).
+- **Share Workout Adaptation Engine** — rejected: nutrition domains (meals / macros / hydration / refeed) need a dedicated plan model and adapters.
+- **AI / generative adaptation** — rejected: sprint forbids AI reasoning / nutrition generation / goal changes.
+
+**Consequences:**
+- Documentation updates: [NUTRITION_ADAPTATION_ENGINE.md](./NUTRITION_ADAPTATION_ENGINE.md), [NUTRITION_PIPELINE.md](./NUTRITION_PIPELINE.md), [ADAPTIVE_COACHING.md](./ADAPTIVE_COACHING.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [architecture/README.md](./architecture/README.md).
+- Nutrition Adaptation Engine remains free of AI, prompts, providers, networking, persistence, UI, Tool Runtime, Action Engine, nutrition generation, and athlete goal changes.
+- Upstream engines are unchanged; consumed via ports. Recovery / Goal Progress Adaptation Engines remain future.
+
+---
+
+*New decisions are appended as Decision 079, 080, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
