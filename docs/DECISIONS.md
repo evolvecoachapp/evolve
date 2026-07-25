@@ -2331,4 +2331,35 @@ Introduce `app/src/features/explainability-engine/` with immutable models (`Coac
 
 ---
 
-*New decisions are appended as Decision 076, 077, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 076: Continuous Adaptation Engine Foundation (Sprint 23.1)
+
+**Date:** 2026-07-25  
+**Status:** Accepted  
+
+**Context:**
+Sprint 23.1 must introduce a Continuous Adaptation Engine that continuously evaluates athlete evolution over time and determines whether coaching adaptations should be triggered. It sits downstream of Athlete State / Context Fusion / Decision / Recommendation / Explainability and upstream of future Workout / Nutrition / Recovery / Goal Progress Adaptation Engines — without modifying plans, generating recommendations, AI reasoning, prediction, business calculations, persistence, networking, or UI.
+
+**Decision:**
+Introduce `app/src/features/continuous-adaptation/` with immutable models (`AdaptationDecision`, `AdaptationPackage`, `AdaptationOpportunity`, `AdaptationTrigger`, `AdaptationTimeline`, `WorkoutAdaptationInput`, `NutritionAdaptationInput`, `RecoveryAdaptationInput`, `GoalProgressInput`, …), `ContinuousAdaptationEngine` / `AdaptationCoordinator` / `AdaptationSession`, deterministic monitoring / detection / evaluation / comparison / timeline / builders / validators / policies / selectors, upstream ports (Athlete State / Context Fusion / Decision / Recommendation / Explainability with mocks), `ContinuousAdaptationEngineService`, and a narrow application API (`evaluateAdaptation`, `detectAdaptation`, `describeAdaptation`, `createAdaptationSnapshot`, `validateAdaptation`). Document boundaries and ADR-076.
+
+**Why:**
+- **Detection ≠ plan mutation** keeps Workout / Nutrition / Recovery Adaptation Engines free to own plan changes later.
+- **Detection ≠ recommendation generation** keeps Recommendation Engine free of long-horizon opportunity detection.
+- **Ports for upstream engines** enable deterministic tests without provider SDKs.
+- **Monitoring + detection + evaluation + comparison + timeline layers** provide structured opportunity signals without AI / prediction / heuristics.
+- **Narrow public API** prevents leaking internal monitors / detectors / evaluators.
+
+**Alternatives considered:**
+- **Extend Training Adaptation Engine** — rejected: that path is workout-readiness recommendations (Sprint 17.5); Continuous Adaptation is cross-domain opportunity detection over time.
+- **Detect inside Explainability Engine** — rejected: Explainability owns why-traces, not adaptation triggers.
+- **Detect inside Coach Supervisor** — rejected: Supervisor owns multi-agent orchestration, not adaptation opportunity packaging.
+- **AI / predictive adaptation** — rejected: sprint forbids AI reasoning / prediction / heuristics / plan mutation / recommendation generation.
+
+**Consequences:**
+- Documentation updates: [CONTINUOUS_ADAPTATION_ENGINE.md](./CONTINUOUS_ADAPTATION_ENGINE.md), [ADAPTIVE_COACHING.md](./ADAPTIVE_COACHING.md), [REASONING_PIPELINE.md](./REASONING_PIPELINE.md), [AI_RUNTIME.md](./AI_RUNTIME.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [architecture/README.md](./architecture/README.md), [AGENT_PLATFORM.md](./AGENT_PLATFORM.md).
+- Continuous Adaptation Engine remains free of AI, prediction, heuristics, prompts, providers, networking, persistence, UI, Tool Runtime, Action Engine, recommendation generation, plan mutation, and domain calculations.
+- Upstream engines are unchanged; consumed via ports. Downstream domain adaptation engines remain future consumers of handoff inputs.
+
+---
+
+*New decisions are appended as Decision 077, 078, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

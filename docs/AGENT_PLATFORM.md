@@ -30,6 +30,8 @@ Recommendation Engine            ← Sprint 22.4 (CoachingRecommendation orchest
       ↓
 Explainability Engine            ← Sprint 22.5 (CoachingExplanation orchestration)
       ↓
+Continuous Adaptation Engine     ← Sprint 23.1 (AdaptationDecision / opportunity detection)
+      ↓
 Coach Supervisor                 ← Sprint 21.8 (central multi-agent orchestrator)
       ↓
 Supervisor Routing Engine        ← Sprint 21.7
@@ -48,6 +50,7 @@ Supporting infrastructure:
 | Coaching Session Runtime | `features/coaching-session` | Session lifecycle + immutable context; coordinates Supervisor |
 | Athlete State Engine | `features/athlete-state` | Immutable current athlete truth; specialist aggregation |
 | Context Fusion Engine | `features/context-fusion` | Fuse runtimes/agents into `UnifiedCoachingContext` |
+| Continuous Adaptation Engine | `features/continuous-adaptation` | Adaptation opportunity detection → `AdaptationDecision` |
 | Agent Framework | `features/agent-framework` | Shared `IAgent` contracts, lifecycle, registry |
 | Agent Runtime | `features/agent-runtime` | Single-agent execution entry |
 | Coach Supervisor | `features/coach-supervisor` | Multi-agent orchestration → `UnifiedCoachResponse` |

@@ -9,7 +9,7 @@
 
 ## Primary diagrams
 
-- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline + Composition Root + Decision Intelligence + Workout/Rest Runtime + Domain Events + Performance Engine + Achievement Engine + Athlete History + Athlete State Engine + Context Fusion Engine + Decision Engine + Recommendation Engine + Explainability Engine + Decision Pipeline + Reasoning Pipeline + Recovery Intelligence + Insight Engine + Coach Intelligence + Conversation Orchestrator + Prompt Builder + Prompt Composition Engine + AI Provider Abstraction + OpenAI Provider + AI Execution Pipeline + Streaming Foundation + Tool Calling Foundation + Domain Tool Adapters + Response Formatter + Action Engine + Tool Runtime + Agent Framework + Agent Runtime + Workout Agent + Nutrition Agent + Recovery Agent + Coach Agent + Coaching Session Runtime + Athlete State Engine + Coach Supervisor + Supervisor Routing + Agent Capability + Agent Collaboration + Conversation Memory dependency flow
+- [ARCHITECTURE.md](../ARCHITECTURE.md) — AI Workout Pipeline + Composition Root + Decision Intelligence + Workout/Rest Runtime + Domain Events + Performance Engine + Achievement Engine + Athlete History + Athlete State Engine + Context Fusion Engine + Decision Engine + Recommendation Engine + Explainability Engine + Continuous Adaptation Engine + Decision Pipeline + Reasoning Pipeline + Adaptive Coaching + Recovery Intelligence + Insight Engine + Coach Intelligence + Conversation Orchestrator + Prompt Builder + Prompt Composition Engine + AI Provider Abstraction + OpenAI Provider + AI Execution Pipeline + Streaming Foundation + Tool Calling Foundation + Domain Tool Adapters + Response Formatter + Action Engine + Tool Runtime + Agent Framework + Agent Runtime + Workout Agent + Nutrition Agent + Recovery Agent + Coach Agent + Coaching Session Runtime + Athlete State Engine + Coach Supervisor + Supervisor Routing + Agent Capability + Agent Collaboration + Conversation Memory dependency flow
 - [COMPOSITION_ROOT.md](../COMPOSITION_ROOT.md) — Composition Root, Dependency Graph, Factories, DI, Service Lifecycle
 - [DECISION_INTELLIGENCE.md](../DECISION_INTELLIGENCE.md) — Decision graph, explainability, execution reports, Coach AI preparation
 - [WORKOUT_RUNTIME.md](../WORKOUT_RUNTIME.md) — Live WorkoutSession execution state, session lifecycle, runtime state model
@@ -48,11 +48,13 @@
 - [DECISION_ENGINE.md](../DECISION_ENGINE.md) — Decision Engine, immutable CoachingDecision / DecisionPackage
 - [RECOMMENDATION_ENGINE.md](../RECOMMENDATION_ENGINE.md) — Recommendation Engine, immutable CoachingRecommendation / RecommendationPackage
 - [EXPLAINABILITY_ENGINE.md](../EXPLAINABILITY_ENGINE.md) — Explainability Engine, immutable CoachingExplanation / ExplanationPackage
+- [CONTINUOUS_ADAPTATION_ENGINE.md](../CONTINUOUS_ADAPTATION_ENGINE.md) — Continuous Adaptation Engine, immutable AdaptationDecision / AdaptationPackage
+- [ADAPTIVE_COACHING.md](../ADAPTIVE_COACHING.md) — Adaptive coaching path from opportunity detection to future domain adaptation engines
 - [DECISION_PIPELINE.md](../DECISION_PIPELINE.md) — Decision pipeline from fused context through Decision → Recommendation → Explainability
-- [REASONING_PIPELINE.md](../REASONING_PIPELINE.md) — Deterministic evidence / reasoning-trace / explainability pipeline
+- [REASONING_PIPELINE.md](../REASONING_PIPELINE.md) — Deterministic evidence / reasoning-trace / explainability / continuous-adaptation pipeline
 - [STATE_MANAGEMENT.md](../STATE_MANAGEMENT.md) — State ownership map across athlete / session / fusion / decision / recommendation / explanation / history modules
 - [SESSION_LIFECYCLE.md](../SESSION_LIFECYCLE.md) — Coaching session statuses, phases, and transitions
-- [AI_RUNTIME.md](../AI_RUNTIME.md) — Mobile AI / coach runtime stack (Conversation → Session → Athlete State → Context Fusion → Decision Engine → Recommendation Engine → Explainability Engine)
+- [AI_RUNTIME.md](../AI_RUNTIME.md) — Mobile AI / coach runtime stack (Conversation → Session → Athlete State → Context Fusion → Decision Engine → Recommendation Engine → Explainability Engine → Continuous Adaptation Engine)
 - [AGENT_PLATFORM.md](../AGENT_PLATFORM.md) — Multi-agent platform stack index
 - [AGENT_COLLABORATION.md](../AGENT_COLLABORATION.md) — Agent Collaboration Foundation, planning / dispatch / aggregation
 - [AGENT_CAPABILITY.md](../AGENT_CAPABILITY.md) — Agent Capability Registry Foundation, resolve / register / query
