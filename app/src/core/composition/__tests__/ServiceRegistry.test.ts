@@ -23,6 +23,18 @@ describe("ServiceRegistry", () => {
       "TrainingAdaptationService",
       "WorkoutAssemblyService",
       "ProgramGenerationService",
+      "AgentCapabilityService",
+      "WorkoutAgentService",
+      "NutritionAgentService",
+      "RecoveryAgentService",
+      "SupervisorRoutingService",
+      "AgentCollaborationService",
+      "CoachSupervisorService",
+      "CoachingSessionService",
+      "AthleteStateService",
+      "ContextFusionService",
+      "DecisionEngineService",
+      "RecommendationEngineService",
     ]);
   });
 

@@ -77,4 +77,52 @@ export class ServiceRegistry {
   getWorkoutAssemblyService(): ServiceMap["WorkoutAssemblyService"] {
     return this.resolve("WorkoutAssemblyService");
   }
+
+  getAgentCapabilityService(): ServiceMap["AgentCapabilityService"] {
+    return this.resolve("AgentCapabilityService");
+  }
+
+  getWorkoutAgentService(): ServiceMap["WorkoutAgentService"] {
+    return this.resolve("WorkoutAgentService");
+  }
+
+  getNutritionAgentService(): ServiceMap["NutritionAgentService"] {
+    return this.resolve("NutritionAgentService");
+  }
+
+  getRecoveryAgentService(): ServiceMap["RecoveryAgentService"] {
+    return this.resolve("RecoveryAgentService");
+  }
+
+  getSupervisorRoutingService(): ServiceMap["SupervisorRoutingService"] {
+    return this.resolve("SupervisorRoutingService");
+  }
+
+  getAgentCollaborationService(): ServiceMap["AgentCollaborationService"] {
+    return this.resolve("AgentCollaborationService");
+  }
+
+  getCoachSupervisorService(): ServiceMap["CoachSupervisorService"] {
+    return this.resolve("CoachSupervisorService");
+  }
+
+  getCoachingSessionService(): ServiceMap["CoachingSessionService"] {
+    return this.resolve("CoachingSessionService");
+  }
+
+  getAthleteStateService(): ServiceMap["AthleteStateService"] {
+    return this.resolve("AthleteStateService");
+  }
+
+  getContextFusionService(): ServiceMap["ContextFusionService"] {
+    return this.resolve("ContextFusionService");
+  }
+
+  getDecisionEngineService(): ServiceMap["DecisionEngineService"] {
+    return this.resolve("DecisionEngineService");
+  }
+
+  getRecommendationEngineService(): ServiceMap["RecommendationEngineService"] {
+    return this.resolve("RecommendationEngineService");
+  }
 }

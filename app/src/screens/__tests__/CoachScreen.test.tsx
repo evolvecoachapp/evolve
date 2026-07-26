@@ -28,6 +28,12 @@ jest.mock(
   () => ({
     createCoachConversationRuntime: () => ({
       service: {},
+      coachingSession: {
+        startSession: jest.fn(),
+        continueSession: jest.fn(),
+        endSession: jest.fn(),
+        describeSession: jest.fn(),
+      },
       configuration: {
         provider: { type: "local", apiKey: null },
         model: { id: "local-default" },

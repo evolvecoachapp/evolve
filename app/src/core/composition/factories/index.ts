@@ -21,3 +21,39 @@ export type { WorkoutAssemblyFactoryDeps } from "./WorkoutAssemblyFactory";
 
 export { ProgramGenerationFactory } from "./ProgramGenerationFactory";
 export type { ProgramGenerationFactoryDeps } from "./ProgramGenerationFactory";
+
+export { AgentCapabilityFactory } from "./AgentCapabilityFactory";
+
+export {
+  WorkoutAgentFactory,
+  NutritionAgentFactory,
+  RecoveryAgentFactory,
+} from "./SpecialistAgentFactories";
+
+export {
+  SupervisorRoutingFactory,
+  AgentCollaborationFactory,
+} from "./RoutingCollaborationFactories";
+export type { SupervisorRoutingFactoryDeps } from "./RoutingCollaborationFactories";
+
+export {
+  CoachSupervisorFactory,
+  CoachingSessionFactory,
+} from "./CoachOrchestrationFactories";
+export type {
+  CoachSupervisorFactoryDeps,
+  CoachingSessionFactoryDeps,
+} from "./CoachOrchestrationFactories";
+
+export {
+  AthleteStateFactory,
+  ContextFusionFactory,
+  DecisionEngineFactory,
+  RecommendationEngineFactory,
+} from "./DecisionPipelineFactories";
+export type {
+  AthleteStateFactoryDeps,
+  ContextFusionFactoryDeps,
+  DecisionEngineFactoryDeps,
+  RecommendationEngineFactoryDeps,
+} from "./DecisionPipelineFactories";

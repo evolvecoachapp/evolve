@@ -8,6 +8,18 @@ import {
   TrainingAdaptationFactory,
   WorkoutAssemblyFactory,
   WorkoutBlueprintFactory,
+  AgentCapabilityFactory,
+  WorkoutAgentFactory,
+  NutritionAgentFactory,
+  RecoveryAgentFactory,
+  SupervisorRoutingFactory,
+  AgentCollaborationFactory,
+  CoachSupervisorFactory,
+  CoachingSessionFactory,
+  AthleteStateFactory,
+  ContextFusionFactory,
+  DecisionEngineFactory,
+  RecommendationEngineFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -29,6 +41,10 @@ export interface CompositionRootOptions {
  * Composition Root — single place that wires and exposes pipeline services.
  *
  * Application code must request services here; it must not manually `new` them.
+ *
+ * Wires:
+ * - Training Intelligence pipeline (program generation)
+ * - Coaching architecture pipeline (session → supervisor → fusion → decision → recommendation)
  */
 export class CompositionRoot {
   readonly container: ApplicationContainer<ServiceMap>;
@@ -66,6 +82,7 @@ export class CompositionRoot {
 
     const container = new ApplicationContainer<ServiceMap>([...SERVICE_TOKENS]);
 
+    // ── Training Intelligence ──────────────────────────────────────────
     container.register(
       "WorkoutBlueprintService",
       () =>
@@ -140,6 +157,113 @@ export class CompositionRoot {
       { lifecycle },
     );
 
+    // ── Coaching architecture ──────────────────────────────────────────
+    container.register(
+      "AgentCapabilityService",
+      () => AgentCapabilityFactory.create(),
+      { lifecycle },
+    );
+
+    container.register(
+      "WorkoutAgentService",
+      () => WorkoutAgentFactory.create(),
+      { lifecycle },
+    );
+
+    container.register(
+      "NutritionAgentService",
+      () => NutritionAgentFactory.create(),
+      { lifecycle },
+    );
+
+    container.register(
+      "RecoveryAgentService",
+      () => RecoveryAgentFactory.create(),
+      { lifecycle },
+    );
+
+    container.register(
+      "SupervisorRoutingService",
+      () =>
+        SupervisorRoutingFactory.create({
+          capabilityService: container.resolve("AgentCapabilityService"),
+        }),
+      { lifecycle },
+    );
+
+    container.register(
+      "AgentCollaborationService",
+      () => AgentCollaborationFactory.create(),
+      { lifecycle },
+    );
+
+    container.register(
+      "CoachSupervisorService",
+      () =>
+        CoachSupervisorFactory.create({
+          routing: container.resolve("SupervisorRoutingService"),
+          collaboration: container.resolve("AgentCollaborationService"),
+        }),
+      { lifecycle },
+    );
+
+    container.register(
+      "CoachingSessionService",
+      () =>
+        CoachingSessionFactory.create({
+          supervisor: container.resolve("CoachSupervisorService"),
+        }),
+      { lifecycle },
+    );
+
+    container.register(
+      "AthleteStateService",
+      () =>
+        AthleteStateFactory.create({
+          workoutAgent: container.resolve("WorkoutAgentService"),
+          nutritionAgent: container.resolve("NutritionAgentService"),
+          recoveryAgent: container.resolve("RecoveryAgentService"),
+        }),
+      { lifecycle },
+    );
+
+    container.register(
+      "ContextFusionService",
+      () =>
+        ContextFusionFactory.create({
+          athleteState: container.resolve("AthleteStateService"),
+          coachingSession: container.resolve("CoachingSessionService"),
+          supervisor: container.resolve("CoachSupervisorService"),
+          workoutAgent: container.resolve("WorkoutAgentService"),
+          nutritionAgent: container.resolve("NutritionAgentService"),
+          recoveryAgent: container.resolve("RecoveryAgentService"),
+        }),
+      { lifecycle },
+    );
+
+    container.register(
+      "DecisionEngineService",
+      () =>
+        DecisionEngineFactory.create({
+          contextFusion: container.resolve("ContextFusionService"),
+          athleteState: container.resolve("AthleteStateService"),
+          supervisor: container.resolve("CoachSupervisorService"),
+        }),
+      { lifecycle },
+    );
+
+    container.register(
+      "RecommendationEngineService",
+      () =>
+        RecommendationEngineFactory.create({
+          decisionEngine: container.resolve("DecisionEngineService"),
+          contextFusion: container.resolve("ContextFusionService"),
+          athleteState: container.resolve("AthleteStateService"),
+          supervisor: container.resolve("CoachSupervisorService"),
+        }),
+      { lifecycle },
+    );
+
     container.validate();
     container.freeze();
 
@@ -185,5 +309,29 @@ export class CompositionRoot {
 
   getWorkoutAssemblyService(): ServiceMap["WorkoutAssemblyService"] {
     return this.registry.getWorkoutAssemblyService();
+  }
+
+  getCoachingSessionService(): ServiceMap["CoachingSessionService"] {
+    return this.registry.resolve("CoachingSessionService");
+  }
+
+  getCoachSupervisorService(): ServiceMap["CoachSupervisorService"] {
+    return this.registry.resolve("CoachSupervisorService");
+  }
+
+  getRecommendationEngineService(): ServiceMap["RecommendationEngineService"] {
+    return this.registry.resolve("RecommendationEngineService");
+  }
+
+  getDecisionEngineService(): ServiceMap["DecisionEngineService"] {
+    return this.registry.resolve("DecisionEngineService");
+  }
+
+  getContextFusionService(): ServiceMap["ContextFusionService"] {
+    return this.registry.resolve("ContextFusionService");
+  }
+
+  getAthleteStateService(): ServiceMap["AthleteStateService"] {
+    return this.registry.resolve("AthleteStateService");
   }
 }

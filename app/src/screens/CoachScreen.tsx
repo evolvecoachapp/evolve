@@ -62,6 +62,7 @@ export function CoachScreen() {
     retryMessage,
   } = useCoachConversation({
     service: runtime.service,
+    coachingSession: runtime.coachingSession,
     promptContext,
   });
 

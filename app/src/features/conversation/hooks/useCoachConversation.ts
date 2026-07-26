@@ -1,5 +1,12 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { StreamingSession } from "../../ai/models/StreamingSession";
+import { WellKnownCapabilityIds } from "../../agent-capability/models/CapabilityId";
+import type { CoachingSessionService } from "../../coaching-session/services/CoachingSessionService";
+import { EMPTY_SESSION_METADATA } from "../../coaching-session/models/SessionMetadata";
+import {
+  SessionRequestKinds,
+  type SessionRequest,
+} from "../../coaching-session/models/SessionRequest";
 import type { PromptContext } from "../../prompt-builder/models/coach/PromptContext";
 import {
   closeConversation as closeConversationUseCase,
@@ -17,20 +24,30 @@ export interface UseCoachConversationOptions {
   /** Injected ConversationService — no singleton / global default. */
   readonly service: ConversationService;
   /**
+   * Optional Coaching Session Runtime from Composition Root.
+   * When provided, conversation turns also execute the new coaching pipeline.
+   */
+  readonly coachingSession?: CoachingSessionService | null;
+  /**
    * Prompt context used for AI generation on send/retry.
    * Required when calling sendMessage or retryMessage.
    */
   readonly promptContext?: PromptContext | null;
+  /** Optional athlete id for session / supervisor invocations. */
+  readonly athleteId?: string | null;
 }
 
 /**
  * Presentation adapter for the Conversation engine.
  *
  * Returns domain state and actions only — no UI formatting.
+ * Optionally bridges into Coaching Session Runtime (Composition Root).
  */
 export function useCoachConversation({
   service,
+  coachingSession = null,
   promptContext = null,
+  athleteId = null,
 }: UseCoachConversationOptions) {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [loading, setLoading] = useState(false);
@@ -40,6 +57,8 @@ export function useCoachConversation({
     null,
   );
   const [error, setError] = useState<string | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
+  const requestSeq = useRef(0);
 
   const syncStreamState = useCallback(() => {
     const next = service.getCurrentStream();
@@ -60,6 +79,50 @@ export function useCoachConversation({
       }
     },
     [service],
+  );
+
+  const invokeSession = useCallback(
+    (input: {
+      readonly kind:
+        | typeof SessionRequestKinds.START
+        | typeof SessionRequestKinds.CONTINUE
+        | typeof SessionRequestKinds.END;
+      readonly conversationId: string | null;
+      readonly message: string;
+    }) => {
+      if (!coachingSession) return;
+      requestSeq.current += 1;
+      const request: SessionRequest = Object.freeze({
+        id: `session-req:${requestSeq.current}`,
+        kind: input.kind,
+        sessionId: sessionIdRef.current,
+        conversationId: input.conversationId,
+        athleteId,
+        message: input.message,
+        intent: "coach_conversation",
+        requiredCapabilityIds: Object.freeze([
+          WellKnownCapabilityIds.GENERATE_WORKOUT,
+          WellKnownCapabilityIds.EVALUATE_RECOVERY,
+        ]),
+        metadata: EMPTY_SESSION_METADATA,
+        createdAt: new Date().toISOString(),
+      });
+
+      const result =
+        input.kind === SessionRequestKinds.START
+          ? coachingSession.startSession(request)
+          : input.kind === SessionRequestKinds.CONTINUE
+            ? coachingSession.continueSession(request)
+            : coachingSession.endSession(request);
+
+      if (result.success && result.sessionId) {
+        sessionIdRef.current = result.sessionId;
+      }
+      if (input.kind === SessionRequestKinds.END && result.success) {
+        sessionIdRef.current = null;
+      }
+    },
+    [athleteId, coachingSession],
   );
 
   const run = useCallback(
@@ -99,8 +162,18 @@ export function useCoachConversation({
   );
 
   const startConversation = useCallback(async () => {
-    await run(() => startConversationUseCase(service));
-  }, [run, service]);
+    await run(async () => {
+      const next = await startConversationUseCase(service);
+      if (next) {
+        invokeSession({
+          kind: SessionRequestKinds.START,
+          conversationId: next.id,
+          message: "start coaching session",
+        });
+      }
+      return next;
+    });
+  }, [invokeSession, run, service]);
 
   const sendMessage = useCallback(
     async (content: string) => {
@@ -115,21 +188,37 @@ export function useCoachConversation({
 
       const conversationId = conversation.id;
       await run(
-        () =>
-          sendMessageUseCase(service, {
+        async () => {
+          const next = await sendMessageUseCase(service, {
             conversationId,
             content,
             promptContext,
-            onConversationUpdate: (next) => {
-              setConversation(next);
+            onConversationUpdate: (updated) => {
+              setConversation(updated);
               syncStreamState();
             },
-          }),
+          });
+          invokeSession({
+            kind: sessionIdRef.current
+              ? SessionRequestKinds.CONTINUE
+              : SessionRequestKinds.START,
+            conversationId,
+            message: content,
+          });
+          return next;
+        },
         conversationId,
         { streaming: true },
       );
     },
-    [conversation, promptContext, run, service, syncStreamState],
+    [
+      conversation,
+      invokeSession,
+      promptContext,
+      run,
+      service,
+      syncStreamState,
+    ],
   );
 
   const retryMessage = useCallback(
@@ -176,8 +265,15 @@ export function useCoachConversation({
       return;
     }
 
-    await run(() => closeConversationUseCase(service, conversation.id));
-  }, [conversation, run, service]);
+    await run(async () => {
+      invokeSession({
+        kind: SessionRequestKinds.END,
+        conversationId: conversation.id,
+        message: "end coaching session",
+      });
+      return closeConversationUseCase(service, conversation.id);
+    });
+  }, [conversation, invokeSession, run, service]);
 
   const deleteConversation = useCallback(async () => {
     if (!conversation) {
@@ -187,17 +283,20 @@ export function useCoachConversation({
 
     const conversationId = conversation.id;
     await run(async () => {
+      invokeSession({
+        kind: SessionRequestKinds.END,
+        conversationId,
+        message: "end coaching session",
+      });
       await deleteConversationUseCase(service, conversationId);
     });
-  }, [conversation, run, service]);
+  }, [conversation, invokeSession, run, service]);
 
   const restore = useCallback(async () => {
     setIsRestoring(true);
     setError(null);
     try {
-      const restored = await service.restoreConversation(
-        conversation?.id,
-      );
+      const restored = await service.restoreConversation(conversation?.id);
       setConversation(restored);
     } catch (caughtError: unknown) {
       setError(
@@ -217,6 +316,7 @@ export function useCoachConversation({
     try {
       await service.clearConversation(conversation?.id);
       setConversation(null);
+      sessionIdRef.current = null;
     } catch (caughtError: unknown) {
       setError(
         caughtError instanceof Error

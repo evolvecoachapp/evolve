@@ -1,3 +1,15 @@
+import type { AgentCapabilityService } from "../../../features/agent-capability/services/AgentCapabilityService";
+import type { WorkoutAgentService } from "../../../features/workout-agent/services/WorkoutAgentService";
+import type { NutritionAgentService } from "../../../features/nutrition-agent/services/NutritionAgentService";
+import type { RecoveryAgentService } from "../../../features/recovery-agent/services/RecoveryAgentService";
+import type { SupervisorRoutingService } from "../../../features/supervisor-routing/services/SupervisorRoutingService";
+import type { AgentCollaborationService } from "../../../features/agent-collaboration/services/AgentCollaborationService";
+import type { CoachSupervisorService } from "../../../features/coach-supervisor/services/CoachSupervisorService";
+import type { CoachingSessionService } from "../../../features/coaching-session/services/CoachingSessionService";
+import type { AthleteStateService } from "../../../features/athlete-state/services/AthleteStateService";
+import type { ContextFusionService } from "../../../features/context-fusion/services/ContextFusionService";
+import type { DecisionEngineService } from "../../../features/decision-engine/services/DecisionEngineService";
+import type { RecommendationEngineService } from "../../../features/recommendation-engine/services/RecommendationEngineService";
 import type { ExerciseSelectionService } from "../../../features/exercise-selection/services/ExerciseSelectionService";
 import type { ProgramGenerationService } from "../../../features/program-generation/services/ProgramGenerationService";
 import type { ProgrammingService } from "../../../features/programming/services/ProgrammingService";
@@ -11,6 +23,7 @@ import type { WorkoutBlueprintService } from "../../../features/workout-blueprin
  * Extend this interface when registering future services.
  */
 export interface ServiceMap {
+  // Training Intelligence pipeline
   ProgramGenerationService: ProgramGenerationService;
   WorkoutBlueprintService: WorkoutBlueprintService;
   ExerciseSelectionService: ExerciseSelectionService;
@@ -18,12 +31,27 @@ export interface ServiceMap {
   ProgressionService: ProgressionService;
   TrainingAdaptationService: TrainingAdaptationService;
   WorkoutAssemblyService: WorkoutAssemblyService;
+
+  // Coaching architecture pipeline
+  AgentCapabilityService: AgentCapabilityService;
+  WorkoutAgentService: WorkoutAgentService;
+  NutritionAgentService: NutritionAgentService;
+  RecoveryAgentService: RecoveryAgentService;
+  SupervisorRoutingService: SupervisorRoutingService;
+  AgentCollaborationService: AgentCollaborationService;
+  CoachSupervisorService: CoachSupervisorService;
+  CoachingSessionService: CoachingSessionService;
+  AthleteStateService: AthleteStateService;
+  ContextFusionService: ContextFusionService;
+  DecisionEngineService: DecisionEngineService;
+  RecommendationEngineService: RecommendationEngineService;
 }
 
 export type ServiceToken = keyof ServiceMap;
 
 /** Canonical ordered tokens for registry integrity checks. */
 export const SERVICE_TOKENS = [
+  // Training Intelligence
   "WorkoutBlueprintService",
   "ExerciseSelectionService",
   "ProgrammingService",
@@ -31,4 +59,17 @@ export const SERVICE_TOKENS = [
   "TrainingAdaptationService",
   "WorkoutAssemblyService",
   "ProgramGenerationService",
+  // Coaching architecture
+  "AgentCapabilityService",
+  "WorkoutAgentService",
+  "NutritionAgentService",
+  "RecoveryAgentService",
+  "SupervisorRoutingService",
+  "AgentCollaborationService",
+  "CoachSupervisorService",
+  "CoachingSessionService",
+  "AthleteStateService",
+  "ContextFusionService",
+  "DecisionEngineService",
+  "RecommendationEngineService",
 ] as const satisfies readonly ServiceToken[];

@@ -2,13 +2,35 @@ import { eventDispatcher } from "../dispatcher"
 import type { WeightUpdated } from "../types"
 import { generateDailyInsights } from "../../dailyCoach"
 import type { DailyContext, CoachInsight } from "../../dailyCoach/types"
-import { recommendationService } from "../../recommendations/service"
+import {
+  createRecommendationEngineBridgeService,
+  resolveService,
+} from "../../../core/composition"
+import {
+  recommendationService as legacyRecommendationService,
+  recommendationStore,
+} from "../../recommendations/service"
 import type { RecommendationContext } from "../../recommendations/types"
 import { generateNotifications } from "../../notifications/generator"
 import { notificationStore } from "../../notifications/service"
 import { defaultUserIntelligence } from "../../userIntelligence/factory"
 
 let initialized = false
+
+/**
+ * Resolve the Recommendation Engine bridge (new pipeline).
+ * Falls back to the legacy recommendation service if composition is unavailable.
+ */
+function resolveRecommendationService() {
+  try {
+    return createRecommendationEngineBridgeService(
+      resolveService("RecommendationEngineService"),
+      recommendationStore,
+    )
+  } catch {
+    return legacyRecommendationService
+  }
+}
 
 export function initializeWeightUpdatedPipeline(): void {
   if (initialized) {
@@ -24,7 +46,9 @@ function handleWeightUpdated(event: WeightUpdated): void {
   const insights = generateDailyInsights(dailyContext)
 
   const recommendationContext = buildRecommendationContext(event, insights)
-  const feed = recommendationService.generateAndStoreRecommendations(recommendationContext)
+  const feed = resolveRecommendationService().generateAndStoreRecommendations(
+    recommendationContext,
+  )
 
   const notifications = generateNotifications(feed)
   notificationStore.saveNotifications(notifications)

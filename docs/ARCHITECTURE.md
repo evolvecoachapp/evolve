@@ -340,17 +340,18 @@ Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). AI Runtime: [AI_RUNTIME.md]
 
 Full detail: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md).
 
-### Composition Root & Dependency Injection (`core/composition`) — Sprint 17.9
+### Composition Root & Dependency Injection (`core/composition`) — Sprint 17.9 + 23.1
 
 | Aspect | Implementation |
 |--------|----------------|
 | **Purpose** | Centralized object creation and dependency wiring for pipeline services |
-| **Flow** | Application → Composition Root → `ApplicationContainer` → `ServiceRegistry` → Factories → Feature Services → Orchestrator → Engines |
+| **Flow** | Application → Composition Root → `ApplicationContainer` → `ServiceRegistry` → Factories + thin adapters → Feature Services |
 | **Container** | Register / resolve, singleton + transient lifecycles, freeze after init, duplicate/missing/circular/late validation |
-| **Registry** | Typed `ServiceMap` for Blueprint, Selection, Programming, Progression, Adaptation, Assembly, Program Generation |
+| **Registry** | Typed `ServiceMap` for Training Intelligence **and** Coaching Architecture (Capability → Routing → Collaboration → Supervisor → Session → Athlete State → Context Fusion → Decision → Recommendation) |
 | **Factories** | Creation-only factories (no business logic) |
+| **Adapters** | Thin port adapters between coaching modules + legacy Recommendation Engine bridge |
 | **Providers** | Configuration, in-memory repositories, default strategies |
-| **Application API** | Use-cases resolve defaults via `resolveService(token)` — no manual `new` |
+| **Application API** | Use-cases / Coach / Dashboard resolve defaults via `resolveService(token)` — no manual `new` |
 | **Design** | **Wiring only.** No AI, networking, persistence, UI, caching layer, analytics, or engine/business logic changes |
 
 Full detail: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).

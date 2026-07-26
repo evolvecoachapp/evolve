@@ -156,19 +156,19 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 
 ## Last Completed Sprint
 
-**22.0 — Coaching Session Runtime** (2026-07-25)
+**23.1 — Composition Root Integration** (2026-07-26)
 
-- `features/coaching-session` session orchestration between Conversation Runtime and Coach Supervisor (`startSession` / `continueSession` / `endSession`)
-- Immutable models, lifecycle state machine, context/history/checkpoints, planners, policies, validators, builders, `CoachingSessionService`
-- Consumes Conversation Runtime + Coach Supervisor via ports (mocks in tests); produces `SessionResult` / `SessionContext` / `SessionSummary` — no AI, prompts, networking, persistence, or domain business logic
+- Wired the coaching architecture into `core/composition` (Capability Registry → Routing → Collaboration → Coach Supervisor → Coaching Session → Athlete State → Context Fusion → Decision Engine → Recommendation Engine)
+- Thin port adapters only — no new engines, no module redesigns, legacy modules retained
+- Coach UI resolves `CoachingSessionService`; Dashboard recommendations use Recommendation Engine bridge into the legacy store/widget contract
 
-Previous: **21.8 — Coach Supervisor Foundation**, **21.7 — Supervisor Routing Engine Foundation**, **21.6 — Agent Capability Registry Foundation**
+Previous: **22.0 — Coaching Session Runtime**, **21.8 — Coach Supervisor Foundation**, **21.7 — Supervisor Routing Engine Foundation**
 
 ---
 
 ## Next Sprint
 
-Wire Conversation Runtime consumers to Coaching Session Runtime (`startSession` / `continueSession` / `endSession`) and live Coach Supervisor adapter (replace mock port) — still without embedding domain logic in the session runtime.
+Downstream adaptation / explainability consumers and further Conversation Runtime binding polish — still without embedding domain logic in composition adapters.
 
 ---
 

@@ -48,6 +48,18 @@ export {
   TrainingAdaptationFactory,
   WorkoutAssemblyFactory,
   WorkoutBlueprintFactory,
+  AgentCapabilityFactory,
+  WorkoutAgentFactory,
+  NutritionAgentFactory,
+  RecoveryAgentFactory,
+  SupervisorRoutingFactory,
+  AgentCollaborationFactory,
+  CoachSupervisorFactory,
+  CoachingSessionFactory,
+  AthleteStateFactory,
+  ContextFusionFactory,
+  DecisionEngineFactory,
+  RecommendationEngineFactory,
 } from "./factories";
 
 export {
@@ -61,3 +73,13 @@ export {
   resetCompositionRoot,
   resolveService,
 } from "./createCompositionRoot";
+
+export {
+  createSupervisorRoutingPortAdapter,
+  createAgentCollaborationPortAdapter,
+  createCoachSupervisorPortAdapter,
+  BoundConversationRuntimePort,
+  createBoundConversationRuntimePort,
+  createRecommendationEngineBridgeService,
+  RecommendationEngineBridgeService,
+} from "./adapters";
