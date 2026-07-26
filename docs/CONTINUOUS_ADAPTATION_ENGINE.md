@@ -7,7 +7,7 @@
 **Purpose:** Document the Continuous Adaptation Engine — deterministic detection of meaningful adaptation opportunities over time.  
 **Source of Truth:** Yes — for Continuous Adaptation Engine layout, monitoring / detection / evaluation / comparison / timeline, boundaries, and public API on mobile.
 
-Related: [ADAPTIVE_COACHING.md](./ADAPTIVE_COACHING.md), [WORKOUT_ADAPTATION_ENGINE.md](./WORKOUT_ADAPTATION_ENGINE.md), [WORKOUT_PIPELINE.md](./WORKOUT_PIPELINE.md), [EXPLAINABILITY_ENGINE.md](./EXPLAINABILITY_ENGINE.md), [RECOMMENDATION_ENGINE.md](./RECOMMENDATION_ENGINE.md), [DECISION_ENGINE.md](./DECISION_ENGINE.md), [REASONING_PIPELINE.md](./REASONING_PIPELINE.md), [AI_RUNTIME.md](./AI_RUNTIME.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [ATHLETE_STATE_ENGINE.md](./ATHLETE_STATE_ENGINE.md), [CONTEXT_FUSION_ENGINE.md](./CONTEXT_FUSION_ENGINE.md), [STATE_MANAGEMENT.md](./STATE_MANAGEMENT.md), [DECISIONS.md](./DECISIONS.md) (ADR-076).
+Related: [ADAPTIVE_COACHING.md](./ADAPTIVE_COACHING.md), [WORKOUT_ADAPTATION_ENGINE.md](./WORKOUT_ADAPTATION_ENGINE.md), [WORKOUT_PIPELINE.md](./WORKOUT_PIPELINE.md), [GOAL_PROGRESS_ENGINE.md](./GOAL_PROGRESS_ENGINE.md), [GOAL_EVALUATION_PIPELINE.md](./GOAL_EVALUATION_PIPELINE.md), [EXPLAINABILITY_ENGINE.md](./EXPLAINABILITY_ENGINE.md), [RECOMMENDATION_ENGINE.md](./RECOMMENDATION_ENGINE.md), [DECISION_ENGINE.md](./DECISION_ENGINE.md), [REASONING_PIPELINE.md](./REASONING_PIPELINE.md), [AI_RUNTIME.md](./AI_RUNTIME.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [ATHLETE_STATE_ENGINE.md](./ATHLETE_STATE_ENGINE.md), [CONTEXT_FUSION_ENGINE.md](./CONTEXT_FUSION_ENGINE.md), [STATE_MANAGEMENT.md](./STATE_MANAGEMENT.md), [DECISIONS.md](./DECISIONS.md) (ADR-076, ADR-080).
 
 ---
 
@@ -63,8 +63,10 @@ AdaptationDecision
 Workout Adaptation Engine   ← Sprint 24.1 (`features/workout-adaptation`)
 Nutrition Adaptation Engine (NutritionAdaptationInput) ← Sprint 24.2
 Recovery Adaptation Engine  (RecoveryAdaptationInput)  ← Sprint 24.3
-Goal Progress Engine        (GoalProgressInput)        ← future
+Goal Progress Engine        (GoalProgressInput)        ← Sprint 24.4 (`features/goal-progress`)
 ```
+
+Goal Progress Engine (Sprint 24.4) also feeds back into this engine: it produces its own `ContinuousAdaptationInput` handoff (from `features/goal-progress`) after evaluating progress, which this engine can consume as an additional signal source alongside Athlete State / Context Fusion / Decision / Recommendation / Explainability. See [GOAL_PROGRESS_ENGINE.md](./GOAL_PROGRESS_ENGINE.md) and [GOAL_EVALUATION_PIPELINE.md](./GOAL_EVALUATION_PIPELINE.md).
 
 ---
 
@@ -120,7 +122,7 @@ Root export: models + application + `ContinuousAdaptationEngineService` only —
 | Timeline | `AdaptationTimeline`, `AdaptationHistory`, `AdaptationWindow` |
 | Downstream handoffs | `WorkoutAdaptationInput`, `NutritionAdaptationInput`, `RecoveryAdaptationInput`, `GoalProgressInput` |
 
-Handoff inputs are **structured opportunity packages only** — they do not modify plans. Workout Adaptation Engine (Sprint 24.1) consumes the workout handoff and owns blueprint adaptation separately.
+Handoff inputs are **structured opportunity packages only** — they do not modify plans. Workout Adaptation Engine (Sprint 24.1) consumes the workout handoff and owns blueprint adaptation separately. Goal Progress Engine (Sprint 24.4, `features/goal-progress`) consumes the `GoalProgressInput` handoff for its own evaluation and, in turn, produces a `ContinuousAdaptationInput` handoff back to this engine — see [GOAL_PROGRESS_ENGINE.md](./GOAL_PROGRESS_ENGINE.md).
 
 ---
 
