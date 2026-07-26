@@ -2,16 +2,31 @@
 
 **Project:** EVOLVE  
 **Version:** 0.6.0  
-**Status:** Living Document  
-**Last Updated:** 2026-07-23  
+**Status:** Deprecated (Sprint 23.2) — superseded by Coach Supervisor pipeline  
+**Last Updated:** 2026-07-27  
 **Purpose:** Document the Coach Agent as a meta-agent that coordinates specialized agents.  
-**Source of Truth:** Yes — for Coach Agent layout, meta-agent orchestration, result merging, and public API on mobile.
+**Source of Truth:** Historical — for Coach Agent layout only. Production coaching orchestration uses Composition Root (Coach Supervisor / Session).
 
-Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md), [AGENT_RUNTIME.md](./AGENT_RUNTIME.md), [WORKOUT_AGENT.md](./WORKOUT_AGENT.md), [NUTRITION_AGENT.md](./NUTRITION_AGENT.md), [RECOVERY_AGENT.md](./RECOVERY_AGENT.md), [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md).
+Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md), [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md), [AGENT_RUNTIME.md](./AGENT_RUNTIME.md), [WORKOUT_AGENT.md](./WORKOUT_AGENT.md), [NUTRITION_AGENT.md](./NUTRITION_AGENT.md), [RECOVERY_AGENT.md](./RECOVERY_AGENT.md), [COACH_INTELLIGENCE.md](./COACH_INTELLIGENCE.md).
 
 ---
 
-## Architecture Summary
+## Deprecation Notice (Sprint 23.2)
+
+`features/coach-agent` is **deprecated**. Prefer:
+
+```
+Conversation Runtime → Coaching Session → Coach Supervisor
+  → Supervisor Routing → Agent Collaboration → Specialist Agents
+```
+
+via `resolveService("CoachingSessionService")` / `resolveService("CoachSupervisorService")`.
+
+This module is not registered in the Composition Root and has no production application call sites. Public exports remain for compatibility and existing unit tests until a later removal sprint.
+
+---
+
+## Architecture Summary (historical)
 
 ```
 Agent Runtime

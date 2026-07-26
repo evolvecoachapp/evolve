@@ -156,7 +156,15 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 
 ## Last Completed Sprint
 
-**23.1 — Composition Root Integration** (2026-07-26)
+**23.2 — Legacy Pipeline Consolidation** (2026-07-27)
+
+- Converted legacy `recommendations` service into a Composition Root facade (`DefaultRecommendationService` → Recommendation Engine bridge; rule path is fallback-only)
+- Collapsed Dashboard weight pipeline onto the single facade (removed duplicate bridge resolve)
+- Marked `decisionEngine`, `coach-agent`, and `useCoachChat` as deprecated compatibility surfaces
+- Removed duplicate WeightUpdated recommendation handling from `RecommendationListener`
+- Public APIs preserved; no new engines; no business-behavior redesign
+
+Previous: **23.1 — Composition Root Integration** (2026-07-26)
 
 - Wired the coaching architecture into `core/composition` (Capability Registry → Routing → Collaboration → Coach Supervisor → Coaching Session → Athlete State → Context Fusion → Decision Engine → Recommendation Engine)
 - Thin port adapters only — no new engines, no module redesigns, legacy modules retained

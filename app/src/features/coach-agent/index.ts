@@ -3,6 +3,13 @@
  *
  * Sprint 21.3 — Coach Agent Foundation.
  *
+ * @deprecated Sprint 23.2 — Superseded by the Composition Root coaching pipeline:
+ * Coaching Session → Coach Supervisor → Supervisor Routing → Agent Collaboration
+ * → specialist agents. This module is retained for compatibility and unit tests
+ * only. It is not registered in the Composition Root and has no production
+ * application call sites. Prefer `resolveService("CoachSupervisorService")`
+ * / `resolveService("CoachingSessionService")`.
+ *
  * Agent Runtime → Coach Agent → Agent Coordinator →
  * Workout / Recovery / Nutrition Agents → Merge Results → CoachDecisionResult
  *

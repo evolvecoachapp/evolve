@@ -3,8 +3,8 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-26  
-**Purpose:** Document the mobile Composition Root, Dependency Container, factories, providers, registry, and service lifecycle (Sprint 17.9 + Sprint 23.1 coaching integration).  
+**Last Updated:** 2026-07-27  
+**Purpose:** Document the mobile Composition Root, Dependency Container, factories, providers, registry, and service lifecycle (Sprint 17.9 + Sprint 23.1 coaching integration + Sprint 23.2 legacy consolidation).  
 **Source of Truth:** Yes — for Composition Root layout and DI rules on mobile.
 
 Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [AI_SYSTEM.md](./AI_SYSTEM.md), [DECISIONS.md](./DECISIONS.md) (ADR-036).
@@ -86,7 +86,21 @@ Execution entry points:
 | Coach UI | `createCoachConversationRuntime` → `CoachingSessionService` → Supervisor → Routing → Collaboration → Agents |
 | Dashboard recommendations | `weightUpdatedPipeline` → `RecommendationEngineBridge` → Recommendation Engine ← Decision ← Context Fusion ← Athlete State |
 
-Legacy `decisionEngine` / `recommendations` modules remain available; the Dashboard path uses a thin bridge into the new Recommendation Engine while preserving the legacy store/widget contract.
+Legacy `decisionEngine` / `recommendations` modules remain as **compatibility
+facades** (Sprint 23.2). Application recommendation generation defaults to the
+Composition Root Recommendation Engine via `DefaultRecommendationService` →
+`RecommendationEngineBridge`. Legacy rule generation is fallback-only.
+
+### Deprecated / Compatibility Modules (Sprint 23.2)
+
+| Module | Status | Replacement |
+|--------|--------|-------------|
+| `features/decisionEngine` | Deprecated — types + rule fallback | `features/decision-engine` + Recommendation Engine |
+| `features/recommendations` service (rule path) | Thin facade; `LegacyRuleRecommendationService` deprecated | Composition Root + bridge; store/widget retained |
+| `features/coach-agent` | Deprecated — no production call sites | Coach Supervisor + Routing + Collaboration |
+| `features/coach/hooks/useCoachChat` | Deprecated | `useCoachConversation` + `createCoachConversationRuntime` |
+
+Do not add new call sites to deprecated modules. Keep public exports stable until a later removal sprint.
 
 ---
 

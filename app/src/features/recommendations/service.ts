@@ -1,3 +1,7 @@
+import {
+  createRecommendationEngineBridgeService,
+  resolveService,
+} from "../../core/composition"
 import { generateRecommendations } from "../decisionEngine"
 import type {
   RecommendationContext,
@@ -27,7 +31,13 @@ const createContextVersion = (context: RecommendationContext): string => {
   return stableStringify(payload)
 }
 
-export class DefaultRecommendationService implements RecommendationService {
+/**
+ * Legacy rule-based recommendation generator (`decisionEngine`).
+ * Retained as Composition Root fallback and for unit tests that need deterministic rules.
+ *
+ * @deprecated Prefer `createRecommendationService` / Composition Root Recommendation Engine.
+ */
+export class LegacyRuleRecommendationService implements RecommendationService {
   constructor(private readonly store: RecommendationStore) {}
 
   generateAndStoreRecommendations(context: RecommendationContext): RecommendationFeed {
@@ -44,10 +54,48 @@ export class DefaultRecommendationService implements RecommendationService {
   }
 }
 
+/**
+ * Thin facade over the Composition Root Recommendation Engine.
+ * Preserves the legacy `RecommendationService` + store contract for Dashboard / notifications.
+ * Falls back to `LegacyRuleRecommendationService` only when composition is unavailable.
+ */
+export class DefaultRecommendationService implements RecommendationService {
+  private readonly legacy: LegacyRuleRecommendationService
+
+  constructor(private readonly store: RecommendationStore) {
+    this.legacy = new LegacyRuleRecommendationService(store)
+  }
+
+  generateAndStoreRecommendations(context: RecommendationContext): RecommendationFeed {
+    try {
+      return createRecommendationEngineBridgeService(
+        resolveService("RecommendationEngineService"),
+        this.store,
+      ).generateAndStoreRecommendations(context)
+    } catch {
+      return this.legacy.generateAndStoreRecommendations(context)
+    }
+  }
+}
+
+/**
+ * Application default: Composition Root Recommendation Engine via bridge.
+ */
 export function createRecommendationService(
   store: RecommendationStore = new InMemoryRecommendationStore()
 ): RecommendationService {
   return new DefaultRecommendationService(store)
+}
+
+/**
+ * Explicit legacy rule path (tests / emergency fallback).
+ *
+ * @deprecated Prefer `createRecommendationService`.
+ */
+export function createLegacyRecommendationService(
+  store: RecommendationStore = new InMemoryRecommendationStore()
+): RecommendationService {
+  return new LegacyRuleRecommendationService(store)
 }
 
 export const recommendationStore = new InMemoryRecommendationStore()

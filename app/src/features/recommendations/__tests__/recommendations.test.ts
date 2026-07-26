@@ -1,6 +1,10 @@
+import { resetCompositionRoot } from "../../../core/composition"
 import { createUserIntelligence } from "../../userIntelligence/factory"
 import { InMemoryRecommendationStore } from "../store"
-import { createRecommendationService } from "../service"
+import {
+  createLegacyRecommendationService,
+  createRecommendationService,
+} from "../service"
 import type { RecommendationContext } from "../types"
 
 describe("RecommendationStore", () => {
@@ -52,7 +56,11 @@ describe("RecommendationStore", () => {
 })
 
 describe("RecommendationService", () => {
-  it("generates recommendations and stores the latest feed", () => {
+  afterEach(() => {
+    resetCompositionRoot()
+  })
+
+  it("generates recommendations via Composition Root and stores the latest feed", () => {
     const store = new InMemoryRecommendationStore()
     const service = createRecommendationService(store)
     const context: RecommendationContext = {
@@ -81,5 +89,20 @@ describe("RecommendationService", () => {
 
     expect(feed.contextVersion).toBe("custom-version")
     expect(store.getLatest()?.contextVersion).toBe("custom-version")
+  })
+
+  it("legacy rule path still generates deterministic recommendations", () => {
+    const store = new InMemoryRecommendationStore()
+    const service = createLegacyRecommendationService(store)
+    const context: RecommendationContext = {
+      userIntelligence: createUserIntelligence({
+        goals: { primaryGoal: "Strength" },
+      }),
+    }
+
+    const feed = service.generateAndStoreRecommendations(context)
+
+    expect(feed.recommendations.length).toBeGreaterThan(0)
+    expect(store.getLatest()).toEqual(feed)
   })
 })

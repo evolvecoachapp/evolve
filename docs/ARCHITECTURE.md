@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-25  
+**Last Updated:** 2026-07-27  
 **Purpose:** Concise system architecture — layers, patterns, dependency flow.  
 **Source of Truth:** Partial — summary only; deep reference is [EVOLVE_ARCHITECTURE.md](../.cursor/rules/EVOLVE_ARCHITECTURE.md).
 
@@ -167,7 +167,7 @@ Nutrition Agent                  ← Sprint 21.2 (implemented) — nutrition spe
 Recovery Agent                   ← Sprint 21.3 (implemented) — recovery specialist domain agent (orchestration only)
   (`app/src/features/recovery-agent/`)
   ↓
-Coach Agent                      ← Sprint 21.3 (implemented) — meta-agent coordinating Workout / Recovery / Nutrition
+Coach Agent                      ← Sprint 21.3 (deprecated Sprint 23.2 — superseded by Coach Supervisor pipeline)
   (`app/src/features/coach-agent/`)
   ↓
 Coaching Session Runtime         ← Sprint 22.0 (implemented) — session lifecycle between Conversation Runtime and Coach Supervisor
@@ -190,6 +190,9 @@ Explainability Engine            ← Sprint 22.5 (implemented) — CoachingRecom
   ↓
 Continuous Adaptation Engine     ← Sprint 23.1 (implemented) — adaptation opportunity detection → AdaptationDecision
   (`app/src/features/continuous-adaptation/`)
+  ↓
+Composition Root coaching wiring ← Sprint 23.1 + 23.2 (implemented) — DI integration; legacy decisionEngine/recommendations/coach-agent reduced to facades
+  (`app/src/core/composition/`)
   ↓
 Workout Adaptation Engine        ← Sprint 24.1 (implemented) — adapt existing Workout Blueprint → UpdatedWorkoutBlueprint
   (`app/src/features/workout-adaptation/`)
@@ -349,7 +352,7 @@ Full detail: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md).
 | **Container** | Register / resolve, singleton + transient lifecycles, freeze after init, duplicate/missing/circular/late validation |
 | **Registry** | Typed `ServiceMap` for Training Intelligence **and** Coaching Architecture (Capability → Routing → Collaboration → Supervisor → Session → Athlete State → Context Fusion → Decision → Recommendation) |
 | **Factories** | Creation-only factories (no business logic) |
-| **Adapters** | Thin port adapters between coaching modules + legacy Recommendation Engine bridge |
+| **Adapters** | Thin port adapters between coaching modules + legacy Recommendation Engine bridge (`RecommendationEngineBridge` / `DefaultRecommendationService` facade) |
 | **Providers** | Configuration, in-memory repositories, default strategies |
 | **Application API** | Use-cases / Coach / Dashboard resolve defaults via `resolveService(token)` — no manual `new` |
 | **Design** | **Wiring only.** No AI, networking, persistence, UI, caching layer, analytics, or engine/business logic changes |
@@ -809,10 +812,11 @@ Full detail: [NUTRITION_AGENT.md](./NUTRITION_AGENT.md). Agent Framework: [AGENT
 
 Full detail: [RECOVERY_AGENT.md](./RECOVERY_AGENT.md). Agent Framework: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md). Agent Runtime: [AGENT_RUNTIME.md](./AGENT_RUNTIME.md). Recovery Intelligence: [RECOVERY_INTELLIGENCE.md](./RECOVERY_INTELLIGENCE.md).
 
-### Coach Agent (`features/coach-agent`) — Sprint 21.3 Meta-Agent
+### Coach Agent (`features/coach-agent`) — Sprint 21.3 Meta-Agent (**deprecated**)
 
 | Aspect | Implementation |
 |--------|----------------|
+| **Status** | **Deprecated (Sprint 23.2).** Superseded by Composition Root: Coaching Session → Coach Supervisor → Supervisor Routing → Agent Collaboration. Not registered in DI; no production app call sites. Retained for compatibility / unit tests only. |
 | **Purpose** | Meta-agent that coordinates specialized agents (Workout / Recovery / Nutrition) |
 | **Flow** | Agent Runtime → Coach Agent → Agent Coordinator → Workout / Recovery / Nutrition Agents → Merge Results → CoachAgentResult |
 | **Models** | `CoachRequest`, `CoachDecision`, `CoachExecutionPlan`, `CoachExecutionContext`, `CoachAgentResult`, `CoachEvaluation`, `CoachSummary`, `CoachMetadata`, `CoachExecutionState`, `CoachExecutionEvent`, `SpecialistAgentKind`, … |
@@ -823,6 +827,7 @@ Full detail: [RECOVERY_AGENT.md](./RECOVERY_AGENT.md). Agent Framework: [AGENT_F
 | **Application API** | `processCoachRequest`, `buildCoachingPlan`, `evaluateCoachDecision`, `describeCoachCapabilities`, `validateCoachPlan` |
 | **Integration** | Consumes Workout / Recovery / Nutrition public APIs without modifying them; produces immutable `CoachAgentResult` |
 | **Design** | **No business logic, prompts, providers, networking, persistence, or memory.** Orchestration only |
+| **Replacement** | Prefer `resolveService("CoachSupervisorService")` / `resolveService("CoachingSessionService")` |
 
 Full detail: [COACH_AGENT.md](./COACH_AGENT.md). Agent Framework: [AGENT_FRAMEWORK.md](./AGENT_FRAMEWORK.md). Agent Runtime: [AGENT_RUNTIME.md](./AGENT_RUNTIME.md).
 

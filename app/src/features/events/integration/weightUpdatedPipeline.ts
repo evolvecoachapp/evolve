@@ -3,12 +3,7 @@ import type { WeightUpdated } from "../types"
 import { generateDailyInsights } from "../../dailyCoach"
 import type { DailyContext, CoachInsight } from "../../dailyCoach/types"
 import {
-  createRecommendationEngineBridgeService,
-  resolveService,
-} from "../../../core/composition"
-import {
-  recommendationService as legacyRecommendationService,
-  recommendationStore,
+  recommendationService,
 } from "../../recommendations/service"
 import type { RecommendationContext } from "../../recommendations/types"
 import { generateNotifications } from "../../notifications/generator"
@@ -18,20 +13,12 @@ import { defaultUserIntelligence } from "../../userIntelligence/factory"
 let initialized = false
 
 /**
- * Resolve the Recommendation Engine bridge (new pipeline).
- * Falls back to the legacy recommendation service if composition is unavailable.
+ * WeightUpdated → daily insights → RecommendationService facade → notifications.
+ *
+ * Recommendation generation runs through the Composition Root
+ * (Recommendation Engine bridge). The facade falls back to legacy rules
+ * only if composition is unavailable.
  */
-function resolveRecommendationService() {
-  try {
-    return createRecommendationEngineBridgeService(
-      resolveService("RecommendationEngineService"),
-      recommendationStore,
-    )
-  } catch {
-    return legacyRecommendationService
-  }
-}
-
 export function initializeWeightUpdatedPipeline(): void {
   if (initialized) {
     return
@@ -46,7 +33,7 @@ function handleWeightUpdated(event: WeightUpdated): void {
   const insights = generateDailyInsights(dailyContext)
 
   const recommendationContext = buildRecommendationContext(event, insights)
-  const feed = resolveRecommendationService().generateAndStoreRecommendations(
+  const feed = recommendationService.generateAndStoreRecommendations(
     recommendationContext,
   )
 
@@ -103,4 +90,3 @@ function buildRecommendationContext(event: WeightUpdated, insights: CoachInsight
     },
   }
 }
-

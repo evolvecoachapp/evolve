@@ -1,10 +1,15 @@
 /**
  * Recommendation Listener
  *
- * Reacts to domain events to update and refine personalized recommendations.
+ * Reacts to domain events for recommendation-adjacent side effects.
+ *
+ * Sprint 23.2 — WeightUpdated recommendation generation is owned solely by
+ * `initializeWeightUpdatedPipeline` (Composition Root path). This listener
+ * must not duplicate that orchestration.
+ *
  * Subscribes to:
  * - ProfileUpdated: Update recommendations based on new profile data
- * - WeightUpdated: Adjust nutrition/activity recommendations
+ * - WeightUpdated: no-op (pipeline owns recommendation flow)
  * - WorkoutCompleted: Consider historical performance for future recommendations
  * - MealLogged: Refine nutritional recommendations
  */
@@ -69,16 +74,10 @@ export class RecommendationListener {
     // - Cache invalidation
   }
 
-  private onWeightUpdated(event: WeightUpdated): void {
-    // Example: Adjust recommendations based on weight progress
-    console.log(
-      `[RecommendationListener] Weight updated: ${event.weightKg}kg (was ${event.previousWeightKg}kg)`
-    );
-    // In a real app, this might:
-    // - Adjust calorie targets
-    // - Update exercise intensity recommendations
-    // - Track progress toward goal
-    // - Trigger milestone notifications
+  private onWeightUpdated(_event: WeightUpdated): void {
+    // Sprint 23.2 — WeightUpdated recommendation orchestration is owned solely by
+    // `initializeWeightUpdatedPipeline` (Composition Root Recommendation Engine bridge).
+    // Intentionally a no-op to avoid a duplicate recommendation execution path.
   }
 
   private onWorkoutCompleted(event: WorkoutCompleted): void {

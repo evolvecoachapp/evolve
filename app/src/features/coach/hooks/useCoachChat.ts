@@ -22,6 +22,11 @@ interface UseCoachChatOptions {
   enableStreaming?: boolean;
 }
 
+/**
+ * @deprecated Sprint 23.2 — Prefer `useCoachConversation` with
+ * `createCoachConversationRuntime()` (Composition Root Coaching Session).
+ * Retained for compatibility; CoachScreen no longer uses this hook.
+ */
 export function useCoachChat({
   service = coachService,
   typingDelayMs = TYPING_DELAY_MS,
