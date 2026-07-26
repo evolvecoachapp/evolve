@@ -5,6 +5,8 @@ import { programExercises } from "../../programming/application";
 import { generateProgression } from "../../progression/application";
 import { previewAdaptations } from "../../training-adaptation/application";
 import { assembleWorkout } from "../../workout-assembly/application";
+import type { WorkoutGenerationRequest } from "../../program-generation/models/WorkoutGenerationRequest";
+import type { WorkoutGenerationResult } from "../../program-generation/models/WorkoutGenerationResult";
 import type { TrainingAdaptationRequest } from "../../training-adaptation/models/TrainingAdaptationRequest";
 import type { TrainingAdaptationResult } from "../../training-adaptation/models/TrainingAdaptationResult";
 import type { WorkoutIntent } from "../models/WorkoutIntent";
@@ -118,6 +120,36 @@ export class WorkoutDomainGateway {
         attributes: Object.freeze({
           recommendationCount: String(result.recommendations.length),
           readinessScore: String(result.readiness.overallScore),
+        }),
+        invokedAt: this.clock(),
+      }),
+    };
+  }
+
+  /**
+   * Invoke Program Generation (generateWorkout path).
+   * Forwards to existing Program Generation Orchestrator — no generation logic here.
+   */
+  async invokeGeneration(
+    request: WorkoutGenerationRequest,
+    contextId: string,
+  ): Promise<{
+    readonly result: WorkoutGenerationResult;
+    readonly invocation: WorkoutDomainInvocation;
+  }> {
+    const result = await this.ports.generateWorkoutProgram(request);
+    return {
+      result,
+      invocation: this.freezeInvocation({
+        id: `domain:${contextId}:generation`,
+        capability: WorkoutDomainCapabilities.PROGRAM_GENERATION,
+        status: WorkoutDomainInvocationStatuses.INVOKED,
+        summary: `Program Generation produced session ${result.session.id}.`,
+        resultRef: result.requestId,
+        attributes: Object.freeze({
+          sessionId: result.session.id,
+          issueCount: String(result.validationIssues.length),
+          exerciseCount: String(result.session.exercises.length),
         }),
         invokedAt: this.clock(),
       }),

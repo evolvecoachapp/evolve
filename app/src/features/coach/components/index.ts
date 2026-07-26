@@ -16,3 +16,4 @@ export { MessageBubble } from "./MessageBubble";
 export { MessageTimestamp } from "./MessageTimestamp";
 export { ScrollToBottomButton } from "./ScrollToBottomButton";
 export { TypingIndicator } from "./TypingIndicator";
+export { GenerateWorkoutButton } from "./GenerateWorkoutButton";

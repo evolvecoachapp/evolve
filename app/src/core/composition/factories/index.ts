@@ -57,3 +57,6 @@ export type {
   DecisionEngineFactoryDeps,
   RecommendationEngineFactoryDeps,
 } from "./DecisionPipelineFactories";
+
+export { WorkoutGenerationPipelineFactory } from "./WorkoutGenerationPipelineFactory";
+export type { WorkoutGenerationPipelineFactoryDeps } from "./WorkoutGenerationPipelineFactory";

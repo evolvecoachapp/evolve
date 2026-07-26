@@ -20,6 +20,7 @@ import {
   ContextFusionFactory,
   DecisionEngineFactory,
   RecommendationEngineFactory,
+  WorkoutGenerationPipelineFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -264,6 +265,23 @@ export class CompositionRoot {
       { lifecycle },
     );
 
+    container.register(
+      "WorkoutGenerationPipelineService",
+      () =>
+        WorkoutGenerationPipelineFactory.create({
+          coachingSession: container.resolve("CoachingSessionService"),
+          coachSupervisor: container.resolve("CoachSupervisorService"),
+          workoutAgent: container.resolve("WorkoutAgentService"),
+          athleteState: container.resolve("AthleteStateService"),
+          contextFusion: container.resolve("ContextFusionService"),
+          decisionEngine: container.resolve("DecisionEngineService"),
+          recommendationEngine: container.resolve(
+            "RecommendationEngineService",
+          ),
+        }),
+      { lifecycle },
+    );
+
     container.validate();
     container.freeze();
 
@@ -321,6 +339,10 @@ export class CompositionRoot {
 
   getRecommendationEngineService(): ServiceMap["RecommendationEngineService"] {
     return this.registry.resolve("RecommendationEngineService");
+  }
+
+  getWorkoutGenerationPipelineService(): ServiceMap["WorkoutGenerationPipelineService"] {
+    return this.registry.resolve("WorkoutGenerationPipelineService");
   }
 
   getDecisionEngineService(): ServiceMap["DecisionEngineService"] {

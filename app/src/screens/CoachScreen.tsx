@@ -4,6 +4,7 @@ import {
   NativeSyntheticEvent,
   ScrollView,
   StyleSheet,
+  Text,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -13,12 +14,14 @@ import {
   ConversationHeader,
   EmptyConversation,
   ErrorConversation,
+  GenerateWorkoutButton,
   LoadingConversation,
   MessageBubble,
   ScrollToBottomButton,
   TypingIndicator,
 } from "../features/coach/components";
 import { createCoachConversationRuntime } from "../features/coach/services/createCoachConversationRuntime";
+import { useGenerateWorkout } from "../features/coach/hooks/useGenerateWorkout";
 import { toFriendlyConversationError } from "../features/coach/utils/toFriendlyConversationError";
 import { useCoachConversation } from "../features/conversation/hooks/useCoachConversation";
 import { useCoachPrompt } from "../features/prompt-builder/hooks/useCoachPrompt";
@@ -64,6 +67,15 @@ export function CoachScreen() {
     service: runtime.service,
     coachingSession: runtime.coachingSession,
     promptContext,
+  });
+
+  const {
+    generating,
+    plan,
+    error: generateError,
+    generateWorkout,
+  } = useGenerateWorkout({
+    conversationId: conversation?.id ?? null,
   });
 
   const footerReserve = floatingFooterMetrics.scrollReserve(composerHeight);
@@ -115,7 +127,7 @@ export function CoachScreen() {
     }
   }, [keyboardLift, scrollToLatest]);
 
-  const styles = useThemedStyles(() =>
+  const styles = useThemedStyles(({ colors, typography }) =>
     StyleSheet.create({
       screen: {
         flex: 1,
@@ -132,6 +144,21 @@ export function CoachScreen() {
       conversation: {
         gap: coachLayout.messageGap,
         position: "relative",
+      },
+      planSummary: {
+        ...typography.callout,
+        color: colors.inkMuted,
+        paddingHorizontal: spacing.screenPadding,
+        paddingBottom: spacing.xs,
+      },
+      generateError: {
+        ...typography.callout,
+        color: colors.error,
+        paddingHorizontal: spacing.screenPadding,
+        paddingBottom: spacing.xs,
+      },
+      composerStack: {
+        gap: spacing.xs,
       },
     }),
   );
@@ -167,6 +194,12 @@ export function CoachScreen() {
   const handleRetryConversation = useCallback(() => {
     void startConversation();
   }, [startConversation]);
+
+  const handleGenerateWorkout = useCallback(() => {
+    void generateWorkout().catch(() => {
+      // error surfaced via generateError state
+    });
+  }, [generateWorkout]);
 
   const visibleMessages = messages.filter((message) => message.role !== "system");
   const conversationTitle =
@@ -301,15 +334,33 @@ export function CoachScreen() {
           />
         </View>
 
-        <ChatInput
-          onSend={handleSend}
-          disabled={
-            !conversation || !promptContext || showInitialLoading || isStreaming
-          }
-          loading={loading || isStreaming}
-          onKeyboardHeightChange={setKeyboardLift}
-          onComposerLayout={setComposerHeight}
-        />
+        <View style={styles.composerStack}>
+          {plan ? (
+            <Text style={styles.planSummary}>{plan.summary.message}</Text>
+          ) : null}
+          {generateError ? (
+            <Text style={styles.generateError}>{generateError}</Text>
+          ) : null}
+          <GenerateWorkoutButton
+            onPress={handleGenerateWorkout}
+            loading={generating}
+            disabled={
+              !conversation || showInitialLoading || isStreaming || generating
+            }
+          />
+          <ChatInput
+            onSend={handleSend}
+            disabled={
+              !conversation ||
+              !promptContext ||
+              showInitialLoading ||
+              isStreaming
+            }
+            loading={loading || isStreaming}
+            onKeyboardHeightChange={setKeyboardLift}
+            onComposerLayout={setComposerHeight}
+          />
+        </View>
       </View>
     </GradientBackground>
   );

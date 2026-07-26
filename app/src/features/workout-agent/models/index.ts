@@ -2,6 +2,7 @@
 export type { WorkoutAgentMetadata } from "./WorkoutAgentMetadata";
 export { EMPTY_WORKOUT_AGENT_METADATA } from "./WorkoutAgentMetadata";
 export type { WorkoutAgentResult } from "./WorkoutAgentResult";
+export type { WorkoutAgentGenerateResult } from "./WorkoutAgentGenerateResult";
 export type { WorkoutAgentSnapshot } from "./WorkoutAgentSnapshot";
 export type { WorkoutAgentState } from "./WorkoutAgentState";
 export type { WorkoutAgentStatistics } from "./WorkoutAgentStatistics";

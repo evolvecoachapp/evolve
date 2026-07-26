@@ -1,11 +1,13 @@
 import type { ActionPlan } from "../../action-engine/models/ActionPlan";
 import type { ConversationContext } from "../../conversation-orchestrator/models/ConversationContext";
+import type { WorkoutGenerationRequest } from "../../program-generation/models/WorkoutGenerationRequest";
 import type { CoachResponse } from "../../response-formatter/models/CoachResponse";
 import type { ToolExecutionResult } from "../../tool-runtime/models/ToolExecutionResult";
 import { WorkoutContextBuilder } from "../builders/WorkoutContextBuilder";
 import { WorkoutPlanBuilder } from "../builders/WorkoutPlanBuilder";
 import { WorkoutRecommendationBuilder } from "../builders/WorkoutRecommendationBuilder";
 import { EMPTY_WORKOUT_AGENT_METADATA } from "../models/WorkoutAgentMetadata";
+import type { WorkoutAgentGenerateResult } from "../models/WorkoutAgentGenerateResult";
 import type { WorkoutAgentResult } from "../models/WorkoutAgentResult";
 import type { WorkoutDomainPayloads } from "../models/WorkoutDomainPayloads";
 import type { WorkoutRequest } from "../models/WorkoutRequest";
@@ -287,6 +289,96 @@ export class WorkoutAgentCoordinator {
       startedAt,
       completedAt,
       frozenAt: completedAt,
+    });
+  }
+
+  /**
+   * Generate path — plans via agent, then invokes Program Generation via domain gateway.
+   */
+  async generate(input: {
+    readonly request: WorkoutRequest;
+    readonly generationRequest: WorkoutGenerationRequest;
+    readonly conversationContext?: ConversationContext | null;
+    readonly coachResponse?: CoachResponse | null;
+    readonly actionPlan?: ActionPlan | null;
+    readonly toolExecutionResult?: ToolExecutionResult | null;
+    readonly memoryTurnCount?: number;
+    readonly domainPayloads?: WorkoutDomainPayloads;
+  }): Promise<WorkoutAgentGenerateResult> {
+    const request = Object.freeze({
+      ...input.request,
+      intentHint: input.request.intentHint ?? WorkoutIntents.PLAN_WORKOUT,
+    });
+
+    const context = new WorkoutContextBuilder().build({
+      ...input,
+      request,
+      clock: this.clock,
+    });
+    const reasoning = createDefaultReasoners().map((r) => r.reason(context));
+    const proposal = new WorkoutPlanBuilder().buildProposal({
+      context,
+      reasoning,
+      clock: this.clock,
+    });
+
+    const base = this.process({
+      ...input,
+      request,
+    });
+
+    const { result: generation, invocation } =
+      await this.domainGateway.invokeGeneration(
+        input.generationRequest,
+        base.context.id,
+      );
+
+    const extra =
+      input.domainPayloads != null
+        ? await this.domainGateway.invokeSelected(
+            base.context.intent,
+            base.context.id,
+            {
+              ...input.domainPayloads,
+              generationRequest: input.generationRequest,
+              decisionSource: generation,
+            },
+          )
+        : Object.freeze([invocation]);
+
+    const domainInvocations = Object.freeze(
+      input.domainPayloads != null
+        ? [...extra]
+        : [
+            ...base.domainInvocations.filter(
+              (item) => item.capability !== invocation.capability,
+            ),
+            invocation,
+          ],
+    );
+
+    const success =
+      base.success &&
+      generation.validationIssues.length === 0 &&
+      domainInvocations.every((item) => item.status !== "failed");
+
+    const agent = freezeAgentResult({
+      ...base,
+      domainInvocations,
+      success,
+      message: success
+        ? `Workout generated via Program Generation (${invocation.summary}).`
+        : base.message,
+      completedAt: this.clock(),
+      frozenAt: this.clock(),
+    });
+
+    return Object.freeze({
+      agent,
+      proposal,
+      generation,
+      success,
+      message: agent.message,
     });
   }
 

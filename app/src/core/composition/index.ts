@@ -60,6 +60,7 @@ export {
   ContextFusionFactory,
   DecisionEngineFactory,
   RecommendationEngineFactory,
+  WorkoutGenerationPipelineFactory,
 } from "./factories";
 
 export {

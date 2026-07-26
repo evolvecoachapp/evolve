@@ -20,7 +20,9 @@ Conversation Runtime
   ↓
 Coaching Session Runtime          ← Sprint 22.0 (session lifecycle + immutable context)
   ↓
-Specialist Agents (Workout / Nutrition / Recovery / Goal)
+Coach Supervisor                  ← Sprint 21.8 (multi-agent orchestration)
+  ↓
+Workout Agent                     ← planning + generateWorkout domain gateway
   ↓
 Athlete State Engine              ← Sprint 22.1 (immutable athlete truth)
   ↓
@@ -30,21 +32,15 @@ Decision Engine                   ← Sprint 22.3 (CoachingDecision / DecisionPa
   ↓
 Recommendation Engine             ← Sprint 22.4 (CoachingRecommendation / RecommendationPackage)
   ↓
-Explainability Engine             ← Sprint 22.5 (CoachingExplanation / ExplanationPackage / LLMFormatterInput)
+Workout Generation Pipeline       ← Sprint 24.1 product (WorkoutPlan canonical output)
   ↓
-Continuous Adaptation Engine      ← Sprint 23.1 (AdaptationDecision / opportunity detection)
-  ↓
-Workout Adaptation Engine         ← Sprint 24.1 (UpdatedWorkoutBlueprint / WorkoutRuntimeInput)
-  ↓
-Coach Supervisor                  ← Sprint 21.8 (multi-agent orchestration)
-  ↓
-Supervisor Routing / Capability Registry / Agent Collaboration
-  ↓
-Aggregation
-  ↓
-Unified Coach Response
-  ↓
-SessionResult / AthleteState / UnifiedCoachingContext / CoachingDecision / CoachingRecommendation / CoachingExplanation / AdaptationDecision / UpdatedWorkoutBlueprint
+WorkoutPlan / SessionResult / AthleteState / UnifiedCoachingContext / CoachingDecision / CoachingRecommendation
+```
+
+### Parallel adaptation path (existing Sprint 24.1 engine)
+
+```
+Explainability → Continuous Adaptation → Workout Adaptation → UpdatedWorkoutBlueprint → Workout Runtime
 ```
 
 ---

@@ -156,7 +156,15 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 
 ## Last Completed Sprint
 
-**23.2 — Legacy Pipeline Consolidation** (2026-07-27)
+**24.1 — Intelligent Workout Generation Pipeline** (2026-07-27)
+
+- Product capability: Conversation → Coaching Session → Coach Supervisor → Workout Agent → Athlete State → Context Fusion → Decision → Recommendation → Workout Generation → canonical `WorkoutPlan`
+- Module `features/workout-generation-pipeline` (orchestration only — no new engines)
+- Workout Agent gained `generateWorkout` (Program Generation via domain gateway)
+- Coach Screen **Generate Workout** CTA; UI adapter `mapWorkoutPlanToWorkoutProgram` for legacy screens
+- Composition Root registers `WorkoutGenerationPipelineService`
+
+Previous: **23.2 — Legacy Pipeline Consolidation** (2026-07-27)
 
 - Converted legacy `recommendations` service into a Composition Root facade (`DefaultRecommendationService` → Recommendation Engine bridge; rule path is fallback-only)
 - Collapsed Dashboard weight pipeline onto the single facade (removed duplicate bridge resolve)

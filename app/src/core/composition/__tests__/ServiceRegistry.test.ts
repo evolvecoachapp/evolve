@@ -35,6 +35,7 @@ describe("ServiceRegistry", () => {
       "ContextFusionService",
       "DecisionEngineService",
       "RecommendationEngineService",
+      "WorkoutGenerationPipelineService",
     ]);
   });
 

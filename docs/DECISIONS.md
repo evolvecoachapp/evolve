@@ -2455,4 +2455,31 @@ Introduce `app/src/features/recovery-adaptation/` with immutable models (`Recove
 
 ---
 
-*New decisions are appended as Decision 080, 081, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 080: Intelligent Workout Generation Pipeline (Sprint 24.1 product)
+
+**Date:** 2026-07-27  
+**Status:** Accepted
+
+**Context:**  
+Sprint 24.1 (product capability) must deliver an end-to-end Workout Generation Pipeline that transforms coaching context into a canonical immutable `WorkoutPlan` for the UI. Existing engines already cover Session, Supervisor, Workout Agent, Athlete State, Context Fusion, Decision, Recommendation, and Program Generation. A new engine would duplicate ownership.
+
+**Decision:**  
+Introduce `features/workout-generation-pipeline` as **orchestration only** (not an engine). Pipeline order:
+
+Conversation Runtime → Coaching Session Runtime → Coach Supervisor → Workout Agent → Athlete State → Context Fusion → Decision Engine → Recommendation Engine → Workout Generation (via Workout Agent domain gateway → Program Generation) → `WorkoutPlan`.
+
+Canonical UI output is `WorkoutPlan`. Workout Agent gains `generateWorkout` / `invokeGeneration` but does not absorb Program Generation business logic. Legacy workout screens consume plans via `mapWorkoutPlanToWorkoutProgram` adapter. Composition Root registers `WorkoutGenerationPipelineService`.
+
+**Alternatives considered:**
+- **New Workout Generation Engine** — rejected: duplicates Program Generation + Workout Agent.
+- **Call Program Generation from Coach UI** — rejected: bypasses Session / Supervisor / Fusion / Decision / Recommendation.
+- **Treat WorkoutPlanProposal as UI plan** — rejected: proposal is planning-only; UI needs assembled session graph.
+
+**Consequences:**
+- Documentation: [WORKOUT_PIPELINE.md](./WORKOUT_PIPELINE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- No new engines; engines remain unchanged in responsibility.
+- Workout Adaptation (ADR-077) remains the existing-blueprint adaptation path.
+
+---
+
+*New decisions are appended as Decision 081, 082, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

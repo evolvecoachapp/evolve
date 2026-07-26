@@ -13,6 +13,7 @@ export * from "./models";
 export {
   processWorkoutRequest,
   buildWorkoutPlan,
+  generateWorkout,
   adaptWorkout,
   evaluateWorkout,
   describeWorkoutCapabilities,

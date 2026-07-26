@@ -3,7 +3,9 @@ import type { ConversationContext } from "../../conversation-orchestrator/models
 import type { CoachResponse } from "../../response-formatter/models/CoachResponse";
 import type { ToolExecutionResult } from "../../tool-runtime/models/ToolExecutionResult";
 import type { TrainingAdaptationRequest } from "../../training-adaptation/models/TrainingAdaptationRequest";
+import type { WorkoutGenerationRequest } from "../../program-generation/models/WorkoutGenerationRequest";
 import type { WorkoutAgent } from "../models/WorkoutAgent";
+import type { WorkoutAgentGenerateResult } from "../models/WorkoutAgentGenerateResult";
 import type { WorkoutAgentResult } from "../models/WorkoutAgentResult";
 import type { WorkoutDomainPayloads } from "../models/WorkoutDomainPayloads";
 import type { WorkoutPlanProposal } from "../models/WorkoutPlanProposal";
@@ -64,6 +66,30 @@ export function buildWorkoutPlan(options: {
     clock || nowMs ? { clock, nowMs } : undefined,
   );
   return resolved.buildWorkoutPlan(rest);
+}
+
+/**
+ * Public API — generate a workout via Program Generation domain orchestration.
+ */
+export async function generateWorkout(options: {
+  readonly request: WorkoutRequest;
+  readonly generationRequest: WorkoutGenerationRequest;
+  readonly conversationContext?: ConversationContext | null;
+  readonly coachResponse?: CoachResponse | null;
+  readonly actionPlan?: ActionPlan | null;
+  readonly toolExecutionResult?: ToolExecutionResult | null;
+  readonly memoryTurnCount?: number;
+  readonly domainPayloads?: WorkoutDomainPayloads;
+  readonly service?: WorkoutAgentService;
+  readonly clock?: WorkoutAgentServiceDeps["clock"];
+  readonly nowMs?: WorkoutAgentServiceDeps["nowMs"];
+}): Promise<WorkoutAgentGenerateResult> {
+  const { service, clock, nowMs, ...rest } = options;
+  const resolved = resolveService(
+    service,
+    clock || nowMs ? { clock, nowMs } : undefined,
+  );
+  return resolved.generateWorkout(rest);
 }
 
 /**

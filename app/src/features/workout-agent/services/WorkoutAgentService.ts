@@ -7,6 +7,7 @@ import { AgentRuntimeStatuses } from "../../agent-runtime/models/AgentRuntimeSta
 import { createRuntimeError } from "../../agent-runtime/models/AgentRuntimeError";
 import { freezeResult } from "../../agent-runtime/utils/FreezeRuntime";
 import type { ConversationContext } from "../../conversation-orchestrator/models/ConversationContext";
+import type { WorkoutGenerationRequest } from "../../program-generation/models/WorkoutGenerationRequest";
 import type { CoachResponse } from "../../response-formatter/models/CoachResponse";
 import type { ToolExecutionResult } from "../../tool-runtime/models/ToolExecutionResult";
 import type { TrainingAdaptationRequest } from "../../training-adaptation/models/TrainingAdaptationRequest";
@@ -17,6 +18,7 @@ import {
 } from "../agent/WorkoutAgent";
 import type { WorkoutAgentEngineDeps } from "../agent/WorkoutAgentEngine";
 import type { WorkoutAgent } from "../models/WorkoutAgent";
+import type { WorkoutAgentGenerateResult } from "../models/WorkoutAgentGenerateResult";
 import type { WorkoutAgentResult } from "../models/WorkoutAgentResult";
 import type { WorkoutDomainPayloads } from "../models/WorkoutDomainPayloads";
 import { EMPTY_WORKOUT_AGENT_METADATA } from "../models/WorkoutAgentMetadata";
@@ -183,6 +185,19 @@ export class WorkoutAgentService {
     readonly domainPayloads?: WorkoutDomainPayloads;
   }): Promise<WorkoutAgentResult> {
     return this.orchestrator.adapt(input);
+  }
+
+  async generateWorkout(input: {
+    readonly request: WorkoutRequest;
+    readonly generationRequest: WorkoutGenerationRequest;
+    readonly conversationContext?: ConversationContext | null;
+    readonly coachResponse?: CoachResponse | null;
+    readonly actionPlan?: ActionPlan | null;
+    readonly toolExecutionResult?: ToolExecutionResult | null;
+    readonly memoryTurnCount?: number;
+    readonly domainPayloads?: WorkoutDomainPayloads;
+  }): Promise<WorkoutAgentGenerateResult> {
+    return this.orchestrator.generate(input);
   }
 
   evaluateWorkout(proposal: WorkoutPlanProposal): WorkoutValidation {

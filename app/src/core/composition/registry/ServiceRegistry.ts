@@ -125,4 +125,8 @@ export class ServiceRegistry {
   getRecommendationEngineService(): ServiceMap["RecommendationEngineService"] {
     return this.resolve("RecommendationEngineService");
   }
+
+  getWorkoutGenerationPipelineService(): ServiceMap["WorkoutGenerationPipelineService"] {
+    return this.resolve("WorkoutGenerationPipelineService");
+  }
 }

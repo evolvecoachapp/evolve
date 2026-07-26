@@ -1,8 +1,10 @@
 import type { WorkoutAgentResult } from "../models/WorkoutAgentResult";
+import type { WorkoutAgentGenerateResult } from "../models/WorkoutAgentGenerateResult";
 import type { WorkoutDomainPayloads } from "../models/WorkoutDomainPayloads";
 import type { WorkoutRequest } from "../models/WorkoutRequest";
 import type { ActionPlan } from "../../action-engine/models/ActionPlan";
 import type { ConversationContext } from "../../conversation-orchestrator/models/ConversationContext";
+import type { WorkoutGenerationRequest } from "../../program-generation/models/WorkoutGenerationRequest";
 import type { CoachResponse } from "../../response-formatter/models/CoachResponse";
 import type { ToolExecutionResult } from "../../tool-runtime/models/ToolExecutionResult";
 import type { TrainingAdaptationRequest } from "../../training-adaptation/models/TrainingAdaptationRequest";
@@ -32,6 +34,19 @@ export class WorkoutAgentOrchestrator {
     readonly memoryTurnCount?: number;
   }): WorkoutAgentResult {
     return this.engine.processRequest(input);
+  }
+
+  async generate(input: {
+    readonly request: WorkoutRequest;
+    readonly generationRequest: WorkoutGenerationRequest;
+    readonly conversationContext?: ConversationContext | null;
+    readonly coachResponse?: CoachResponse | null;
+    readonly actionPlan?: ActionPlan | null;
+    readonly toolExecutionResult?: ToolExecutionResult | null;
+    readonly memoryTurnCount?: number;
+    readonly domainPayloads?: WorkoutDomainPayloads;
+  }): Promise<WorkoutAgentGenerateResult> {
+    return this.engine.generateWorkout(input);
   }
 
   async adapt(input: {
