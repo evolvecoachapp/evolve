@@ -1,6 +1,19 @@
 import type { WorkoutConstraints } from "./WorkoutConstraints";
 import type { WorkoutDay } from "./WorkoutDay";
 import type { WorkoutMetrics } from "./WorkoutMetrics";
+import type { WorkoutModificationChange } from "./WorkoutModificationChange";
+import type { WorkoutModificationKind } from "./WorkoutModificationKind";
+import {
+  ALL_WORKOUT_MODIFICATION_KINDS,
+  WorkoutModificationKinds,
+} from "./WorkoutModificationKind";
+import type { WorkoutModificationRequest } from "./WorkoutModificationRequest";
+import type {
+  WorkoutModificationResult,
+  WorkoutModificationStage,
+  WorkoutModificationStageTrace,
+} from "./WorkoutModificationResult";
+import { WorkoutModificationStages } from "./WorkoutModificationResult";
 import type { WorkoutNotes } from "./WorkoutNotes";
 import type { WorkoutObjectives } from "./WorkoutObjectives";
 import type { WorkoutPlan } from "./WorkoutPlan";
@@ -35,6 +48,12 @@ export type {
   WorkoutConstraints,
   WorkoutDay,
   WorkoutMetrics,
+  WorkoutModificationChange,
+  WorkoutModificationKind,
+  WorkoutModificationRequest,
+  WorkoutModificationResult,
+  WorkoutModificationStage,
+  WorkoutModificationStageTrace,
   WorkoutNotes,
   WorkoutObjectives,
   WorkoutPlan,
@@ -54,7 +73,13 @@ export type {
   WorkoutWeek,
 };
 
-export { WorkoutPlanValidationCodes, WorkoutPipelineStages };
+export {
+  ALL_WORKOUT_MODIFICATION_KINDS,
+  WorkoutModificationKinds,
+  WorkoutModificationStages,
+  WorkoutPlanValidationCodes,
+  WorkoutPipelineStages,
+};
 
 export const PIPELINE_VERSION = "1.0.0";
 

@@ -10,7 +10,10 @@ import {
 import { EMPTY_ROUTING_METADATA } from "../../supervisor-routing/models/RoutingMetadata";
 import { RoutingPriorityLevels } from "../../supervisor-routing/models/RoutingPriority";
 import type { SupervisorRoutingService } from "../../supervisor-routing/services/SupervisorRoutingService";
+import { EMPTY_PLAN_METADATA } from "../../workout-generation-pipeline/models";
+import type { WorkoutModificationResult } from "../../workout-generation-pipeline/models/WorkoutModificationResult";
 import type { WorkoutPlan } from "../../workout-generation-pipeline/models/WorkoutPlan";
+import type { WorkoutGenerationPipelineService } from "../../workout-generation-pipeline/services/WorkoutGenerationPipelineService";
 import { buildCoachConversationContext } from "../builders/buildCoachConversationContext";
 import { buildCoachConversationResponse } from "../builders/buildCoachConversationResponse";
 import {
@@ -35,6 +38,7 @@ export interface CoachConversationOrchestratorDeps {
   readonly coachingSession: CoachingSessionService;
   readonly coachSupervisor: CoachSupervisorService;
   readonly supervisorRouting: SupervisorRoutingService;
+  readonly workoutPipeline?: WorkoutGenerationPipelineService | null;
   readonly conversationMemory?: ConversationMemoryService;
   readonly planStore?: ActiveWorkoutPlanStore;
   readonly clock?: () => string;
@@ -44,8 +48,8 @@ export interface CoachConversationOrchestratorDeps {
  * Product orchestrator for Intelligent Coach Conversation.
  *
  * Conversation → Intent Routing → Coaching Session → Supervisor Routing
- * → Coach Supervisor → Context (WorkoutPlan + Recommendations + Memory)
- * → Deterministic coaching response
+ * → Coach Supervisor → (optional Adaptive Modification) → Context
+ * (WorkoutPlan + Recommendations + Memory) → Deterministic coaching response
  *
  * Orchestration only — no new engines.
  */
@@ -53,6 +57,7 @@ export class CoachConversationOrchestrator {
   private readonly coachingSession: CoachingSessionService;
   private readonly coachSupervisor: CoachSupervisorService;
   private readonly supervisorRouting: SupervisorRoutingService;
+  private readonly workoutPipeline: WorkoutGenerationPipelineService | null;
   private readonly conversationMemory: ConversationMemoryService;
   private readonly planStore: ActiveWorkoutPlanStore;
   private readonly clock: () => string;
@@ -62,6 +67,7 @@ export class CoachConversationOrchestrator {
     this.coachingSession = deps.coachingSession;
     this.coachSupervisor = deps.coachSupervisor;
     this.supervisorRouting = deps.supervisorRouting;
+    this.workoutPipeline = deps.workoutPipeline ?? null;
     this.conversationMemory =
       deps.conversationMemory ?? createConversationMemoryService();
     this.planStore = deps.planStore ?? createActiveWorkoutPlanStore();
@@ -259,10 +265,60 @@ export class CoachConversationOrchestrator {
           : "Supervisor failed"),
     );
 
-    const workoutPlan = this.planStore.resolve({
+    let workoutPlan = this.planStore.resolve({
       conversationId: request.conversationId,
       sessionId,
     });
+    let previousWorkoutPlan: WorkoutPlan | null = null;
+    let modification: WorkoutModificationResult | null = null;
+
+    if (intent === CoachConversationIntents.WORKOUT_MODIFICATION) {
+      if (!workoutPlan) {
+        push(
+          CoachConversationStages.WORKOUT_MODIFICATION,
+          false,
+          "No active WorkoutPlan to modify — generate a workout first",
+        );
+      } else if (!this.workoutPipeline) {
+        push(
+          CoachConversationStages.WORKOUT_MODIFICATION,
+          false,
+          "Workout pipeline not wired for adaptive modification",
+        );
+      } else {
+        previousWorkoutPlan = workoutPlan;
+        modification = this.workoutPipeline.modifyWorkoutPlan(
+          Object.freeze({
+            id: `mod-req:${request.id}`,
+            plan: workoutPlan,
+            athleteId: request.athleteId,
+            conversationId: request.conversationId,
+            sessionId,
+            message: request.message,
+            kindHint: null,
+            metadata: EMPTY_PLAN_METADATA,
+            createdAt: this.clock(),
+          }),
+        );
+        push(
+          CoachConversationStages.WORKOUT_MODIFICATION,
+          modification.success,
+          modification.success
+            ? `Applied ${modification.kind} → plan ${modification.plan?.id}`
+            : modification.message,
+        );
+        if (modification.success && modification.plan) {
+          const updated = Object.freeze({
+            ...modification.plan,
+            conversationId:
+              modification.plan.conversationId ?? request.conversationId,
+            sessionId: modification.plan.sessionId ?? sessionId,
+          });
+          this.attachWorkoutPlan(updated);
+          workoutPlan = updated;
+        }
+      }
+    }
 
     const memoryHints = loadCoachMemoryHints({
       memory: this.conversationMemory,
@@ -275,6 +331,8 @@ export class CoachConversationOrchestrator {
       intent,
       sessionId,
       workoutPlan,
+      previousWorkoutPlan,
+      modification,
       session: sessionResult,
       memoryHints,
       createdAt: this.clock(),
@@ -321,6 +379,7 @@ export class CoachConversationOrchestrator {
       sessionId,
       conversationId: request.conversationId,
       workoutPlan,
+      modification,
       session: sessionResult,
       routing: routingResult,
       supervisor: supervisorResult,

@@ -1,3 +1,4 @@
+import { isWorkoutModificationMessage } from "../../workout-generation-pipeline/modification";
 import {
   CoachConversationIntents,
   type CoachConversationIntent,
@@ -19,22 +20,22 @@ const INTENT_RULES: readonly IntentRule[] = Object.freeze([
   {
     intent: CoachConversationIntents.EXERCISE_EXPLANATION,
     patterns: Object.freeze([
-      /\b(exercise|movement|lift|set|rep)\b/i,
       /\bwhy (this|that|these) (exercise|movement|lift)/i,
       /\bexplain .{0,40}\b(squat|bench|deadlift|press|row|pull|curl)\b/i,
+      /\b(explain|why).{0,40}\b(exercise|movement|lift)\b/i,
     ]),
   },
   {
     intent: CoachConversationIntents.PROGRESSION_EXPLANATION,
     patterns: Object.freeze([
-      /\b(progress(ion|ing)?|overload|deload|advance|next week)\b/i,
+      /\b(explain|why).{0,40}\b(progress(ion|ing)?|overload|deload)\b/i,
       /\bhow (do i|should i) progress\b/i,
     ]),
   },
   {
     intent: CoachConversationIntents.RECOVERY_EXPLANATION,
     patterns: Object.freeze([
-      /\b(recover(y|ing)?|rest day|fatigue|soreness|readiness)\b/i,
+      /\b(explain|why).{0,40}\b(recover(y|ing)?|rest day|readiness)\b/i,
       /\bwhy .{0,30}\b(rest|recover)\b/i,
     ]),
   },
@@ -64,6 +65,7 @@ const INTENT_RULES: readonly IntentRule[] = Object.freeze([
 
 /**
  * Deterministic keyword intent router for coaching conversation.
+ * Adaptive modification requests are detected first (Sprint 24.3).
  * Reuses Supervisor Routing downstream for capability planning.
  */
 export function routeCoachConversationIntent(
@@ -77,6 +79,11 @@ export function routeCoachConversationIntent(
   const trimmed = message.trim();
   if (!trimmed) {
     return CoachConversationIntents.UNKNOWN;
+  }
+
+  // Adaptive modification takes precedence over explain/summary intents.
+  if (isWorkoutModificationMessage(trimmed)) {
+    return CoachConversationIntents.WORKOUT_MODIFICATION;
   }
 
   for (const rule of INTENT_RULES) {

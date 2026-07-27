@@ -16,6 +16,7 @@ import {
 } from "../../workout-generation-pipeline/testSupport/fixtures";
 import { generateWorkoutPlan } from "../../workout-generation-pipeline/application";
 import type { WorkoutPlan } from "../../workout-generation-pipeline/models/WorkoutPlan";
+import type { WorkoutGenerationPipelineService } from "../../workout-generation-pipeline/services/WorkoutGenerationPipelineService";
 import {
   EMPTY_COACH_CONVERSATION_METADATA,
   type CoachConversationRequest,
@@ -50,7 +51,10 @@ export function createCoachConversationRequest(
 }
 
 export function createTestCoachConversationService(
-  overrides: { readonly clock?: () => string } = {},
+  overrides: {
+    readonly clock?: () => string;
+    readonly workoutPipeline?: WorkoutGenerationPipelineService | null;
+  } = {},
 ): CoachConversationService {
   const clock = overrides.clock ?? createFixedClock();
   const supervisor = createTestSupervisorService();
@@ -68,11 +72,16 @@ export function createTestCoachConversationService(
     sessionId: "session:1",
     clock,
   });
+  const workoutPipeline =
+    overrides.workoutPipeline === undefined
+      ? createTestWorkoutGenerationPipelineService({ clock })
+      : overrides.workoutPipeline;
 
   return createCoachConversationService({
     coachingSession,
     coachSupervisor: supervisor,
     supervisorRouting,
+    workoutPipeline,
     conversationMemory,
     planStore: createActiveWorkoutPlanStore(),
     clock,

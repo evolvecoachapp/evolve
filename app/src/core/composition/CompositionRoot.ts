@@ -290,6 +290,9 @@ export class CompositionRoot {
           coachingSession: container.resolve("CoachingSessionService"),
           coachSupervisor: container.resolve("CoachSupervisorService"),
           supervisorRouting: container.resolve("SupervisorRoutingService"),
+          workoutPipeline: container.resolve(
+            "WorkoutGenerationPipelineService",
+          ),
         }),
       { lifecycle },
     );

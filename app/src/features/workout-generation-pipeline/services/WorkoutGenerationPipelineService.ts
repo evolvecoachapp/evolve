@@ -1,3 +1,5 @@
+import type { WorkoutModificationRequest } from "../models/WorkoutModificationRequest";
+import type { WorkoutModificationResult } from "../models/WorkoutModificationResult";
 import type { WorkoutPipelineRequest } from "../models/WorkoutPipelineRequest";
 import type { WorkoutResult } from "../models/WorkoutResult";
 import {
@@ -21,6 +23,15 @@ export class WorkoutGenerationPipelineService {
 
   generateWorkoutPlan(request: WorkoutPipelineRequest): Promise<WorkoutResult> {
     return this.orchestrator.generate(request);
+  }
+
+  /**
+   * Adaptive modification of an existing WorkoutPlan (no full regeneration).
+   */
+  modifyWorkoutPlan(
+    request: WorkoutModificationRequest,
+  ): WorkoutModificationResult {
+    return this.orchestrator.modify(request);
   }
 }
 

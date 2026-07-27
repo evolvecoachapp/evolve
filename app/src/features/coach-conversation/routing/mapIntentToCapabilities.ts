@@ -15,6 +15,7 @@ export function mapIntentToCapabilities(
     case CoachConversationIntents.WORKOUT_SUMMARY:
     case CoachConversationIntents.EXERCISE_EXPLANATION:
     case CoachConversationIntents.PROGRESSION_EXPLANATION:
+    case CoachConversationIntents.WORKOUT_MODIFICATION:
       return Object.freeze([WellKnownCapabilityIds.GENERATE_WORKOUT]);
     case CoachConversationIntents.RECOVERY_EXPLANATION:
       return Object.freeze([WellKnownCapabilityIds.EVALUATE_RECOVERY]);

@@ -1,8 +1,8 @@
 /**
- * Intelligent Coach Conversation — product orchestration (Sprint 24.2).
+ * Intelligent Coach Conversation — product orchestration (Sprint 24.2 + 24.3).
  *
  * Conversation Runtime → Intent Routing → Coaching Session → Supervisor Routing
- * → Coach Supervisor → WorkoutPlan + Athlete/Recommendations context → Response
+ * → Coach Supervisor → (optional Adaptive Modification) → WorkoutPlan context → Response
  *
  * Orchestration only. Reuses existing engines. No new engines.
  */

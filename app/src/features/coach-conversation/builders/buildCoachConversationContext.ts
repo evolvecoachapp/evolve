@@ -1,4 +1,5 @@
 import type { SessionResult } from "../../coaching-session/models/SessionResult";
+import type { WorkoutModificationResult } from "../../workout-generation-pipeline/models/WorkoutModificationResult";
 import type { WorkoutPlan } from "../../workout-generation-pipeline/models/WorkoutPlan";
 import type { CoachConversationContext } from "../models/CoachConversationContext";
 import type { CoachConversationIntent } from "../models/CoachConversationIntent";
@@ -10,6 +11,8 @@ export interface BuildCoachConversationContextInput {
   readonly intent: CoachConversationIntent;
   readonly sessionId: string | null;
   readonly workoutPlan: WorkoutPlan | null;
+  readonly previousWorkoutPlan?: WorkoutPlan | null;
+  readonly modification?: WorkoutModificationResult | null;
   readonly session: SessionResult | null;
   readonly memoryHints?: readonly string[];
   readonly createdAt: string;
@@ -33,6 +36,8 @@ export function buildCoachConversationContext(
     conversationId: input.request.conversationId,
     athleteId: input.request.athleteId,
     workoutPlan: plan,
+    previousWorkoutPlan: input.previousWorkoutPlan ?? null,
+    modification: input.modification ?? null,
     session: input.session,
     recommendationTitles: Object.freeze([...recommendationTitles]),
     recoveryNotes: Object.freeze([...recoveryNotes]),

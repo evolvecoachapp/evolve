@@ -200,13 +200,16 @@ Intelligent Workout Generation Pipeline ← Sprint 24.1 product (implemented) �
 Intelligent Coach Conversation ← Sprint 24.2 product (implemented) — conversation + WorkoutPlan explanations via existing coaching pipeline
   (`app/src/features/coach-conversation/`)
   ↓
+Adaptive Workout Modification ← Sprint 24.3 product (implemented) — living WorkoutPlan via surgical modification (no full regeneration)
+  (`features/workout-generation-pipeline` modification path + `features/coach-conversation`)
+  ↓
 Workout Adaptation Engine        ← Sprint 24.1 engine (implemented) — adapt existing Workout Blueprint → UpdatedWorkoutBlueprint
   (`app/src/features/workout-adaptation/`)
   ↓
 Nutrition Adaptation Engine      ← Sprint 24.2 engine (implemented) — adapt existing Nutrition Plan → UpdatedNutritionPlan
   (`app/src/features/nutrition-adaptation/`)
   ↓
-Recovery Adaptation Engine       ← Sprint 24.3 (implemented) — adapt existing Recovery Plan → UpdatedRecoveryPlan
+Recovery Adaptation Engine       ← Sprint 24.3 engine (implemented) — adapt existing Recovery Plan → UpdatedRecoveryPlan
   (`app/src/features/recovery-adaptation/`)
   ↓
 Goal Progress Engine             ← Sprint 24.4 (implemented) — evaluate goal progress → GoalProgressState
@@ -1047,6 +1050,20 @@ Full detail: [CONTINUOUS_ADAPTATION_ENGINE.md](./CONTINUOUS_ADAPTATION_ENGINE.md
 | **Design** | **No new engines.** Reuses Session, Supervisor Routing, Supervisor, Conversation Memory, WorkoutPlan |
 
 Full detail: [COACH_CONVERSATION.md](./COACH_CONVERSATION.md). Workout Pipeline: [WORKOUT_PIPELINE.md](./WORKOUT_PIPELINE.md). ADR-081: [DECISIONS.md](./DECISIONS.md).
+
+### Adaptive Workout Modification — Sprint 24.3 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Modify the active `WorkoutPlan` through natural coaching requests without regenerating the entire program |
+| **Flow** | WorkoutPlan → Modification Request → Workout Agent → Plan Validation → Updated WorkoutPlan → Conversation Reply |
+| **Models** | `WorkoutModificationRequest`, `WorkoutModificationResult`, `WorkoutModificationKind`, `WorkoutModificationChange` |
+| **Orchestration** | Pipeline `modifyWorkoutPlan` + Coach Conversation `WORKOUT_MODIFICATION` intent — product orchestration only |
+| **Application API** | `modifyWorkoutPlan`, `validateAdaptedWorkoutPlan`; conversation replies explain what changed / preserved / progression / recovery impact |
+| **Integration** | Composition Root injects `WorkoutGenerationPipelineService` into `CoachConversationService`; Coach Screen Generate → Modify (chat) → Updated plan continuity |
+| **Design** | **No new engines.** Surgical edits only. Preserves progression week, recommendations, decision package, and ordering when possible |
+
+Full detail: [WORKOUT_PIPELINE.md](./WORKOUT_PIPELINE.md). Coach Conversation: [COACH_CONVERSATION.md](./COACH_CONVERSATION.md). ADR-082: [DECISIONS.md](./DECISIONS.md).
 
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 

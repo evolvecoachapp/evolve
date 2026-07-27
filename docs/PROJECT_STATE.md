@@ -156,7 +156,16 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 
 ## Last Completed Sprint
 
-**24.2 — Intelligent Coach Conversation Experience** (2026-07-27)
+**24.3 — Adaptive Workout Modification** (2026-07-27)
+
+- Product capability: active `WorkoutPlan` becomes a living object modified through natural coaching requests
+- Surgical path: WorkoutPlan → Modification Request → Workout Agent → Validation → Updated WorkoutPlan → Conversation Reply
+- No full regeneration; preserves progression week, recommendations, decision package, ordering when possible
+- Coach Conversation intent `workout_modification`; Composition Root injects pipeline into `CoachConversationService`
+- Coach Screen: Generate → Modify via chat → Updated plan continuity
+- Supported kinds: replace/remove/add exercise, duration, intensity, volume, equipment, injury, fatigue, recovery, focus; unknown fallback
+
+Previous: **24.2 — Intelligent Coach Conversation Experience** (2026-07-27)
 
 - Product capability: conversation becomes the primary coaching interface after WorkoutPlan generation
 - Module `features/coach-conversation` (orchestration only — no new engines)
@@ -193,7 +202,7 @@ Previous: **22.0 — Coaching Session Runtime**, **21.8 — Coach Supervisor Fou
 
 ## Next Sprint
 
-Downstream adaptation / explainability consumers and further Conversation Runtime binding polish — still without embedding domain logic in composition adapters.
+Further Conversation Runtime polish and downstream consumers of living WorkoutPlan modifications — still without embedding domain logic in composition adapters.
 
 ---
 

@@ -1,4 +1,5 @@
 import type { SessionResult } from "../../coaching-session/models/SessionResult";
+import type { WorkoutModificationResult } from "../../workout-generation-pipeline/models/WorkoutModificationResult";
 import type { WorkoutPlan } from "../../workout-generation-pipeline/models/WorkoutPlan";
 import type { CoachConversationIntent } from "./CoachConversationIntent";
 import type { CoachConversationRequest } from "./CoachConversationRequest";
@@ -15,6 +16,8 @@ export interface CoachConversationContext {
   readonly conversationId: string;
   readonly athleteId: string;
   readonly workoutPlan: WorkoutPlan | null;
+  readonly previousWorkoutPlan: WorkoutPlan | null;
+  readonly modification: WorkoutModificationResult | null;
   readonly session: SessionResult | null;
   readonly recommendationTitles: readonly string[];
   readonly recoveryNotes: readonly string[];

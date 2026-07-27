@@ -63,6 +63,39 @@ function sessionHint(context: CoachConversationContext): string {
   return ` Session note: ${context.session.response.message}`;
 }
 
+function modificationLines(context: CoachConversationContext): string {
+  const modification = context.modification;
+  const plan = context.workoutPlan;
+  if (!modification) {
+    return "No adaptive modification was applied on this turn.";
+  }
+
+  const changed = modification.changes
+    .map((item) => item.summary)
+    .slice(0, 4)
+    .join("; ");
+  const preserved = modification.preserved.slice(0, 5).join(", ");
+  const planRef = plan
+    ? ` Updated plan "${plan.summary.title}" now has ${plan.summary.exerciseCount} exercises (~${plan.summary.estimatedDurationMinutes} min).`
+    : "";
+
+  if (!modification.success || !plan) {
+    return `${modification.explanation} The active WorkoutPlan was left unchanged.`;
+  }
+
+  return [
+    modification.explanation,
+    changed ? `What changed: ${changed}.` : "",
+    preserved ? `What remained unchanged: ${preserved}.` : "",
+    `Progression impact: ${modification.progressionImpact}`,
+    `Recovery impact: ${modification.recoveryImpact}`,
+    planRef,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+}
+
 function buildMessage(
   intent: CoachConversationIntent,
   context: CoachConversationContext,
@@ -72,6 +105,15 @@ function buildMessage(
   const session = sessionHint(context);
 
   switch (intent) {
+    case CoachConversationIntents.WORKOUT_MODIFICATION:
+      return {
+        message: `${intro} ${modificationLines(context)}${memory}${session}`.trim(),
+        topics: Object.freeze([
+          "workout_modification",
+          "workout_plan",
+          context.modification?.kind ?? "unknown",
+        ]),
+      };
     case CoachConversationIntents.WORKOUT_SUMMARY: {
       const plan = context.workoutPlan;
       const summary = plan
@@ -120,14 +162,14 @@ function buildMessage(
     case CoachConversationIntents.GENERAL_COACHING:
       return {
         message:
-          `${intro} I can explain today's workout, exercises, progression, recovery, or recommendations using your active coaching session.${memory}${session}`.trim(),
+          `${intro} I can explain today's workout, modify the active plan, or cover exercises, progression, recovery, and recommendations using your coaching session.${memory}${session}`.trim(),
         topics: Object.freeze(["general_coaching"]),
       };
     case CoachConversationIntents.UNKNOWN:
     default:
       return {
         message:
-          `${intro} I did not match a specific coaching intent. Ask about today's workout, exercises, progression, recovery, or recommendations.${memory}${session}`.trim(),
+          `${intro} I did not match a specific coaching intent. Ask about today's workout, request a modification (replace exercise, adjust intensity/volume, equipment, injury, fatigue), or ask about progression, recovery, or recommendations.${memory}${session}`.trim(),
         topics: Object.freeze(["unknown"]),
       };
   }

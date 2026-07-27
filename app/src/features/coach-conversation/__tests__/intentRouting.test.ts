@@ -40,6 +40,18 @@ describe("Coach conversation intent routing", () => {
     ).toBe(CoachConversationIntents.RECOMMENDATION_EXPLANATION);
   });
 
+  it("routes adaptive workout modification intents", () => {
+    expect(
+      routeCoachConversationIntent("Replace this exercise with another lift"),
+    ).toBe(CoachConversationIntents.WORKOUT_MODIFICATION);
+    expect(
+      routeCoachConversationIntent("Reduce the intensity of today's workout"),
+    ).toBe(CoachConversationIntents.WORKOUT_MODIFICATION);
+    expect(
+      routeCoachConversationIntent("I don't have a barbell available"),
+    ).toBe(CoachConversationIntents.WORKOUT_MODIFICATION);
+  });
+
   it("routes general coaching intents", () => {
     expect(routeCoachConversationIntent("Give me coaching tips")).toBe(
       CoachConversationIntents.GENERAL_COACHING,

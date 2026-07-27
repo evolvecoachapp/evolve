@@ -60,6 +60,7 @@ export function CoachScreen() {
     isStreaming,
     currentStream,
     error,
+    lastCoachResult,
     startConversation,
     sendMessage,
     retryMessage,
@@ -73,13 +74,15 @@ export function CoachScreen() {
 
   const {
     generating,
-    plan,
+    plan: generatedPlan,
     error: generateError,
     generateWorkout,
   } = useGenerateWorkout({
     conversationId: conversation?.id ?? null,
     onPlanGenerated: attachWorkoutPlan,
   });
+
+  const plan = lastCoachResult?.workoutPlan ?? generatedPlan;
 
   const footerReserve = floatingFooterMetrics.scrollReserve(composerHeight);
   const scrollBottomPadding =
@@ -339,7 +342,10 @@ export function CoachScreen() {
 
         <View style={styles.composerStack}>
           {plan ? (
-            <Text style={styles.planSummary}>{plan.summary.message}</Text>
+            <Text style={styles.planSummary}>
+              {plan.summary.message} Modify via chat — replace exercise, adjust
+              intensity/volume, equipment, injury, or fatigue.
+            </Text>
           ) : null}
           {generateError ? (
             <Text style={styles.generateError}>{generateError}</Text>
@@ -347,6 +353,7 @@ export function CoachScreen() {
           <GenerateWorkoutButton
             onPress={handleGenerateWorkout}
             loading={generating}
+            label={plan ? "Regenerate Workout" : "Generate Workout"}
             disabled={
               !conversation || showInitialLoading || isStreaming || generating
             }

@@ -58,13 +58,46 @@ WorkoutPlan                      ← canonical UI output
 ### Public API
 
 - `generateWorkoutPlan` → `WorkoutResult` (`plan: WorkoutPlan | null`)
-- `validateGeneratedWorkoutPlan`
+- `modifyWorkoutPlan` → `WorkoutModificationResult` (Sprint 24.3 — surgical update)
+- `validateGeneratedWorkoutPlan` / `validateAdaptedWorkoutPlan`
 - Coach Screen: **Generate Workout** via `useGenerateWorkout` → Composition Root `WorkoutGenerationPipelineService`
+- Coach chat: adaptive modify via Coach Conversation → pipeline `modifyWorkoutPlan`
 
 ### Compatibility
 
 - `mapWorkoutPlanToWorkoutProgram` adapts `WorkoutPlan` → legacy UI `WorkoutProgram`
 - Existing workout screens continue to use catalog/runtime models unchanged
+
+---
+
+## Adaptive Workout Modification (Sprint 24.3 product)
+
+Living `WorkoutPlan` path — **does not regenerate** the entire program.
+
+```
+WorkoutPlan
+      ↓
+Workout Modification Request     ← deterministic kind routing
+      ↓
+Workout Agent                    ← ADAPT_WORKOUT intelligence (no full generation)
+      ↓
+Surgical apply                   ← only affected portions change
+      ↓
+Plan Validation                  ← integrity + modification constraints
+      ↓
+Updated WorkoutPlan              ← re-attached to conversation
+      ↓
+Conversation Reply               ← what changed / preserved / progression / recovery
+```
+
+**Supported kinds:** replace / remove / add exercise, reduce / increase duration, reduce / increase intensity, modify volume, equipment unavailable, injury limitation, fatigue adjustment, recovery adjustment, focus muscle group. Unknown → deterministic fallback.
+
+**Preserved when possible:** exercise ordering, weekly progression week number, workout objectives (primary), constraints (merged), recommendation + decision packages, generation provenance.
+
+Module path: `features/workout-generation-pipeline/modification/`  
+Conversation entry: `features/coach-conversation` intent `workout_modification`
+
+Distinct from the **Workout Adaptation Engine** (blueprint key adaptation for Continuous Adaptation → Runtime). Product adaptive modification operates on the canonical UI `WorkoutPlan`.
 
 ---
 

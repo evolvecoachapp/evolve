@@ -2509,4 +2509,31 @@ Active WorkoutPlan is attached to the conversation/session via an in-memory refe
 
 ---
 
-*New decisions are appended as Decision 082, 083, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 082: Adaptive Workout Modification (Sprint 24.3 product)
+
+**Date:** 2026-07-27  
+**Status:** Accepted
+
+**Context:**  
+Sprint 24.3 (product capability) must let athletes modify the active `WorkoutPlan` through natural coaching requests without regenerating the entire program. Full regeneration would discard ordering, progression continuity, and attached recommendation/decision packages. A new modification engine would duplicate Workout Agent + pipeline validation. The Workout Adaptation Engine operates on blueprint keys for Continuous Adaptation → Runtime, not the canonical UI `WorkoutPlan`.
+
+**Decision:**  
+Extend the Workout Generation Pipeline with a **surgical modification path** (`modifyWorkoutPlan`) and Coach Conversation with intent `workout_modification`:
+
+WorkoutPlan → Workout Modification Request → Workout Agent (`ADAPT_WORKOUT`) → Plan Validation → Updated WorkoutPlan → Conversation Reply.
+
+Only affected portions change. Active plan is re-attached via `ActiveWorkoutPlanStore`. Composition Root injects `WorkoutGenerationPipelineService` into `CoachConversationService`. Unknown adaptive requests produce a deterministic fallback. No new engines.
+
+**Alternatives considered:**
+- **Full re-run of Workout Generation Pipeline** — rejected: regenerates the entire plan and breaks living-object continuity.
+- **New Adaptive Modification Engine** — rejected: duplicates Workout Agent + validation; sprint forbids new engines.
+- **Wire Workout Adaptation Engine into conversation** — rejected for this product path: that engine adapts blueprint structure keys for runtime handoff, not the canonical `WorkoutPlan` UX object.
+- **UI → Workout Agent direct calls** — rejected: must pass Composition Root / Coach Conversation.
+
+**Consequences:**
+- Documentation: [WORKOUT_PIPELINE.md](./WORKOUT_PIPELINE.md), [COACH_CONVERSATION.md](./COACH_CONVERSATION.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- Coach Screen flow: Generate Workout → Modify Workout (chat) → Updated Workout → conversation continues.
+
+---
+
+*New decisions are appended as Decision 083, 084, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

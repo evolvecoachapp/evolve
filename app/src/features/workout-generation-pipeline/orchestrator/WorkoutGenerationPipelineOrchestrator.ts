@@ -18,11 +18,22 @@ import { RecommendationInputKinds } from "../../recommendation-engine/models/Rec
 import { EMPTY_RECOMMENDATION_METADATA } from "../../recommendation-engine/models/RecommendationMetadata";
 import type { RecommendationEngineService } from "../../recommendation-engine/services/RecommendationEngineService";
 import { EMPTY_WORKOUT_AGENT_METADATA } from "../../workout-agent/models/WorkoutAgentMetadata";
+import { WorkoutIntents } from "../../workout-agent/models/WorkoutIntent";
 import type { WorkoutAgentService } from "../../workout-agent/services/WorkoutAgentService";
 import { buildWorkoutPlan } from "../builders/WorkoutPlanBuilder";
 import {
+  applyWorkoutModification,
+  routeWorkoutModificationKind,
+  validateModifiedWorkoutPlan,
+} from "../modification";
+import {
   EMPTY_PLAN_METADATA,
+  WorkoutModificationKinds,
+  WorkoutModificationStages,
   WorkoutPipelineStages,
+  type WorkoutModificationRequest,
+  type WorkoutModificationResult,
+  type WorkoutModificationStageTrace,
   type WorkoutPipelineRequest,
   type WorkoutPipelineStageTrace,
   type WorkoutResult,
@@ -68,6 +79,235 @@ export class WorkoutGenerationPipelineOrchestrator {
     this.decisionEngine = deps.decisionEngine;
     this.recommendationEngine = deps.recommendationEngine;
     this.clock = deps.clock ?? (() => new Date().toISOString());
+  }
+
+  modify(request: WorkoutModificationRequest): WorkoutModificationResult {
+    const startedAt = this.clock();
+    const trace: WorkoutModificationStageTrace[] = [];
+    const errors: string[] = [];
+    const previousPlan = request.plan;
+
+    const push = (
+      stage: WorkoutModificationStageTrace["stage"],
+      success: boolean,
+      summary: string,
+    ) => {
+      trace.push(
+        Object.freeze({
+          stage,
+          success,
+          summary,
+          completedAt: this.clock(),
+        }),
+      );
+      if (!success) errors.push(`${stage}: ${summary}`);
+    };
+
+    const kind = routeWorkoutModificationKind(
+      request.message,
+      request.kindHint,
+    );
+    push(
+      WorkoutModificationStages.REQUEST,
+      kind !== WorkoutModificationKinds.UNKNOWN,
+      kind === WorkoutModificationKinds.UNKNOWN
+        ? "Unrecognized adaptive modification request"
+        : `Modification kind ${kind}`,
+    );
+
+    if (kind === WorkoutModificationKinds.UNKNOWN) {
+      const completedAt = this.clock();
+      return Object.freeze({
+        id: `mod-result:${request.id}`,
+        success: false,
+        kind,
+        request,
+        previousPlan,
+        plan: null,
+        changes: Object.freeze([]),
+        preserved: Object.freeze([
+          "weekly_progression",
+          "workout_objectives",
+          "recommendation_package",
+          "decision_package",
+          "exercise_ordering",
+        ]),
+        validation: Object.freeze({
+          valid: false,
+          issues: Object.freeze([
+            Object.freeze({
+              code: "integrity" as const,
+              message: "Unknown adaptive modification request",
+              blocking: true,
+            }),
+          ]),
+        }),
+        workoutAgent: null,
+        explanation:
+          "I could not match a supported adaptive modification. Try replace/remove/add exercise, duration, intensity, volume, equipment, injury, fatigue, recovery, or focus requests.",
+        progressionImpact: "No progression changes applied.",
+        recoveryImpact: "No recovery changes applied.",
+        trace: Object.freeze([...trace]),
+        errors: Object.freeze([...errors]),
+        message: "Unknown adaptive modification request",
+        startedAt,
+        completedAt,
+      });
+    }
+
+    // Workout Agent — adapt intelligence (no full regeneration)
+    const workoutAgent = this.workoutAgent.processWorkoutRequest({
+      request: Object.freeze({
+        id: `workout-req:mod:${request.id}`,
+        athleteId: request.athleteId,
+        conversationId: request.conversationId,
+        message: request.message,
+        intentHint: WorkoutIntents.ADAPT_WORKOUT,
+        objectiveHint: null,
+        daysPerWeek: previousPlan.proposal.daysPerWeek,
+        experienceLevel: null,
+        constraints: Object.freeze([
+          ...previousPlan.constraints.athleteConstraints,
+          ...previousPlan.constraints.recoveryConstraints,
+        ]),
+        metadata: EMPTY_WORKOUT_AGENT_METADATA,
+        createdAt: startedAt,
+      }),
+    });
+    push(
+      WorkoutModificationStages.WORKOUT_AGENT,
+      workoutAgent.success,
+      workoutAgent.success
+        ? "Workout Agent evaluated adaptation request"
+        : workoutAgent.message || "Workout Agent adaptation failed",
+    );
+
+    const applied = applyWorkoutModification({
+      plan: previousPlan,
+      kind,
+      message: request.message,
+      at: this.clock(),
+      requestId: request.id,
+    });
+    push(
+      WorkoutModificationStages.APPLY,
+      applied !== null,
+      applied
+        ? `Applied ${applied.changes.length} change(s)`
+        : "Failed to apply modification",
+    );
+
+    if (!applied) {
+      const completedAt = this.clock();
+      return Object.freeze({
+        id: `mod-result:${request.id}`,
+        success: false,
+        kind,
+        request,
+        previousPlan,
+        plan: null,
+        changes: Object.freeze([]),
+        preserved: Object.freeze([
+          "weekly_progression",
+          "workout_objectives",
+          "recommendation_package",
+          "decision_package",
+          "exercise_ordering",
+        ]),
+        validation: Object.freeze({
+          valid: false,
+          issues: Object.freeze([
+            Object.freeze({
+              code: "integrity" as const,
+              message: "Modification could not be applied to the active plan",
+              blocking: true,
+            }),
+          ]),
+        }),
+        workoutAgent,
+        explanation:
+          "The adaptive modification could not be applied to the current WorkoutPlan while preserving validity.",
+        progressionImpact: "No progression changes applied.",
+        recoveryImpact: "No recovery changes applied.",
+        trace: Object.freeze([...trace]),
+        errors: Object.freeze([...errors]),
+        message: "Adaptive modification apply failed",
+        startedAt,
+        completedAt,
+      });
+    }
+
+    const validation = validateModifiedWorkoutPlan(
+      applied.plan,
+      previousPlan,
+    );
+    push(
+      WorkoutModificationStages.VALIDATION,
+      validation.valid,
+      validation.valid
+        ? "Modified WorkoutPlan validated"
+        : validation.issues
+            .filter((item) => item.blocking)
+            .map((item) => item.message)
+            .join("; ") || "Validation failed",
+    );
+
+    if (!validation.valid) {
+      const completedAt = this.clock();
+      return Object.freeze({
+        id: `mod-result:${request.id}`,
+        success: false,
+        kind,
+        request,
+        previousPlan,
+        plan: null,
+        changes: applied.changes,
+        preserved: applied.preserved,
+        validation,
+        workoutAgent,
+        explanation: applied.explanation,
+        progressionImpact: applied.progressionImpact,
+        recoveryImpact: applied.recoveryImpact,
+        trace: Object.freeze([...trace]),
+        errors: Object.freeze([
+          ...errors,
+          ...validation.issues
+            .filter((item) => item.blocking)
+            .map((item) => item.message),
+        ]),
+        message: "Modified WorkoutPlan failed validation",
+        startedAt,
+        completedAt,
+      });
+    }
+
+    push(
+      WorkoutModificationStages.PLAN,
+      true,
+      `Updated WorkoutPlan ${applied.plan.id}`,
+    );
+
+    const completedAt = this.clock();
+    return Object.freeze({
+      id: `mod-result:${request.id}`,
+      success: true,
+      kind,
+      request,
+      previousPlan,
+      plan: applied.plan,
+      changes: applied.changes,
+      preserved: applied.preserved,
+      validation,
+      workoutAgent,
+      explanation: applied.explanation,
+      progressionImpact: applied.progressionImpact,
+      recoveryImpact: applied.recoveryImpact,
+      trace: Object.freeze([...trace]),
+      errors: Object.freeze([...errors]),
+      message: applied.plan.summary.message,
+      startedAt,
+      completedAt,
+    });
   }
 
   async generate(request: WorkoutPipelineRequest): Promise<WorkoutResult> {
