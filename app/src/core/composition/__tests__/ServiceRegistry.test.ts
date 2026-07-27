@@ -41,6 +41,7 @@ describe("ServiceRegistry", () => {
       "PlanRestoreService",
       "CoachTimelineService",
       "ProactiveInsightsService",
+      "ExplainableCoachingSessionService",
     ]);
   });
 

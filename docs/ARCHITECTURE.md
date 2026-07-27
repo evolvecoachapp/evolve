@@ -171,6 +171,7 @@ Coach Agent                      ← Sprint 21.3 (deprecated Sprint 23.2 — sup
   (`app/src/features/coach-agent/`)
   ↓
 Coaching Session Runtime         ← Sprint 22.0 (implemented) — session lifecycle between Conversation Runtime and Coach Supervisor
+Explainable Coaching Session     ← Sprint 26.1 product (implemented) — compose existing evidence into immutable session artifacts
   (`app/src/features/coaching-session/`)
   ↓
 Athlete State Engine             ← Sprint 22.1 (implemented) — immutable athlete truth aggregated from specialists
@@ -1042,12 +1043,12 @@ Full detail: [CONTINUOUS_ADAPTATION_ENGINE.md](./CONTINUOUS_ADAPTATION_ENGINE.md
 | Aspect | Implementation |
 |--------|----------------|
 | **Purpose** | Conversational coaching experience grounded in active WorkoutPlan + session context |
-| **Flow** | Conversation → Intent Routing → Coaching Session → Supervisor Routing → Coach Supervisor → WorkoutPlan + Recommendations + Memory → coaching response |
+| **Flow** | Conversation → Intent Routing → Coaching Session → Supervisor Routing → Coach Supervisor → WorkoutPlan + Recommendations + Memory → Explainable Coaching Session → coaching response |
 | **Models** | `CoachConversationRequest`, `CoachConversationResult`, `CoachConversationIntent`, `CoachConversationContext`, `CoachConversationResponse` |
 | **Orchestration** | `CoachConversationOrchestrator` / `CoachConversationService` — product orchestration only |
 | **Application API** | `processCoachConversationTurn`, `attachWorkoutPlanToConversation` |
-| **Integration** | Composition Root `CoachConversationService`; Coach Screen Generate Workout → attach plan → natural conversation |
-| **Design** | **No new engines.** Reuses Session, Supervisor Routing, Supervisor, Conversation Memory, WorkoutPlan |
+| **Integration** | Composition Root `CoachConversationService`; Coach Screen Generate Workout → attach plan → natural conversation; Sprint 26.1 explainable session on every turn |
+| **Design** | **No new engines.** Reuses Session, Supervisor Routing, Supervisor, Conversation Memory, WorkoutPlan, Timeline, Insights, Explainable Session |
 
 Full detail: [COACH_CONVERSATION.md](./COACH_CONVERSATION.md). Workout Pipeline: [WORKOUT_PIPELINE.md](./WORKOUT_PIPELINE.md). ADR-081: [DECISIONS.md](./DECISIONS.md).
 
@@ -1118,6 +1119,19 @@ Full detail: [COACH_TIMELINE.md](./COACH_TIMELINE.md). ADR-086: [DECISIONS.md](.
 | **Design** | **No LLM. No ML. No persistence. No event bus. No scheduler. No UI redesign.** Distinct from Sprint 18.7 Insight Engine domain-fact snapshots |
 
 Full detail: [PROACTIVE_INSIGHTS.md](./PROACTIVE_INSIGHTS.md). ADR-087: [DECISIONS.md](./DECISIONS.md).
+
+### Explainable Coaching Session (`features/coaching-session/composition`) — Sprint 26.1 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Package every coaching turn as a structured, evidence-backed explainable session |
+| **Flow** | User Request → Coach Conversation → Athlete Context → Timeline → Decision → Recommendation → Explainability → Proactive Insights → Coaching Session → Conversation Response |
+| **Models** | `CoachingSession`, `CoachingSessionContext`, `CoachingSessionEvidence`, `CoachingSessionDecision`, `CoachingSessionRecommendation`, `CoachingSessionInsight`, `CoachingSessionExplanation`, `CoachingSessionSummary`, `CoachingSessionConfidence`, `CoachingSessionResult` |
+| **Services** | `collectEvidence`, `collectTimelineContext`, `collectDecisionContext`, `collectRecommendationContext`, `collectInsightContext`, `buildSessionSummary`, `calculateSessionConfidence`, `validateCoachingSession`, `buildCoachingSession`, `ExplainableCoachingSessionService` |
+| **Integration** | Coach Conversation every turn (`EXPLAINABLE_SESSION`); Timeline / Plan History / Insights / Decision / Recommendation / Explainability refs; Composition Root `ExplainableCoachingSessionService` |
+| **Design** | **Compose existing architecture only. No new engines. No LLM reasoning. No persistence. No event bus. No UI redesign.** Distinct from Sprint 22.0 lifecycle runtime descriptor |
+
+Full detail: [COACHING_SESSION.md](./COACHING_SESSION.md). ADR-088: [DECISIONS.md](./DECISIONS.md).
 
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 

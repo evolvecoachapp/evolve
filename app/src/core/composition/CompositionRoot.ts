@@ -26,6 +26,7 @@ import {
   PlanRestoreFactory,
   CoachTimelineFactory,
   ProactiveInsightsFactory,
+  ExplainableCoachingSessionFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -193,6 +194,17 @@ export class CompositionRoot {
     );
 
     container.register(
+      "ExplainableCoachingSessionService",
+      () =>
+        ExplainableCoachingSessionFactory.create({
+          coachTimeline: container.resolve("CoachTimelineService"),
+          planHistory: container.resolve("PlanHistoryService"),
+          proactiveInsights: container.resolve("ProactiveInsightsService"),
+        }),
+      { lifecycle },
+    );
+
+    container.register(
       "WorkoutAgentService",
       () => WorkoutAgentFactory.create(),
       { lifecycle },
@@ -340,6 +352,9 @@ export class CompositionRoot {
           planRestore: container.resolve("PlanRestoreService"),
           coachTimeline: container.resolve("CoachTimelineService"),
           proactiveInsights: container.resolve("ProactiveInsightsService"),
+          explainableCoachingSession: container.resolve(
+            "ExplainableCoachingSessionService",
+          ),
         }),
       { lifecycle },
     );
@@ -425,6 +440,10 @@ export class CompositionRoot {
 
   getProactiveInsightsService(): ServiceMap["ProactiveInsightsService"] {
     return this.registry.resolve("ProactiveInsightsService");
+  }
+
+  getExplainableCoachingSessionService(): ServiceMap["ExplainableCoachingSessionService"] {
+    return this.registry.resolve("ExplainableCoachingSessionService");
   }
 
   getDecisionEngineService(): ServiceMap["DecisionEngineService"] {

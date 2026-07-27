@@ -3,11 +3,11 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-27  
-**Purpose:** Document the Intelligent Coach Conversation product path — contextual coaching replies grounded in WorkoutPlan + session context, including adaptive modification, plan restore, timeline explainability, and proactive insights.  
-**Source of Truth:** Yes — for Sprint 24.2 / 24.3 / 25.3 / 25.4 / 25.5 product conversation experience on mobile.
+**Last Updated:** 2026-07-28  
+**Purpose:** Document the Intelligent Coach Conversation product path — contextual coaching replies grounded in WorkoutPlan + session context, including adaptive modification, plan restore, timeline explainability, proactive insights, and explainable coaching sessions.  
+**Source of Truth:** Yes — for Sprint 24.2 / 24.3 / 25.3 / 25.4 / 25.5 / 26.1 product conversation experience on mobile.
 
-Related: [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [WORKOUT_PIPELINE.md](./WORKOUT_PIPELINE.md), [PLAN_HISTORY.md](./PLAN_HISTORY.md), [COACH_TIMELINE.md](./COACH_TIMELINE.md), [PROACTIVE_INSIGHTS.md](./PROACTIVE_INSIGHTS.md), [CONVERSATION_MEMORY.md](./CONVERSATION_MEMORY.md), [SUPERVISOR_ROUTING.md](./SUPERVISOR_ROUTING.md), [AI_RUNTIME.md](./AI_RUNTIME.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md), [DECISIONS.md](./DECISIONS.md) (ADR-081, ADR-082, ADR-083, ADR-085, ADR-086, ADR-087).
+Related: [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [COACHING_SESSION.md](./COACHING_SESSION.md), [WORKOUT_PIPELINE.md](./WORKOUT_PIPELINE.md), [PLAN_HISTORY.md](./PLAN_HISTORY.md), [COACH_TIMELINE.md](./COACH_TIMELINE.md), [PROACTIVE_INSIGHTS.md](./PROACTIVE_INSIGHTS.md), [CONVERSATION_MEMORY.md](./CONVERSATION_MEMORY.md), [SUPERVISOR_ROUTING.md](./SUPERVISOR_ROUTING.md), [AI_RUNTIME.md](./AI_RUNTIME.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md), [DECISIONS.md](./DECISIONS.md) (ADR-081, ADR-082, ADR-083, ADR-085, ADR-086, ADR-087, ADR-088).
 
 ---
 
@@ -41,6 +41,8 @@ Coach Supervisor
   Plan History → Resolve Target → Preview → Validate → Restore Snapshot → Publish New Version
   ↓
 Active WorkoutPlan + Recommendations + Memory + Session
+  ↓
+Explainable Coaching Session (Sprint 26.1)  ← evidence package from existing systems
   ↓
 Deterministic coaching response
 ```
@@ -113,7 +115,8 @@ Every reply is assembled from:
 - Optional `WorkoutModificationResult` on modification turns
 - Optional `PlanRestoreResult` on restore turns
 - Athlete / recommendation facts already on the plan (`recommendationPackage`, notes, progression)
-- Current Coaching Session result
+- Current Coaching Session result (Sprint 22.0 lifecycle)
+- Explainable Coaching Session (Sprint 26.1) — evidence package from Timeline / Decision / Recommendation / Insights / Plan
 - Conversation Memory hints (prior intent / plan / reply summaries)
 
 `ActiveWorkoutPlanStore` holds conversation/session references only — it does not own plan generation, modification, or history logic.
@@ -124,9 +127,9 @@ Every reply is assembled from:
 
 Module: `app/src/features/coach-conversation/`
 
-- `processCoachConversationTurn` → `CoachConversationResult` (includes `modification` / `restore` when applicable)
+- `processCoachConversationTurn` → `CoachConversationResult` (includes `modification` / `restore` / `explainableSession` when applicable)
 - `attachWorkoutPlanToConversation`
-- Composition Root token: `CoachConversationService` (injected with `WorkoutGenerationPipelineService`, `PlanHistoryService`, `PlanRestoreService`)
+- Composition Root token: `CoachConversationService` (injected with `WorkoutGenerationPipelineService`, `PlanHistoryService`, `PlanRestoreService`, `CoachTimelineService`, `ProactiveInsightsService`, `ExplainableCoachingSessionService`)
 - Coach Screen: Generate Workout → Modify / Restore via chat → Updated Workout → conversation continues via `useCoachConversation` + `useGenerateWorkout`
 
 Conversation Runtime compatibility:
@@ -140,10 +143,11 @@ Conversation Runtime compatibility:
 
 **Does:**
 
-- orchestrate existing Session / Supervisor Routing / Supervisor / Memory / Workout Pipeline modification / Plan Restore
+- orchestrate existing Session / Supervisor Routing / Supervisor / Memory / Workout Pipeline modification / Plan Restore / Timeline / Insights / Explainable Session composition
 - route intents deterministically (restore before modification before explanation)
 - attach and reference WorkoutPlan for explanations and living-plan updates
 - publish plan versions into Plan History on attach / modify
+- compose an Explainable Coaching Session on every turn
 - produce immutable `CoachConversationResult`
 
 **Does not:**

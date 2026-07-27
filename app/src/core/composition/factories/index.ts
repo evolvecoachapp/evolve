@@ -75,3 +75,6 @@ export type { CoachTimelineFactoryDeps } from "./CoachTimelineFactory";
 
 export { ProactiveInsightsFactory } from "./ProactiveInsightsFactory";
 export type { ProactiveInsightsFactoryDeps } from "./ProactiveInsightsFactory";
+
+export { ExplainableCoachingSessionFactory } from "./ExplainableCoachingSessionFactory";
+export type { ExplainableCoachingSessionFactoryDeps } from "./ExplainableCoachingSessionFactory";

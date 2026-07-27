@@ -1,6 +1,8 @@
 import { SessionRequestKinds } from "../../coaching-session/models/SessionRequest";
 import { EMPTY_SESSION_METADATA } from "../../coaching-session/models/SessionMetadata";
 import type { CoachingSessionService } from "../../coaching-session/services/CoachingSessionService";
+import type { ExplainableCoachingSessionService } from "../../coaching-session/composition/services/ExplainableCoachingSessionService";
+import type { CoachingSessionResult as ExplainableCoachingSessionResult } from "../../coaching-session/composition/models/CoachingSessionResult";
 import { EMPTY_SUPERVISOR_METADATA } from "../../coach-supervisor/models/CoachSupervisorMetadata";
 import type { CoachSupervisorService } from "../../coach-supervisor/services/CoachSupervisorService";
 import {
@@ -63,6 +65,7 @@ export interface CoachConversationOrchestratorDeps {
   readonly planRestore?: PlanRestoreService | null;
   readonly coachTimeline?: CoachTimelineService | null;
   readonly proactiveInsights?: ProactiveInsightsService | null;
+  readonly explainableCoachingSession?: ExplainableCoachingSessionService | null;
   readonly conversationMemory?: ConversationMemoryService;
   readonly planStore?: ActiveWorkoutPlanStore;
   readonly clock?: () => string;
@@ -87,6 +90,7 @@ export class CoachConversationOrchestrator {
   private readonly planRestore: PlanRestoreService | null;
   private readonly coachTimeline: CoachTimelineService | null;
   private readonly proactiveInsights: ProactiveInsightsService | null;
+  private readonly explainableCoachingSession: ExplainableCoachingSessionService | null;
   private readonly conversationMemory: ConversationMemoryService;
   private readonly planStore: ActiveWorkoutPlanStore;
   private readonly clock: () => string;
@@ -101,6 +105,7 @@ export class CoachConversationOrchestrator {
     this.planRestore = deps.planRestore ?? null;
     this.coachTimeline = deps.coachTimeline ?? null;
     this.proactiveInsights = deps.proactiveInsights ?? null;
+    this.explainableCoachingSession = deps.explainableCoachingSession ?? null;
     this.conversationMemory =
       deps.conversationMemory ?? createConversationMemoryService();
     this.planStore = deps.planStore ?? createActiveWorkoutPlanStore();
@@ -121,6 +126,10 @@ export class CoachConversationOrchestrator {
 
   getProactiveInsights(): ProactiveInsightsService | null {
     return this.proactiveInsights;
+  }
+
+  getExplainableCoachingSession(): ExplainableCoachingSessionService | null {
+    return this.explainableCoachingSession;
   }
 
   attachWorkoutPlan(plan: WorkoutPlan): void {
@@ -572,6 +581,50 @@ export class CoachConversationOrchestrator {
       );
     }
 
+    const recommendationTitles =
+      workoutPlan?.recommendationPackage?.recommendations.map(
+        (item) => item.title,
+      ) ?? Object.freeze([]);
+    const recoveryNotes = workoutPlan?.notes.recoveryNotes ?? Object.freeze([]);
+
+    let explainableSessionResult: ExplainableCoachingSessionResult | null =
+      null;
+    if (this.explainableCoachingSession) {
+      const lineageId = workoutPlan
+        ? resolveWorkoutLineageId(workoutPlan)
+        : null;
+      explainableSessionResult = this.explainableCoachingSession.build({
+        athleteId: request.athleteId,
+        conversationId: request.conversationId,
+        sessionId,
+        lifecycleSessionId: sessionId,
+        userRequest: request.message,
+        conversationIntent: intent,
+        requestId: request.id,
+        workoutPlan,
+        modification,
+        restore,
+        recommendationTitles,
+        recoveryNotes,
+        planLineageId: lineageId,
+        insights: insightResult?.insights,
+      });
+      push(
+        CoachConversationStages.EXPLAINABLE_SESSION,
+        explainableSessionResult.success,
+        explainableSessionResult.message,
+      );
+      if (!explainableSessionResult.success) {
+        errors.push(explainableSessionResult.message);
+      }
+    } else {
+      push(
+        CoachConversationStages.EXPLAINABLE_SESSION,
+        true,
+        "Explainable coaching session service not configured",
+      );
+    }
+
     const context = buildCoachConversationContext({
       id: `ctx:${request.id}`,
       request,
@@ -584,6 +637,7 @@ export class CoachConversationOrchestrator {
       timelineResult,
       insightResult,
       session: sessionResult,
+      explainableSession: explainableSessionResult?.session ?? null,
       memoryHints,
       createdAt: this.clock(),
     });
@@ -656,6 +710,8 @@ export class CoachConversationOrchestrator {
       modification,
       restore,
       session: sessionResult,
+      explainableSession: explainableSessionResult?.session ?? null,
+      explainableSessionResult,
       routing: routingResult,
       supervisor: supervisorResult,
       memory: memoryResult,

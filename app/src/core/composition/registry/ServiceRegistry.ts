@@ -149,4 +149,8 @@ export class ServiceRegistry {
   getProactiveInsightsService(): ServiceMap["ProactiveInsightsService"] {
     return this.resolve("ProactiveInsightsService");
   }
+
+  getExplainableCoachingSessionService(): ServiceMap["ExplainableCoachingSessionService"] {
+    return this.resolve("ExplainableCoachingSessionService");
+  }
 }

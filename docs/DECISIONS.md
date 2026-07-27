@@ -2619,13 +2619,13 @@ Composition Root registers `CoachTimelineService` (ADR-086).
 
 ## Decision 087: Proactive Coach Insights (Sprint 25.5 product)
 
-**Date:** 2026-07-27  
+**Date:** 2026-07-27
 **Status:** Accepted
 
-**Context:**  
+**Context:**
 The Coach Timeline journals decisions, but the product still waits for the athlete to ask “why” or “what changed.” Athletes also need the Coach to surface problems, patterns, and progress risks proactively. Reusing Sprint 18.7 Insight Engine would conflate observational domain-fact snapshots with coach-facing actionable insights. LLM-generated observations would hallucinate beyond evidence.
 
-**Decision:**  
+**Decision:**
 Introduce `features/proactive-insights` as a **deterministic analysis layer** over existing coaching knowledge (Timeline, Plan History, Goal Progress signals, Recovery signals, Decision/Recommendation/Explainability refs already journaled):
 
 Athlete State → Timeline → Plan History → Goal Progress → Recovery State → Insight Analysis → Coach Insight → Conversation / Dashboard.
@@ -2646,4 +2646,33 @@ Composition Root registers `ProactiveInsightsService` (ADR-087).
 
 ---
 
-*New decisions are appended as Decision 088, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 088: Explainable Coaching Session Composition (Sprint 26.1 product)
+
+**Date:** 2026-07-28
+**Status:** Accepted
+
+**Context:**
+Coaching turns still surface primarily as text replies even though EVOLVE already owns Timeline, Decision, Recommendation, Explainability, Proactive Insights, Plan History, and Conversation context. Athletes need every coaching interaction packaged as a complete explainable session. A new reasoning engine would duplicate existing logic. Replacing Sprint 22.0 Coaching Session Runtime would break lifecycle orchestration between Conversation and Supervisor.
+
+**Decision:**
+Extend `features/coaching-session` with an **Explainable Coaching Session composition layer** (`composition/`) that packages existing domain evidence into an immutable `CoachingSession` artifact on every Coach Conversation turn:
+
+User Request → Coach Conversation → Athlete Context → Timeline → Decision → Recommendation → Explainability → Proactive Insights → Coaching Session → Conversation Response.
+
+Composition reuses existing services only — no new engines, no LLM reasoning, no invented evidence. Confidence is deterministic from evidence. Dashboard application APIs expose Latest Session / Summary / Evidence / Insights / Confidence — presentation only. Sprint 22.0 lifecycle runtime remains unchanged; the explainable artifact is distinct from the runtime descriptor type.
+
+Composition Root registers `ExplainableCoachingSessionService` and injects it into `CoachConversationService` (ADR-088).
+
+**Alternatives considered:**
+- **New reasoning / session engine** — rejected: sprint forbids new engines; must compose existing architecture.
+- **Replace Sprint 22.0 Coaching Session Runtime** — rejected: lifecycle orchestration must remain; composition sits alongside it.
+- **LLM-generated session narratives / confidence** — rejected: must stay deterministic and evidence-backed.
+- **Persistence / event bus / UI redesign** — rejected: sprint constraints.
+
+**Consequences:**
+- Documentation: [COACHING_SESSION.md](./COACHING_SESSION.md), [COACH_CONVERSATION.md](./COACH_CONVERSATION.md), [COACH_TIMELINE.md](./COACH_TIMELINE.md), [PROACTIVE_INSIGHTS.md](./PROACTIVE_INSIGHTS.md), [PLAN_HISTORY.md](./PLAN_HISTORY.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- Conversation APIs remain message-compatible; every turn also carries an explainable session.
+
+---
+
+*New decisions are appended as Decision 089, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

@@ -1,4 +1,6 @@
 import type { SessionResult } from "../../coaching-session/models/SessionResult";
+import type { CoachingSession as ExplainableCoachingSession } from "../../coaching-session/composition/models/CoachingSession";
+import type { CoachingSessionResult as ExplainableCoachingSessionResult } from "../../coaching-session/composition/models/CoachingSessionResult";
 import type { MemoryResult } from "../../conversation-memory/models/MemoryResult";
 import type { CoachSupervisorResult } from "../../coach-supervisor/models/CoachSupervisorResult";
 import type { RoutingResult } from "../../supervisor-routing/models/RoutingResult";
@@ -18,6 +20,7 @@ export const CoachConversationStages = {
   WORKOUT_MODIFICATION: "workout_modification",
   PLAN_RESTORE: "plan_restore",
   CONTEXT_ASSEMBLY: "context_assembly",
+  EXPLAINABLE_SESSION: "explainable_session",
   RESPONSE: "response",
   MEMORY: "memory",
 } as const;
@@ -49,6 +52,8 @@ export interface CoachConversationResult {
   readonly modification: WorkoutModificationResult | null;
   readonly restore: PlanRestoreResult | null;
   readonly session: SessionResult | null;
+  readonly explainableSession: ExplainableCoachingSession | null;
+  readonly explainableSessionResult: ExplainableCoachingSessionResult | null;
   readonly routing: RoutingResult | null;
   readonly supervisor: CoachSupervisorResult | null;
   readonly memory: MemoryResult | null;

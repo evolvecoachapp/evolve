@@ -3,11 +3,11 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-27  
+**Last Updated:** 2026-07-28  
 **Purpose:** Document deterministic proactive coaching insights derived from existing domain evidence.  
 **Source of Truth:** Yes — for Sprint 25.5 Proactive Coach Insights foundation on mobile.
 
-Related: [COACH_TIMELINE.md](./COACH_TIMELINE.md), [COACH_CONVERSATION.md](./COACH_CONVERSATION.md), [PLAN_HISTORY.md](./PLAN_HISTORY.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [DECISIONS.md](./DECISIONS.md) (ADR-087).
+Related: [COACH_TIMELINE.md](./COACH_TIMELINE.md), [COACH_CONVERSATION.md](./COACH_CONVERSATION.md), [COACHING_SESSION.md](./COACHING_SESSION.md), [PLAN_HISTORY.md](./PLAN_HISTORY.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [DECISIONS.md](./DECISIONS.md) (ADR-087, ADR-088).
 
 ---
 
@@ -110,3 +110,5 @@ No UI redesign.
 ## Composition Root
 
 Registers `ProactiveInsightsService` (depends on `CoachTimelineService` + `PlanHistoryService`) and injects it into Coach Conversation.
+
+Explainable Coaching Session (Sprint 26.1) consumes generated insights as evidence when composing session artifacts ([COACHING_SESSION.md](./COACHING_SESSION.md), ADR-088).
