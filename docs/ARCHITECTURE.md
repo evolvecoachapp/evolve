@@ -1106,6 +1106,19 @@ Full detail: [PLAN_HISTORY.md](./PLAN_HISTORY.md). Workout Pipeline: [WORKOUT_PI
 
 Full detail: [COACH_TIMELINE.md](./COACH_TIMELINE.md). ADR-086: [DECISIONS.md](./DECISIONS.md).
 
+### Proactive Coach Insights (`features/proactive-insights`) — Sprint 25.5 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Deterministic proactive coaching insights from existing domain evidence |
+| **Flow** | Athlete State → Timeline → Plan History → Goal Progress → Recovery → Insight Analysis → Coach Insight → Conversation / Dashboard |
+| **Models** | `CoachInsight`, `CoachInsightType`, `CoachInsightSeverity`, `CoachInsightReason`, `CoachInsightEvidence`, `CoachInsightRecommendation`, `CoachInsightSnapshot`, `CoachInsightSummary`, `InsightAnalysisResult`, `InsightQuery`, `InsightFilter` |
+| **Services** | `analyzeTimeline`, `analyzeGoalProgress`, `analyzeWorkoutPatterns`, `analyzeNutritionPatterns`, `analyzeRecoveryPatterns`, `buildCoachInsights`, `prioritizeInsights`, `filterInsights`, `validateInsights`, `ProactiveInsightsService` |
+| **Integration** | Coach Conversation `coach_insight`; Coach Timeline / Plan History / Goal / Recovery / Decision / Recommendation / Explainability refs; Composition Root `ProactiveInsightsService` |
+| **Design** | **No LLM. No ML. No persistence. No event bus. No scheduler. No UI redesign.** Distinct from Sprint 18.7 Insight Engine domain-fact snapshots |
+
+Full detail: [PROACTIVE_INSIGHTS.md](./PROACTIVE_INSIGHTS.md). ADR-087: [DECISIONS.md](./DECISIONS.md).
+
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 
 | Aspect | Implementation |

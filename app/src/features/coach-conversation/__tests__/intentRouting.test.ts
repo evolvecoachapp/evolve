@@ -73,6 +73,24 @@ describe("Coach conversation intent routing", () => {
     ).toBe(CoachConversationIntents.TIMELINE_QUERY);
   });
 
+  it("routes coach insight intents", () => {
+    expect(routeCoachConversationIntent("Anything I should know?")).toBe(
+      CoachConversationIntents.COACH_INSIGHT,
+    );
+    expect(routeCoachConversationIntent("Do you see any problems?")).toBe(
+      CoachConversationIntents.COACH_INSIGHT,
+    );
+    expect(routeCoachConversationIntent("How am I progressing?")).toBe(
+      CoachConversationIntents.COACH_INSIGHT,
+    );
+    expect(routeCoachConversationIntent("What should I improve?")).toBe(
+      CoachConversationIntents.COACH_INSIGHT,
+    );
+    expect(
+      routeCoachConversationIntent("What patterns do you notice?"),
+    ).toBe(CoachConversationIntents.COACH_INSIGHT);
+  });
+
   it("routes general coaching intents", () => {
     expect(routeCoachConversationIntent("Give me coaching tips")).toBe(
       CoachConversationIntents.GENERAL_COACHING,

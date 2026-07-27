@@ -150,6 +150,30 @@ function timelineLines(context: CoachConversationContext): string {
   return `From the Coach Timeline decision journal: ${body}${summaryLine}`.trim();
 }
 
+function insightLines(context: CoachConversationContext): string {
+  const result = context.insightResult;
+  if (!result) {
+    return "I have no proactive coach insights available for that question, so I will not invent observations.";
+  }
+  if (result.insights.length === 0) {
+    return "I have no proactive coach insights supported by current evidence, so I will not invent observations.";
+  }
+  const body = result.insights
+    .slice(0, 5)
+    .map((insight) => {
+      return [
+        `${insight.severity} — ${insight.title}`,
+        `Evidence: ${insight.evidence.summary}`,
+        `Reason: ${insight.reason.reason}`,
+        `Recommendation: ${insight.recommendation.action}`,
+        `Expected outcome: ${insight.expectedOutcome}`,
+        `Confidence: ${insight.confidence}`,
+      ].join(". ");
+    })
+    .join(" ");
+  return `From proactive coach insights: ${body}`.trim();
+}
+
 function buildMessage(
   intent: CoachConversationIntent,
   context: CoachConversationContext,
@@ -180,6 +204,11 @@ function buildMessage(
       return {
         message: `${timelineLines(context)}${memory}${session}`.trim(),
         topics: Object.freeze(["timeline_query", "decision_journal"]),
+      };
+    case CoachConversationIntents.COACH_INSIGHT:
+      return {
+        message: `${insightLines(context)}${memory}${session}`.trim(),
+        topics: Object.freeze(["coach_insight", "proactive_insights"]),
       };
     case CoachConversationIntents.WORKOUT_SUMMARY: {
       const plan = context.workoutPlan;
@@ -229,14 +258,14 @@ function buildMessage(
     case CoachConversationIntents.GENERAL_COACHING:
       return {
         message:
-          `${intro} I can explain today's workout, modify or restore the active plan, answer timeline questions from the decision journal, or cover exercises, progression, recovery, and recommendations using your coaching session.${memory}${session}`.trim(),
+          `${intro} I can explain today's workout, modify or restore the active plan, answer timeline questions from the decision journal, surface proactive insights from your coaching evidence, or cover exercises, progression, recovery, and recommendations using your coaching session.${memory}${session}`.trim(),
         topics: Object.freeze(["general_coaching"]),
       };
     case CoachConversationIntents.UNKNOWN:
     default:
       return {
         message:
-          `${intro} I did not match a specific coaching intent. Ask about today's workout, request a modification, undo/restore a prior version, ask what changed this week, or ask about progression, recovery, or recommendations.${memory}${session}`.trim(),
+          `${intro} I did not match a specific coaching intent. Ask about today's workout, request a modification, undo/restore a prior version, ask what changed this week, ask for proactive insights, or ask about progression, recovery, or recommendations.${memory}${session}`.trim(),
         topics: Object.freeze(["unknown"]),
       };
   }

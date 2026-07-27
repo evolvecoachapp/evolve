@@ -8,6 +8,8 @@ import { createPlanRestoreService } from "../../plan-restore/services/PlanRestor
 import type { PlanRestoreService } from "../../plan-restore/services/PlanRestoreService";
 import { createCoachTimelineService } from "../../coach-timeline/services/CoachTimelineService";
 import type { CoachTimelineService } from "../../coach-timeline/services/CoachTimelineService";
+import { createProactiveInsightsService } from "../../proactive-insights/services/ProactiveInsightsService";
+import type { ProactiveInsightsService } from "../../proactive-insights/services/ProactiveInsightsService";
 import {
   createSupervisorRoutingService,
 } from "../../supervisor-routing/services/SupervisorRoutingService";
@@ -63,6 +65,7 @@ export function createTestCoachConversationService(
     readonly planHistory?: PlanHistoryService | null;
     readonly planRestore?: PlanRestoreService | null;
     readonly coachTimeline?: CoachTimelineService | null;
+    readonly proactiveInsights?: ProactiveInsightsService | null;
   } = {},
 ): CoachConversationService {
   const clock = overrides.clock ?? createFixedClock();
@@ -102,6 +105,14 @@ export function createTestCoachConversationService(
           clock,
         })
       : overrides.planRestore ?? null;
+  const proactiveInsights =
+    overrides.proactiveInsights === undefined && coachTimeline
+      ? createProactiveInsightsService({
+          coachTimeline,
+          planHistory,
+          clock,
+        })
+      : overrides.proactiveInsights ?? null;
 
   return createCoachConversationService({
     coachingSession,
@@ -111,6 +122,7 @@ export function createTestCoachConversationService(
     planHistory,
     planRestore,
     coachTimeline,
+    proactiveInsights,
     conversationMemory,
     planStore: createActiveWorkoutPlanStore(),
     clock,

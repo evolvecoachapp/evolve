@@ -2617,4 +2617,33 @@ Composition Root registers `CoachTimelineService` (ADR-086).
 
 ---
 
-*New decisions are appended as Decision 087, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 087: Proactive Coach Insights (Sprint 25.5 product)
+
+**Date:** 2026-07-27  
+**Status:** Accepted
+
+**Context:**  
+The Coach Timeline journals decisions, but the product still waits for the athlete to ask “why” or “what changed.” Athletes also need the Coach to surface problems, patterns, and progress risks proactively. Reusing Sprint 18.7 Insight Engine would conflate observational domain-fact snapshots with coach-facing actionable insights. LLM-generated observations would hallucinate beyond evidence.
+
+**Decision:**  
+Introduce `features/proactive-insights` as a **deterministic analysis layer** over existing coaching knowledge (Timeline, Plan History, Goal Progress signals, Recovery signals, Decision/Recommendation/Explainability refs already journaled):
+
+Athlete State → Timeline → Plan History → Goal Progress → Recovery State → Insight Analysis → Coach Insight → Conversation / Dashboard.
+
+Insights are immutable, evidence-backed, severity/confidence deterministic, and never invent unsupported advice. Coach Conversation intent `coach_insight` answers “anything I should know / problems / progress / improve / patterns” strictly from generated insights. Dashboard application APIs expose Top / Latest / Critical / domain insights — presentation only.
+
+Composition Root registers `ProactiveInsightsService` (ADR-087).
+
+**Alternatives considered:**
+- **Reuse Insight Engine (ADR-045 / Sprint 18.7)** — rejected: that engine owns observational domain-fact snapshots, not coach-facing proactive product insights.
+- **LLM / ML pattern detection** — rejected: sprint forbids LLM inference and machine learning; must stay deterministic.
+- **Background scheduler / event bus / persistence** — rejected: sprint constraints; analysis runs on demand from existing in-memory evidence.
+- **UI-owned insight logic** — rejected: business logic must not live in presentation.
+
+**Consequences:**
+- Documentation: [PROACTIVE_INSIGHTS.md](./PROACTIVE_INSIGHTS.md), [COACH_CONVERSATION.md](./COACH_CONVERSATION.md), [COACH_TIMELINE.md](./COACH_TIMELINE.md), [PLAN_HISTORY.md](./PLAN_HISTORY.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- Distinct from Insight Engine; reuses Timeline as the primary evidence source without duplicating domain calculators.
+
+---
+
+*New decisions are appended as Decision 088, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

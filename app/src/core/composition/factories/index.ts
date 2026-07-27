@@ -72,3 +72,6 @@ export type { PlanRestoreFactoryDeps } from "./PlanRestoreFactory";
 
 export { CoachTimelineFactory } from "./CoachTimelineFactory";
 export type { CoachTimelineFactoryDeps } from "./CoachTimelineFactory";
+
+export { ProactiveInsightsFactory } from "./ProactiveInsightsFactory";
+export type { ProactiveInsightsFactoryDeps } from "./ProactiveInsightsFactory";

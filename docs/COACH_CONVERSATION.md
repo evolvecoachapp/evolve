@@ -4,10 +4,10 @@
 **Version:** 0.6.0  
 **Status:** Living Document  
 **Last Updated:** 2026-07-27  
-**Purpose:** Document the Intelligent Coach Conversation product path — contextual coaching replies grounded in WorkoutPlan + session context, including adaptive modification, plan restore, and timeline explainability.  
-**Source of Truth:** Yes — for Sprint 24.2 / 24.3 / 25.3 / 25.4 product conversation experience on mobile.
+**Purpose:** Document the Intelligent Coach Conversation product path — contextual coaching replies grounded in WorkoutPlan + session context, including adaptive modification, plan restore, timeline explainability, and proactive insights.  
+**Source of Truth:** Yes — for Sprint 24.2 / 24.3 / 25.3 / 25.4 / 25.5 product conversation experience on mobile.
 
-Related: [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [WORKOUT_PIPELINE.md](./WORKOUT_PIPELINE.md), [PLAN_HISTORY.md](./PLAN_HISTORY.md), [COACH_TIMELINE.md](./COACH_TIMELINE.md), [CONVERSATION_MEMORY.md](./CONVERSATION_MEMORY.md), [SUPERVISOR_ROUTING.md](./SUPERVISOR_ROUTING.md), [AI_RUNTIME.md](./AI_RUNTIME.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md), [DECISIONS.md](./DECISIONS.md) (ADR-081, ADR-082, ADR-083, ADR-085, ADR-086).
+Related: [COACHING_SESSION_RUNTIME.md](./COACHING_SESSION_RUNTIME.md), [WORKOUT_PIPELINE.md](./WORKOUT_PIPELINE.md), [PLAN_HISTORY.md](./PLAN_HISTORY.md), [COACH_TIMELINE.md](./COACH_TIMELINE.md), [PROACTIVE_INSIGHTS.md](./PROACTIVE_INSIGHTS.md), [CONVERSATION_MEMORY.md](./CONVERSATION_MEMORY.md), [SUPERVISOR_ROUTING.md](./SUPERVISOR_ROUTING.md), [AI_RUNTIME.md](./AI_RUNTIME.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md), [DECISIONS.md](./DECISIONS.md) (ADR-081, ADR-082, ADR-083, ADR-085, ADR-086, ADR-087).
 
 ---
 
@@ -62,6 +62,7 @@ Generate Workout remains the Workout Generation Pipeline (Sprint 24.1). After ge
 | `workout_modification` | Surgically modify the active WorkoutPlan (Sprint 24.3) |
 | `plan_restore` | Restore a prior immutable plan version as a new version (Sprint 25.3) |
 | `timeline_query` | Answer why/when/what-changed from Coach Timeline entries only (Sprint 25.4) |
+| `coach_insight` | Surface proactive insights from generated evidence only (Sprint 25.5) |
 | `general_coaching` | General coaching guidance |
 | `unknown` | Deterministic fallback |
 
@@ -71,7 +72,9 @@ Restore examples: "Undo my last workout change", "Restore yesterday's workout", 
 
 Timeline examples: "Why did you lower my volume?", "When did we remove deadlifts?", "What changed this week?", "Why is my diet different?", "Show me the latest adjustments."
 
-Intents map to Supervisor capability requirements (`GenerateWorkout`, `EvaluateRecovery`, …). Supervisor Routing is reused for capability planning. Restore intents are detected before timeline and modification.
+Proactive insight examples: "Anything I should know?", "Do you see any problems?", "How am I progressing?", "What should I improve?", "What patterns do you notice?"
+
+Intents map to Supervisor capability requirements (`GenerateWorkout`, `EvaluateRecovery`, …). Supervisor Routing is reused for capability planning. Restore intents are detected before timeline, insights, and modification.
 
 ---
 

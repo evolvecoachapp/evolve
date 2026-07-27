@@ -7,7 +7,7 @@
 **Purpose:** Document the chronological reasoning history of the AI Coach (decision journal).  
 **Source of Truth:** Yes — for Sprint 25.4 Coach Timeline foundation on mobile.
 
-Related: [COACH_CONVERSATION.md](./COACH_CONVERSATION.md), [PLAN_HISTORY.md](./PLAN_HISTORY.md), [EXPLAINABILITY_ENGINE.md](./EXPLAINABILITY_ENGINE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [DECISIONS.md](./DECISIONS.md) (ADR-086).
+Related: [COACH_CONVERSATION.md](./COACH_CONVERSATION.md), [PLAN_HISTORY.md](./PLAN_HISTORY.md), [PROACTIVE_INSIGHTS.md](./PROACTIVE_INSIGHTS.md), [EXPLAINABILITY_ENGINE.md](./EXPLAINABILITY_ENGINE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [DECISIONS.md](./DECISIONS.md) (ADR-086).
 
 ---
 
@@ -108,4 +108,4 @@ Responses are assembled **only** from Timeline entries.
 
 ## Composition Root
 
-Registers `CoachTimelineService` and injects it into Coach Conversation, Plan Restore, Decision Engine, Nutrition Agent, and Recovery Agent.
+Registers `CoachTimelineService` and injects it into Coach Conversation, Plan Restore, Decision Engine, Nutrition Agent, Recovery Agent, and Proactive Insights.

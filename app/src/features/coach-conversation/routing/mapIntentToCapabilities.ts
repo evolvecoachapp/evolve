@@ -18,6 +18,7 @@ export function mapIntentToCapabilities(
     case CoachConversationIntents.WORKOUT_MODIFICATION:
     case CoachConversationIntents.PLAN_RESTORE:
     case CoachConversationIntents.TIMELINE_QUERY:
+    case CoachConversationIntents.COACH_INSIGHT:
       return Object.freeze([WellKnownCapabilityIds.GENERATE_WORKOUT]);
     case CoachConversationIntents.RECOVERY_EXPLANATION:
       return Object.freeze([WellKnownCapabilityIds.EVALUATE_RECOVERY]);

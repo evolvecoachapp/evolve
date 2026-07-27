@@ -145,4 +145,8 @@ export class ServiceRegistry {
   getCoachTimelineService(): ServiceMap["CoachTimelineService"] {
     return this.resolve("CoachTimelineService");
   }
+
+  getProactiveInsightsService(): ServiceMap["ProactiveInsightsService"] {
+    return this.resolve("ProactiveInsightsService");
+  }
 }

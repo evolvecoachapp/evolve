@@ -1,6 +1,7 @@
 import type { SessionResult } from "../../coaching-session/models/SessionResult";
 import type { PlanRestoreResult } from "../../plan-restore/models/PlanRestoreResult";
 import type { TimelineResult } from "../../coach-timeline/models/TimelineResult";
+import type { InsightAnalysisResult } from "../../proactive-insights/models/InsightAnalysisResult";
 import type { WorkoutModificationResult } from "../../workout-generation-pipeline/models/WorkoutModificationResult";
 import type { WorkoutPlan } from "../../workout-generation-pipeline/models/WorkoutPlan";
 import type { CoachConversationContext } from "../models/CoachConversationContext";
@@ -17,6 +18,7 @@ export interface BuildCoachConversationContextInput {
   readonly modification?: WorkoutModificationResult | null;
   readonly restore?: PlanRestoreResult | null;
   readonly timelineResult?: TimelineResult | null;
+  readonly insightResult?: InsightAnalysisResult | null;
   readonly session: SessionResult | null;
   readonly memoryHints?: readonly string[];
   readonly createdAt: string;
@@ -44,6 +46,7 @@ export function buildCoachConversationContext(
     modification: input.modification ?? null,
     restore: input.restore ?? null,
     timelineResult: input.timelineResult ?? null,
+    insightResult: input.insightResult ?? null,
     session: input.session,
     recommendationTitles: Object.freeze([...recommendationTitles]),
     recoveryNotes: Object.freeze([...recoveryNotes]),

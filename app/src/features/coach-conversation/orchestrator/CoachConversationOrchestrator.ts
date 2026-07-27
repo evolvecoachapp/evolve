@@ -20,6 +20,9 @@ import {
 import { buildTimelineGroundedReply } from "../../coach-timeline/builders/buildTimelineGroundedReply";
 import type { TimelineResult } from "../../coach-timeline/models/TimelineResult";
 import type { CoachTimelineService } from "../../coach-timeline/services/CoachTimelineService";
+import { buildInsightGroundedReply } from "../../proactive-insights/builders/buildInsightGroundedReply";
+import type { InsightAnalysisResult } from "../../proactive-insights/models/InsightAnalysisResult";
+import type { ProactiveInsightsService } from "../../proactive-insights/services/ProactiveInsightsService";
 import { EMPTY_ROUTING_METADATA } from "../../supervisor-routing/models/RoutingMetadata";
 import { RoutingPriorityLevels } from "../../supervisor-routing/models/RoutingPriority";
 import type { SupervisorRoutingService } from "../../supervisor-routing/services/SupervisorRoutingService";
@@ -59,6 +62,7 @@ export interface CoachConversationOrchestratorDeps {
   readonly planHistory?: PlanHistoryService | null;
   readonly planRestore?: PlanRestoreService | null;
   readonly coachTimeline?: CoachTimelineService | null;
+  readonly proactiveInsights?: ProactiveInsightsService | null;
   readonly conversationMemory?: ConversationMemoryService;
   readonly planStore?: ActiveWorkoutPlanStore;
   readonly clock?: () => string;
@@ -82,6 +86,7 @@ export class CoachConversationOrchestrator {
   private readonly planHistory: PlanHistoryService | null;
   private readonly planRestore: PlanRestoreService | null;
   private readonly coachTimeline: CoachTimelineService | null;
+  private readonly proactiveInsights: ProactiveInsightsService | null;
   private readonly conversationMemory: ConversationMemoryService;
   private readonly planStore: ActiveWorkoutPlanStore;
   private readonly clock: () => string;
@@ -95,6 +100,7 @@ export class CoachConversationOrchestrator {
     this.planHistory = deps.planHistory ?? null;
     this.planRestore = deps.planRestore ?? null;
     this.coachTimeline = deps.coachTimeline ?? null;
+    this.proactiveInsights = deps.proactiveInsights ?? null;
     this.conversationMemory =
       deps.conversationMemory ?? createConversationMemoryService();
     this.planStore = deps.planStore ?? createActiveWorkoutPlanStore();
@@ -111,6 +117,10 @@ export class CoachConversationOrchestrator {
 
   getTimeline(): CoachTimelineService | null {
     return this.coachTimeline;
+  }
+
+  getProactiveInsights(): ProactiveInsightsService | null {
+    return this.proactiveInsights;
   }
 
   attachWorkoutPlan(plan: WorkoutPlan): void {
@@ -366,6 +376,7 @@ export class CoachConversationOrchestrator {
     let modification: WorkoutModificationResult | null = null;
     let restore: PlanRestoreResult | null = null;
     let timelineResult: TimelineResult | null = null;
+    let insightResult: InsightAnalysisResult | null = null;
 
     if (intent === CoachConversationIntents.WORKOUT_MODIFICATION) {
       if (!workoutPlan) {
@@ -534,6 +545,33 @@ export class CoachConversationOrchestrator {
       );
     }
 
+    if (intent === CoachConversationIntents.COACH_INSIGHT) {
+      if (!this.proactiveInsights) {
+        insightResult = Object.freeze({
+          query: null,
+          insights: Object.freeze([]),
+          snapshot: null,
+          summary: null,
+          matchedCount: 0,
+          success: true,
+          message:
+            "I have no proactive coach insights available for that question, so I will not invent observations.",
+          generatedAt: this.clock(),
+        });
+      } else {
+        insightResult = buildInsightGroundedReply({
+          insights: this.proactiveInsights,
+          athleteId: request.athleteId,
+          message: request.message,
+        }).result;
+      }
+      push(
+        CoachConversationStages.CONTEXT_ASSEMBLY,
+        true,
+        `Coach insight query matched ${insightResult.matchedCount} insights`,
+      );
+    }
+
     const context = buildCoachConversationContext({
       id: `ctx:${request.id}`,
       request,
@@ -544,11 +582,15 @@ export class CoachConversationOrchestrator {
       modification,
       restore,
       timelineResult,
+      insightResult,
       session: sessionResult,
       memoryHints,
       createdAt: this.clock(),
     });
-    if (intent !== CoachConversationIntents.TIMELINE_QUERY) {
+    if (
+      intent !== CoachConversationIntents.TIMELINE_QUERY &&
+      intent !== CoachConversationIntents.COACH_INSIGHT
+    ) {
       push(
         CoachConversationStages.CONTEXT_ASSEMBLY,
         true,
@@ -581,6 +623,7 @@ export class CoachConversationOrchestrator {
       intent === CoachConversationIntents.WORKOUT_MODIFICATION ||
       intent === CoachConversationIntents.PLAN_RESTORE ||
       intent === CoachConversationIntents.TIMELINE_QUERY ||
+      intent === CoachConversationIntents.COACH_INSIGHT ||
       intent === CoachConversationIntents.GENERAL_COACHING;
     if (importantUserRequest) {
       appendUserRequest({
