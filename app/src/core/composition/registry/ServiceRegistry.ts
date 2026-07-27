@@ -141,4 +141,8 @@ export class ServiceRegistry {
   getPlanRestoreService(): ServiceMap["PlanRestoreService"] {
     return this.resolve("PlanRestoreService");
   }
+
+  getCoachTimelineService(): ServiceMap["CoachTimelineService"] {
+    return this.resolve("CoachTimelineService");
+  }
 }

@@ -122,7 +122,7 @@ Re-attach active WorkoutPlan → Conversation Reply
 Module: `features/plan-restore/` (shared with Nutrition). History: `features/plan-history/`.  
 Conversation entry: intent `plan_restore`. History remains append-only — restore never deletes or overwrites prior versions.
 
-Related: [PLAN_HISTORY.md](./PLAN_HISTORY.md), ADR-083 / ADR-085 in [DECISIONS.md](./DECISIONS.md).
+Related: [PLAN_HISTORY.md](./PLAN_HISTORY.md), [COACH_TIMELINE.md](./COACH_TIMELINE.md), ADR-083 / ADR-085 / ADR-086 in [DECISIONS.md](./DECISIONS.md).
 
 ---
 

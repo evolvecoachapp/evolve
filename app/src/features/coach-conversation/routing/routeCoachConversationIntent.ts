@@ -1,5 +1,6 @@
 import { isWorkoutModificationMessage } from "../../workout-generation-pipeline/modification";
 import { isPlanRestoreMessage } from "../../plan-restore/routing/routePlanRestoreIntent";
+import { isTimelineQueryMessage } from "../../coach-timeline/builders/buildTimelineGroundedReply";
 import {
   CoachConversationIntents,
   type CoachConversationIntent,
@@ -66,7 +67,7 @@ const INTENT_RULES: readonly IntentRule[] = Object.freeze([
 
 /**
  * Deterministic keyword intent router for coaching conversation.
- * Plan restore and adaptive modification are detected before explain/summary.
+ * Plan restore, timeline query, and adaptive modification are detected before explain/summary.
  * Reuses Supervisor Routing downstream for capability planning.
  */
 export function routeCoachConversationIntent(
@@ -85,6 +86,11 @@ export function routeCoachConversationIntent(
   // Restore / undo takes precedence over modification and explain intents.
   if (isPlanRestoreMessage(trimmed)) {
     return CoachConversationIntents.PLAN_RESTORE;
+  }
+
+  // Timeline decision-journal queries — grounded answers only.
+  if (isTimelineQueryMessage(trimmed)) {
+    return CoachConversationIntents.TIMELINE_QUERY;
   }
 
   // Adaptive modification takes precedence over explain/summary intents.

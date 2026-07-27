@@ -5,6 +5,11 @@ import type { ConversationContext } from "../../conversation-orchestrator/models
 import type { CoachResponse } from "../../response-formatter/models/CoachResponse";
 import type { ToolExecutionResult } from "../../tool-runtime/models/ToolExecutionResult";
 import {
+  appendNutritionEvent,
+} from "../../coach-timeline/builders/timelineIntegration";
+import { CoachTimelineEventCategories } from "../../coach-timeline/models/CoachTimelineEvent";
+import type { CoachTimelineService } from "../../coach-timeline/services/CoachTimelineService";
+import {
   NutritionAgentFacade,
   NutritionAgentEngine,
   type NutritionAgentFacadeDeps,
@@ -22,6 +27,7 @@ import { NutritionAgentOrchestrator } from "../orchestrator/NutritionAgentOrches
 export interface NutritionAgentServiceDeps extends NutritionAgentEngineDeps {
   readonly frameworkService?: AgentFrameworkService;
   readonly registerWithFramework?: boolean;
+  readonly coachTimeline?: CoachTimelineService | null;
 }
 
 /**
@@ -36,6 +42,7 @@ export class NutritionAgentService {
   private readonly engine: NutritionAgentEngine;
   private readonly orchestrator: NutritionAgentOrchestrator;
   private readonly facade: NutritionAgentFacade;
+  private readonly coachTimeline: CoachTimelineService | null;
 
   constructor(deps: NutritionAgentServiceDeps = {}) {
     const facadeDeps: NutritionAgentFacadeDeps = {
@@ -46,6 +53,7 @@ export class NutritionAgentService {
     this.facade = new NutritionAgentFacade(facadeDeps);
     this.engine = this.facade.getEngine();
     this.orchestrator = new NutritionAgentOrchestrator(deps);
+    this.coachTimeline = deps.coachTimeline ?? null;
   }
 
   describeCapabilities(): NutritionAgent {
@@ -68,7 +76,9 @@ export class NutritionAgentService {
     readonly toolExecutionResult?: ToolExecutionResult | null;
     readonly memoryTurnCount?: number;
   }): NutritionAgentResult {
-    return this.orchestrator.orchestrate(input);
+    const result = this.orchestrator.orchestrate(input);
+    this.journalNutrition(result, CoachTimelineEventCategories.NUTRITION_CREATED);
+    return result;
   }
 
   buildNutritionPlan(input: {
@@ -79,7 +89,20 @@ export class NutritionAgentService {
     readonly toolExecutionResult?: ToolExecutionResult | null;
     readonly memoryTurnCount?: number;
   }): NutritionPlan {
-    return this.engine.buildPlan(input);
+    const plan = this.engine.buildPlan(input);
+    if (this.coachTimeline) {
+      appendNutritionEvent({
+        timeline: this.coachTimeline,
+        athleteId: input.request.athleteId ?? "athlete:unknown",
+        category: CoachTimelineEventCategories.NUTRITION_CREATED,
+        planId: plan.id,
+        summary: `Nutrition plan created (${plan.id})`,
+        explanation: "Nutrition Agent generated a nutrition plan",
+        conversationId: input.request.conversationId ?? null,
+        at: new Date().toISOString(),
+      });
+    }
+    return plan;
   }
 
   async adjustNutritionPlan(input: {
@@ -92,7 +115,13 @@ export class NutritionAgentService {
     readonly memoryTurnCount?: number;
     readonly domainPayloads?: NutritionDomainPayloads;
   }): Promise<NutritionAgentResult> {
-    return this.orchestrator.adjust(input);
+    const result = await this.orchestrator.adjust(input);
+    this.journalNutrition(
+      result,
+      CoachTimelineEventCategories.NUTRITION_MODIFIED,
+      "diet nutrition macros",
+    );
+    return result;
   }
 
   evaluateNutrition(plan: NutritionPlan): NutritionValidation {
@@ -101,6 +130,35 @@ export class NutritionAgentService {
 
   validateNutritionPlan(plan: NutritionPlan): NutritionValidation {
     return this.engine.evaluate(plan);
+  }
+
+  private journalNutrition(
+    result: NutritionAgentResult,
+    category:
+      | typeof CoachTimelineEventCategories.NUTRITION_CREATED
+      | typeof CoachTimelineEventCategories.NUTRITION_MODIFIED,
+    searchHints?: string,
+  ): void {
+    if (!result.success || !this.coachTimeline) return;
+    const plan = result.decision.plan;
+    if (!plan) return;
+    appendNutritionEvent({
+      timeline: this.coachTimeline,
+      athleteId: result.request.athleteId ?? "athlete:unknown",
+      category,
+      planId: plan.id,
+      summary:
+        category === CoachTimelineEventCategories.NUTRITION_CREATED
+          ? `Nutrition plan created (${plan.id})`
+          : `Nutrition plan modified (${plan.id})`,
+      explanation:
+        result.message ??
+        result.explanation?.summary ??
+        "Nutrition Agent updated the nutrition plan",
+      conversationId: result.request.conversationId ?? null,
+      at: result.completedAt,
+      searchHints,
+    });
   }
 }
 

@@ -4,6 +4,8 @@ import type { AgentFrameworkService } from "../../agent-framework/services/Agent
 import type { ConversationContext } from "../../conversation-orchestrator/models/ConversationContext";
 import type { CoachResponse } from "../../response-formatter/models/CoachResponse";
 import type { ToolExecutionResult } from "../../tool-runtime/models/ToolExecutionResult";
+import { appendRecoveryAdjustment } from "../../coach-timeline/builders/timelineIntegration";
+import type { CoachTimelineService } from "../../coach-timeline/services/CoachTimelineService";
 import {
   RecoveryAgentFacade,
   RecoveryAgentEngine,
@@ -20,6 +22,7 @@ import { RecoveryAgentOrchestrator } from "../orchestrator/RecoveryAgentOrchestr
 export interface RecoveryAgentServiceDeps extends RecoveryAgentEngineDeps {
   readonly frameworkService?: AgentFrameworkService;
   readonly registerWithFramework?: boolean;
+  readonly coachTimeline?: CoachTimelineService | null;
 }
 
 /**
@@ -32,6 +35,7 @@ export class RecoveryAgentService {
   private readonly engine: RecoveryAgentEngine;
   private readonly orchestrator: RecoveryAgentOrchestrator;
   private readonly facade: RecoveryAgentFacade;
+  private readonly coachTimeline: CoachTimelineService | null;
 
   constructor(deps: RecoveryAgentServiceDeps = {}) {
     const facadeDeps: RecoveryAgentFacadeDeps = {
@@ -42,6 +46,7 @@ export class RecoveryAgentService {
     this.facade = new RecoveryAgentFacade(facadeDeps);
     this.engine = this.facade.getEngine();
     this.orchestrator = new RecoveryAgentOrchestrator(deps);
+    this.coachTimeline = deps.coachTimeline ?? null;
   }
 
   describeCapabilities(): RecoveryAgent {
@@ -64,7 +69,9 @@ export class RecoveryAgentService {
     readonly toolExecutionResult?: ToolExecutionResult | null;
     readonly memoryTurnCount?: number;
   }): RecoveryAgentResult {
-    return this.orchestrator.orchestrate(input);
+    const result = this.orchestrator.orchestrate(input);
+    this.journalRecovery(result);
+    return result;
   }
 
   buildRecoveryPlan(input: {
@@ -75,7 +82,19 @@ export class RecoveryAgentService {
     readonly toolExecutionResult?: ToolExecutionResult | null;
     readonly memoryTurnCount?: number;
   }): RecoveryPlan {
-    return this.engine.buildPlan(input);
+    const plan = this.engine.buildPlan(input);
+    if (this.coachTimeline) {
+      appendRecoveryAdjustment({
+        timeline: this.coachTimeline,
+        athleteId: input.request.athleteId ?? "athlete:unknown",
+        planId: plan.id,
+        summary: `Recovery strategy adjusted (${plan.strategyId ?? plan.id})`,
+        explanation: "Recovery Agent built an updated recovery plan",
+        conversationId: input.request.conversationId ?? null,
+        at: new Date().toISOString(),
+      });
+    }
+    return plan;
   }
 
   evaluateRecovery(plan: RecoveryPlan): RecoveryValidation {
@@ -84,6 +103,24 @@ export class RecoveryAgentService {
 
   validateRecoveryPlan(plan: RecoveryPlan): RecoveryValidation {
     return this.engine.evaluate(plan);
+  }
+
+  private journalRecovery(result: RecoveryAgentResult): void {
+    if (!result.success || !this.coachTimeline) return;
+    const plan = result.decision.plan;
+    if (!plan) return;
+    appendRecoveryAdjustment({
+      timeline: this.coachTimeline,
+      athleteId: result.request.athleteId ?? "athlete:unknown",
+      planId: plan.id,
+      summary: `Recovery strategy adjusted (${plan.strategyId ?? plan.id})`,
+      explanation:
+        result.message ??
+        result.explanation.summary ??
+        "Recovery Agent updated recovery strategy",
+      conversationId: result.request.conversationId ?? null,
+      at: result.completedAt,
+    });
   }
 }
 

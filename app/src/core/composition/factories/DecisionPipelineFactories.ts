@@ -19,6 +19,7 @@ import {
   createRecommendationEngineService,
   type RecommendationEngineService,
 } from "../../../features/recommendation-engine/services/RecommendationEngineService";
+import type { CoachTimelineService } from "../../../features/coach-timeline/services/CoachTimelineService";
 import {
   createAthleteWorkoutAgentPortAdapter,
   createAthleteNutritionAgentPortAdapter,
@@ -82,6 +83,7 @@ export interface DecisionEngineFactoryDeps {
   readonly contextFusion: ContextFusionService;
   readonly athleteState: AthleteStateService;
   readonly supervisor: CoachSupervisorService;
+  readonly coachTimeline?: CoachTimelineService | null;
 }
 
 export const DecisionEngineFactory = {
@@ -92,6 +94,7 @@ export const DecisionEngineFactory = {
       ),
       athleteStatePort: createDecisionAthleteStatePortAdapter(deps.athleteState),
       supervisorPort: createDecisionSupervisorPortAdapter(deps.supervisor),
+      coachTimeline: deps.coachTimeline ?? null,
     });
   },
 } as const;

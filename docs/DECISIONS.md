@@ -2588,4 +2588,33 @@ Coach Conversation gains intent `plan_restore`. Composition Root registers `Plan
 
 ---
 
-*New decisions are appended as Decision 086, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 086: Coach Timeline & Decision Journal (Sprint 25.4 product)
+
+**Date:** 2026-07-27  
+**Status:** Accepted
+
+**Context:**  
+Athletes ask why the Coach changed volume, removed exercises, adjusted diet, or altered recovery. Plan History stores immutable plan snapshots but does not explain coaching reasoning. Conversation Memory stores structured coaching knowledge, not a chronological decision journal. Without a dedicated Timeline, explainability answers would hallucinate or duplicate logic across engines.
+
+**Decision:**  
+Introduce `features/coach-timeline` as an **append-only in-memory decision journal** (not chat history, not analytics, not an event bus, not persistence):
+
+Conversation → Coach Decision → Decision Journal Entry → Timeline → Coach Memory → Conversation continues.
+
+Every meaningful coaching decision appends an immutable `CoachTimelineEntry` with Decision / Recommendation / Reason / Impact / Expected Outcome references. Summaries are deterministic. Coach Conversation intent `timeline_query` answers “why / when / what changed” questions strictly from Timeline entries. Automatic appends hook existing orchestration (Conversation, Plan Restore, Nutrition/Recovery Agents, Decision Engine, Goal Progress) — no new event bus.
+
+Composition Root registers `CoachTimelineService` (ADR-086).
+
+**Alternatives considered:**
+- **Reuse Conversation Memory as the journal** — rejected: memory is not a chronological decision journal and would blur concerns.
+- **Reuse Plan History** — rejected: history versions plans; it does not explain coaching reasons.
+- **New event bus / database** — rejected: sprint forbids event bus and persistence.
+- **LLM-invented explanations** — rejected: must never hallucinate; answers come from journal entries only.
+
+**Consequences:**
+- Documentation: [COACH_TIMELINE.md](./COACH_TIMELINE.md), [COACH_CONVERSATION.md](./COACH_CONVERSATION.md), [PLAN_HISTORY.md](./PLAN_HISTORY.md), [WORKOUT_PIPELINE.md](./WORKOUT_PIPELINE.md), [NUTRITION_PIPELINE.md](./NUTRITION_PIPELINE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- Timeline entries are immutable; prior entries are never modified.
+
+---
+
+*New decisions are appended as Decision 087, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

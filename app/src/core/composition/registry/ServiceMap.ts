@@ -14,6 +14,7 @@ import type { WorkoutGenerationPipelineService } from "../../../features/workout
 import type { CoachConversationService } from "../../../features/coach-conversation/services/CoachConversationService";
 import type { PlanHistoryService } from "../../../features/plan-history/services/PlanHistoryService";
 import type { PlanRestoreService } from "../../../features/plan-restore/services/PlanRestoreService";
+import type { CoachTimelineService } from "../../../features/coach-timeline/services/CoachTimelineService";
 import type { ExerciseSelectionService } from "../../../features/exercise-selection/services/ExerciseSelectionService";
 import type { ProgramGenerationService } from "../../../features/program-generation/services/ProgramGenerationService";
 import type { ProgrammingService } from "../../../features/programming/services/ProgrammingService";
@@ -53,6 +54,7 @@ export interface ServiceMap {
   CoachConversationService: CoachConversationService;
   PlanHistoryService: PlanHistoryService;
   PlanRestoreService: PlanRestoreService;
+  CoachTimelineService: CoachTimelineService;
 }
 
 export type ServiceToken = keyof ServiceMap;
@@ -84,4 +86,5 @@ export const SERVICE_TOKENS = [
   "CoachConversationService",
   "PlanHistoryService",
   "PlanRestoreService",
+  "CoachTimelineService",
 ] as const satisfies readonly ServiceToken[];

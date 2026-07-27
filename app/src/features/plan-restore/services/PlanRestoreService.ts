@@ -1,4 +1,6 @@
 import type { PlanHistoryService } from "../../plan-history/services/PlanHistoryService";
+import { appendPlanRestored } from "../../coach-timeline/builders/timelineIntegration";
+import type { CoachTimelineService } from "../../coach-timeline/services/CoachTimelineService";
 import type { PlanRestoreRequest } from "../models/PlanRestoreRequest";
 import type { PlanRestoreResult } from "../models/PlanRestoreResult";
 import {
@@ -12,6 +14,7 @@ import { validateRestore } from "./validateRestore";
 
 export interface PlanRestoreServiceDeps {
   readonly planHistory: PlanHistoryService;
+  readonly coachTimeline?: CoachTimelineService | null;
   readonly clock?: () => string;
 }
 
@@ -23,10 +26,12 @@ export interface PlanRestoreServiceDeps {
  */
 export class PlanRestoreService {
   private readonly planHistory: PlanHistoryService;
+  private readonly coachTimeline: CoachTimelineService | null;
   private readonly clock: () => string;
 
   constructor(deps: PlanRestoreServiceDeps) {
     this.planHistory = deps.planHistory;
+    this.coachTimeline = deps.coachTimeline ?? null;
     this.clock = deps.clock ?? (() => new Date().toISOString());
   }
 
@@ -117,7 +122,7 @@ export class PlanRestoreService {
       });
     }
 
-    return applyRestore({
+    const result = applyRestore({
       request,
       preview,
       validation,
@@ -125,6 +130,24 @@ export class PlanRestoreService {
       startedAt,
       completedAt: this.clock(),
     });
+
+    if (result.success && result.publishedVersion) {
+      appendPlanRestored({
+        timeline: this.coachTimeline,
+        athleteId: request.athleteId,
+        planType: request.target.planType,
+        lineageId: request.target.lineageId,
+        versionNumber: result.publishedVersion.versionNumber,
+        conversationId: request.conversationId,
+        sessionId: request.sessionId,
+        summary: result.restoredSummary,
+        explanation: result.restoreReason,
+        impact: result.progressionImpact,
+        at: result.completedAt,
+      });
+    }
+
+    return result;
   }
 
   previewOnly(request: PlanRestoreRequest) {

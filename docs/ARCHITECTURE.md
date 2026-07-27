@@ -1093,6 +1093,19 @@ Full detail: [PLAN_HISTORY.md](./PLAN_HISTORY.md). ADR-083: [DECISIONS.md](./DEC
 
 Full detail: [PLAN_HISTORY.md](./PLAN_HISTORY.md). Workout Pipeline: [WORKOUT_PIPELINE.md](./WORKOUT_PIPELINE.md). Nutrition Pipeline: [NUTRITION_PIPELINE.md](./NUTRITION_PIPELINE.md). Coach Conversation: [COACH_CONVERSATION.md](./COACH_CONVERSATION.md). ADR-085: [DECISIONS.md](./DECISIONS.md).
 
+### Coach Timeline & Decision Journal (`features/coach-timeline`) — Sprint 25.4 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Chronological reasoning history of the AI Coach (decision journal) |
+| **Flow** | Conversation → Coach Decision → Journal Entry → Timeline → Coach Memory → Conversation |
+| **Models** | `CoachTimeline`, `CoachTimelineEntry`, `CoachTimelineEvent`, `CoachTimelineSummary`, `CoachTimelineSnapshot`, `CoachDecisionReason`, `TimelineFilter`, `TimelineQuery`, `TimelineResult` |
+| **Services** | `appendTimelineEntry`, `buildTimelineSummary`, `queryTimeline`, `filterTimeline`, `groupTimelineEvents`, `validateTimeline`, `CoachTimelineService` |
+| **Integration** | Coach Conversation `timeline_query`; Plan History / Restore; Nutrition / Recovery / Decision / Goal Progress hooks; Composition Root `CoachTimelineService` |
+| **Design** | **Not chat history. Not analytics. Not an event bus. No persistence.** Append-only immutable entries; grounded answers only |
+
+Full detail: [COACH_TIMELINE.md](./COACH_TIMELINE.md). ADR-086: [DECISIONS.md](./DECISIONS.md).
+
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 
 | Aspect | Implementation |

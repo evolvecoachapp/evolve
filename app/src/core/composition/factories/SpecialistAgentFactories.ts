@@ -10,6 +10,7 @@ import {
   createRecoveryAgentService,
   type RecoveryAgentService,
 } from "../../../features/recovery-agent/services/RecoveryAgentService";
+import type { CoachTimelineService } from "../../../features/coach-timeline/services/CoachTimelineService";
 
 export const WorkoutAgentFactory = {
   create(): WorkoutAgentService {
@@ -17,14 +18,28 @@ export const WorkoutAgentFactory = {
   },
 } as const;
 
+export interface NutritionAgentFactoryDeps {
+  readonly coachTimeline?: CoachTimelineService | null;
+}
+
 export const NutritionAgentFactory = {
-  create(): NutritionAgentService {
-    return createNutritionAgentService({ agentId: "agent:nutrition" });
+  create(deps: NutritionAgentFactoryDeps = {}): NutritionAgentService {
+    return createNutritionAgentService({
+      agentId: "agent:nutrition",
+      coachTimeline: deps.coachTimeline ?? null,
+    });
   },
 } as const;
 
+export interface RecoveryAgentFactoryDeps {
+  readonly coachTimeline?: CoachTimelineService | null;
+}
+
 export const RecoveryAgentFactory = {
-  create(): RecoveryAgentService {
-    return createRecoveryAgentService({ agentId: "agent:recovery" });
+  create(deps: RecoveryAgentFactoryDeps = {}): RecoveryAgentService {
+    return createRecoveryAgentService({
+      agentId: "agent:recovery",
+      coachTimeline: deps.coachTimeline ?? null,
+    });
   },
 } as const;

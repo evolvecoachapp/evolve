@@ -69,3 +69,6 @@ export type { PlanHistoryFactoryDeps } from "./PlanHistoryFactory";
 
 export { PlanRestoreFactory } from "./PlanRestoreFactory";
 export type { PlanRestoreFactoryDeps } from "./PlanRestoreFactory";
+
+export { CoachTimelineFactory } from "./CoachTimelineFactory";
+export type { CoachTimelineFactoryDeps } from "./CoachTimelineFactory";

@@ -87,4 +87,4 @@ Publish new version (changeReason: restored)
 Module path: `features/plan-restore/` + `features/plan-history/`.  
 Not nutrition generation. Not Nutrition Adaptation Engine. Corrupted snapshots are rejected.
 
-Related: [PLAN_HISTORY.md](./PLAN_HISTORY.md), [COACH_CONVERSATION.md](./COACH_CONVERSATION.md), ADR-085.
+Related: [PLAN_HISTORY.md](./PLAN_HISTORY.md), [COACH_CONVERSATION.md](./COACH_CONVERSATION.md), [COACH_TIMELINE.md](./COACH_TIMELINE.md), ADR-085 / ADR-086.

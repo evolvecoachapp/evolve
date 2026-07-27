@@ -12,6 +12,14 @@ import type { PlanHistoryService } from "../../plan-history/services/PlanHistory
 import type { PlanRestoreResult } from "../../plan-restore/models/PlanRestoreResult";
 import { buildPlanRestoreRequest } from "../../plan-restore/routing/routePlanRestoreIntent";
 import type { PlanRestoreService } from "../../plan-restore/services/PlanRestoreService";
+import {
+  appendUserRequest,
+  appendWorkoutCreated,
+  appendWorkoutModified,
+} from "../../coach-timeline/builders/timelineIntegration";
+import { buildTimelineGroundedReply } from "../../coach-timeline/builders/buildTimelineGroundedReply";
+import type { TimelineResult } from "../../coach-timeline/models/TimelineResult";
+import type { CoachTimelineService } from "../../coach-timeline/services/CoachTimelineService";
 import { EMPTY_ROUTING_METADATA } from "../../supervisor-routing/models/RoutingMetadata";
 import { RoutingPriorityLevels } from "../../supervisor-routing/models/RoutingPriority";
 import type { SupervisorRoutingService } from "../../supervisor-routing/services/SupervisorRoutingService";
@@ -50,10 +58,12 @@ export interface CoachConversationOrchestratorDeps {
   readonly workoutPipeline?: WorkoutGenerationPipelineService | null;
   readonly planHistory?: PlanHistoryService | null;
   readonly planRestore?: PlanRestoreService | null;
+  readonly coachTimeline?: CoachTimelineService | null;
   readonly conversationMemory?: ConversationMemoryService;
   readonly planStore?: ActiveWorkoutPlanStore;
   readonly clock?: () => string;
 }
+
 
 /**
  * Product orchestrator for Intelligent Coach Conversation.
@@ -71,6 +81,7 @@ export class CoachConversationOrchestrator {
   private readonly workoutPipeline: WorkoutGenerationPipelineService | null;
   private readonly planHistory: PlanHistoryService | null;
   private readonly planRestore: PlanRestoreService | null;
+  private readonly coachTimeline: CoachTimelineService | null;
   private readonly conversationMemory: ConversationMemoryService;
   private readonly planStore: ActiveWorkoutPlanStore;
   private readonly clock: () => string;
@@ -83,6 +94,7 @@ export class CoachConversationOrchestrator {
     this.workoutPipeline = deps.workoutPipeline ?? null;
     this.planHistory = deps.planHistory ?? null;
     this.planRestore = deps.planRestore ?? null;
+    this.coachTimeline = deps.coachTimeline ?? null;
     this.conversationMemory =
       deps.conversationMemory ?? createConversationMemoryService();
     this.planStore = deps.planStore ?? createActiveWorkoutPlanStore();
@@ -97,10 +109,15 @@ export class CoachConversationOrchestrator {
     return this.conversationMemory;
   }
 
+  getTimeline(): CoachTimelineService | null {
+    return this.coachTimeline;
+  }
+
   attachWorkoutPlan(plan: WorkoutPlan): void {
     let next = plan;
+    let versionNumber: number | null = null;
+    const lineageId = resolveWorkoutLineageId(plan);
     if (this.planHistory) {
-      const lineageId = resolveWorkoutLineageId(plan);
       const existing = this.planHistory.getHistory(lineageId);
       next = publishWorkoutPlanVersion({
         planHistory: this.planHistory,
@@ -112,6 +129,50 @@ export class CoachConversationOrchestrator {
           ? `Attached updated workout plan ${plan.id}`
           : `Initial workout plan ${plan.id}`,
         requestId: `attach:${plan.id}:${this.clock()}`,
+        at: this.clock(),
+      });
+      versionNumber =
+        this.planHistory.getHistory(lineageId)?.currentVersionNumber ?? null;
+      if (existing) {
+        appendWorkoutModified({
+          timeline: this.coachTimeline,
+          athleteId: next.athleteId,
+          planId: next.id,
+          lineageId,
+          versionNumber,
+          conversationId: next.conversationId,
+          sessionId: next.sessionId,
+          summary: `Workout plan modified (${next.summary.title})`,
+          explanation: `Attached updated workout plan ${next.id}`,
+          impact: "Active workout plan replaced with updated version",
+          expectedOutcome: "Athlete trains with the updated plan",
+          at: this.clock(),
+        });
+      } else {
+        appendWorkoutCreated({
+          timeline: this.coachTimeline,
+          athleteId: next.athleteId,
+          planId: next.id,
+          lineageId,
+          versionNumber,
+          conversationId: next.conversationId,
+          sessionId: next.sessionId,
+          summary: `Workout plan created (${next.summary.title})`,
+          explanation: `Initial workout plan ${next.id} attached to conversation`,
+          at: this.clock(),
+        });
+      }
+    } else {
+      appendWorkoutCreated({
+        timeline: this.coachTimeline,
+        athleteId: next.athleteId,
+        planId: next.id,
+        lineageId,
+        versionNumber: null,
+        conversationId: next.conversationId,
+        sessionId: next.sessionId,
+        summary: `Workout plan created (${next.summary.title})`,
+        explanation: `Workout plan ${next.id} attached to conversation`,
         at: this.clock(),
       });
     }
@@ -304,6 +365,7 @@ export class CoachConversationOrchestrator {
     let previousWorkoutPlan: WorkoutPlan | null = null;
     let modification: WorkoutModificationResult | null = null;
     let restore: PlanRestoreResult | null = null;
+    let timelineResult: TimelineResult | null = null;
 
     if (intent === CoachConversationIntents.WORKOUT_MODIFICATION) {
       if (!workoutPlan) {
@@ -347,6 +409,8 @@ export class CoachConversationOrchestrator {
               modification.plan.conversationId ?? request.conversationId,
             sessionId: modification.plan.sessionId ?? sessionId,
           });
+          let versionNumber: number | null = null;
+          const lineageId = resolveWorkoutLineageId(updated);
           if (this.planHistory) {
             updated = publishWorkoutPlanVersion({
               planHistory: this.planHistory,
@@ -356,9 +420,30 @@ export class CoachConversationOrchestrator {
               requestId: request.id,
               at: this.clock(),
             });
+            versionNumber =
+              this.planHistory.getHistory(lineageId)?.currentVersionNumber ??
+              null;
           }
           this.planStore.attach(updated);
           workoutPlan = updated;
+          const changeHints = modification.changes
+            .map((item) => item.summary)
+            .join(" ");
+          appendWorkoutModified({
+            timeline: this.coachTimeline,
+            athleteId: request.athleteId,
+            planId: updated.id,
+            lineageId,
+            versionNumber,
+            conversationId: request.conversationId,
+            sessionId,
+            summary: `Workout modified (${modification.kind})`,
+            explanation: modification.explanation || modification.message,
+            impact: `${modification.progressionImpact} ${modification.recoveryImpact}`,
+            expectedOutcome: "Athlete trains with the surgically updated plan",
+            at: this.clock(),
+            searchHints: `${changeHints} volume intensity`,
+          });
         }
       }
     }
@@ -417,6 +502,38 @@ export class CoachConversationOrchestrator {
       conversationId: request.conversationId,
     });
 
+    if (intent === CoachConversationIntents.TIMELINE_QUERY) {
+      if (!this.coachTimeline) {
+        timelineResult = Object.freeze({
+          query: Object.freeze({
+            athleteId: request.athleteId,
+            filter: null,
+            summaryKind: null,
+            limit: 0,
+            order: "desc" as const,
+          }),
+          timeline: null,
+          entries: Object.freeze([]),
+          summary: null,
+          matchedCount: 0,
+          success: true,
+          message:
+            "I have no Coach Timeline entries available for that question, so I will not invent a reason.",
+        });
+      } else {
+        timelineResult = buildTimelineGroundedReply({
+          timeline: this.coachTimeline,
+          athleteId: request.athleteId,
+          message: request.message,
+        }).result;
+      }
+      push(
+        CoachConversationStages.CONTEXT_ASSEMBLY,
+        true,
+        `Timeline query matched ${timelineResult.matchedCount} entries`,
+      );
+    }
+
     const context = buildCoachConversationContext({
       id: `ctx:${request.id}`,
       request,
@@ -426,17 +543,20 @@ export class CoachConversationOrchestrator {
       previousWorkoutPlan,
       modification,
       restore,
+      timelineResult,
       session: sessionResult,
       memoryHints,
       createdAt: this.clock(),
     });
-    push(
-      CoachConversationStages.CONTEXT_ASSEMBLY,
-      true,
-      workoutPlan
-        ? `Context assembled with plan ${workoutPlan.id}`
-        : "Context assembled without WorkoutPlan",
-    );
+    if (intent !== CoachConversationIntents.TIMELINE_QUERY) {
+      push(
+        CoachConversationStages.CONTEXT_ASSEMBLY,
+        true,
+        workoutPlan
+          ? `Context assembled with plan ${workoutPlan.id}`
+          : "Context assembled without WorkoutPlan",
+      );
+    }
 
     const response = buildCoachConversationResponse(
       context,
@@ -456,6 +576,24 @@ export class CoachConversationOrchestrator {
       memoryResult.success,
       memoryResult.message ?? "Memory recorded",
     );
+
+    const importantUserRequest =
+      intent === CoachConversationIntents.WORKOUT_MODIFICATION ||
+      intent === CoachConversationIntents.PLAN_RESTORE ||
+      intent === CoachConversationIntents.TIMELINE_QUERY ||
+      intent === CoachConversationIntents.GENERAL_COACHING;
+    if (importantUserRequest) {
+      appendUserRequest({
+        timeline: this.coachTimeline,
+        athleteId: request.athleteId,
+        requestId: request.id,
+        message: request.message,
+        intent,
+        conversationId: request.conversationId,
+        sessionId,
+        at: this.clock(),
+      });
+    }
 
     // Response is always produced; soft-fail upstream stages stay in trace/errors.
     const success = sessionResult.success && response.message.length > 0;

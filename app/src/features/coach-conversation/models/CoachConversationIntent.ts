@@ -1,5 +1,5 @@
 /**
- * Deterministic coach conversation intents (Sprint 24.2 + 24.3 + 25.3).
+ * Deterministic coach conversation intents (Sprint 24.2 + 24.3 + 25.3 + 25.4).
  * Routed before Supervisor coordination — not a new engine.
  */
 export const CoachConversationIntents = {
@@ -11,6 +11,7 @@ export const CoachConversationIntents = {
   RECOMMENDATION_EXPLANATION: "recommendation_explanation",
   WORKOUT_MODIFICATION: "workout_modification",
   PLAN_RESTORE: "plan_restore",
+  TIMELINE_QUERY: "timeline_query",
   GENERAL_COACHING: "general_coaching",
   UNKNOWN: "unknown",
 } as const;

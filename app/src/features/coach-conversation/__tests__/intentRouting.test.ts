@@ -61,6 +61,18 @@ describe("Coach conversation intent routing", () => {
     );
   });
 
+  it("routes timeline query intents", () => {
+    expect(routeCoachConversationIntent("Why did you lower my volume?")).toBe(
+      CoachConversationIntents.TIMELINE_QUERY,
+    );
+    expect(routeCoachConversationIntent("What changed this week?")).toBe(
+      CoachConversationIntents.TIMELINE_QUERY,
+    );
+    expect(
+      routeCoachConversationIntent("Show me the latest adjustments"),
+    ).toBe(CoachConversationIntents.TIMELINE_QUERY);
+  });
+
   it("routes general coaching intents", () => {
     expect(routeCoachConversationIntent("Give me coaching tips")).toBe(
       CoachConversationIntents.GENERAL_COACHING,

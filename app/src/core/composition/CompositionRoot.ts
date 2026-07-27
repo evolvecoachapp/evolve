@@ -24,6 +24,7 @@ import {
   CoachConversationFactory,
   PlanHistoryFactory,
   PlanRestoreFactory,
+  CoachTimelineFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -169,6 +170,12 @@ export class CompositionRoot {
     );
 
     container.register(
+      "CoachTimelineService",
+      () => CoachTimelineFactory.create(),
+      { lifecycle },
+    );
+
+    container.register(
       "WorkoutAgentService",
       () => WorkoutAgentFactory.create(),
       { lifecycle },
@@ -176,13 +183,19 @@ export class CompositionRoot {
 
     container.register(
       "NutritionAgentService",
-      () => NutritionAgentFactory.create(),
+      () =>
+        NutritionAgentFactory.create({
+          coachTimeline: container.resolve("CoachTimelineService"),
+        }),
       { lifecycle },
     );
 
     container.register(
       "RecoveryAgentService",
-      () => RecoveryAgentFactory.create(),
+      () =>
+        RecoveryAgentFactory.create({
+          coachTimeline: container.resolve("CoachTimelineService"),
+        }),
       { lifecycle },
     );
 
@@ -252,6 +265,7 @@ export class CompositionRoot {
           contextFusion: container.resolve("ContextFusionService"),
           athleteState: container.resolve("AthleteStateService"),
           supervisor: container.resolve("CoachSupervisorService"),
+          coachTimeline: container.resolve("CoachTimelineService"),
         }),
       { lifecycle },
     );
@@ -296,6 +310,7 @@ export class CompositionRoot {
       () =>
         PlanRestoreFactory.create({
           planHistory: container.resolve("PlanHistoryService"),
+          coachTimeline: container.resolve("CoachTimelineService"),
         }),
       { lifecycle },
     );
@@ -312,6 +327,7 @@ export class CompositionRoot {
           ),
           planHistory: container.resolve("PlanHistoryService"),
           planRestore: container.resolve("PlanRestoreService"),
+          coachTimeline: container.resolve("CoachTimelineService"),
         }),
       { lifecycle },
     );
@@ -389,6 +405,10 @@ export class CompositionRoot {
 
   getPlanRestoreService(): ServiceMap["PlanRestoreService"] {
     return this.registry.resolve("PlanRestoreService");
+  }
+
+  getCoachTimelineService(): ServiceMap["CoachTimelineService"] {
+    return this.registry.resolve("CoachTimelineService");
   }
 
   getDecisionEngineService(): ServiceMap["DecisionEngineService"] {

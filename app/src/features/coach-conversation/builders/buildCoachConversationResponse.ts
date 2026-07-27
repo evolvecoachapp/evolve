@@ -122,6 +122,34 @@ function restoreLines(context: CoachConversationContext): string {
     .trim();
 }
 
+function timelineLines(context: CoachConversationContext): string {
+  const result = context.timelineResult;
+  if (!result) {
+    return "I have no Coach Timeline entries available for that question, so I will not invent a reason.";
+  }
+  if (result.entries.length === 0) {
+    return result.message;
+  }
+  const body = result.entries
+    .map((entry) => {
+      const parts = [
+        `${entry.timestamp} — ${entry.summary}`,
+        `Reason: ${entry.decisionReason.reason}`,
+        `Impact: ${entry.decisionReason.impact}`,
+        `Expected outcome: ${entry.decisionReason.expectedOutcome}`,
+      ];
+      if (entry.relatedPlanVersion != null) {
+        parts.push(`Related plan version: v${entry.relatedPlanVersion}`);
+      }
+      return parts.join(". ");
+    })
+    .join(" ");
+  const summaryLine = result.summary
+    ? ` Summary (${result.summary.title}): ${result.summary.narrative}`
+    : "";
+  return `From the Coach Timeline decision journal: ${body}${summaryLine}`.trim();
+}
+
 function buildMessage(
   intent: CoachConversationIntent,
   context: CoachConversationContext,
@@ -147,6 +175,11 @@ function buildMessage(
           "plan_restore",
           context.restore?.request.target.planType ?? "workout",
         ]),
+      };
+    case CoachConversationIntents.TIMELINE_QUERY:
+      return {
+        message: `${timelineLines(context)}${memory}${session}`.trim(),
+        topics: Object.freeze(["timeline_query", "decision_journal"]),
       };
     case CoachConversationIntents.WORKOUT_SUMMARY: {
       const plan = context.workoutPlan;
@@ -196,14 +229,14 @@ function buildMessage(
     case CoachConversationIntents.GENERAL_COACHING:
       return {
         message:
-          `${intro} I can explain today's workout, modify or restore the active plan, or cover exercises, progression, recovery, and recommendations using your coaching session.${memory}${session}`.trim(),
+          `${intro} I can explain today's workout, modify or restore the active plan, answer timeline questions from the decision journal, or cover exercises, progression, recovery, and recommendations using your coaching session.${memory}${session}`.trim(),
         topics: Object.freeze(["general_coaching"]),
       };
     case CoachConversationIntents.UNKNOWN:
     default:
       return {
         message:
-          `${intro} I did not match a specific coaching intent. Ask about today's workout, request a modification, undo/restore a prior version, or ask about progression, recovery, or recommendations.${memory}${session}`.trim(),
+          `${intro} I did not match a specific coaching intent. Ask about today's workout, request a modification, undo/restore a prior version, ask what changed this week, or ask about progression, recovery, or recommendations.${memory}${session}`.trim(),
         topics: Object.freeze(["unknown"]),
       };
   }
