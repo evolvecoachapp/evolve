@@ -1,4 +1,5 @@
 import { isWorkoutModificationMessage } from "../../workout-generation-pipeline/modification";
+import { isPlanRestoreMessage } from "../../plan-restore/routing/routePlanRestoreIntent";
 import {
   CoachConversationIntents,
   type CoachConversationIntent,
@@ -65,7 +66,7 @@ const INTENT_RULES: readonly IntentRule[] = Object.freeze([
 
 /**
  * Deterministic keyword intent router for coaching conversation.
- * Adaptive modification requests are detected first (Sprint 24.3).
+ * Plan restore and adaptive modification are detected before explain/summary.
  * Reuses Supervisor Routing downstream for capability planning.
  */
 export function routeCoachConversationIntent(
@@ -79,6 +80,11 @@ export function routeCoachConversationIntent(
   const trimmed = message.trim();
   if (!trimmed) {
     return CoachConversationIntents.UNKNOWN;
+  }
+
+  // Restore / undo takes precedence over modification and explain intents.
+  if (isPlanRestoreMessage(trimmed)) {
+    return CoachConversationIntents.PLAN_RESTORE;
   }
 
   // Adaptive modification takes precedence over explain/summary intents.

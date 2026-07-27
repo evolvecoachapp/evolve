@@ -2536,4 +2536,56 @@ Only affected portions change. Active plan is re-attached via `ActiveWorkoutPlan
 
 ---
 
-*New decisions are appended as Decision 083, 084, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 083: Immutable Plan History (Sprint 25.2 foundation)
+
+**Date:** 2026-07-27  
+**Status:** Accepted
+
+**Context:**  
+Adaptive modification and restore require an append-only record of prior Workout and Nutrition plan snapshots. Mutating the active plan in place would lose undo/restore capability and break auditability of coaching changes.
+
+**Decision:**  
+Introduce `features/plan-history` as an in-memory append-only version store (not an engine, not persistence). Each publish creates a new immutable `PlanSnapshot` / `PlanVersion` under a stable lineage. Checksums support integrity validation. Corrupted snapshots may be flagged but never silently repaired.
+
+**Alternatives considered:**
+- **Embed version arrays on WorkoutPlan** — rejected: couples UI plan identity to history ownership.
+- **Database-backed history** — deferred: sprint forbids persistence layer.
+- **Overwrite active plan only** — rejected: cannot support restore / undo.
+
+**Consequences:**
+- Documentation: [PLAN_HISTORY.md](./PLAN_HISTORY.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- Composition Root registers `PlanHistoryService`.
+- Restore (ADR-085) publishes restored snapshots as new versions only.
+
+---
+
+## Decision 085: Immutable Plan Restore (Sprint 25.3 product)
+
+**Date:** 2026-07-27  
+**Status:** Accepted
+
+**Context:**  
+Athletes need undo / restore of prior Workout and Nutrition plan versions after adaptive modifications. Regeneration would discard living-plan continuity. Adaptation engines adjust structure keys, not immutable UI/history snapshots. Mutating history would violate append-only versioning (ADR-083).
+
+**Decision:**  
+Introduce `features/plan-restore` as **orchestration only** (not a regeneration or adaptation engine):
+
+Conversation → Restore Intent → Coach Supervisor → Plan History → Resolve Target → Preview → Validation → Restore Snapshot → Publish New Version → Conversation continues.
+
+Restore targets: `LAST_VERSION`, `PREVIOUS_VERSION`, `INITIAL_VERSION`, `VERSION_NUMBER`, `TIMESTAMP`, `CHANGE_REASON`, `MANUAL_SELECTION`. Unknown targets fail deterministically. Corrupted snapshots are never restored. History remains immutable — restore always creates version `n+1`.
+
+Coach Conversation gains intent `plan_restore`. Composition Root registers `PlanRestoreService` and injects history/restore into `CoachConversationService`.
+
+**Alternatives considered:**
+- **Full Workout / Nutrition regeneration** — rejected: not undo; discards continuity.
+- **New restore engine** — rejected: sprint forbids new engines; history already owns snapshots.
+- **Mutate / delete prior versions** — rejected: violates immutable history (ADR-083).
+- **UI-owned undo stack** — rejected: business logic must not live in presentation.
+
+**Consequences:**
+- Documentation: [PLAN_HISTORY.md](./PLAN_HISTORY.md), [WORKOUT_PIPELINE.md](./WORKOUT_PIPELINE.md), [NUTRITION_PIPELINE.md](./NUTRITION_PIPELINE.md), [COACH_CONVERSATION.md](./COACH_CONVERSATION.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- Example history: v1 → v2 → v3 → restore v1 → **v4**.
+
+---
+
+*New decisions are appended as Decision 086, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

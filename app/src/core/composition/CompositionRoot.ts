@@ -22,6 +22,8 @@ import {
   RecommendationEngineFactory,
   WorkoutGenerationPipelineFactory,
   CoachConversationFactory,
+  PlanHistoryFactory,
+  PlanRestoreFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -284,6 +286,21 @@ export class CompositionRoot {
     );
 
     container.register(
+      "PlanHistoryService",
+      () => PlanHistoryFactory.create(),
+      { lifecycle },
+    );
+
+    container.register(
+      "PlanRestoreService",
+      () =>
+        PlanRestoreFactory.create({
+          planHistory: container.resolve("PlanHistoryService"),
+        }),
+      { lifecycle },
+    );
+
+    container.register(
       "CoachConversationService",
       () =>
         CoachConversationFactory.create({
@@ -293,6 +310,8 @@ export class CompositionRoot {
           workoutPipeline: container.resolve(
             "WorkoutGenerationPipelineService",
           ),
+          planHistory: container.resolve("PlanHistoryService"),
+          planRestore: container.resolve("PlanRestoreService"),
         }),
       { lifecycle },
     );
@@ -362,6 +381,14 @@ export class CompositionRoot {
 
   getCoachConversationService(): ServiceMap["CoachConversationService"] {
     return this.registry.resolve("CoachConversationService");
+  }
+
+  getPlanHistoryService(): ServiceMap["PlanHistoryService"] {
+    return this.registry.resolve("PlanHistoryService");
+  }
+
+  getPlanRestoreService(): ServiceMap["PlanRestoreService"] {
+    return this.registry.resolve("PlanRestoreService");
   }
 
   getDecisionEngineService(): ServiceMap["DecisionEngineService"] {

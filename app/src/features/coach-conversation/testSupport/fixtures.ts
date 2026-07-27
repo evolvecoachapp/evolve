@@ -2,6 +2,10 @@ import { createTestSupervisorService } from "../../coach-supervisor/testSupport/
 import { createCoachSupervisorPortAdapter } from "../../../core/composition/adapters/CoachSupervisorPortAdapter";
 import { createCoachingSessionService } from "../../coaching-session/services/CoachingSessionService";
 import { createConversationMemoryService } from "../../conversation-memory/services/ConversationMemoryService";
+import { createPlanHistoryService } from "../../plan-history/services/PlanHistoryService";
+import type { PlanHistoryService } from "../../plan-history/services/PlanHistoryService";
+import { createPlanRestoreService } from "../../plan-restore/services/PlanRestoreService";
+import type { PlanRestoreService } from "../../plan-restore/services/PlanRestoreService";
 import {
   createSupervisorRoutingService,
 } from "../../supervisor-routing/services/SupervisorRoutingService";
@@ -54,6 +58,8 @@ export function createTestCoachConversationService(
   overrides: {
     readonly clock?: () => string;
     readonly workoutPipeline?: WorkoutGenerationPipelineService | null;
+    readonly planHistory?: PlanHistoryService | null;
+    readonly planRestore?: PlanRestoreService | null;
   } = {},
 ): CoachConversationService {
   const clock = overrides.clock ?? createFixedClock();
@@ -77,11 +83,22 @@ export function createTestCoachConversationService(
       ? createTestWorkoutGenerationPipelineService({ clock })
       : overrides.workoutPipeline;
 
+  const planHistory =
+    overrides.planHistory === undefined
+      ? createPlanHistoryService({ clock })
+      : overrides.planHistory;
+  const planRestore =
+    overrides.planRestore === undefined && planHistory
+      ? createPlanRestoreService({ planHistory, clock })
+      : overrides.planRestore ?? null;
+
   return createCoachConversationService({
     coachingSession,
     coachSupervisor: supervisor,
     supervisorRouting,
     workoutPipeline,
+    planHistory,
+    planRestore,
     conversationMemory,
     planStore: createActiveWorkoutPlanStore(),
     clock,

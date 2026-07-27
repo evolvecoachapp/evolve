@@ -2,6 +2,7 @@ import type { SessionResult } from "../../coaching-session/models/SessionResult"
 import type { MemoryResult } from "../../conversation-memory/models/MemoryResult";
 import type { CoachSupervisorResult } from "../../coach-supervisor/models/CoachSupervisorResult";
 import type { RoutingResult } from "../../supervisor-routing/models/RoutingResult";
+import type { PlanRestoreResult } from "../../plan-restore/models/PlanRestoreResult";
 import type { WorkoutModificationResult } from "../../workout-generation-pipeline/models/WorkoutModificationResult";
 import type { WorkoutPlan } from "../../workout-generation-pipeline/models/WorkoutPlan";
 import type { CoachConversationContext } from "./CoachConversationContext";
@@ -15,6 +16,7 @@ export const CoachConversationStages = {
   SUPERVISOR_ROUTING: "supervisor_routing",
   COACH_SUPERVISOR: "coach_supervisor",
   WORKOUT_MODIFICATION: "workout_modification",
+  PLAN_RESTORE: "plan_restore",
   CONTEXT_ASSEMBLY: "context_assembly",
   RESPONSE: "response",
   MEMORY: "memory",
@@ -45,6 +47,7 @@ export interface CoachConversationResult {
   readonly conversationId: string;
   readonly workoutPlan: WorkoutPlan | null;
   readonly modification: WorkoutModificationResult | null;
+  readonly restore: PlanRestoreResult | null;
   readonly session: SessionResult | null;
   readonly routing: RoutingResult | null;
   readonly supervisor: CoachSupervisorResult | null;

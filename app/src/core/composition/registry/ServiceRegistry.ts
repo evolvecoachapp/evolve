@@ -133,4 +133,12 @@ export class ServiceRegistry {
   getCoachConversationService(): ServiceMap["CoachConversationService"] {
     return this.resolve("CoachConversationService");
   }
+
+  getPlanHistoryService(): ServiceMap["PlanHistoryService"] {
+    return this.resolve("PlanHistoryService");
+  }
+
+  getPlanRestoreService(): ServiceMap["PlanRestoreService"] {
+    return this.resolve("PlanRestoreService");
+  }
 }

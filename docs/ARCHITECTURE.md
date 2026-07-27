@@ -1065,6 +1065,34 @@ Full detail: [COACH_CONVERSATION.md](./COACH_CONVERSATION.md). Workout Pipeline:
 
 Full detail: [WORKOUT_PIPELINE.md](./WORKOUT_PIPELINE.md). Coach Conversation: [COACH_CONVERSATION.md](./COACH_CONVERSATION.md). ADR-082: [DECISIONS.md](./DECISIONS.md).
 
+### Plan History (`features/plan-history`) — Sprint 25.2 foundation
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Append-only immutable versioned snapshots for Workout and Nutrition lineages |
+| **Flow** | Plan publish → PlanSnapshot + PlanVersion → lineage history |
+| **Models** | `PlanHistory`, `PlanSnapshot`, `PlanVersion`, `PlanChangeReason`, `PlanType` |
+| **Service** | `PlanHistoryService` / `PlanHistoryStore` — in-memory only |
+| **Application API** | `publishPlanVersion`, `getPlanHistory` |
+| **Integration** | Composition Root `PlanHistoryService`; consumed by Coach Conversation + Plan Restore |
+| **Design** | **No persistence, no engines, no mutation of prior versions** |
+
+Full detail: [PLAN_HISTORY.md](./PLAN_HISTORY.md). ADR-083: [DECISIONS.md](./DECISIONS.md).
+
+### Immutable Plan Restore (`features/plan-restore`) — Sprint 25.3 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Restore any prior plan snapshot by publishing it as a brand-new version |
+| **Flow** | Resolve Target → Preview → Validate → Restore Snapshot → Publish New Version |
+| **Models** | `PlanRestoreRequest`, `PlanRestoreTarget`, `PlanRestorePreview`, `PlanRestoreValidation`, `PlanRestoreResult`, `RestoreConflict` |
+| **Services** | `resolveRestoreTarget`, `previewRestore`, `validateRestore`, `restoreWorkoutPlan`, `restoreNutritionPlan`, `applyRestore`, `PlanRestoreService` |
+| **Targets** | LAST / PREVIOUS / INITIAL / VERSION_NUMBER / TIMESTAMP / CHANGE_REASON / MANUAL_SELECTION |
+| **Integration** | Coach Conversation intent `plan_restore`; Composition Root `PlanRestoreService` |
+| **Design** | **Not regeneration. Not adaptation.** Never mutates history. Corrupted snapshots rejected. |
+
+Full detail: [PLAN_HISTORY.md](./PLAN_HISTORY.md). Workout Pipeline: [WORKOUT_PIPELINE.md](./WORKOUT_PIPELINE.md). Nutrition Pipeline: [NUTRITION_PIPELINE.md](./NUTRITION_PIPELINE.md). Coach Conversation: [COACH_CONVERSATION.md](./COACH_CONVERSATION.md). ADR-085: [DECISIONS.md](./DECISIONS.md).
+
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 
 | Aspect | Implementation |

@@ -155,6 +155,10 @@ Bootstrap sequence:
 | `ContextFusionFactory` | `ContextFusionService` (live upstream ports) |
 | `DecisionEngineFactory` | `DecisionEngineService` (live Context Fusion port) |
 | `RecommendationEngineFactory` | `RecommendationEngineService` (live Decision Engine port) |
+| `WorkoutGenerationPipelineFactory` | `WorkoutGenerationPipelineService` |
+| `PlanHistoryFactory` | `PlanHistoryService` (append-only versions) |
+| `PlanRestoreFactory` | `PlanRestoreService` (history → new version) |
+| `CoachConversationFactory` | `CoachConversationService` (pipeline + history + restore) |
 
 Factories accept explicit deps from providers / container resolves. Feature-level `create*Service()` helpers remain for unit tests and optional overrides; application defaults go through the Composition Root.
 

@@ -63,3 +63,9 @@ export type { WorkoutGenerationPipelineFactoryDeps } from "./WorkoutGenerationPi
 
 export { CoachConversationFactory } from "./CoachConversationFactory";
 export type { CoachConversationFactoryDeps } from "./CoachConversationFactory";
+
+export { PlanHistoryFactory } from "./PlanHistoryFactory";
+export type { PlanHistoryFactoryDeps } from "./PlanHistoryFactory";
+
+export { PlanRestoreFactory } from "./PlanRestoreFactory";
+export type { PlanRestoreFactoryDeps } from "./PlanRestoreFactory";

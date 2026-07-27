@@ -5,6 +5,8 @@ import {
 import type { CoachingSessionService } from "../../../features/coaching-session/services/CoachingSessionService";
 import type { CoachSupervisorService } from "../../../features/coach-supervisor/services/CoachSupervisorService";
 import type { ConversationMemoryService } from "../../../features/conversation-memory/services/ConversationMemoryService";
+import type { PlanHistoryService } from "../../../features/plan-history/services/PlanHistoryService";
+import type { PlanRestoreService } from "../../../features/plan-restore/services/PlanRestoreService";
 import type { SupervisorRoutingService } from "../../../features/supervisor-routing/services/SupervisorRoutingService";
 import type { ActiveWorkoutPlanStore } from "../../../features/coach-conversation/store/ActiveWorkoutPlanStore";
 import type { WorkoutGenerationPipelineService } from "../../../features/workout-generation-pipeline/services/WorkoutGenerationPipelineService";
@@ -14,6 +16,8 @@ export interface CoachConversationFactoryDeps {
   readonly coachSupervisor: CoachSupervisorService;
   readonly supervisorRouting: SupervisorRoutingService;
   readonly workoutPipeline?: WorkoutGenerationPipelineService | null;
+  readonly planHistory?: PlanHistoryService | null;
+  readonly planRestore?: PlanRestoreService | null;
   readonly conversationMemory?: ConversationMemoryService;
   readonly planStore?: ActiveWorkoutPlanStore;
   readonly clock?: () => string;

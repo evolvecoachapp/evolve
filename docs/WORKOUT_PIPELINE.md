@@ -101,6 +101,31 @@ Distinct from the **Workout Adaptation Engine** (blueprint key adaptation for Co
 
 ---
 
+## Immutable Plan Restore (Sprint 25.3 product)
+
+Restore a prior WorkoutPlan snapshot without regeneration or adaptation.
+
+```
+Conversation restore intent
+      ↓
+Plan History
+      ↓
+Resolve Target → Preview → Validate
+      ↓
+Clone immutable snapshot
+      ↓
+Publish as brand-new version (n+1)
+      ↓
+Re-attach active WorkoutPlan → Conversation Reply
+```
+
+Module: `features/plan-restore/` (shared with Nutrition). History: `features/plan-history/`.  
+Conversation entry: intent `plan_restore`. History remains append-only — restore never deletes or overwrites prior versions.
+
+Related: [PLAN_HISTORY.md](./PLAN_HISTORY.md), ADR-083 / ADR-085 in [DECISIONS.md](./DECISIONS.md).
+
+---
+
 ## Workout Adaptation Pipeline
 
 ```

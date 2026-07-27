@@ -7,6 +7,11 @@ import {
   createConversationMemoryService,
   type ConversationMemoryService,
 } from "../../conversation-memory/services/ConversationMemoryService";
+import { PlanChangeReasons } from "../../plan-history/models/PlanChangeReason";
+import type { PlanHistoryService } from "../../plan-history/services/PlanHistoryService";
+import type { PlanRestoreResult } from "../../plan-restore/models/PlanRestoreResult";
+import { buildPlanRestoreRequest } from "../../plan-restore/routing/routePlanRestoreIntent";
+import type { PlanRestoreService } from "../../plan-restore/services/PlanRestoreService";
 import { EMPTY_ROUTING_METADATA } from "../../supervisor-routing/models/RoutingMetadata";
 import { RoutingPriorityLevels } from "../../supervisor-routing/models/RoutingPriority";
 import type { SupervisorRoutingService } from "../../supervisor-routing/services/SupervisorRoutingService";
@@ -16,6 +21,10 @@ import type { WorkoutPlan } from "../../workout-generation-pipeline/models/Worko
 import type { WorkoutGenerationPipelineService } from "../../workout-generation-pipeline/services/WorkoutGenerationPipelineService";
 import { buildCoachConversationContext } from "../builders/buildCoachConversationContext";
 import { buildCoachConversationResponse } from "../builders/buildCoachConversationResponse";
+import {
+  publishWorkoutPlanVersion,
+  resolveWorkoutLineageId,
+} from "../history/publishWorkoutPlanHistory";
 import {
   loadCoachMemoryHints,
   recordCoachConversationMemory,
@@ -39,6 +48,8 @@ export interface CoachConversationOrchestratorDeps {
   readonly coachSupervisor: CoachSupervisorService;
   readonly supervisorRouting: SupervisorRoutingService;
   readonly workoutPipeline?: WorkoutGenerationPipelineService | null;
+  readonly planHistory?: PlanHistoryService | null;
+  readonly planRestore?: PlanRestoreService | null;
   readonly conversationMemory?: ConversationMemoryService;
   readonly planStore?: ActiveWorkoutPlanStore;
   readonly clock?: () => string;
@@ -48,8 +59,8 @@ export interface CoachConversationOrchestratorDeps {
  * Product orchestrator for Intelligent Coach Conversation.
  *
  * Conversation → Intent Routing → Coaching Session → Supervisor Routing
- * → Coach Supervisor → (optional Adaptive Modification) → Context
- * (WorkoutPlan + Recommendations + Memory) → Deterministic coaching response
+ * → Coach Supervisor → (optional Adaptive Modification | Plan Restore)
+ * → Context (WorkoutPlan + Recommendations + Memory) → Deterministic coaching response
  *
  * Orchestration only — no new engines.
  */
@@ -58,6 +69,8 @@ export class CoachConversationOrchestrator {
   private readonly coachSupervisor: CoachSupervisorService;
   private readonly supervisorRouting: SupervisorRoutingService;
   private readonly workoutPipeline: WorkoutGenerationPipelineService | null;
+  private readonly planHistory: PlanHistoryService | null;
+  private readonly planRestore: PlanRestoreService | null;
   private readonly conversationMemory: ConversationMemoryService;
   private readonly planStore: ActiveWorkoutPlanStore;
   private readonly clock: () => string;
@@ -68,6 +81,8 @@ export class CoachConversationOrchestrator {
     this.coachSupervisor = deps.coachSupervisor;
     this.supervisorRouting = deps.supervisorRouting;
     this.workoutPipeline = deps.workoutPipeline ?? null;
+    this.planHistory = deps.planHistory ?? null;
+    this.planRestore = deps.planRestore ?? null;
     this.conversationMemory =
       deps.conversationMemory ?? createConversationMemoryService();
     this.planStore = deps.planStore ?? createActiveWorkoutPlanStore();
@@ -83,37 +98,54 @@ export class CoachConversationOrchestrator {
   }
 
   attachWorkoutPlan(plan: WorkoutPlan): void {
-    this.planStore.attach(plan);
-    if (plan.conversationId) {
+    let next = plan;
+    if (this.planHistory) {
+      const lineageId = resolveWorkoutLineageId(plan);
+      const existing = this.planHistory.getHistory(lineageId);
+      next = publishWorkoutPlanVersion({
+        planHistory: this.planHistory,
+        plan,
+        changeReason: existing
+          ? PlanChangeReasons.MODIFIED
+          : PlanChangeReasons.INITIAL,
+        changeSummary: existing
+          ? `Attached updated workout plan ${plan.id}`
+          : `Initial workout plan ${plan.id}`,
+        requestId: `attach:${plan.id}:${this.clock()}`,
+        at: this.clock(),
+      });
+    }
+    this.planStore.attach(next);
+    if (next.conversationId) {
       recordCoachConversationMemory({
         memory: this.conversationMemory,
         context: buildCoachConversationContext({
-          id: `ctx:attach:${plan.id}`,
+          id: `ctx:attach:${next.id}`,
           request: Object.freeze({
-            id: `req:attach:${plan.id}`,
-            conversationId: plan.conversationId,
-            sessionId: plan.sessionId,
-            athleteId: plan.athleteId,
+            id: `req:attach:${next.id}`,
+            conversationId: next.conversationId,
+            sessionId: next.sessionId,
+            athleteId: next.athleteId,
             message: "attach_workout_plan",
             intentHint: null,
             metadata: Object.freeze({
               tags: Object.freeze(["attach"]),
-              attributes: Object.freeze({ planId: plan.id }),
+              attributes: Object.freeze({ planId: next.id }),
             }),
             createdAt: this.clock(),
           }),
           intent: CoachConversationIntents.WORKOUT_SUMMARY,
-          sessionId: plan.sessionId,
-          workoutPlan: plan,
+          sessionId: next.sessionId,
+          workoutPlan: next,
           session: null,
           createdAt: this.clock(),
         }),
         response: Object.freeze({
-          id: `resp:attach:${plan.id}`,
+          id: `resp:attach:${next.id}`,
           intent: CoachConversationIntents.WORKOUT_SUMMARY,
-          message: plan.summary.message,
+          message: next.summary.message,
           referencesWorkoutPlan: true,
-          planId: plan.id,
+          planId: next.id,
           topics: Object.freeze(["workout_plan"]),
           createdAt: this.clock(),
         }),
@@ -271,6 +303,7 @@ export class CoachConversationOrchestrator {
     });
     let previousWorkoutPlan: WorkoutPlan | null = null;
     let modification: WorkoutModificationResult | null = null;
+    let restore: PlanRestoreResult | null = null;
 
     if (intent === CoachConversationIntents.WORKOUT_MODIFICATION) {
       if (!workoutPlan) {
@@ -308,13 +341,72 @@ export class CoachConversationOrchestrator {
             : modification.message,
         );
         if (modification.success && modification.plan) {
-          const updated = Object.freeze({
+          let updated: WorkoutPlan = Object.freeze({
             ...modification.plan,
             conversationId:
               modification.plan.conversationId ?? request.conversationId,
             sessionId: modification.plan.sessionId ?? sessionId,
           });
-          this.attachWorkoutPlan(updated);
+          if (this.planHistory) {
+            updated = publishWorkoutPlanVersion({
+              planHistory: this.planHistory,
+              plan: updated,
+              changeReason: PlanChangeReasons.MODIFIED,
+              changeSummary: modification.explanation || modification.message,
+              requestId: request.id,
+              at: this.clock(),
+            });
+          }
+          this.planStore.attach(updated);
+          workoutPlan = updated;
+        }
+      }
+    }
+
+    if (intent === CoachConversationIntents.PLAN_RESTORE) {
+      if (!this.planRestore || !this.planHistory) {
+        push(
+          CoachConversationStages.PLAN_RESTORE,
+          false,
+          "Plan restore / history services not wired",
+        );
+      } else if (!workoutPlan) {
+        push(
+          CoachConversationStages.PLAN_RESTORE,
+          false,
+          "No active WorkoutPlan lineage to restore — generate a workout first",
+        );
+      } else {
+        previousWorkoutPlan = workoutPlan;
+        const lineageId = resolveWorkoutLineageId(workoutPlan);
+        const restoreRequest = buildPlanRestoreRequest({
+          id: `restore-req:${request.id}`,
+          athleteId: workoutPlan.athleteId,
+          conversationId: request.conversationId,
+          sessionId,
+          message: request.message,
+          lineageId,
+          planType: "workout",
+          createdAt: this.clock(),
+          clock: this.clock,
+        });
+        restore = this.planRestore.restore(restoreRequest);
+        push(
+          CoachConversationStages.PLAN_RESTORE,
+          restore.success,
+          restore.success
+            ? `Restored → v${restore.publishedVersion?.versionNumber}`
+            : restore.message,
+        );
+        if (restore.success && restore.workoutPlan) {
+          const updated = Object.freeze({
+            ...restore.workoutPlan,
+            conversationId:
+              restore.workoutPlan.conversationId ?? request.conversationId,
+            sessionId: restore.workoutPlan.sessionId ?? sessionId,
+          });
+          // Already published by applyRestore — attach without double-publish.
+          this.planStore.attach(updated);
           workoutPlan = updated;
         }
       }
@@ -333,6 +425,7 @@ export class CoachConversationOrchestrator {
       workoutPlan,
       previousWorkoutPlan,
       modification,
+      restore,
       session: sessionResult,
       memoryHints,
       createdAt: this.clock(),
@@ -380,6 +473,7 @@ export class CoachConversationOrchestrator {
       conversationId: request.conversationId,
       workoutPlan,
       modification,
+      restore,
       session: sessionResult,
       routing: routingResult,
       supervisor: supervisorResult,

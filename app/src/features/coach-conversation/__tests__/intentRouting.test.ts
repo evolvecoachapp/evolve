@@ -52,6 +52,15 @@ describe("Coach conversation intent routing", () => {
     ).toBe(CoachConversationIntents.WORKOUT_MODIFICATION);
   });
 
+  it("routes plan restore intents", () => {
+    expect(routeCoachConversationIntent("Undo my last workout change")).toBe(
+      CoachConversationIntents.PLAN_RESTORE,
+    );
+    expect(routeCoachConversationIntent("Bring back my original diet")).toBe(
+      CoachConversationIntents.PLAN_RESTORE,
+    );
+  });
+
   it("routes general coaching intents", () => {
     expect(routeCoachConversationIntent("Give me coaching tips")).toBe(
       CoachConversationIntents.GENERAL_COACHING,

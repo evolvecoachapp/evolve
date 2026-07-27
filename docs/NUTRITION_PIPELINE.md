@@ -67,3 +67,24 @@ Updated Nutrition Plan → Nutrition Runtime
 - Nutrition Adaptation sits **after** Continuous Adaptation and **before** Nutrition Runtime
 - Requires existing `planId` + structure keys (or port resolution)
 - Parallel to Workout Adaptation Engine (domain-specific, same architectural role)
+
+---
+
+## Immutable Plan Restore (Sprint 25.3)
+
+Nutrition plans participate in the same Plan History + Plan Restore pipeline as workouts:
+
+```
+Nutrition lineage history
+      ↓
+Resolve Target → Preview → Validate
+      ↓
+Restore NutritionPlan snapshot
+      ↓
+Publish new version (changeReason: restored)
+```
+
+Module path: `features/plan-restore/` + `features/plan-history/`.  
+Not nutrition generation. Not Nutrition Adaptation Engine. Corrupted snapshots are rejected.
+
+Related: [PLAN_HISTORY.md](./PLAN_HISTORY.md), [COACH_CONVERSATION.md](./COACH_CONVERSATION.md), ADR-085.
