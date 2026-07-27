@@ -153,4 +153,8 @@ export class ServiceRegistry {
   getExplainableCoachingSessionService(): ServiceMap["ExplainableCoachingSessionService"] {
     return this.resolve("ExplainableCoachingSessionService");
   }
+
+  getHomeExperienceService(): ServiceMap["HomeExperienceService"] {
+    return this.resolve("HomeExperienceService");
+  }
 }

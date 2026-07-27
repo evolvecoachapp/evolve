@@ -112,3 +112,5 @@ No UI redesign.
 Registers `ProactiveInsightsService` (depends on `CoachTimelineService` + `PlanHistoryService`) and injects it into Coach Conversation.
 
 Explainable Coaching Session (Sprint 26.1) consumes generated insights as evidence when composing session artifacts ([COACHING_SESSION.md](./COACHING_SESSION.md), ADR-088).
+
+Home Experience (Sprint 27.1) surfaces critical/top insights on the Home dashboard via composition only ([HOME_EXPERIENCE.md](./HOME_EXPERIENCE.md), ADR-089).

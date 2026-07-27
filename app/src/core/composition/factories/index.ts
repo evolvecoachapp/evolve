@@ -78,3 +78,6 @@ export type { ProactiveInsightsFactoryDeps } from "./ProactiveInsightsFactory";
 
 export { ExplainableCoachingSessionFactory } from "./ExplainableCoachingSessionFactory";
 export type { ExplainableCoachingSessionFactoryDeps } from "./ExplainableCoachingSessionFactory";
+
+export { HomeExperienceFactory } from "./HomeExperienceFactory";
+export type { HomeExperienceFactoryDeps } from "./HomeExperienceFactory";

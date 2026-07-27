@@ -107,3 +107,5 @@ No UI redesign.
 ## Composition Root
 
 Registers `ExplainableCoachingSessionService` (depends on `CoachTimelineService` + `PlanHistoryService` + `ProactiveInsightsService`) and injects it into Coach Conversation.
+
+Home Experience (Sprint 27.1) consumes the latest explainable session for the Home coach card ([HOME_EXPERIENCE.md](./HOME_EXPERIENCE.md), ADR-089).

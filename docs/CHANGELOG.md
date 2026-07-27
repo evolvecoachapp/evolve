@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0 (current release)
 **Status:** Living Document
-**Last Updated:** 2026-07-26  
+**Last Updated:** 2026-07-28  
 **Purpose:** Semantic release history; accumulate changes under `[Unreleased]` until tagged.  
 **Source of Truth:** Yes — for release versions and shipped changes.
 All notable changes to EVOLVE are documented in this file.
@@ -27,6 +27,7 @@ Each release section groups changes under: `Added`, `Changed`, `Deprecated`, `Re
 ## [Unreleased]
 
 ### Added
+- Sprint 27.1 (product) — Coach Home Experience Orchestrator: `features/home-experience` composes Workout / Nutrition / Recovery / Goal Progress / Coach Timeline / Plan History / Proactive Insights / Explainable Coaching Session into an immutable `HomeExperience` for the Home dashboard (cards + deterministic quick actions); dashboard application APIs (`getHomeExperience` / `getHomeSummary` / `getQuickActions` / `getCoachCard` / `getInsightCards`); Composition Root `HomeExperienceService`; ADR-089; [HOME_EXPERIENCE.md](./HOME_EXPERIENCE.md) — composition only; no new engines, no LLM, no persistence, no event bus, no UI redesign; conversation unchanged
 - Sprint 26.1 (product) — Explainable Coaching Session: `features/coaching-session/composition` packages Timeline / Decision / Recommendation / Explainability / Proactive Insights / Plan History / Conversation evidence into immutable explainable `CoachingSession` artifacts on every Coach Conversation turn; deterministic confidence; dashboard application APIs (Latest/Summary/Evidence/Insights/Confidence); Composition Root `ExplainableCoachingSessionService`; ADR-088; [COACHING_SESSION.md](./COACHING_SESSION.md) — no new engines, no LLM reasoning, no persistence, no event bus, no UI redesign; Sprint 22.0 lifecycle runtime unchanged
 - Sprint 25.5 (product) — Proactive Coach Insights: `features/proactive-insights` deterministic analysis over Timeline / Plan History / Goal / Recovery evidence into immutable `CoachInsight` records (types, severity, evidence, reason, recommendation, confidence); services analyze/build/prioritize/filter/validate; Coach Conversation intent `coach_insight`; dashboard application APIs (Top/Latest/Critical/domain); Composition Root `ProactiveInsightsService`; ADR-087; [PROACTIVE_INSIGHTS.md](./PROACTIVE_INSIGHTS.md) — no LLM, no ML, no persistence, no event bus, no scheduler, no UI redesign
 - Sprint 25.4 (product) — Coach Timeline & Decision Journal: `features/coach-timeline` append-only immutable reasoning journal (not chat history, not analytics, not an event bus); event categories for workout/nutrition/goal/recovery/decision/user/system; deterministic summaries; automatic orchestration hooks; Coach Conversation intent `timeline_query` answers why/when/what-changed from journal entries only; Composition Root `CoachTimelineService`; ADR-086; [COACH_TIMELINE.md](./COACH_TIMELINE.md) — no persistence, no UI redesign

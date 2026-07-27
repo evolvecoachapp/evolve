@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-27  
+**Last Updated:** 2026-07-28  
 **Purpose:** Concise system architecture — layers, patterns, dependency flow.  
 **Source of Truth:** Partial — summary only; deep reference is [EVOLVE_ARCHITECTURE.md](../.cursor/rules/EVOLVE_ARCHITECTURE.md).
 
@@ -173,6 +173,9 @@ Coach Agent                      ← Sprint 21.3 (deprecated Sprint 23.2 — sup
 Coaching Session Runtime         ← Sprint 22.0 (implemented) — session lifecycle between Conversation Runtime and Coach Supervisor
 Explainable Coaching Session     ← Sprint 26.1 product (implemented) — compose existing evidence into immutable session artifacts
   (`app/src/features/coaching-session/`)
+  ↓
+Home Experience                  ← Sprint 27.1 product (implemented) — compose coaching knowledge into Home dashboard experience
+  (`app/src/features/home-experience/`)
   ↓
 Athlete State Engine             ← Sprint 22.1 (implemented) — immutable athlete truth aggregated from specialists
   (`app/src/features/athlete-state/`)
@@ -1132,6 +1135,19 @@ Full detail: [PROACTIVE_INSIGHTS.md](./PROACTIVE_INSIGHTS.md). ADR-087: [DECISIO
 | **Design** | **Compose existing architecture only. No new engines. No LLM reasoning. No persistence. No event bus. No UI redesign.** Distinct from Sprint 22.0 lifecycle runtime descriptor |
 
 Full detail: [COACHING_SESSION.md](./COACHING_SESSION.md). ADR-088: [DECISIONS.md](./DECISIONS.md).
+
+### Home Experience (`features/home-experience`) — Sprint 27.1 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Transform Home into a deterministic composition of existing coaching knowledge (not a widget collection) |
+| **Flow** | Athlete State → Timeline → Plan History → Goal Progress → Recovery → Workout → Nutrition → Proactive Insights → Explainable Coaching Session → Home Experience → Dashboard |
+| **Models** | `HomeExperience`, `HomeSummary`, `HomeWorkoutCard`, `HomeNutritionCard`, `HomeRecoveryCard`, `HomeGoalCard`, `HomeInsightCard`, `HomeTimelineCard`, `HomeCoachCard`, `HomeQuickAction`, `HomeExperienceResult` |
+| **Services** | `buildWorkoutCard`, `buildNutritionCard`, `buildRecoveryCard`, `buildGoalCard`, `buildInsightCard`, `buildTimelineCard`, `buildCoachCard`, `buildQuickActions`, `buildHomeExperience`, `validateHomeExperience`, `HomeExperienceService` |
+| **Integration** | Workout / Nutrition / Recovery / Goal / Timeline / Plan History / Insights / Explainable Session; Composition Root `HomeExperienceService` |
+| **Design** | **Compose existing architecture only. No new engines. No LLM. No persistence. No event bus. No UI redesign.** Distinct from `features/home` UI providers |
+
+Full detail: [HOME_EXPERIENCE.md](./HOME_EXPERIENCE.md). ADR-089: [DECISIONS.md](./DECISIONS.md).
 
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 

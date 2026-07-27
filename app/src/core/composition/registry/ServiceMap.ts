@@ -17,6 +17,7 @@ import type { PlanRestoreService } from "../../../features/plan-restore/services
 import type { CoachTimelineService } from "../../../features/coach-timeline/services/CoachTimelineService";
 import type { ProactiveInsightsService } from "../../../features/proactive-insights/services/ProactiveInsightsService";
 import type { ExplainableCoachingSessionService } from "../../../features/coaching-session/composition/services/ExplainableCoachingSessionService";
+import type { HomeExperienceService } from "../../../features/home-experience/services/HomeExperienceService";
 import type { ExerciseSelectionService } from "../../../features/exercise-selection/services/ExerciseSelectionService";
 import type { ProgramGenerationService } from "../../../features/program-generation/services/ProgramGenerationService";
 import type { ProgrammingService } from "../../../features/programming/services/ProgrammingService";
@@ -59,6 +60,7 @@ export interface ServiceMap {
   CoachTimelineService: CoachTimelineService;
   ProactiveInsightsService: ProactiveInsightsService;
   ExplainableCoachingSessionService: ExplainableCoachingSessionService;
+  HomeExperienceService: HomeExperienceService;
 }
 
 export type ServiceToken = keyof ServiceMap;
@@ -93,4 +95,5 @@ export const SERVICE_TOKENS = [
   "CoachTimelineService",
   "ProactiveInsightsService",
   "ExplainableCoachingSessionService",
+  "HomeExperienceService",
 ] as const satisfies readonly ServiceToken[];

@@ -2675,4 +2675,33 @@ Composition Root registers `ExplainableCoachingSessionService` and injects it in
 
 ---
 
-*New decisions are appended as Decision 089, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 089: Home Experience Composition (Sprint 27.1 product)
+
+**Date:** 2026-07-28
+**Status:** Accepted
+
+**Context:**
+The Home screen remains a collection of presentation widgets even though EVOLVE already owns Athlete State, Coach Timeline, Plan History, Goal Progress, Recovery, Workout, Nutrition, Proactive Insights, and Explainable Coaching Session. Athletes need Home to act as the central intelligence hub. A new AI/home engine would duplicate existing logic. Embedding composition in UI providers would violate Clean Architecture.
+
+**Decision:**
+Introduce `features/home-experience` as a **composition-only layer** that assembles existing domain outputs into an immutable `HomeExperience` for the dashboard:
+
+Athlete State → Coach Timeline → Plan History → Goal Progress → Recovery → Workout → Nutrition → Proactive Insights → Explainable Coaching Session → Home Experience → Dashboard.
+
+Cards (Workout / Nutrition / Recovery / Goal / Insight / Timeline / Coach) and Quick Actions are deterministic projections of existing evidence — no new engines, no LLM, no invented state. Dashboard application APIs expose Home Experience / Summary / Quick Actions / Coach Card / Insight Cards — presentation only. Conversation orchestration is unchanged.
+
+Composition Root registers `HomeExperienceService` (ADR-089). Distinct from `features/home` UI providers.
+
+**Alternatives considered:**
+- **New Home / dashboard engine** — rejected: sprint forbids new engines; must compose existing architecture.
+- **UI-owned composition in `features/home`** — rejected: business composition must not live in presentation providers.
+- **LLM-generated home narratives / actions** — rejected: must stay deterministic and evidence-backed.
+- **Persistence / event bus / UI redesign / conversation changes** — rejected: sprint constraints.
+
+**Consequences:**
+- Documentation: [HOME_EXPERIENCE.md](./HOME_EXPERIENCE.md), [COACHING_SESSION.md](./COACHING_SESSION.md), [PROACTIVE_INSIGHTS.md](./PROACTIVE_INSIGHTS.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- Home Experience models are immutable; domain engines remain the source of truth.
+
+---
+
+*New decisions are appended as Decision 090, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
