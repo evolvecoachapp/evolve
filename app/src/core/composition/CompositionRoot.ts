@@ -28,6 +28,7 @@ import {
   ProactiveInsightsFactory,
   ExplainableCoachingSessionFactory,
   HomeExperienceFactory,
+  DailyBriefFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -209,6 +210,21 @@ export class CompositionRoot {
       "HomeExperienceService",
       () =>
         HomeExperienceFactory.create({
+          coachTimeline: container.resolve("CoachTimelineService"),
+          planHistory: container.resolve("PlanHistoryService"),
+          proactiveInsights: container.resolve("ProactiveInsightsService"),
+          explainableCoachingSession: container.resolve(
+            "ExplainableCoachingSessionService",
+          ),
+        }),
+      { lifecycle },
+    );
+
+    container.register(
+      "DailyBriefService",
+      () =>
+        DailyBriefFactory.create({
+          homeExperience: container.resolve("HomeExperienceService"),
           coachTimeline: container.resolve("CoachTimelineService"),
           planHistory: container.resolve("PlanHistoryService"),
           proactiveInsights: container.resolve("ProactiveInsightsService"),
@@ -463,6 +479,10 @@ export class CompositionRoot {
 
   getHomeExperienceService(): ServiceMap["HomeExperienceService"] {
     return this.registry.resolve("HomeExperienceService");
+  }
+
+  getDailyBriefService(): ServiceMap["DailyBriefService"] {
+    return this.registry.resolve("DailyBriefService");
   }
 
   getDecisionEngineService(): ServiceMap["DecisionEngineService"] {

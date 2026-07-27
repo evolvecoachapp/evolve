@@ -2704,4 +2704,33 @@ Composition Root registers `HomeExperienceService` (ADR-089). Distinct from `fea
 
 ---
 
-*New decisions are appended as Decision 090, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 090: Athlete Daily Brief Composition (Sprint 27.2 product)
+
+**Date:** 2026-07-28
+**Status:** Accepted
+
+**Context:**
+Athletes need a deterministic daily coaching brief when opening EVOLVE. Chat replies, notifications, and LLM summaries are the wrong abstraction. EVOLVE already owns Home Experience, Timeline, Plan History, Recovery, Goal Progress, Workout, Nutrition, Proactive Insights, and Explainable Coaching Session. A new brief engine would duplicate existing logic.
+
+**Decision:**
+Introduce `features/daily-brief` as a **composition-only layer** that assembles existing domain outputs into an immutable `DailyBrief`:
+
+Athlete State → Home Experience → Coach Timeline → Plan History → Recovery → Goal Progress → Workout → Nutrition → Proactive Insights → Explainable Coaching Session → Daily Brief → Dashboard.
+
+Sections (Workout / Nutrition / Recovery / Goals / Insights / Coach Message), priority (`LOW`/`NORMAL`/`HIGH`/`CRITICAL`), and confidence are deterministic projections of existing evidence — no new engines, no LLM, no invented state. Dashboard application APIs expose Daily Brief / Coach Message / section getters — presentation only. Conversation orchestration is unchanged. No persistence, scheduler, or notifications.
+
+Composition Root registers `DailyBriefService` (ADR-090), depending on Home Experience and the same coaching domain services.
+
+**Alternatives considered:**
+- **New Daily Brief / coaching summary engine** — rejected: sprint forbids new engines; must compose existing architecture.
+- **LLM-generated brief / priority / confidence** — rejected: must stay deterministic and evidence-backed.
+- **Chat-driven brief or notification delivery** — rejected: Daily Brief is independent of conversation and is not a notification.
+- **Persistence / background scheduler / UI redesign** — rejected: sprint constraints.
+
+**Consequences:**
+- Documentation: [DAILY_BRIEF.md](./DAILY_BRIEF.md), [HOME_EXPERIENCE.md](./HOME_EXPERIENCE.md), [COACHING_SESSION.md](./COACHING_SESSION.md), [PROACTIVE_INSIGHTS.md](./PROACTIVE_INSIGHTS.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- Daily Brief models are immutable; domain engines remain the source of truth.
+
+---
+
+*New decisions are appended as Decision 091, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

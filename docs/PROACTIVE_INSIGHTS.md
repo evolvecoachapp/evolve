@@ -114,3 +114,5 @@ Registers `ProactiveInsightsService` (depends on `CoachTimelineService` + `PlanH
 Explainable Coaching Session (Sprint 26.1) consumes generated insights as evidence when composing session artifacts ([COACHING_SESSION.md](./COACHING_SESSION.md), ADR-088).
 
 Home Experience (Sprint 27.1) surfaces critical/top insights on the Home dashboard via composition only ([HOME_EXPERIENCE.md](./HOME_EXPERIENCE.md), ADR-089).
+
+Athlete Daily Brief (Sprint 27.2) surfaces critical insights and the top recommendation in the Daily Brief insights section ([DAILY_BRIEF.md](./DAILY_BRIEF.md), ADR-090).

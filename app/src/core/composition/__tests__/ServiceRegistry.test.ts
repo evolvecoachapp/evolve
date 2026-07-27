@@ -43,6 +43,7 @@ describe("ServiceRegistry", () => {
       "ProactiveInsightsService",
       "ExplainableCoachingSessionService",
       "HomeExperienceService",
+      "DailyBriefService",
     ]);
   });
 

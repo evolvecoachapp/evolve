@@ -18,7 +18,7 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Auth | Connected — login, register, refresh, secure-store tokens |
 | Navigation | 6-tab bottom bar (Home, Workout, Nutrition, Coach, Progress, Profile) |
 | Design system | Token-based theme with light/dark/system preference (`ThemeContext`) |
-| Feature modules | coach, workout, nutrition, progress, analytics, home, home-experience, dashboard, profile, shared; plus AI/training domains below |
+| Feature modules | coach, workout, nutrition, progress, analytics, home, home-experience, daily-brief, dashboard, profile, shared; plus AI/training domains below |
 | Data layer | Service factory pattern; Composition Root DI for Training Intelligence pipeline (`core/composition`, Sprint 17.9); Decision Intelligence explanations (`core/decision-intelligence`, Sprint 17.10); Workout Runtime execution state (`features/workout-runtime`, Sprint 18.0); Rest Runtime rest periods (`features/rest-runtime`, Sprint 18.1); Domain Events execution substrate (`core/domain-events`, Sprint 18.2); Performance Engine single-session snapshots (`features/performance-engine`, Sprint 18.3); Achievement Engine Personal Records (`features/achievement-engine`, Sprint 18.4); Athlete History immutable chronological record (`features/athlete-history`, Sprint 18.5); Recovery Intelligence deterministic recovery snapshots (`features/recovery-intelligence`, Sprint 18.6); Insight Engine deterministic domain insight snapshots (`features/insight-engine`, Sprint 18.7); Coach Intelligence immutable Coaching Context preparation (`features/coach-intelligence`, Sprint 18.8); Conversation Orchestrator immutable Conversation Context preparation (`features/conversation-orchestrator`, Sprint 19.0); Prompt Composition Engine immutable Prompt Package composition (`features/prompt-composition`, Sprint 19.1); Agent Framework / Runtime / Collaboration / Capability foundations (Sprint 21.x); Conversation Memory (`features/conversation-memory`, Sprint 21.4); Coach Timeline (`features/coach-timeline`, Sprint 25.4); Proactive Coach Insights (`features/proactive-insights`, Sprint 25.5); Explainable Coaching Session (`features/coaching-session/composition`, Sprint 26.1); Home Experience (`features/home-experience`, Sprint 27.1); user/workout backend providers; on-device workout history via `WorkoutHistoryRepository` + `StorageAdapter` (Sprint 13.0); analytics via `WorkoutAnalyticsRepository` (Sprint 14.0) |
 | Backend providers | `BackendUserService`, `BackendWorkoutService` live; other `Backend*Service` classes throw `notConfigured()` |
 | Tests | Jest + jest-expo |
@@ -64,6 +64,7 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Proactive Insights | `features/proactive-insights` | Foundation complete (25.5) — deterministic coach insights from existing evidence only |
 | Explainable Coaching Session | `features/coaching-session/composition` | Foundation complete (26.1) — compose existing evidence into immutable session artifacts only |
 | Home Experience | `features/home-experience` | Foundation complete (27.1) — compose existing coaching knowledge into Home dashboard experience only |
+| Athlete Daily Brief | `features/daily-brief` | Foundation complete (27.2) — compose existing coaching knowledge into deterministic daily brief only |
 
 These domains are TypeScript application modules with in-memory repositories. They are **not** backend HTTP APIs and do **not** write to PostgreSQL. The integration framework exercises the full pipeline without modifying engine behavior. Pipeline services are composed through `core/composition`. Decision Intelligence explains pipeline decisions without changing engine behavior. Workout Runtime consumes immutable `WorkoutSession` outputs without modifying Program Generation. Rest Runtime manages rest periods with injected elapsed time and may be owned by Workout Runtime. Domain Events record immutable lifecycle events from Workout/Rest Runtime into an ordered in-memory Event Stream for future subscribers. Performance Engine analyzes completed `WorkoutResult` + `EventStream` into immutable single-session snapshots without mutating execution or program generation. Achievement Engine detects Personal Records from Performance Snapshots via injected baselines without owning history, persistence, or gamification. Athlete History organizes immutable chronological domain facts from workout/performance/achievement outputs without persistence, AI, networking, storage, querying, or timeline UI. Recovery Intelligence derives deterministic recovery metrics/snapshots from Athlete History + Performance Snapshot without AI, recommendations, persistence, networking, predictions, sleep, or wearables. Insight Engine aggregates deterministic domain facts from Performance, Achievement, Recovery, and Athlete History into immutable Insight Snapshots without AI, recommendations, persistence, networking, prompts, LLM, or conversation. Coach Intelligence prepares immutable Coaching Context from Insight Snapshot (optionally referencing Recovery, History, Performance, Achievement) without AI, prompts, LLM providers, networking, HTTP, persistence, or conversation. Conversation Orchestrator prepares immutable Conversation Context from Coaching Context (optionally referencing Insight, Recovery, History, Performance, Achievement) without AI, prompts, LLM providers, networking, HTTP, persistence, or conversation generation. Prompt Composition Engine transforms Conversation Context into an immutable Prompt Package of structured blocks (optionally referencing Coaching Context / Insight Snapshot) without AI, networking, HTTP, OpenAI/Anthropic/Gemini/Ollama, or provider-specific string prompt generation.
 
@@ -162,7 +163,17 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 
 ## Last Completed Sprint
 
-**27.1 — Coach Home Experience Orchestrator** (2026-07-28)
+**27.2 — Athlete Daily Brief** (2026-07-28)
+
+- Daily Brief composition (`features/daily-brief`) — deterministic daily coaching brief
+- Sections: Workout / Nutrition / Recovery / Goals / Insights / Coach Message
+- Deterministic priority (`LOW`/`NORMAL`/`HIGH`/`CRITICAL`) and evidence-based confidence
+- Dashboard APIs: `getDailyBrief`, `getCoachMessage`, section getters
+- Composition Root: `DailyBriefService`
+- ADR-090; docs: DAILY_BRIEF, HOME_EXPERIENCE, ARCHITECTURE, PROACTIVE_INSIGHTS, COACHING_SESSION
+- No new engines; no conversation changes; no UI redesign; no persistence; no notifications
+
+Previous: **27.1 — Coach Home Experience Orchestrator** (2026-07-28)
 
 - Home Experience composition (`features/home-experience`) — Home as deterministic intelligence hub
 - Cards: Workout / Nutrition / Recovery / Goal / Insight / Timeline / Coach + deterministic Quick Actions

@@ -109,3 +109,5 @@ No UI redesign.
 Registers `ExplainableCoachingSessionService` (depends on `CoachTimelineService` + `PlanHistoryService` + `ProactiveInsightsService`) and injects it into Coach Conversation.
 
 Home Experience (Sprint 27.1) consumes the latest explainable session for the Home coach card ([HOME_EXPERIENCE.md](./HOME_EXPERIENCE.md), ADR-089).
+
+Athlete Daily Brief (Sprint 27.2) consumes the latest explainable session for the Daily Brief coach message ([DAILY_BRIEF.md](./DAILY_BRIEF.md), ADR-090).

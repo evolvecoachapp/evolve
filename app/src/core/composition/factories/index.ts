@@ -81,3 +81,6 @@ export type { ExplainableCoachingSessionFactoryDeps } from "./ExplainableCoachin
 
 export { HomeExperienceFactory } from "./HomeExperienceFactory";
 export type { HomeExperienceFactoryDeps } from "./HomeExperienceFactory";
+
+export { DailyBriefFactory } from "./DailyBriefFactory";
+export type { DailyBriefFactoryDeps } from "./DailyBriefFactory";

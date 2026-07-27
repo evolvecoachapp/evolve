@@ -39,6 +39,7 @@ describe("CompositionRoot coaching pipeline integration", () => {
     expect(root.resolve("ProactiveInsightsService")).toBeDefined();
     expect(root.resolve("ExplainableCoachingSessionService")).toBeDefined();
     expect(root.resolve("HomeExperienceService")).toBeDefined();
+    expect(root.resolve("DailyBriefService")).toBeDefined();
   });
 
   it("executes Conversation → Session → Supervisor path", () => {

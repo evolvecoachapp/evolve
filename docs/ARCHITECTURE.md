@@ -177,6 +177,9 @@ Explainable Coaching Session     ← Sprint 26.1 product (implemented) — compo
 Home Experience                  ← Sprint 27.1 product (implemented) — compose coaching knowledge into Home dashboard experience
   (`app/src/features/home-experience/`)
   ↓
+Athlete Daily Brief              ← Sprint 27.2 product (implemented) — compose coaching knowledge into deterministic daily brief
+  (`app/src/features/daily-brief/`)
+  ↓
 Athlete State Engine             ← Sprint 22.1 (implemented) — immutable athlete truth aggregated from specialists
   (`app/src/features/athlete-state/`)
   ↓
@@ -1148,6 +1151,19 @@ Full detail: [COACHING_SESSION.md](./COACHING_SESSION.md). ADR-088: [DECISIONS.m
 | **Design** | **Compose existing architecture only. No new engines. No LLM. No persistence. No event bus. No UI redesign.** Distinct from `features/home` UI providers |
 
 Full detail: [HOME_EXPERIENCE.md](./HOME_EXPERIENCE.md). ADR-089: [DECISIONS.md](./DECISIONS.md).
+
+### Athlete Daily Brief (`features/daily-brief`) — Sprint 27.2 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Deterministic daily coaching brief composed from existing coaching knowledge (not chat, not notifications, not an LLM summary) |
+| **Flow** | Athlete State → Home Experience → Timeline → Plan History → Recovery → Goal Progress → Workout → Nutrition → Proactive Insights → Explainable Coaching Session → Daily Brief → Dashboard |
+| **Models** | `DailyBrief`, `DailyBriefSummary`, `DailyBriefWorkout`, `DailyBriefNutrition`, `DailyBriefRecovery`, `DailyBriefGoals`, `DailyBriefInsights`, `DailyBriefCoachMessage`, `DailyBriefPriority`, `DailyBriefConfidence`, `DailyBriefResult` |
+| **Services** | `buildWorkoutSection`, `buildNutritionSection`, `buildRecoverySection`, `buildGoalSection`, `buildInsightSection`, `buildCoachMessage`, `calculatePriority`, `calculateConfidence`, `buildDailyBrief`, `validateDailyBrief`, `DailyBriefService` |
+| **Integration** | Home Experience / Workout / Nutrition / Recovery / Goal / Timeline / Plan History / Insights / Explainable Session / Decision / Recommendation; Composition Root `DailyBriefService` |
+| **Design** | **Compose existing architecture only. No new engines. No LLM. No persistence. No scheduler. No notifications. No UI redesign.** |
+
+Full detail: [DAILY_BRIEF.md](./DAILY_BRIEF.md). ADR-090: [DECISIONS.md](./DECISIONS.md).
 
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 

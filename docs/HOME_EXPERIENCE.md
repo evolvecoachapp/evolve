@@ -7,7 +7,7 @@
 **Purpose:** Document Home Experience composition — Home as a deterministic intelligence hub over existing coaching knowledge.  
 **Source of Truth:** Yes — for Sprint 27.1 Home Experience on mobile.
 
-Related: [COACHING_SESSION.md](./COACHING_SESSION.md), [PROACTIVE_INSIGHTS.md](./PROACTIVE_INSIGHTS.md), [COACH_TIMELINE.md](./COACH_TIMELINE.md), [PLAN_HISTORY.md](./PLAN_HISTORY.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [DECISIONS.md](./DECISIONS.md) (ADR-089).
+Related: [COACHING_SESSION.md](./COACHING_SESSION.md), [PROACTIVE_INSIGHTS.md](./PROACTIVE_INSIGHTS.md), [COACH_TIMELINE.md](./COACH_TIMELINE.md), [PLAN_HISTORY.md](./PLAN_HISTORY.md), [DAILY_BRIEF.md](./DAILY_BRIEF.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [DECISIONS.md](./DECISIONS.md) (ADR-089).
 
 ---
 
@@ -118,3 +118,5 @@ No conversation changes. Conversation continues to use existing orchestration. T
 ## Composition Root
 
 Registers `HomeExperienceService` (depends on `CoachTimelineService` + `PlanHistoryService` + `ProactiveInsightsService` + `ExplainableCoachingSessionService`).
+
+Athlete Daily Brief (Sprint 27.2) composes Home Experience and the same coaching domains into a daily brief for dashboard presentation ([DAILY_BRIEF.md](./DAILY_BRIEF.md), ADR-090).

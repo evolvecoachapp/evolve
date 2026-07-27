@@ -157,4 +157,8 @@ export class ServiceRegistry {
   getHomeExperienceService(): ServiceMap["HomeExperienceService"] {
     return this.resolve("HomeExperienceService");
   }
+
+  getDailyBriefService(): ServiceMap["DailyBriefService"] {
+    return this.resolve("DailyBriefService");
+  }
 }
