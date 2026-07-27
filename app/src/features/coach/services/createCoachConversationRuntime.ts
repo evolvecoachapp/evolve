@@ -4,6 +4,7 @@ import type { AIProviderInfo } from "../../ai/models/AIProviderInfo";
 import { AIProviderFactory } from "../../ai/providers/AIProviderFactory";
 import { AIService } from "../../ai/services/AIService";
 import { resolveService } from "../../../core/composition";
+import type { CoachConversationService } from "../../coach-conversation/services/CoachConversationService";
 import type { CoachingSessionService } from "../../coaching-session/services/CoachingSessionService";
 import { InMemoryConversationRepository } from "../../conversation/repository/InMemoryConversationRepository";
 import { ConversationService } from "../../conversation/services/ConversationService";
@@ -11,6 +12,7 @@ import { ConversationService } from "../../conversation/services/ConversationSer
 export interface CoachConversationRuntime {
   readonly service: ConversationService;
   readonly coachingSession: CoachingSessionService;
+  readonly coachConversation: CoachConversationService;
   readonly configuration: AIConfiguration;
   readonly providerInfo: AIProviderInfo;
   readonly healthCheck: () => Promise<boolean>;
@@ -19,7 +21,7 @@ export interface CoachConversationRuntime {
 /**
  * App composition root for Coach chat.
  * Builds ConversationService → AIService → AIProvider (local stub, no networking)
- * and resolves Coaching Session Runtime from the process Composition Root.
+ * and resolves Coaching Session + Coach Conversation from the process Composition Root.
  */
 export function createCoachConversationRuntime(): CoachConversationRuntime {
   const configuration = AIConfigurationFactory.createDefault({
@@ -32,10 +34,12 @@ export function createCoachConversationRuntime(): CoachConversationRuntime {
     aiService,
   );
   const coachingSession = resolveService("CoachingSessionService");
+  const coachConversation = resolveService("CoachConversationService");
 
   return {
     service,
     coachingSession,
+    coachConversation,
     configuration,
     providerInfo: provider.getProviderInfo(),
     healthCheck: () => aiService.healthCheck(),

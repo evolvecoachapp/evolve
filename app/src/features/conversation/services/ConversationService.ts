@@ -52,6 +52,15 @@ export interface SendMessageOptions {
   readonly onConversationUpdate?: (conversation: Conversation) => void;
 }
 
+/** Persist a coaching turn with a pre-built assistant reply (no AI generation). */
+export interface SendCoachingReplyOptions {
+  readonly conversationId: string;
+  readonly content: string;
+  readonly assistantContent: string;
+  readonly now?: string;
+  readonly onConversationUpdate?: (conversation: Conversation) => void;
+}
+
 export interface RetryMessageOptions {
   readonly conversationId: string;
   readonly messageId: string;
@@ -187,6 +196,68 @@ export class ConversationService {
       now,
       onConversationUpdate: options.onConversationUpdate,
     });
+  }
+
+  /**
+   * Record a user message and a prepared coaching assistant reply.
+   * Used by Intelligent Coach Conversation — does not call AI providers.
+   */
+  async sendCoachingReply(
+    options: SendCoachingReplyOptions,
+  ): Promise<Conversation> {
+    const now = options.now ?? new Date().toISOString();
+    this.assertNoActiveStream(options.conversationId);
+
+    const conversation = await this.requireActiveConversation(
+      options.conversationId,
+    );
+
+    const userMessage = createMessage({
+      conversationId: conversation.id,
+      role: "user",
+      content: options.content,
+      status: "pending",
+      now,
+    });
+    assertValidMessage(userMessage);
+
+    let current = await this.repository.appendMessage(
+      conversation.id,
+      userMessage,
+    );
+    options.onConversationUpdate?.(current);
+
+    if (current.messages.length === 1) {
+      current = await this.repository.updateTitle(
+        current.id,
+        generateConversationTitle(options.content),
+      );
+      options.onConversationUpdate?.(current);
+    }
+
+    current = await this.repository.updateMessageStatus(
+      current.id,
+      userMessage.id,
+      "sent",
+    );
+    options.onConversationUpdate?.(current);
+
+    const assistantMessage = createMessage({
+      conversationId: current.id,
+      role: "assistant",
+      content: options.assistantContent,
+      status: "sent",
+      now,
+    });
+    assertValidMessage(assistantMessage);
+
+    current = await this.repository.appendMessage(
+      current.id,
+      assistantMessage,
+    );
+    options.onConversationUpdate?.(current);
+    await this.autoPersist(current, "idle");
+    return current;
   }
 
   /**

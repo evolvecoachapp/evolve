@@ -129,4 +129,8 @@ export class ServiceRegistry {
   getWorkoutGenerationPipelineService(): ServiceMap["WorkoutGenerationPipelineService"] {
     return this.resolve("WorkoutGenerationPipelineService");
   }
+
+  getCoachConversationService(): ServiceMap["CoachConversationService"] {
+    return this.resolve("CoachConversationService");
+  }
 }

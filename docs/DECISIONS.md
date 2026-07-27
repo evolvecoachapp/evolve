@@ -2482,4 +2482,31 @@ Canonical UI output is `WorkoutPlan`. Workout Agent gains `generateWorkout` / `i
 
 ---
 
-*New decisions are appended as Decision 081, 082, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 081: Intelligent Coach Conversation Experience (Sprint 24.2 product)
+
+**Date:** 2026-07-27  
+**Status:** Accepted
+
+**Context:**  
+Sprint 24.2 (product capability) must deliver a real conversational coaching experience on top of the existing coaching pipeline and WorkoutPlan. Chat replies and workout generation were parallel paths; follow-ups could not reference the active plan through session context. A new conversation engine would duplicate Conversation Runtime, Coaching Session, Supervisor Routing, and Memory.
+
+**Decision:**  
+Introduce `features/coach-conversation` as **orchestration only** (not an engine). Turn order:
+
+Conversation Runtime → deterministic Intent Routing → Coaching Session Runtime → Supervisor Routing → Coach Supervisor → assemble response from Conversation + attached WorkoutPlan + Recommendations + Memory + Session → persist via Conversation Runtime `sendCoachingReply`.
+
+Active WorkoutPlan is attached to the conversation/session via an in-memory reference store after Workout Generation Pipeline success. Composition Root registers `CoachConversationService`. Existing AI streaming conversation path remains when the coaching conversation service is not injected.
+
+**Alternatives considered:**
+- **New Conversation Engine** — rejected: duplicates Conversation Runtime + Session + Supervisor.
+- **Put explanation logic in Coach Screen** — rejected: business logic must not live in UI.
+- **Bypass Session/Supervisor for explanations** — rejected: violates pipeline reuse rules.
+- **Embed WorkoutPlan inside SessionContext** — deferred: would redesign Coaching Session; attachment store adapter is sufficient.
+
+**Consequences:**
+- Documentation: [COACH_CONVERSATION.md](./COACH_CONVERSATION.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- No new engines; Workout Generation Pipeline remains the plan producer.
+
+---
+
+*New decisions are appended as Decision 082, 083, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

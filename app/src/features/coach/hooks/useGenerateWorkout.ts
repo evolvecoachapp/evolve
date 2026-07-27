@@ -12,6 +12,8 @@ export interface UseGenerateWorkoutOptions {
   readonly athleteId?: string;
   readonly conversationId?: string | null;
   readonly sessionId?: string | null;
+  /** Called after a successful generation so the plan attaches to conversation. */
+  readonly onPlanGenerated?: (plan: WorkoutPlan) => void;
 }
 
 export interface UseGenerateWorkoutResult {
@@ -67,6 +69,16 @@ export function useGenerateWorkout(
       });
       setResult(pipelineResult);
       setPlan(pipelineResult.plan);
+      if (pipelineResult.plan) {
+        // Prefer Composition Root coach conversation attachment when available.
+        try {
+          const coachConversation = resolveService("CoachConversationService");
+          coachConversation.attachWorkoutPlan(pipelineResult.plan);
+        } catch {
+          // Composition may omit coach conversation in isolated tests.
+        }
+        options.onPlanGenerated?.(pipelineResult.plan);
+      }
       if (!pipelineResult.success) {
         setError(pipelineResult.message);
       }
@@ -81,7 +93,12 @@ export function useGenerateWorkout(
     } finally {
       setGenerating(false);
     }
-  }, [options.athleteId, options.conversationId, options.sessionId]);
+  }, [
+    options.athleteId,
+    options.conversationId,
+    options.onPlanGenerated,
+    options.sessionId,
+  ]);
 
   return {
     generating,

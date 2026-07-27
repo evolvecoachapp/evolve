@@ -11,7 +11,25 @@ Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [COACHING_SESSION_RUNTIME.md](./C
 
 ---
 
-## Coach Interaction Path (Sprint 24.1)
+## Coach Interaction Path (Sprint 24.2)
+
+```
+User
+  ↓
+Conversation Runtime
+  ↓
+Coach Conversation (product)      ← Sprint 24.2 — intent routing + plan-grounded replies
+  ↓
+Coaching Session Runtime          ← Sprint 22.0 (session lifecycle + immutable context)
+  ↓
+Supervisor Routing / Coach Supervisor
+  ↓
+Active WorkoutPlan + Recommendations + Conversation Memory
+  ↓
+Deterministic coaching response (persisted via Conversation Runtime)
+```
+
+### Workout generation path (Sprint 24.1)
 
 ```
 User
@@ -35,6 +53,8 @@ Recommendation Engine             ← Sprint 22.4 (CoachingRecommendation / Reco
 Workout Generation Pipeline       ← Sprint 24.1 product (WorkoutPlan canonical output)
   ↓
 WorkoutPlan / SessionResult / AthleteState / UnifiedCoachingContext / CoachingDecision / CoachingRecommendation
+  ↓
+attachWorkoutPlan → Coach Conversation session
 ```
 
 ### Parallel adaptation path (existing Sprint 24.1 engine)

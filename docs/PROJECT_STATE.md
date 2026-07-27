@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-24  
+**Last Updated:** 2026-07-27  
 **Purpose:** Snapshot of the current project state only.  
 **Source of Truth:** Yes — for current sprint, completion %, and live system status.
 
@@ -156,7 +156,16 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 
 ## Last Completed Sprint
 
-**24.1 — Intelligent Workout Generation Pipeline** (2026-07-27)
+**24.2 — Intelligent Coach Conversation Experience** (2026-07-27)
+
+- Product capability: conversation becomes the primary coaching interface after WorkoutPlan generation
+- Module `features/coach-conversation` (orchestration only — no new engines)
+- Deterministic intent routing + Supervisor Routing reuse; WorkoutPlan attachment to conversation session
+- Coach Screen: Generate Workout → natural conversation about that plan via Composition Root
+- Conversation Memory records intent / plan / reply continuity; `ConversationService.sendCoachingReply` adapter
+- Composition Root registers `CoachConversationService`
+
+Previous: **24.1 — Intelligent Workout Generation Pipeline** (2026-07-27)
 
 - Product capability: Conversation → Coaching Session → Coach Supervisor → Workout Agent → Athlete State → Context Fusion → Decision → Recommendation → Workout Generation → canonical `WorkoutPlan`
 - Module `features/workout-generation-pipeline` (orchestration only — no new engines)

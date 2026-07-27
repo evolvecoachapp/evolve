@@ -60,3 +60,6 @@ export type {
 
 export { WorkoutGenerationPipelineFactory } from "./WorkoutGenerationPipelineFactory";
 export type { WorkoutGenerationPipelineFactoryDeps } from "./WorkoutGenerationPipelineFactory";
+
+export { CoachConversationFactory } from "./CoachConversationFactory";
+export type { CoachConversationFactoryDeps } from "./CoachConversationFactory";

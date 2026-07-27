@@ -63,9 +63,11 @@ export function CoachScreen() {
     startConversation,
     sendMessage,
     retryMessage,
+    attachWorkoutPlan,
   } = useCoachConversation({
     service: runtime.service,
     coachingSession: runtime.coachingSession,
+    coachConversation: runtime.coachConversation,
     promptContext,
   });
 
@@ -76,6 +78,7 @@ export function CoachScreen() {
     generateWorkout,
   } = useGenerateWorkout({
     conversationId: conversation?.id ?? null,
+    onPlanGenerated: attachWorkoutPlan,
   });
 
   const footerReserve = floatingFooterMetrics.scrollReserve(composerHeight);
@@ -352,7 +355,6 @@ export function CoachScreen() {
             onSend={handleSend}
             disabled={
               !conversation ||
-              !promptContext ||
               showInitialLoading ||
               isStreaming
             }

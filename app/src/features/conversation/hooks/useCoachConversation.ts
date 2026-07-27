@@ -1,6 +1,11 @@
 import { useCallback, useRef, useState } from "react";
 import type { StreamingSession } from "../../ai/models/StreamingSession";
 import { WellKnownCapabilityIds } from "../../agent-capability/models/CapabilityId";
+import type { CoachConversationService } from "../../coach-conversation/services/CoachConversationService";
+import {
+  EMPTY_COACH_CONVERSATION_METADATA,
+  type CoachConversationResult,
+} from "../../coach-conversation/models";
 import type { CoachingSessionService } from "../../coaching-session/services/CoachingSessionService";
 import { EMPTY_SESSION_METADATA } from "../../coaching-session/models/SessionMetadata";
 import {
@@ -8,10 +13,12 @@ import {
   type SessionRequest,
 } from "../../coaching-session/models/SessionRequest";
 import type { PromptContext } from "../../prompt-builder/models/coach/PromptContext";
+import type { WorkoutPlan } from "../../workout-generation-pipeline/models/WorkoutPlan";
 import {
   closeConversation as closeConversationUseCase,
   deleteConversation as deleteConversationUseCase,
   retryMessage as retryMessageUseCase,
+  sendCoachingReply as sendCoachingReplyUseCase,
   sendMessage as sendMessageUseCase,
   startConversation as startConversationUseCase,
 } from "../application";
@@ -29,8 +36,13 @@ export interface UseCoachConversationOptions {
    */
   readonly coachingSession?: CoachingSessionService | null;
   /**
+   * Optional Intelligent Coach Conversation service (Composition Root).
+   * When provided, replies are produced from session + WorkoutPlan context.
+   */
+  readonly coachConversation?: CoachConversationService | null;
+  /**
    * Prompt context used for AI generation on send/retry.
-   * Required when calling sendMessage or retryMessage.
+   * Required when calling sendMessage or retryMessage without coachConversation.
    */
   readonly promptContext?: PromptContext | null;
   /** Optional athlete id for session / supervisor invocations. */
@@ -41,11 +53,12 @@ export interface UseCoachConversationOptions {
  * Presentation adapter for the Conversation engine.
  *
  * Returns domain state and actions only — no UI formatting.
- * Optionally bridges into Coaching Session Runtime (Composition Root).
+ * Optionally bridges into Coaching Session Runtime and Coach Conversation.
  */
 export function useCoachConversation({
   service,
   coachingSession = null,
+  coachConversation = null,
   promptContext = null,
   athleteId = null,
 }: UseCoachConversationOptions) {
@@ -57,6 +70,8 @@ export function useCoachConversation({
     null,
   );
   const [error, setError] = useState<string | null>(null);
+  const [lastCoachResult, setLastCoachResult] =
+    useState<CoachConversationResult | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const requestSeq = useRef(0);
 
@@ -90,7 +105,7 @@ export function useCoachConversation({
       readonly conversationId: string | null;
       readonly message: string;
     }) => {
-      if (!coachingSession) return;
+      if (!coachingSession || coachConversation) return;
       requestSeq.current += 1;
       const request: SessionRequest = Object.freeze({
         id: `session-req:${requestSeq.current}`,
@@ -122,7 +137,7 @@ export function useCoachConversation({
         sessionIdRef.current = null;
       }
     },
-    [athleteId, coachingSession],
+    [athleteId, coachConversation, coachingSession],
   );
 
   const run = useCallback(
@@ -164,7 +179,7 @@ export function useCoachConversation({
   const startConversation = useCallback(async () => {
     await run(async () => {
       const next = await startConversationUseCase(service);
-      if (next) {
+      if (next && !coachConversation) {
         invokeSession({
           kind: SessionRequestKinds.START,
           conversationId: next.id,
@@ -173,7 +188,7 @@ export function useCoachConversation({
       }
       return next;
     });
-  }, [invokeSession, run, service]);
+  }, [coachConversation, invokeSession, run, service]);
 
   const sendMessage = useCallback(
     async (content: string) => {
@@ -181,12 +196,45 @@ export function useCoachConversation({
         setError("No active conversation.");
         return;
       }
+
+      const conversationId = conversation.id;
+
+      if (coachConversation) {
+        await run(async () => {
+          const result = coachConversation.processTurn(
+            Object.freeze({
+              id: `coach-conv:${Date.now()}`,
+              conversationId,
+              sessionId: sessionIdRef.current,
+              athleteId: athleteId ?? "athlete:1",
+              message: content,
+              intentHint: null,
+              metadata: EMPTY_COACH_CONVERSATION_METADATA,
+              createdAt: new Date().toISOString(),
+            }),
+          );
+          if (result.sessionId) {
+            sessionIdRef.current = result.sessionId;
+          }
+          setLastCoachResult(result);
+
+          return sendCoachingReplyUseCase(service, {
+            conversationId,
+            content,
+            assistantContent: result.message,
+            onConversationUpdate: (updated) => {
+              setConversation(updated);
+            },
+          });
+        }, conversationId);
+        return;
+      }
+
       if (!promptContext) {
         setError("Prompt context is required to send a message.");
         return;
       }
 
-      const conversationId = conversation.id;
       await run(
         async () => {
           const next = await sendMessageUseCase(service, {
@@ -212,6 +260,8 @@ export function useCoachConversation({
       );
     },
     [
+      athleteId,
+      coachConversation,
       conversation,
       invokeSession,
       promptContext,
@@ -219,6 +269,17 @@ export function useCoachConversation({
       service,
       syncStreamState,
     ],
+  );
+
+  const attachWorkoutPlan = useCallback(
+    (plan: WorkoutPlan) => {
+      if (!coachConversation) return;
+      coachConversation.attachWorkoutPlan(plan);
+      if (plan.sessionId) {
+        sessionIdRef.current = plan.sessionId;
+      }
+    },
+    [coachConversation],
   );
 
   const retryMessage = useCallback(
@@ -317,6 +378,7 @@ export function useCoachConversation({
       await service.clearConversation(conversation?.id);
       setConversation(null);
       sessionIdRef.current = null;
+      setLastCoachResult(null);
     } catch (caughtError: unknown) {
       setError(
         caughtError instanceof Error
@@ -342,8 +404,11 @@ export function useCoachConversation({
     isRestoring,
     currentStream,
     error,
+    lastCoachResult,
+    sessionId: sessionIdRef.current,
     startConversation,
     sendMessage,
+    attachWorkoutPlan,
     retryMessage,
     cancelStream,
     closeConversation,

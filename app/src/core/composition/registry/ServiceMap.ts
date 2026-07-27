@@ -11,6 +11,7 @@ import type { ContextFusionService } from "../../../features/context-fusion/serv
 import type { DecisionEngineService } from "../../../features/decision-engine/services/DecisionEngineService";
 import type { RecommendationEngineService } from "../../../features/recommendation-engine/services/RecommendationEngineService";
 import type { WorkoutGenerationPipelineService } from "../../../features/workout-generation-pipeline/services/WorkoutGenerationPipelineService";
+import type { CoachConversationService } from "../../../features/coach-conversation/services/CoachConversationService";
 import type { ExerciseSelectionService } from "../../../features/exercise-selection/services/ExerciseSelectionService";
 import type { ProgramGenerationService } from "../../../features/program-generation/services/ProgramGenerationService";
 import type { ProgrammingService } from "../../../features/programming/services/ProgrammingService";
@@ -47,6 +48,7 @@ export interface ServiceMap {
   DecisionEngineService: DecisionEngineService;
   RecommendationEngineService: RecommendationEngineService;
   WorkoutGenerationPipelineService: WorkoutGenerationPipelineService;
+  CoachConversationService: CoachConversationService;
 }
 
 export type ServiceToken = keyof ServiceMap;
@@ -75,4 +77,5 @@ export const SERVICE_TOKENS = [
   "DecisionEngineService",
   "RecommendationEngineService",
   "WorkoutGenerationPipelineService",
+  "CoachConversationService",
 ] as const satisfies readonly ServiceToken[];

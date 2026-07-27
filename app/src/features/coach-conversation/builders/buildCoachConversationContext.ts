@@ -1,0 +1,43 @@
+import type { SessionResult } from "../../coaching-session/models/SessionResult";
+import type { WorkoutPlan } from "../../workout-generation-pipeline/models/WorkoutPlan";
+import type { CoachConversationContext } from "../models/CoachConversationContext";
+import type { CoachConversationIntent } from "../models/CoachConversationIntent";
+import type { CoachConversationRequest } from "../models/CoachConversationRequest";
+
+export interface BuildCoachConversationContextInput {
+  readonly id: string;
+  readonly request: CoachConversationRequest;
+  readonly intent: CoachConversationIntent;
+  readonly sessionId: string | null;
+  readonly workoutPlan: WorkoutPlan | null;
+  readonly session: SessionResult | null;
+  readonly memoryHints?: readonly string[];
+  readonly createdAt: string;
+}
+
+export function buildCoachConversationContext(
+  input: BuildCoachConversationContextInput,
+): CoachConversationContext {
+  const plan = input.workoutPlan;
+  const recommendationTitles =
+    plan?.recommendationPackage?.recommendations.map((item) => item.title) ??
+    Object.freeze([]);
+  const recoveryNotes = plan?.notes.recoveryNotes ?? Object.freeze([]);
+  const progressionCue = plan?.progression.cue ?? null;
+
+  return Object.freeze({
+    id: input.id,
+    request: input.request,
+    intent: input.intent,
+    sessionId: input.sessionId,
+    conversationId: input.request.conversationId,
+    athleteId: input.request.athleteId,
+    workoutPlan: plan,
+    session: input.session,
+    recommendationTitles: Object.freeze([...recommendationTitles]),
+    recoveryNotes: Object.freeze([...recoveryNotes]),
+    progressionCue,
+    memoryHints: Object.freeze([...(input.memoryHints ?? [])]),
+    createdAt: input.createdAt,
+  });
+}
