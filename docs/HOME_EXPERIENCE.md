@@ -120,3 +120,5 @@ No conversation changes. Conversation continues to use existing orchestration. T
 Registers `HomeExperienceService` (depends on `CoachTimelineService` + `PlanHistoryService` + `ProactiveInsightsService` + `ExplainableCoachingSessionService`).
 
 Athlete Daily Brief (Sprint 27.2) composes Home Experience and the same coaching domains into a daily brief for dashboard presentation ([DAILY_BRIEF.md](./DAILY_BRIEF.md), ADR-090).
+
+Weekly Coach Report (Sprint 27.3) composes Daily Brief, Home Experience, and the same coaching domains into a weekly coaching review ([WEEKLY_REPORT.md](./WEEKLY_REPORT.md), ADR-091).

@@ -111,3 +111,5 @@ Registers `ExplainableCoachingSessionService` (depends on `CoachTimelineService`
 Home Experience (Sprint 27.1) consumes the latest explainable session for the Home coach card ([HOME_EXPERIENCE.md](./HOME_EXPERIENCE.md), ADR-089).
 
 Athlete Daily Brief (Sprint 27.2) consumes the latest explainable session for the Daily Brief coach message ([DAILY_BRIEF.md](./DAILY_BRIEF.md), ADR-090).
+
+Weekly Coach Report (Sprint 27.3) consumes the latest explainable session for executive summary, recommendations, and evidence projection ([WEEKLY_REPORT.md](./WEEKLY_REPORT.md), ADR-091).

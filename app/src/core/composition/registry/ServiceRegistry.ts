@@ -161,4 +161,8 @@ export class ServiceRegistry {
   getDailyBriefService(): ServiceMap["DailyBriefService"] {
     return this.resolve("DailyBriefService");
   }
+
+  getWeeklyCoachReportService(): ServiceMap["WeeklyCoachReportService"] {
+    return this.resolve("WeeklyCoachReportService");
+  }
 }

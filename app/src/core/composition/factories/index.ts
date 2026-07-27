@@ -84,3 +84,6 @@ export type { HomeExperienceFactoryDeps } from "./HomeExperienceFactory";
 
 export { DailyBriefFactory } from "./DailyBriefFactory";
 export type { DailyBriefFactoryDeps } from "./DailyBriefFactory";
+
+export { WeeklyCoachReportFactory } from "./WeeklyCoachReportFactory";
+export type { WeeklyCoachReportFactoryDeps } from "./WeeklyCoachReportFactory";

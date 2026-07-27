@@ -116,3 +116,5 @@ Explainable Coaching Session (Sprint 26.1) consumes generated insights as eviden
 Home Experience (Sprint 27.1) surfaces critical/top insights on the Home dashboard via composition only ([HOME_EXPERIENCE.md](./HOME_EXPERIENCE.md), ADR-089).
 
 Athlete Daily Brief (Sprint 27.2) surfaces critical insights and the top recommendation in the Daily Brief insights section ([DAILY_BRIEF.md](./DAILY_BRIEF.md), ADR-090).
+
+Weekly Coach Report (Sprint 27.3) surfaces weekly patterns, important findings, and top insights in the Weekly Coach Report insights section ([WEEKLY_REPORT.md](./WEEKLY_REPORT.md), ADR-091).

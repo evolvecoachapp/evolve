@@ -180,6 +180,9 @@ Home Experience                  ← Sprint 27.1 product (implemented) — compo
 Athlete Daily Brief              ← Sprint 27.2 product (implemented) — compose coaching knowledge into deterministic daily brief
   (`app/src/features/daily-brief/`)
   ↓
+Weekly Coach Report              ← Sprint 27.3 product (implemented) — compose week into deterministic coaching review
+  (`app/src/features/weekly-report/`)
+  ↓
 Athlete State Engine             ← Sprint 22.1 (implemented) — immutable athlete truth aggregated from specialists
   (`app/src/features/athlete-state/`)
   ↓
@@ -1164,6 +1167,19 @@ Full detail: [HOME_EXPERIENCE.md](./HOME_EXPERIENCE.md). ADR-089: [DECISIONS.md]
 | **Design** | **Compose existing architecture only. No new engines. No LLM. No persistence. No scheduler. No notifications. No UI redesign.** |
 
 Full detail: [DAILY_BRIEF.md](./DAILY_BRIEF.md). ADR-090: [DECISIONS.md](./DECISIONS.md).
+
+### Weekly Coach Report (`features/weekly-report`) — Sprint 27.3 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Deterministic weekly coaching review composed from existing coaching knowledge (not a PDF, not a UI, not an LLM summary) |
+| **Flow** | Athlete State → Coach Timeline → Plan History → Workout → Nutrition → Recovery → Goal Progress → Proactive Insights → Explainable Coaching Session → Daily Brief → Weekly Coach Report → Dashboard / Export |
+| **Models** | `WeeklyCoachReport`, `WeeklyExecutiveSummary`, `WeeklyWorkoutReport`, `WeeklyNutritionReport`, `WeeklyRecoveryReport`, `WeeklyGoalReport`, `WeeklyInsightReport`, `WeeklyDecisionReport`, `WeeklyRecommendationReport`, `WeeklyEvidence`, `WeeklyConfidence`, `WeeklyReportResult` |
+| **Services** | `buildExecutiveSummary`, `buildWorkoutReport`, `buildNutritionReport`, `buildRecoveryReport`, `buildGoalReport`, `buildInsightReport`, `buildDecisionReport`, `buildRecommendationReport`, `buildEvidence`, `calculateWeeklyConfidence`, `buildWeeklyCoachReport`, `validateWeeklyCoachReport`, `WeeklyCoachReportService` |
+| **Integration** | Home Experience / Daily Brief / Workout / Nutrition / Recovery / Goal / Timeline / Plan History / Insights / Explainable Session / Decision / Recommendation; Composition Root `WeeklyCoachReportService` |
+| **Design** | **Compose existing architecture only. No new engines. No LLM. No persistence. No scheduler. No notifications. No PDF. No UI redesign.** |
+
+Full detail: [WEEKLY_REPORT.md](./WEEKLY_REPORT.md). ADR-091: [DECISIONS.md](./DECISIONS.md).
 
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 

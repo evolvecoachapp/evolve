@@ -2733,4 +2733,33 @@ Composition Root registers `DailyBriefService` (ADR-090), depending on Home Expe
 
 ---
 
-*New decisions are appended as Decision 091, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 091: Weekly Coach Report Composition (Sprint 27.3 product)
+
+**Date:** 2026-07-28
+**Status:** Accepted
+
+**Context:**
+Athletes need a structured weekly coaching review of the current week. PDFs, UI redesigns, and LLM summaries are the wrong abstraction. EVOLVE already owns Athlete State, Coach Timeline, Plan History, Workout, Nutrition, Recovery, Goal Progress, Proactive Insights, Explainable Coaching Session, Daily Brief, Decision Engine, and Recommendation Engine. A new weekly report engine would duplicate existing logic.
+
+**Decision:**
+Introduce `features/weekly-report` as a **composition-only layer** that assembles existing domain outputs into an immutable `WeeklyCoachReport`:
+
+Athlete State → Coach Timeline → Plan History → Workout → Nutrition → Recovery → Goal Progress → Proactive Insights → Explainable Coaching Session → Daily Brief → Weekly Coach Report → Dashboard / Export.
+
+Executive Summary, Workout / Nutrition / Recovery / Goal / Insight / Decision / Recommendation reports, evidence projection, and confidence are deterministic projections of existing evidence — no new engines, no LLM, no invented state. Dashboard application APIs expose Weekly Coach Report / Executive Summary / section getters — presentation only. Conversation orchestration is unchanged. No PDF generation, persistence, scheduler, notifications, or background jobs.
+
+Composition Root registers `WeeklyCoachReportService` (ADR-091), depending on Daily Brief, Home Experience, and the same coaching domain services.
+
+**Alternatives considered:**
+- **New Weekly Report / coaching summary engine** — rejected: sprint forbids new engines; must compose existing architecture.
+- **LLM-generated report / confidence** — rejected: must stay deterministic and evidence-backed.
+- **PDF generation / UI redesign / export implementation** — rejected: domain artifact and dashboard APIs only; presentation consumers are out of scope.
+- **Persistence / background scheduler / notifications** — rejected: sprint constraints.
+
+**Consequences:**
+- Documentation: [WEEKLY_REPORT.md](./WEEKLY_REPORT.md), [DAILY_BRIEF.md](./DAILY_BRIEF.md), [HOME_EXPERIENCE.md](./HOME_EXPERIENCE.md), [COACHING_SESSION.md](./COACHING_SESSION.md), [PROACTIVE_INSIGHTS.md](./PROACTIVE_INSIGHTS.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- Weekly Coach Report models are immutable; domain engines remain the source of truth.
+
+---
+
+*New decisions are appended as Decision 092, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

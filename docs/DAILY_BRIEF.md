@@ -132,3 +132,9 @@ No conversation changes. The Daily Brief is generated independently from chat.
 ## Composition Root
 
 Registers `DailyBriefService` (depends on `HomeExperienceService` + `CoachTimelineService` + `PlanHistoryService` + `ProactiveInsightsService` + `ExplainableCoachingSessionService`).
+
+---
+
+## Downstream
+
+Weekly Coach Report (Sprint 27.3) composes Daily Brief and the same coaching domains into a weekly coaching review ([WEEKLY_REPORT.md](./WEEKLY_REPORT.md), ADR-091).
