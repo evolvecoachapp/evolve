@@ -3,8 +3,8 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
-**Last Updated:** 2026-07-28  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-104). Append only — never renumber.
+**Last Updated:** 2026-07-29  
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-105). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -3127,4 +3127,34 @@ Extend Infrastructure `LoggingAdapter` contract (`adapterId: "logging"`) alongsi
 
 ---
 
-*New decisions are appended as Decision 104, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 105: Architecture Consolidation Complete (Sprint 30.7 product)
+
+**Date:** 2026-07-29
+**Status:** Accepted
+
+**Context:**
+Phase 30 delivered Persistence Contracts, Infrastructure Contracts, and six adapter foundations (SQLite, Repositories, Authentication, Synchronization, Backend, Logging). Before Product Development (Phase 31), EVOLVE required a full architecture audit to confirm dependency direction, Composition Root integrity, public APIs, naming, documentation alignment, and production readiness — without introducing features or redesigning modules.
+
+**Decision:**
+Declare **Architecture Consolidation Complete** for the Phase 29–30 foundation track:
+
+1. Publish [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md) as the Sprint 30.7 audit deliverable (overview, strengths, weaknesses, refactors, technical debt, production readiness, risks, future recommendations, MVP readiness).
+2. Affirm the permanent dependency rule: Domain/features → contracts → (Composition Root) → infrastructure adapters; Domain never imports `infrastructure/*`.
+3. Affirm Composition Root as the sole registration owner for the typed `ServiceMap` (Training + Coaching + Persistence/Infrastructure foundations).
+4. Perform only documentation alignment and safe consistency improvements (e.g. Composition Root public factory export parity); no business features, no module redesign, no architecture rewrite.
+5. Treat Phase 30 adapters as **replaceable seams** (mocks / local orchestration). Real providers ship later behind the same contracts with new ADRs.
+6. Use PROJECT_STATE + ARCHITECTURE + ARCHITECTURE_REVIEW as sprint/status sources of truth for this track; ROADMAP/TASKS remain historically stale until a dedicated docs refresh.
+
+**Alternatives considered:**
+- **Redesign Composition Root / collapse adapter modules now** — rejected: sprint forbids redesign; architecture is sound enough for Phase 31.
+- **Wire real Auth/HTTP/OpenTelemetry/SQLite RN providers now** — rejected: would mix production providers into a consolidation sprint; seams stay mock until explicit product/ops sprints.
+- **Skip written audit and proceed to Phase 31** — rejected: multi-year development requires an explicit readiness gate and recorded debt.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Phase 31 Product Development may proceed on the existing architecture without structural rewrite.
+- Remaining debt (CI/CD, real providers, port injection into use-cases, barrel narrowing, Plan repository) is tracked in ARCHITECTURE_REVIEW.md — not blocking consolidation acceptance.
+
+---
+
+*New decisions are appended as Decision 105, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

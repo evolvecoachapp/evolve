@@ -3,9 +3,9 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-28  
+**Last Updated:** 2026-07-29  
 **Purpose:** Concise system architecture — layers, patterns, dependency flow.  
-**Source of Truth:** Partial — summary only; deep reference is [EVOLVE_ARCHITECTURE.md](../.cursor/rules/EVOLVE_ARCHITECTURE.md).
+**Source of Truth:** Partial — summary only; deep reference is [EVOLVE_ARCHITECTURE.md](../.cursor/rules/EVOLVE_ARCHITECTURE.md). Architecture consolidation: [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md) (Sprint 30.7 / ADR-105).
 
 See [TECH_STACK.md](./TECH_STACK.md) for versions. Onboarding: [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md).
 
@@ -192,12 +192,18 @@ Athlete Snapshot                 ← Sprint 28.2 product (implemented) — immut
 Unified Athlete Workspace        ← Sprint 28.3 product (implemented) — canonical immutable athlete read model
   (`app/src/features/unified-workspace/`)
   ↓
+Athlete Identity Foundation      ← Sprint 29.1 product (implemented) — immutable identity layer for production features
+  (`app/src/features/athlete-identity/`)
+  ↓
+Runtime Environment Foundation   ← Sprint 29.2 product (implemented) — immutable execution-environment layer for production features
+  (`app/src/features/runtime-environment/`)
+  ↓
 Persistence Contract Foundation  ← Sprint 29.3 product (implemented) — immutable persistence contracts for future adapters
   (`app/src/core/persistence/`)
   ↓
 Infrastructure Adapter Contracts ← Sprint 29.4 product (implemented) — immutable infrastructure adapter contracts for future external services
   (`app/src/core/infrastructure/`)
-
+  ↓
 SQLite Infrastructure Adapter   ← Sprint 30.1 product (implemented) — first production SQLite storage adapter behind Persistence Contracts
   (`app/src/infrastructure/sqlite/`)
   ↓
@@ -216,11 +222,8 @@ Backend API Adapter Foundation ← Sprint 30.5 product (implemented) — first M
 Logging & Observability Adapter Foundation ← Sprint 30.6 product (implemented) — first Mock Logger behind Logging Contracts
   (`app/src/infrastructure/logging/`)
   ↓
-Runtime Environment Foundation   ← Sprint 29.2 product (implemented) — immutable execution-environment layer for production features
-  (`app/src/features/runtime-environment/`)
-  ↓
-Athlete Identity Foundation      ← Sprint 29.1 product (implemented) — immutable identity layer for production features
-  (`app/src/features/athlete-identity/`)
+Architecture Consolidation       ← Sprint 30.7 product (implemented) — architecture review & production-readiness audit (no features)
+  (`docs/ARCHITECTURE_REVIEW.md`)
   ↓
 Athlete State Engine             ← Sprint 22.1 (implemented) — immutable athlete truth aggregated from specialists
   (`app/src/features/athlete-state/`)
@@ -401,21 +404,22 @@ Full runtime detail: [AI_SYSTEM.md](./AI_SYSTEM.md). AI Runtime: [AI_RUNTIME.md]
 
 Full detail: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md).
 
-### Composition Root & Dependency Injection (`core/composition`) — Sprint 17.9 + 23.1
+### Composition Root & Dependency Injection (`core/composition`) — Sprint 17.9 + 23.1 + Phase 29–30
 
 | Aspect | Implementation |
 |--------|----------------|
-| **Purpose** | Centralized object creation and dependency wiring for pipeline services |
-| **Flow** | Application → Composition Root → `ApplicationContainer` → `ServiceRegistry` → Factories + thin adapters → Feature Services |
+| **Purpose** | Centralized object creation and dependency wiring for pipeline + foundation services |
+| **Flow** | Application → Composition Root → `ApplicationContainer` → `ServiceRegistry` → Factories + thin adapters → Feature Services / Infrastructure Adapters |
 | **Container** | Register / resolve, singleton + transient lifecycles, freeze after init, duplicate/missing/circular/late validation |
-| **Registry** | Typed `ServiceMap` for Training Intelligence **and** Coaching Architecture (Capability → Routing → Collaboration → Supervisor → Session → Athlete State → Context Fusion → Decision → Recommendation) |
-| **Factories** | Creation-only factories (no business logic) |
+| **Registry** | Typed `ServiceMap` (55 tokens): Training Intelligence, Coaching Architecture, Persistence/Infrastructure contracts, SQLite, Repository Adapters, Auth, Sync, Backend, Logging |
+| **Factories** | Creation-only factories (no business logic); Phase 29–30 composition factories wrap infrastructure factories |
 | **Adapters** | Thin port adapters between coaching modules + legacy Recommendation Engine bridge (`RecommendationEngineBridge` / `DefaultRecommendationService` facade) |
-| **Providers** | Configuration, in-memory repositories, default strategies |
+| **Providers** | Configuration, in-memory training repositories, default strategies |
+| **Infrastructure wiring** | `PersistenceContractsFactory`, `InfrastructureAdapterFactory`, `SQLiteAdapterFactory`, `RepositoryAdapterFactory`, `AuthenticationFactory`, `SynchronizationFactory`, `BackendFactory`, `LoggerFactory` |
 | **Application API** | Use-cases / Coach / Dashboard resolve defaults via `resolveService(token)` — no manual `new` |
-| **Design** | **Wiring only.** No AI, networking, persistence, UI, caching layer, analytics, or engine/business logic changes |
+| **Design** | **Wiring only.** Factories create objects; no AI/business logic in the Composition Root. Persistence/infra adapters are owned here; Domain never imports them. |
 
-Full detail: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
+Full detail: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Consolidation: [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md).
 
 ### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
 
@@ -1403,6 +1407,17 @@ Full detail: [BACKEND_API_ADAPTER.md](./BACKEND_API_ADAPTER.md). ADR-103: [DECIS
 
 Full detail: [LOGGING_ADAPTER.md](./LOGGING_ADAPTER.md). ADR-104: [DECISIONS.md](./DECISIONS.md).
 
+### Architecture Consolidation (Sprint 30.7 product)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Complete architecture audit before Product Development (Phase 31) — review, validate, consolidate; no business features |
+| **Scope** | Domain, Application, Infrastructure, Composition Root, dependency direction, adapters/factories/registries, public APIs, naming, documentation, tests |
+| **Deliverable** | [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md) — strengths, weaknesses, refactors, debt, production readiness, risks, MVP readiness |
+| **Cleanup** | Composition Root public factory exports aligned with `factories/index.ts`; documentation aligned with Phase 29–30 wiring |
+| **ADR** | ADR-105 |
+| **Design** | **Review only.** No new features; no module redesign; no business-logic changes |
+
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 
 | Aspect | Implementation |
@@ -1706,5 +1721,16 @@ AIOrchestrator.process_message (async)
 | 035 | Integration Testing Framework is isolated test infrastructure |
 | 036 | Composition Root owns mobile pipeline DI |
 | 037 | Decision Intelligence is a structured domain explanation layer |
+| 095 | Athlete Identity Foundation |
+| 096 | Runtime Environment Foundation |
+| 097 | Persistence Contract Foundation |
+| 098 | Infrastructure Adapter Contracts |
+| 099 | SQLite Infrastructure Adapter |
+| 100 | Repository Adapter Integration |
+| 101 | Authentication Adapter Foundation |
+| 102 | Synchronization Adapter Foundation |
+| 103 | Backend API Adapter Foundation |
+| 104 | Logging & Observability Adapter Foundation |
+| 105 | Architecture Consolidation Complete (Sprint 30.7) |
 
-Full list: [DECISIONS.md](./DECISIONS.md)
+Full list: [DECISIONS.md](./DECISIONS.md). Audit: [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md).

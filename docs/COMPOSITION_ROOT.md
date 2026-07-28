@@ -3,11 +3,11 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-27  
-**Purpose:** Document the mobile Composition Root, Dependency Container, factories, providers, registry, and service lifecycle (Sprint 17.9 + Sprint 23.1 coaching integration + Sprint 23.2 legacy consolidation).  
+**Last Updated:** 2026-07-29  
+**Purpose:** Document the mobile Composition Root, Dependency Container, factories, providers, registry, and service lifecycle (Sprint 17.9 + Sprint 23.1 coaching integration + Sprint 23.2 legacy consolidation + Phase 29–30 persistence/infrastructure wiring).  
 **Source of Truth:** Yes — for Composition Root layout and DI rules on mobile.
 
-Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [AI_SYSTEM.md](./AI_SYSTEM.md), [DECISIONS.md](./DECISIONS.md) (ADR-036).
+Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md), [AI_SYSTEM.md](./AI_SYSTEM.md), [DECISIONS.md](./DECISIONS.md) (ADR-036, ADR-105).
 
 ---
 
@@ -20,22 +20,24 @@ Composition Root
   ↓
 Dependency Container (ApplicationContainer)
   ↓
-Service Registry (typed ServiceMap)
+Service Registry (typed ServiceMap — 55 tokens)
   ↓
 Factories + thin port adapters (object creation / wiring only)
   ↓
-Feature Services
+Feature Services  |  Persistence/Infra Contracts  |  Infrastructure Adapters
   ↓
-Training Intelligence  |  Coaching Architecture Pipeline
+Training Intelligence  |  Coaching Architecture Pipeline  |  SQLite / Repos / Auth / Sync / Backend / Logging
 ```
 
 Rules:
 
-- The **Composition Root** is the only place allowed to wire/instantiate pipeline services for application defaults.
+- The **Composition Root** is the only place allowed to wire/instantiate registered pipeline and foundation services for application defaults.
 - Application code **requests** services; it must not manually `new` them.
 - Factories contain **no business logic** — creation and wiring only.
 - Port adapters are **thin** — structural mapping between module contracts only.
-- Current providers remain **in-memory** (no persistence, networking, AI, UI, caching layer, or analytics).
+- Training Intelligence providers remain **in-memory** for engine defaults.
+- Persistence and Infrastructure **implementations** are created only in the Composition Root and must never be imported by Domain/features.
+- Domain depends on **contracts** (`core/persistence`, `core/infrastructure`); Composition Root binds contracts to adapters.
 
 Module: `app/src/core/composition/`.
 
@@ -61,7 +63,7 @@ CompositionRoot
            └─ ProgramGenerationOrchestrator → (six leaf services)
 ```
 
-### Coaching Architecture (Sprint 23.1)
+### Coaching Architecture (Sprint 23.1+)
 
 ```
 AgentCapabilityService
@@ -79,12 +81,28 @@ RecoveryAgentService─┘
                  └─ RecommendationEngineService
 ```
 
+Product composition services (Home, Daily Brief, Weekly Report, Workspaces, Identity, Runtime Environment, Plan History/Restore, Timeline, Insights, Explainable Session, Coach Conversation, Workout Generation Pipeline) are also registered in the same container.
+
+### Persistence & Infrastructure (Phase 29–30)
+
+```
+PersistenceContractsFactory → PersistenceContractRegistry / RepositoryRegistry / StorageContractRegistry
+InfrastructureAdapterFactory → InfrastructureAdapterRegistry (contracts metadata)
+SQLiteAdapterFactory → SQLiteConnection / SQLiteAdapter / SQLiteRepositories
+RepositoryAdapterFactory → RepositoryAdapterRegistry / RepositoryAdapters
+AuthenticationFactory → AuthenticationRegistry / MockAuthenticationProvider / AuthenticationFactory
+SynchronizationFactory → SynchronizationRegistry / SynchronizationEngine / SynchronizationFactory
+BackendFactory → BackendRegistry / MockBackendProvider / BackendFactory
+LoggerFactory → LoggerRegistry / MockLogger / LoggerFactory
+```
+
 Execution entry points:
 
 | Entry | Path |
 |-------|------|
 | Coach UI | `createCoachConversationRuntime` → `CoachingSessionService` → Supervisor → Routing → Collaboration → Agents |
 | Dashboard recommendations | `weightUpdatedPipeline` → `RecommendationEngineBridge` → Recommendation Engine ← Decision ← Context Fusion ← Athlete State |
+| Persistence / infra | `resolveService("SQLiteAdapter" \| "RepositoryAdapters" \| "MockAuthenticationProvider" \| …)` |
 
 Legacy `decisionEngine` / `recommendations` modules remain as **compatibility
 facades** (Sprint 23.2). Application recommendation generation defaults to the
@@ -119,11 +137,13 @@ Public API (`app/src/core/composition`):
 
 Bootstrap sequence:
 
-1. Merge configuration (locked to in-memory / default strategies).
+1. Merge configuration (locked to in-memory / default strategies for training providers).
 2. Register all `SERVICE_TOKENS` with factories.
 3. `validate()` — required tokens present; eager resolve surfaces circular/invalid factories.
 4. `freeze()` — reject late registrations.
 5. `ServiceRegistry.assertIntegrity()`.
+
+Default lifecycle: **singleton** (`preferSingletons: true`). Prefer singletons for the SQLite graph.
 
 ---
 
@@ -159,6 +179,25 @@ Bootstrap sequence:
 | `PlanHistoryFactory` | `PlanHistoryService` (append-only versions) |
 | `PlanRestoreFactory` | `PlanRestoreService` (history → new version) |
 | `CoachConversationFactory` | `CoachConversationService` (pipeline + history + restore) |
+| `CoachTimelineFactory` / `ProactiveInsightsFactory` / `ExplainableCoachingSessionFactory` | Product coaching composition |
+| `HomeExperienceFactory` / `DailyBriefFactory` / `WeeklyCoachReportFactory` | Dashboard composition |
+| `AthleteWorkspaceFactory` / `AthleteSnapshotFactory` / `UnifiedWorkspaceFactory` | Workspace composition |
+| `AthleteIdentityFactory` / `RuntimeEnvironmentFactory` | Identity + runtime environment |
+
+### Persistence & Infrastructure (Phase 29–30)
+
+| Factory | Creates / registers |
+|---------|---------------------|
+| `PersistenceContractsFactory` | Contract registries (no I/O) |
+| `InfrastructureAdapterFactory` | Adapter contract registry (metadata) |
+| `SQLiteAdapterFactory` | Connection + Adapter + Repositories |
+| `RepositoryAdapterFactory` | Adapter registry + Persistence-bound adapters |
+| `AuthenticationFactory` | Registry + MockAuthenticationProvider |
+| `SynchronizationFactory` | Registry + SynchronizationEngine |
+| `BackendFactory` | Registry + MockBackendProvider |
+| `LoggerFactory` | Registry + MockLogger |
+
+Composition factories are thin wrappers over `infrastructure/*` factories. Prefer importing composition aliases from `core/composition` when wiring application defaults.
 
 Factories accept explicit deps from providers / container resolves. Feature-level `create*Service()` helpers remain for unit tests and optional overrides; application defaults go through the Composition Root.
 
@@ -180,76 +219,21 @@ Located in `app/src/core/composition/adapters/`:
 
 ---
 
-## Dependency Injection
-
-`ApplicationContainer<ServiceMap>`:
-
-| Capability | Behavior |
-|------------|----------|
-| Register | `register(token, factory, { lifecycle })` |
-| Resolve | `resolve(token)` |
-| Duplicate prevention | Throws `DuplicateRegistrationError` |
-| Missing registration | Throws `MissingRegistrationError` |
-| Circular deps | Throws `CircularDependencyError` (resolution stack) |
-| Invalid factory result | Throws `InvalidResolutionError` |
-| Late registration | Throws `ContainerFrozenError` after `freeze()` |
-| Graph validation | Throws `DependencyValidationError` for missing required tokens |
-
-Typed registry: extend `ServiceMap` + `SERVICE_TOKENS`, then register in `CompositionRoot.create`.
-
----
-
 ## Service Lifecycle
 
-| Lifecycle | Behavior |
-|-----------|----------|
-| `singleton` (default) | One instance per container; created on first resolve |
-| `transient` | New instance on every resolve |
-
-Pipeline services default to **singleton** (`preferSingletons: true`). Set `preferSingletons: false` in composition options to register them as transient (tests / isolated wiring).
+| Mode | Behavior |
+|------|----------|
+| `singleton` (default) | One instance per token for the container lifetime |
+| `transient` | New instance per resolve — **avoid for SQLite graph** |
 
 ---
 
-## Application Consumption
+## Integrity Rules
 
-```ts
-import { resolveService } from "../../../core/composition";
+- Every `SERVICE_TOKENS` entry must be registered exactly once.
+- Container freezes after bootstrap — no late registration.
+- Circular dependencies fail at validate/eager resolve.
+- Domain/features must not import `app/src/infrastructure/*`.
+- Real providers replace mocks via the same Factory → Registry → Composition Root path (new ADR per swap).
 
-export async function generateWorkoutProgram(
-  request: WorkoutGenerationRequest,
-  service = resolveService("ProgramGenerationService"),
-) {
-  return service.generateWorkoutProgram(request);
-}
-```
-
-Coach chat resolves `CoachingSessionService` via `createCoachConversationRuntime()`. Dashboard recommendations resolve `RecommendationEngineService` via the compatibility bridge.
-
-Callers may still inject a service explicitly (tests). Defaults never call `new` or feature factories directly.
-
----
-
-## Providers
-
-| Provider | Responsibility |
-|----------|----------------|
-| `ConfigurationProvider` | Frozen `CompositionConfiguration` |
-| `RepositoryProvider` | In-memory repositories (feature defaults) |
-| `StrategyProvider` | Default strategies / assessments |
-
-Future external services plug in by extending providers — not by changing application use-cases.
-
----
-
-## Testing
-
-Unit suites under `app/src/core/composition/__tests__/`:
-
-- Container registration / resolution
-- Singleton vs transient
-- Factory creation
-- Registry integrity
-- Dependency validation (missing, duplicate, circular, late, freeze)
-- Coaching pipeline integration (session + recommendation bridge)
-
-Use `resetCompositionRoot()` in `afterEach` when touching the process-wide root.
+See [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md) for consolidation findings (Sprint 30.7).
