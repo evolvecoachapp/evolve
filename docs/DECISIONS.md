@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-28  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-098). Append only — never renumber.
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-099). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -2965,4 +2965,31 @@ Composition Root registers `InfrastructureAdapterRegistry` via `InfrastructureAd
 
 ---
 
-*New decisions are appended as Decision 098, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 099: SQLite Infrastructure Adapter (Sprint 30.1 product)
+
+**Date:** 2026-07-28
+**Status:** Accepted
+
+**Context:**
+EVOLVE Persistence Contracts (ADR-097) and Infrastructure Adapter Contracts (ADR-098) are in place. Production readiness requires a first real storage adapter. Binding Domain features directly to SQLite, Expo SQLite, or React Native APIs would violate Clean Architecture. Introducing cloud sync, authentication, networking, or business logic in the adapter would violate sprint scope.
+
+**Decision:**
+Introduce `infrastructure/sqlite` as the **SQLite Infrastructure Adapter** (first production infrastructure adapter):
+
+Domain → Persistence Contracts → SQLite Adapter → SQLite Database.
+
+Connection layer covers `SQLiteConnection` / `SQLiteConnectionFactory` / `SQLiteSession` / `SQLiteTransaction` / `ConnectionHealth`. Repository implementations cover Athlete / Identity / Workspace / Snapshot / Timeline / Workout / Nutrition / Recovery / Settings / Runtime against Persistence Contracts only. Pure mappers convert `PersistenceRecord` ↔ `SQLiteRow`. Transactions support `begin` / `commit` / `rollback` with no retry logic. Health exposes `isConnected` / `databaseVersion` / `storageUsage` / `adapterVersion`. Application APIs expose `getSQLiteHealth` / `getSQLiteRepositories` / `getSQLiteConnection`. Composition Root registers `SQLiteConnection` / `SQLiteAdapter` / `SQLiteRepositories` via `SQLiteAdapterFactory`. The engine is a pure TypeScript SQLite-compatible store (no Expo / React Native / native bindings in this sprint). Domain never imports SQLite. No cloud sync, authentication, networking, business logic, or AI.
+
+**Alternatives considered:**
+- **Use Expo SQLite / React Native SQLite now** — rejected: sprint forbids Expo and React Native APIs in the adapter boundary.
+- **Bind Domain repositories directly to SQLite** — rejected: Domain must depend only on Persistence Contracts.
+- **Add cloud sync / auth / networking in the adapter** — rejected: out of sprint scope.
+- **Add `better-sqlite3` native binding** — rejected for this sprint: keep the adapter free of native Node/RN bindings so Jest typecheck/tests remain portable; native drivers can replace the engine later without changing contracts.
+
+**Consequences:**
+- Documentation: [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- Future native SQLite drivers must implement the same connection/repository contracts; Domain remains unaware of SQLite.
+
+---
+
+*New decisions are appended as Decision 099, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

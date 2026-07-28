@@ -197,6 +197,9 @@ Persistence Contract Foundation  ← Sprint 29.3 product (implemented) — immut
   ↓
 Infrastructure Adapter Contracts ← Sprint 29.4 product (implemented) — immutable infrastructure adapter contracts for future external services
   (`app/src/core/infrastructure/`)
+
+SQLite Infrastructure Adapter   ← Sprint 30.1 product (implemented) — first production SQLite storage adapter behind Persistence Contracts
+  (`app/src/infrastructure/sqlite/`)
   ↓
 Runtime Environment Foundation   ← Sprint 29.2 product (implemented) — immutable execution-environment layer for production features
   (`app/src/features/runtime-environment/`)
@@ -1291,6 +1294,21 @@ Full detail: [PERSISTENCE_CONTRACTS.md](./PERSISTENCE_CONTRACTS.md). ADR-097: [D
 | **Design** | **Contracts only. No SQLite. No PostgreSQL. No Firebase. No Supabase. No HTTP. No REST. No GraphQL. No SDK imports. No Expo. No React Native. No network. No filesystem. No persistence. No business logic.** |
 
 Full detail: [INFRASTRUCTURE_ADAPTERS.md](./INFRASTRUCTURE_ADAPTERS.md). ADR-098: [DECISIONS.md](./DECISIONS.md).
+
+### SQLite Infrastructure Adapter (`infrastructure/sqlite`) — Sprint 30.1 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | First production infrastructure adapter implementing Persistence Contracts + Infrastructure `StorageAdapter` against a SQLite-compatible engine |
+| **Flow** | Domain → Persistence Contracts → SQLite Adapter → SQLite Database |
+| **Connection** | `SQLiteConnection` / `SQLiteConnectionFactory` / `SQLiteSession` / `SQLiteTransaction` / `ConnectionHealth` |
+| **Repositories** | Athlete / Identity / Workspace / Snapshot / Timeline / Workout / Nutrition / Recovery / Settings / Runtime |
+| **Mappers** | Pure `PersistenceRecord` ↔ `SQLiteRow` mappers (no domain logic) |
+| **Health** | `isConnected` / `databaseVersion` / `storageUsage` / `adapterVersion` |
+| **Integration** | Composition Root via `SQLiteAdapterFactory`; application APIs `getSQLiteHealth` / `getSQLiteRepositories` / `getSQLiteConnection` |
+| **Design** | **Infrastructure only. Domain never imports SQLite. No React Native. No Expo. No cloud sync. No authentication. No networking. No business logic. No AI.** |
+
+Full detail: [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md). ADR-099: [DECISIONS.md](./DECISIONS.md).
 
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 

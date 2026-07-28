@@ -29,6 +29,9 @@ import type { PersistenceContractRegistry } from "../../persistence/application/
 import type { RepositoryRegistry } from "../../persistence/application/RepositoryRegistry";
 import type { StorageContractRegistry } from "../../persistence/application/StorageContractRegistry";
 import type { InfrastructureAdapterRegistry } from "../../infrastructure/application/InfrastructureAdapterRegistry";
+import type { SQLiteConnection } from "../../../infrastructure/sqlite/connection/SQLiteConnection";
+import type { SQLiteAdapter } from "../../../infrastructure/sqlite/application/SQLiteAdapter";
+import type { SQLiteRepositories } from "../../../infrastructure/sqlite/repositories";
 import type { ExerciseSelectionService } from "../../../features/exercise-selection/services/ExerciseSelectionService";
 import type { ProgramGenerationService } from "../../../features/program-generation/services/ProgramGenerationService";
 import type { ProgrammingService } from "../../../features/programming/services/ProgrammingService";
@@ -83,6 +86,9 @@ export interface ServiceMap {
   RepositoryRegistry: RepositoryRegistry;
   StorageContractRegistry: StorageContractRegistry;
   InfrastructureAdapterRegistry: InfrastructureAdapterRegistry;
+  SQLiteConnection: SQLiteConnection;
+  SQLiteAdapter: SQLiteAdapter;
+  SQLiteRepositories: SQLiteRepositories;
 }
 
 export type ServiceToken = keyof ServiceMap;
@@ -129,4 +135,7 @@ export const SERVICE_TOKENS = [
   "RepositoryRegistry",
   "StorageContractRegistry",
   "InfrastructureAdapterRegistry",
+  "SQLiteConnection",
+  "SQLiteAdapter",
+  "SQLiteRepositories",
 ] as const satisfies readonly ServiceToken[];

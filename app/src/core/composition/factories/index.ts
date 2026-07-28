@@ -108,3 +108,9 @@ export type { PersistenceContractsFactoryDeps } from "./PersistenceContractsFact
 
 export { InfrastructureAdapterFactory } from "./InfrastructureAdapterFactory";
 export type { InfrastructureAdapterFactoryDeps } from "./InfrastructureAdapterFactory";
+
+export { SQLiteAdapterCompositionFactory as SQLiteAdapterFactory } from "./SQLiteAdapterFactory";
+export type {
+  SQLiteAdapterCompositionFactoryDeps as SQLiteAdapterFactoryDeps,
+  SQLiteAdapterBundle,
+} from "./SQLiteAdapterFactory";

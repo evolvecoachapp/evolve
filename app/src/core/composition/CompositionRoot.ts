@@ -37,6 +37,7 @@ import {
   RuntimeEnvironmentFactory,
   PersistenceContractsFactory,
   InfrastructureAdapterFactory,
+  SQLiteAdapterFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -354,6 +355,27 @@ export class CompositionRoot {
     );
 
     container.register(
+      "SQLiteConnection",
+      () => SQLiteAdapterFactory.create().connection,
+      { lifecycle },
+    );
+
+    container.register(
+      "SQLiteAdapter",
+      () => {
+        const connection = container.resolve("SQLiteConnection");
+        return SQLiteAdapterFactory.create({ connection }).adapter;
+      },
+      { lifecycle },
+    );
+
+    container.register(
+      "SQLiteRepositories",
+      () => container.resolve("SQLiteAdapter").repositories,
+      { lifecycle },
+    );
+
+    container.register(
       "WorkoutAgentService",
       () => WorkoutAgentFactory.create(),
       { lifecycle },
@@ -641,6 +663,18 @@ export class CompositionRoot {
 
   getInfrastructureAdapterRegistry(): ServiceMap["InfrastructureAdapterRegistry"] {
     return this.registry.resolve("InfrastructureAdapterRegistry");
+  }
+
+  getSQLiteConnection(): ServiceMap["SQLiteConnection"] {
+    return this.registry.resolve("SQLiteConnection");
+  }
+
+  getSQLiteAdapter(): ServiceMap["SQLiteAdapter"] {
+    return this.registry.resolve("SQLiteAdapter");
+  }
+
+  getSQLiteRepositories(): ServiceMap["SQLiteRepositories"] {
+    return this.registry.resolve("SQLiteRepositories");
   }
 
   getDecisionEngineService(): ServiceMap["DecisionEngineService"] {

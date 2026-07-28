@@ -69,6 +69,7 @@ export {
   RuntimeEnvironmentFactory,
   PersistenceContractsFactory,
   InfrastructureAdapterFactory,
+  SQLiteAdapterFactory,
 } from "./factories";
 
 export {

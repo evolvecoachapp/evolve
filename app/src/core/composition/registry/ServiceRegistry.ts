@@ -201,4 +201,16 @@ export class ServiceRegistry {
   getInfrastructureAdapterRegistry(): ServiceMap["InfrastructureAdapterRegistry"] {
     return this.resolve("InfrastructureAdapterRegistry");
   }
+
+  getSQLiteConnection(): ServiceMap["SQLiteConnection"] {
+    return this.resolve("SQLiteConnection");
+  }
+
+  getSQLiteAdapter(): ServiceMap["SQLiteAdapter"] {
+    return this.resolve("SQLiteAdapter");
+  }
+
+  getSQLiteRepositories(): ServiceMap["SQLiteRepositories"] {
+    return this.resolve("SQLiteRepositories");
+  }
 }
