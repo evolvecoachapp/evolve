@@ -33,6 +33,7 @@ import {
   AthleteWorkspaceFactory,
   AthleteSnapshotFactory,
   UnifiedWorkspaceFactory,
+  AthleteIdentityFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -308,6 +309,12 @@ export class CompositionRoot {
     );
 
     container.register(
+      "AthleteIdentityService",
+      () => AthleteIdentityFactory.create(),
+      { lifecycle },
+    );
+
+    container.register(
       "WorkoutAgentService",
       () => WorkoutAgentFactory.create(),
       { lifecycle },
@@ -571,6 +578,10 @@ export class CompositionRoot {
 
   getUnifiedWorkspaceService(): ServiceMap["UnifiedWorkspaceService"] {
     return this.registry.resolve("UnifiedWorkspaceService");
+  }
+
+  getAthleteIdentityService(): ServiceMap["AthleteIdentityService"] {
+    return this.registry.resolve("AthleteIdentityService");
   }
 
   getDecisionEngineService(): ServiceMap["DecisionEngineService"] {

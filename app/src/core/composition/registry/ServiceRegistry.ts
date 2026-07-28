@@ -177,4 +177,8 @@ export class ServiceRegistry {
   getUnifiedWorkspaceService(): ServiceMap["UnifiedWorkspaceService"] {
     return this.resolve("UnifiedWorkspaceService");
   }
+
+  getAthleteIdentityService(): ServiceMap["AthleteIdentityService"] {
+    return this.resolve("AthleteIdentityService");
+  }
 }

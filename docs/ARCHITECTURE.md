@@ -192,6 +192,9 @@ Athlete Snapshot                 ← Sprint 28.2 product (implemented) — immut
 Unified Athlete Workspace        ← Sprint 28.3 product (implemented) — canonical immutable athlete read model
   (`app/src/features/unified-workspace/`)
   ↓
+Athlete Identity Foundation      ← Sprint 29.1 product (implemented) — immutable identity layer for production features
+  (`app/src/features/athlete-identity/`)
+  ↓
 Athlete State Engine             ← Sprint 22.1 (implemented) — immutable athlete truth aggregated from specialists
   (`app/src/features/athlete-state/`)
   ↓
@@ -1226,9 +1229,19 @@ Full detail: [ATHLETE_SNAPSHOT.md](./ATHLETE_SNAPSHOT.md). ADR-093: [DECISIONS.m
 | **Integration** | Athlete State / Home Experience / Daily Brief / Weekly Report / Coach Timeline / Goal Progress / Workout / Nutrition / Recovery / Explainable Coaching Session / Athlete Snapshot; Composition Root `UnifiedWorkspaceService` |
 
 Full detail: [UNIFIED_WORKSPACE.md](./UNIFIED_WORKSPACE.md). ADR-094: [DECISIONS.md](./DECISIONS.md).
-| **Design** | **Compose existing architecture only. No new engines. No LLM. No persistence. No database. No cache. No cloud sync. No UI.** |
 
-Full detail: [ATHLETE_SNAPSHOT.md](./ATHLETE_SNAPSHOT.md). ADR-093: [DECISIONS.md](./DECISIONS.md).
+### Athlete Identity Foundation (`features/athlete-identity`) — Sprint 29.1 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Immutable identity foundation for future Auth / Sync / Cache / Analytics / Coach Portal / Sharing / Export (not authentication, not persistence, not Athlete State) |
+| **Flow** | Identity → Athlete State → Snapshot → Unified Workspace |
+| **Models** | `AthleteIdentity`, `AthleteProfile`, `AthletePreferences`, `AthleteSettings`, `AthleteLocale`, `AthleteUnits`, `AthleteTimeZone`, `AthleteMetadata`, `AthleteIdentityResult` |
+| **Services** | `buildProfile`, `buildPreferences`, `buildSettings`, `buildLocale`, `buildUnits`, `buildTimeZone`, `validateIdentity`, `buildAthleteIdentity`, `AthleteIdentityService` |
+| **Integration** | Composition Root `AthleteIdentityService` via `AthleteIdentityFactory`; application APIs `getAthleteIdentity` / `getAthleteProfile` / `getPreferences` / `getSettings` |
+| **Design** | **Immutable domain modeling only. No authentication. No OAuth/JWT. No persistence. No database. No cache. No cloud. No networking. No event bus. No scheduler. No LLM.** |
+
+Full detail: [ATHLETE_IDENTITY.md](./ATHLETE_IDENTITY.md). ADR-095: [DECISIONS.md](./DECISIONS.md).
 
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 

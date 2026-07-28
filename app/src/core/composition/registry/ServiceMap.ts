@@ -23,6 +23,7 @@ import type { WeeklyCoachReportService } from "../../../features/weekly-report/s
 import type { AthleteWorkspaceService } from "../../../features/intelligence-workspace/services/AthleteWorkspaceService";
 import type { AthleteSnapshotService } from "../../../features/athlete-snapshot/services/AthleteSnapshotService";
 import type { UnifiedWorkspaceService } from "../../../features/unified-workspace/services/UnifiedWorkspaceService";
+import type { AthleteIdentityService } from "../../../features/athlete-identity/services/AthleteIdentityService";
 import type { ExerciseSelectionService } from "../../../features/exercise-selection/services/ExerciseSelectionService";
 import type { ProgramGenerationService } from "../../../features/program-generation/services/ProgramGenerationService";
 import type { ProgrammingService } from "../../../features/programming/services/ProgrammingService";
@@ -71,6 +72,7 @@ export interface ServiceMap {
   AthleteWorkspaceService: AthleteWorkspaceService;
   AthleteSnapshotService: AthleteSnapshotService;
   UnifiedWorkspaceService: UnifiedWorkspaceService;
+  AthleteIdentityService: AthleteIdentityService;
 }
 
 export type ServiceToken = keyof ServiceMap;
@@ -111,4 +113,5 @@ export const SERVICE_TOKENS = [
   "AthleteWorkspaceService",
   "AthleteSnapshotService",
   "UnifiedWorkspaceService",
+  "AthleteIdentityService",
 ] as const satisfies readonly ServiceToken[];

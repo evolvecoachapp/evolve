@@ -65,6 +65,7 @@ export {
   AthleteWorkspaceFactory,
   AthleteSnapshotFactory,
   UnifiedWorkspaceFactory,
+  AthleteIdentityFactory,
 } from "./factories";
 
 export {

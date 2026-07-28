@@ -2849,4 +2849,33 @@ Composition Root registers `UnifiedWorkspaceService` (ADR-094), depending on Ath
 
 ---
 
-*New decisions are appended as Decision 094, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 095: Athlete Identity Foundation (Sprint 29.1 product)
+
+**Date:** 2026-07-28
+**Status:** Accepted
+
+**Context:**
+EVOLVE is entering Production Readiness. Future Authentication, Cloud Sync, Device Sync, Offline Cache, Notifications, Analytics, Coach Portal, Sharing, and Export systems need a stable immutable identity reference. Continuing to key those systems off transient Athlete State would couple production infrastructure to coaching state aggregation. Introducing authentication, OAuth, JWT, Firebase, Supabase, persistence, or networking in this sprint would violate the foundation-only scope.
+
+**Decision:**
+Introduce `features/athlete-identity` as an **immutable identity foundation** (not authentication, not persistence):
+
+Identity → Athlete State → Snapshot → Unified Workspace.
+
+`AthleteIdentity` aggregates Profile, Preferences, Settings, Locale, Units, TimeZone, and Metadata. Builders are single-responsibility composition functions. Application APIs expose Identity / Profile / Preferences / Settings getters — presentation only. Validation covers missing identity, duplicate identity, invalid locale / units / timezone, and missing immutable fields. No authentication, OAuth, JWT, Firebase, Supabase, database, persistence, cache, cloud, networking, event bus, scheduler, or LLM behavior is introduced.
+
+Composition Root registers `AthleteIdentityService` via `AthleteIdentityFactory` (ADR-095) with no upstream service dependencies.
+
+**Alternatives considered:**
+- **Reuse Athlete State identity slice as the production identity root** — rejected: Athlete State is transient coaching truth; production features must reference a dedicated immutable identity layer.
+- **Implement authentication / OAuth / JWT now** — rejected: sprint explicitly forbids authentication and token systems.
+- **Persist identity to database / cloud** — rejected: sprint forbids persistence, database, and cloud; future sync consumers will reference this model later.
+- **Fold identity into Unified Workspace / Snapshot** — rejected: identity must sit above Athlete State as the foundation reference, not as a workspace projection.
+
+**Consequences:**
+- Documentation: [ATHLETE_IDENTITY.md](./ATHLETE_IDENTITY.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- Athlete Identity models are immutable; future Auth / Sync / Cache / Analytics / Portal / Sharing / Export must reference Athlete Identity instead of transient Athlete State.
+
+---
+
+*New decisions are appended as Decision 095, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
