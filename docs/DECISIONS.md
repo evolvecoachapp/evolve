@@ -2791,4 +2791,33 @@ Composition Root registers `AthleteWorkspaceService` (ADR-092), depending on Ath
 
 ---
 
-*New decisions are appended as Decision 092, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 093: Athlete Snapshot Composition (Sprint 28.2 product)
+
+**Date:** 2026-07-28
+**Status:** Accepted
+
+**Context:**
+EVOLVE now has a complete Athlete Intelligence Workspace and upstream premium coaching artifacts. Future cloud, offline, cache, restore, export, and analytics needs require an immutable point-in-time athlete representation. Introducing persistence, ORM entities, an event store, or LLM-generated snapshots would violate the sprint constraints and duplicate existing domain logic.
+
+**Decision:**
+Introduce `features/athlete-snapshot` as a **composition-only layer** that assembles existing outputs into an immutable `AthleteSnapshot`:
+
+Athlete State → Home Experience → Daily Brief → Weekly Coach Report → Athlete Workspace → Coach Timeline → Explainable Coaching Session → Athlete Snapshot → Future Cloud / Offline / Cache / Restore / Export / Analytics.
+
+Identity, State, Workspace, Timeline, Coach, Metadata, Version, Evidence, and Integrity are deterministic projections of existing artifacts only. Athlete Workspace is projected without transformation. Evidence collects references only and never regenerates evidence. Dashboard application APIs expose Current Snapshot / Identity / State / Workspace / Timeline / Coach getters — presentation only. No persistence, database, ORM, event sourcing, cache, cloud sync, UI work, or LLM behavior is introduced.
+
+Composition Root registers `AthleteSnapshotService` (ADR-093), depending on Athlete State, Athlete Workspace, Coach Timeline, Explainable Coaching Session, and Weekly Coach Report services.
+
+**Alternatives considered:**
+- **Persisted snapshot store / ORM entity** — rejected: sprint explicitly forbids persistence and database models.
+- **Event-sourced athlete snapshot** — rejected: sprint forbids event sourcing; Coach Timeline remains the decision journal.
+- **LLM-generated athlete snapshot** — rejected: must remain deterministic and grounded in existing evidence.
+- **Cache / cloud sync layer now** — rejected: deferred to future consumers; this sprint only composes the immutable snapshot.
+
+**Consequences:**
+- Documentation: [ATHLETE_SNAPSHOT.md](./ATHLETE_SNAPSHOT.md), [INTELLIGENCE_WORKSPACE.md](./INTELLIGENCE_WORKSPACE.md), [WEEKLY_REPORT.md](./WEEKLY_REPORT.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- Athlete Snapshot models are immutable; underlying domain services remain the source of truth.
+
+---
+
+*New decisions are appended as Decision 093, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

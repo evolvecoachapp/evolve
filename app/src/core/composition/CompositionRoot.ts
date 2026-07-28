@@ -31,6 +31,7 @@ import {
   DailyBriefFactory,
   WeeklyCoachReportFactory,
   AthleteWorkspaceFactory,
+  AthleteSnapshotFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -268,6 +269,21 @@ export class CompositionRoot {
           explainableCoachingSession: container.resolve(
             "ExplainableCoachingSessionService",
           ),
+        }),
+      { lifecycle },
+    );
+
+    container.register(
+      "AthleteSnapshotService",
+      () =>
+        AthleteSnapshotFactory.create({
+          athleteState: container.resolve("AthleteStateService"),
+          athleteWorkspace: container.resolve("AthleteWorkspaceService"),
+          coachTimeline: container.resolve("CoachTimelineService"),
+          explainableCoachingSession: container.resolve(
+            "ExplainableCoachingSessionService",
+          ),
+          weeklyCoachReport: container.resolve("WeeklyCoachReportService"),
         }),
       { lifecycle },
     );
@@ -528,6 +544,10 @@ export class CompositionRoot {
 
   getAthleteWorkspaceService(): ServiceMap["AthleteWorkspaceService"] {
     return this.registry.resolve("AthleteWorkspaceService");
+  }
+
+  getAthleteSnapshotService(): ServiceMap["AthleteSnapshotService"] {
+    return this.registry.resolve("AthleteSnapshotService");
   }
 
   getDecisionEngineService(): ServiceMap["DecisionEngineService"] {

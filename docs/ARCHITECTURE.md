@@ -186,6 +186,9 @@ Weekly Coach Report              ← Sprint 27.3 product (implemented) — compo
 Athlete Intelligence Workspace   ← Sprint 28.1 product (implemented) — single immutable premium coaching read model
   (`app/src/features/intelligence-workspace/`)
   ↓
+Athlete Snapshot                 ← Sprint 28.2 product (implemented) — immutable point-in-time athlete representation
+  (`app/src/features/athlete-snapshot/`)
+  ↓
 Athlete State Engine             ← Sprint 22.1 (implemented) — immutable athlete truth aggregated from specialists
   (`app/src/features/athlete-state/`)
   ↓
@@ -1196,6 +1199,19 @@ Full detail: [WEEKLY_REPORT.md](./WEEKLY_REPORT.md). ADR-091: [DECISIONS.md](./D
 | **Design** | **Compose existing architecture only. No new engines. No LLM. No persistence. No caching. No scheduler. No UI redesign.** |
 
 Full detail: [INTELLIGENCE_WORKSPACE.md](./INTELLIGENCE_WORKSPACE.md). ADR-092: [DECISIONS.md](./DECISIONS.md).
+
+### Athlete Snapshot (`features/athlete-snapshot`) — Sprint 28.2 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Immutable point-in-time athlete representation composed from existing artifacts (not persistence, not a DB model, not an event store) |
+| **Flow** | Athlete State → Home Experience → Daily Brief → Weekly Coach Report → Athlete Workspace → Coach Timeline → Explainable Coaching Session → Athlete Snapshot → Future Cloud / Offline / Cache / Restore / Export / Analytics |
+| **Models** | `AthleteSnapshot`, `SnapshotIdentity`, `SnapshotState`, `SnapshotWorkspace`, `SnapshotTimeline`, `SnapshotCoach`, `SnapshotMetadata`, `SnapshotVersion`, `SnapshotEvidence`, `SnapshotIntegrity`, `SnapshotResult` |
+| **Services** | `buildIdentity`, `buildState`, `buildWorkspaceProjection`, `buildTimelineProjection`, `buildCoachProjection`, `buildMetadata`, `buildVersion`, `buildEvidence`, `validateIntegrity`, `validateSnapshot`, `buildAthleteSnapshot`, `AthleteSnapshotService` |
+| **Integration** | Athlete Workspace / Athlete State / Home Experience / Daily Brief / Weekly Coach Report / Coach Timeline / Explainable Coaching Session; Composition Root `AthleteSnapshotService` |
+| **Design** | **Compose existing architecture only. No new engines. No LLM. No persistence. No database. No cache. No cloud sync. No UI.** |
+
+Full detail: [ATHLETE_SNAPSHOT.md](./ATHLETE_SNAPSHOT.md). ADR-093: [DECISIONS.md](./DECISIONS.md).
 
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 

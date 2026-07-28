@@ -169,4 +169,8 @@ export class ServiceRegistry {
   getAthleteWorkspaceService(): ServiceMap["AthleteWorkspaceService"] {
     return this.resolve("AthleteWorkspaceService");
   }
+
+  getAthleteSnapshotService(): ServiceMap["AthleteSnapshotService"] {
+    return this.resolve("AthleteSnapshotService");
+  }
 }

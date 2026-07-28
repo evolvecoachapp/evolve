@@ -97,6 +97,8 @@ Composition layer only.
 
 Athlete Intelligence Workspace (Sprint 28.1) projects Weekly Coach Report without transformation into the single premium coaching read model ([INTELLIGENCE_WORKSPACE.md](./INTELLIGENCE_WORKSPACE.md), ADR-092).
 
+Athlete Snapshot (Sprint 28.2) reuses Weekly Coach Report week bounds only for immutable snapshot metadata ([ATHLETE_SNAPSHOT.md](./ATHLETE_SNAPSHOT.md), ADR-093).
+
 ---
 
 ## Evidence

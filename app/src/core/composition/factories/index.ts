@@ -90,3 +90,6 @@ export type { WeeklyCoachReportFactoryDeps } from "./WeeklyCoachReportFactory";
 
 export { AthleteWorkspaceFactory } from "./AthleteWorkspaceFactory";
 export type { AthleteWorkspaceFactoryDeps } from "./AthleteWorkspaceFactory";
+
+export { AthleteSnapshotFactory } from "./AthleteSnapshotFactory";
+export type { AthleteSnapshotFactoryDeps } from "./AthleteSnapshotFactory";
