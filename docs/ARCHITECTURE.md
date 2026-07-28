@@ -201,6 +201,9 @@ Infrastructure Adapter Contracts ← Sprint 29.4 product (implemented) — immut
 SQLite Infrastructure Adapter   ← Sprint 30.1 product (implemented) — first production SQLite storage adapter behind Persistence Contracts
   (`app/src/infrastructure/sqlite/`)
   ↓
+Repository Adapter Integration  ← Sprint 30.2 product (implemented) — Persistence Contracts bound to SQLite repositories via adapters
+  (`app/src/infrastructure/repositories/`)
+  ↓
 Runtime Environment Foundation   ← Sprint 29.2 product (implemented) — immutable execution-environment layer for production features
   (`app/src/features/runtime-environment/`)
   ↓
@@ -1309,6 +1312,20 @@ Full detail: [INFRASTRUCTURE_ADAPTERS.md](./INFRASTRUCTURE_ADAPTERS.md). ADR-098
 | **Design** | **Infrastructure only. Domain never imports SQLite. No React Native. No Expo. No cloud sync. No authentication. No networking. No business logic. No AI.** |
 
 Full detail: [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md). ADR-099: [DECISIONS.md](./DECISIONS.md).
+
+### Repository Adapter Integration (`infrastructure/repositories`) — Sprint 30.2 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | First production repository adapter layer binding Persistence Contracts to SQLite repositories |
+| **Flow** | Domain → Persistence Contracts → Repository Adapters → SQLite Repositories → SQLite Engine |
+| **Adapters** | Athlete / Identity / Workspace / Snapshot / Timeline / Workout / Nutrition / Recovery / Settings / Runtime |
+| **Registry** | `RepositoryAdapterRegistry` / `RepositoryAdapterMetadata` / `RepositoryAdapterResult` / `RepositoryAdapterRegistration` |
+| **Validation** | Missing repository / duplicate registrations / contract compliance / adapter registration / repository compatibility |
+| **Integration** | Composition Root via `RepositoryAdapterFactory`; application APIs `getRepositoryAdapters` / `getRepositoryAdapter` / `validateRepositoryAdapters` |
+| **Design** | **Infrastructure only. Delegation only. No domain changes. No SQLite in Domain. No business logic. No AI. No networking. No cloud. No auth. No cache. No sync.** |
+
+Full detail: [REPOSITORY_ADAPTERS.md](./REPOSITORY_ADAPTERS.md). ADR-100: [DECISIONS.md](./DECISIONS.md).
 
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 

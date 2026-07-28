@@ -32,6 +32,8 @@ import type { InfrastructureAdapterRegistry } from "../../infrastructure/applica
 import type { SQLiteConnection } from "../../../infrastructure/sqlite/connection/SQLiteConnection";
 import type { SQLiteAdapter } from "../../../infrastructure/sqlite/application/SQLiteAdapter";
 import type { SQLiteRepositories } from "../../../infrastructure/sqlite/repositories";
+import type { RepositoryAdapterRegistry } from "../../../infrastructure/repositories/registry/RepositoryAdapterRegistry";
+import type { RepositoryAdapters } from "../../../infrastructure/repositories/adapters";
 import type { ExerciseSelectionService } from "../../../features/exercise-selection/services/ExerciseSelectionService";
 import type { ProgramGenerationService } from "../../../features/program-generation/services/ProgramGenerationService";
 import type { ProgrammingService } from "../../../features/programming/services/ProgrammingService";
@@ -89,6 +91,8 @@ export interface ServiceMap {
   SQLiteConnection: SQLiteConnection;
   SQLiteAdapter: SQLiteAdapter;
   SQLiteRepositories: SQLiteRepositories;
+  RepositoryAdapterRegistry: RepositoryAdapterRegistry;
+  RepositoryAdapters: RepositoryAdapters;
 }
 
 export type ServiceToken = keyof ServiceMap;
@@ -138,4 +142,6 @@ export const SERVICE_TOKENS = [
   "SQLiteConnection",
   "SQLiteAdapter",
   "SQLiteRepositories",
+  "RepositoryAdapterRegistry",
+  "RepositoryAdapters",
 ] as const satisfies readonly ServiceToken[];

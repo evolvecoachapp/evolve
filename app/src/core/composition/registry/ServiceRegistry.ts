@@ -213,4 +213,12 @@ export class ServiceRegistry {
   getSQLiteRepositories(): ServiceMap["SQLiteRepositories"] {
     return this.resolve("SQLiteRepositories");
   }
+
+  getRepositoryAdapterRegistry(): ServiceMap["RepositoryAdapterRegistry"] {
+    return this.resolve("RepositoryAdapterRegistry");
+  }
+
+  getRepositoryAdapters(): ServiceMap["RepositoryAdapters"] {
+    return this.resolve("RepositoryAdapters");
+  }
 }

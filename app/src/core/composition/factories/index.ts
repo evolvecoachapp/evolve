@@ -114,3 +114,9 @@ export type {
   SQLiteAdapterCompositionFactoryDeps as SQLiteAdapterFactoryDeps,
   SQLiteAdapterBundle,
 } from "./SQLiteAdapterFactory";
+
+export { RepositoryAdapterCompositionFactory as RepositoryAdapterFactory } from "./RepositoryAdapterFactory";
+export type {
+  RepositoryAdapterCompositionFactoryDeps as RepositoryAdapterFactoryDeps,
+  RepositoryAdapterBundle,
+} from "./RepositoryAdapterFactory";

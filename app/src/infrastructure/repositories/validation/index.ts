@@ -1,0 +1,3 @@
+export {
+  validateRepositoryAdapterBundle,
+} from "./validateRepositoryAdapters";

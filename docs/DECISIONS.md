@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-28  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-099). Append only — never renumber.
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-100). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -2992,4 +2992,31 @@ Connection layer covers `SQLiteConnection` / `SQLiteConnectionFactory` / `SQLite
 
 ---
 
-*New decisions are appended as Decision 099, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 100: Repository Adapter Integration (Sprint 30.2 product)
+
+**Date:** 2026-07-28
+**Status:** Accepted
+
+**Context:**
+EVOLVE Persistence Contracts (ADR-097) and the SQLite Infrastructure Adapter (ADR-099) are in place. Application code still needs a dedicated repository adapter layer that implements Persistence Contracts by delegating to SQLite repositories. Binding Domain features directly to SQLite repositories, or embedding business / AI / networking logic in adapters, would violate Clean Architecture and sprint scope.
+
+**Decision:**
+Introduce `infrastructure/repositories` as the **Repository Adapter Layer** (first production repository adapter integration):
+
+Domain → Persistence Contracts → Repository Adapter Layer → SQLite Repositories → SQLite Engine.
+
+Adapters cover Athlete / Identity / Workspace / Snapshot / Timeline / Workout / Nutrition / Recovery / Settings / Runtime and delegate only to the corresponding SQLite repositories. Registry models cover RepositoryAdapterRegistry / RepositoryAdapterMetadata / RepositoryAdapterResult / RepositoryAdapterRegistration. Application APIs expose `getRepositoryAdapters` / `getRepositoryAdapter` / `validateRepositoryAdapters`. Validation covers missing repository, duplicate registrations, contract compliance, adapter registration, and repository compatibility. Composition Root registers `RepositoryAdapterRegistry` / `RepositoryAdapters` via `RepositoryAdapterFactory` using existing Persistence Contracts and SQLite repositories. No domain model changes. No business logic. No AI. No networking. No cloud. No authentication. No cache. No synchronization. Domain never imports SQLite.
+
+**Alternatives considered:**
+- **Bind Domain services directly to SQLite repositories** — rejected: Domain must depend only on Persistence Contracts.
+- **Add business / AI / sync logic inside adapters** — rejected: sprint forbids anything beyond delegation.
+- **Skip the adapter layer and expose SQLite repositories via Composition Root only** — rejected: application consumers need Persistence Contract-facing adapters as the integration seam.
+- **Include PlanRepositoryAdapter now** — rejected: SQLite Sprint 30.1 did not implement Plan; adapters stay aligned with existing SQLite repositories.
+
+**Consequences:**
+- Documentation: [REPOSITORY_ADAPTERS.md](./REPOSITORY_ADAPTERS.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- Future storage backends must supply repositories that fulfill Persistence Contracts; Domain remains unaware of SQLite and of concrete adapters.
+
+---
+
+*New decisions are appended as Decision 100, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

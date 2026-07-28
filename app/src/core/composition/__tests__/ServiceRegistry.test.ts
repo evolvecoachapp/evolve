@@ -57,6 +57,8 @@ describe("ServiceRegistry", () => {
       "SQLiteConnection",
       "SQLiteAdapter",
       "SQLiteRepositories",
+      "RepositoryAdapterRegistry",
+      "RepositoryAdapters",
     ]);
   });
 

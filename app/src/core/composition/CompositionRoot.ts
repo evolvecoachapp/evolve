@@ -38,6 +38,7 @@ import {
   PersistenceContractsFactory,
   InfrastructureAdapterFactory,
   SQLiteAdapterFactory,
+  RepositoryAdapterFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -375,6 +376,32 @@ export class CompositionRoot {
       { lifecycle },
     );
 
+    const createRepositoryAdapterBundle = (() => {
+      let bundle:
+        | ReturnType<typeof RepositoryAdapterFactory.create>
+        | undefined;
+      return () => {
+        if (!bundle) {
+          bundle = RepositoryAdapterFactory.create({
+            repositories: container.resolve("SQLiteRepositories"),
+          });
+        }
+        return bundle;
+      };
+    })();
+
+    container.register(
+      "RepositoryAdapterRegistry",
+      () => createRepositoryAdapterBundle().registry,
+      { lifecycle },
+    );
+
+    container.register(
+      "RepositoryAdapters",
+      () => createRepositoryAdapterBundle().adapters,
+      { lifecycle },
+    );
+
     container.register(
       "WorkoutAgentService",
       () => WorkoutAgentFactory.create(),
@@ -675,6 +702,14 @@ export class CompositionRoot {
 
   getSQLiteRepositories(): ServiceMap["SQLiteRepositories"] {
     return this.registry.resolve("SQLiteRepositories");
+  }
+
+  getRepositoryAdapterRegistry(): ServiceMap["RepositoryAdapterRegistry"] {
+    return this.registry.resolve("RepositoryAdapterRegistry");
+  }
+
+  getRepositoryAdapters(): ServiceMap["RepositoryAdapters"] {
+    return this.registry.resolve("RepositoryAdapters");
   }
 
   getDecisionEngineService(): ServiceMap["DecisionEngineService"] {

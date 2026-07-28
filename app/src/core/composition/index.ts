@@ -70,6 +70,7 @@ export {
   PersistenceContractsFactory,
   InfrastructureAdapterFactory,
   SQLiteAdapterFactory,
+  RepositoryAdapterFactory,
 } from "./factories";
 
 export {
