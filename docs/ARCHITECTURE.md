@@ -192,6 +192,9 @@ Athlete Snapshot                 ← Sprint 28.2 product (implemented) — immut
 Unified Athlete Workspace        ← Sprint 28.3 product (implemented) — canonical immutable athlete read model
   (`app/src/features/unified-workspace/`)
   ↓
+Persistence Contract Foundation  ← Sprint 29.3 product (implemented) — immutable persistence contracts for future adapters
+  (`app/src/core/persistence/`)
+  ↓
 Runtime Environment Foundation   ← Sprint 29.2 product (implemented) — immutable execution-environment layer for production features
   (`app/src/features/runtime-environment/`)
   ↓
@@ -1258,6 +1261,20 @@ Full detail: [ATHLETE_IDENTITY.md](./ATHLETE_IDENTITY.md). ADR-095: [DECISIONS.m
 | **Design** | **Immutable domain modeling only. No React Native. No Expo. No Device APIs. No networking. No persistence. No cache. No cloud. No event bus. No scheduler. No LLM. No business logic.** |
 
 Full detail: [RUNTIME_ENVIRONMENT.md](./RUNTIME_ENVIRONMENT.md). ADR-096: [DECISIONS.md](./DECISIONS.md).
+
+### Persistence Contract Foundation (`core/persistence`) — Sprint 29.3 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Immutable persistence contract foundation for future SQLite / PostgreSQL / Supabase / IndexedDB / AsyncStorage / Filesystem / Cloud Sync adapters (not storage, not adapters) |
+| **Flow** | Domain → Persistence Contracts → Future Adapters → Storage Technologies |
+| **Repository contracts** | `AthleteRepository`, `IdentityRepository`, `WorkspaceRepository`, `SnapshotRepository`, `TimelineRepository`, `PlanRepository`, `WorkoutRepository`, `NutritionRepository`, `RecoveryRepository`, `SettingsRepository`, `RuntimeRepository` |
+| **Storage ports** | `StorageReader`, `StorageWriter`, `StorageTransaction`, `StorageSession`, `StorageHealth`, `StorageMetadata`, `StorageResult` |
+| **Registries** | `PersistenceContractRegistry`, `RepositoryRegistry`, `StorageContractRegistry` |
+| **Integration** | Composition Root via `PersistenceContractsFactory`; application APIs `getPersistenceContracts` / `getRepositoryRegistry` / `validatePersistenceContracts` |
+| **Design** | **Contracts only. No SQLite. No PostgreSQL. No Supabase. No AsyncStorage. No Realm. No IndexedDB. No filesystem. No network. No persistence I/O. No serialization. No adapters. No DI framework. No business logic.** |
+
+Full detail: [PERSISTENCE_CONTRACTS.md](./PERSISTENCE_CONTRACTS.md). ADR-097: [DECISIONS.md](./DECISIONS.md).
 
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 

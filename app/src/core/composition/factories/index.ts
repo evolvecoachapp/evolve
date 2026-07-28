@@ -102,3 +102,6 @@ export type { AthleteIdentityFactoryDeps } from "./AthleteIdentityFactory";
 
 export { RuntimeEnvironmentFactory } from "./RuntimeEnvironmentFactory";
 export type { RuntimeEnvironmentFactoryDeps } from "./RuntimeEnvironmentFactory";
+
+export { PersistenceContractsFactory } from "./PersistenceContractsFactory";
+export type { PersistenceContractsFactoryDeps } from "./PersistenceContractsFactory";

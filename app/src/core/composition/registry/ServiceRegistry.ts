@@ -185,4 +185,16 @@ export class ServiceRegistry {
   getRuntimeEnvironmentService(): ServiceMap["RuntimeEnvironmentService"] {
     return this.resolve("RuntimeEnvironmentService");
   }
+
+  getPersistenceContractRegistry(): ServiceMap["PersistenceContractRegistry"] {
+    return this.resolve("PersistenceContractRegistry");
+  }
+
+  getRepositoryRegistry(): ServiceMap["RepositoryRegistry"] {
+    return this.resolve("RepositoryRegistry");
+  }
+
+  getStorageContractRegistry(): ServiceMap["StorageContractRegistry"] {
+    return this.resolve("StorageContractRegistry");
+  }
 }

@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-28  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-096). Append only — never renumber.  
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-097). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -2907,4 +2907,33 @@ Composition Root registers `RuntimeEnvironmentService` via `RuntimeEnvironmentFa
 
 ---
 
-*New decisions are appended as Decision 096, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 097: Persistence Contract Foundation (Sprint 29.3 product)
+
+**Date:** 2026-07-28
+**Status:** Accepted
+
+**Context:**
+EVOLVE is entering Production Readiness. Future SQLite, PostgreSQL, Supabase, IndexedDB, AsyncStorage, Filesystem, and Cloud Sync adapters need a stable immutable contract layer. Coupling the domain directly to any storage technology would violate Clean Architecture. Implementing storage, serialization, networking, or adapters in this sprint would violate the contracts-only scope.
+
+**Decision:**
+Introduce `core/persistence` as a **Persistence Contract Foundation** (not storage, not adapters):
+
+Domain → Persistence Contracts → Future Adapters → Storage Technologies.
+
+Repository contracts cover Athlete / Identity / Workspace / Snapshot / Timeline / Plan / Workout / Nutrition / Recovery / Settings / Runtime. Storage ports cover Reader / Writer / Transaction / Session / Health / Metadata / Result. Application APIs expose `getPersistenceContracts` / `getRepositoryRegistry` / `validatePersistenceContracts`. Validation covers duplicate repositories, missing contracts, invalid registrations, invalid metadata, and unsupported capabilities. Immutable error models cover repository-not-found, storage-unavailable, contract-violation, transaction-failure, and validation failures. No SQLite, PostgreSQL, Supabase, AsyncStorage, Realm, IndexedDB, filesystem, network, persistence I/O, serialization, adapters, DI framework, or business logic is introduced.
+
+Composition Root registers `PersistenceContractRegistry`, `RepositoryRegistry`, and `StorageContractRegistry` via `PersistenceContractsFactory` (ADR-097) with no storage adapter dependencies.
+
+**Alternatives considered:**
+- **Bind domain features directly to AsyncStorage / SQLite now** — rejected: domain must depend only on immutable contracts; storage technologies stay behind future adapters.
+- **Implement a concrete adapter in this sprint** — rejected: sprint explicitly forbids persistence implementations.
+- **Reuse `core/storage` string KV adapters as the domain persistence boundary** — rejected: `core/storage` is a low-level string I/O adapter layer; Persistence Contracts are the domain-facing repository/port foundation.
+- **Introduce a DI framework for repository wiring** — rejected: sprint forbids DI frameworks; Composition Root registration of contract registries is sufficient.
+
+**Consequences:**
+- Documentation: [PERSISTENCE_CONTRACTS.md](./PERSISTENCE_CONTRACTS.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- Future storage adapters must implement Persistence Contracts; the domain must never depend on concrete storage technologies.
+
+---
+
+*New decisions are appended as Decision 097, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

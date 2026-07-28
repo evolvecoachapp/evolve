@@ -46,6 +46,9 @@ describe("CompositionRoot coaching pipeline integration", () => {
     expect(root.resolve("UnifiedWorkspaceService")).toBeDefined();
     expect(root.resolve("AthleteIdentityService")).toBeDefined();
     expect(root.resolve("RuntimeEnvironmentService")).toBeDefined();
+    expect(root.resolve("PersistenceContractRegistry")).toBeDefined();
+    expect(root.resolve("RepositoryRegistry")).toBeDefined();
+    expect(root.resolve("StorageContractRegistry")).toBeDefined();
   });
 
   it("executes Conversation → Session → Supervisor path", () => {

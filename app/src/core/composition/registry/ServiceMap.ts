@@ -25,6 +25,9 @@ import type { AthleteSnapshotService } from "../../../features/athlete-snapshot/
 import type { UnifiedWorkspaceService } from "../../../features/unified-workspace/services/UnifiedWorkspaceService";
 import type { AthleteIdentityService } from "../../../features/athlete-identity/services/AthleteIdentityService";
 import type { RuntimeEnvironmentService } from "../../../features/runtime-environment/services/RuntimeEnvironmentService";
+import type { PersistenceContractRegistry } from "../../persistence/application/PersistenceContractRegistry";
+import type { RepositoryRegistry } from "../../persistence/application/RepositoryRegistry";
+import type { StorageContractRegistry } from "../../persistence/application/StorageContractRegistry";
 import type { ExerciseSelectionService } from "../../../features/exercise-selection/services/ExerciseSelectionService";
 import type { ProgramGenerationService } from "../../../features/program-generation/services/ProgramGenerationService";
 import type { ProgrammingService } from "../../../features/programming/services/ProgrammingService";
@@ -75,6 +78,9 @@ export interface ServiceMap {
   UnifiedWorkspaceService: UnifiedWorkspaceService;
   AthleteIdentityService: AthleteIdentityService;
   RuntimeEnvironmentService: RuntimeEnvironmentService;
+  PersistenceContractRegistry: PersistenceContractRegistry;
+  RepositoryRegistry: RepositoryRegistry;
+  StorageContractRegistry: StorageContractRegistry;
 }
 
 export type ServiceToken = keyof ServiceMap;
@@ -117,4 +123,7 @@ export const SERVICE_TOKENS = [
   "UnifiedWorkspaceService",
   "AthleteIdentityService",
   "RuntimeEnvironmentService",
+  "PersistenceContractRegistry",
+  "RepositoryRegistry",
+  "StorageContractRegistry",
 ] as const satisfies readonly ServiceToken[];

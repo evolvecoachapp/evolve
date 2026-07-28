@@ -35,6 +35,7 @@ import {
   UnifiedWorkspaceFactory,
   AthleteIdentityFactory,
   RuntimeEnvironmentFactory,
+  PersistenceContractsFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -322,6 +323,30 @@ export class CompositionRoot {
     );
 
     container.register(
+      "PersistenceContractRegistry",
+      () => PersistenceContractsFactory.create(),
+      { lifecycle },
+    );
+
+    container.register(
+      "RepositoryRegistry",
+      () =>
+        container
+          .resolve("PersistenceContractRegistry")
+          .getRepositoryRegistry(),
+      { lifecycle },
+    );
+
+    container.register(
+      "StorageContractRegistry",
+      () =>
+        container
+          .resolve("PersistenceContractRegistry")
+          .getStorageContractRegistry(),
+      { lifecycle },
+    );
+
+    container.register(
       "WorkoutAgentService",
       () => WorkoutAgentFactory.create(),
       { lifecycle },
@@ -593,6 +618,18 @@ export class CompositionRoot {
 
   getRuntimeEnvironmentService(): ServiceMap["RuntimeEnvironmentService"] {
     return this.registry.resolve("RuntimeEnvironmentService");
+  }
+
+  getPersistenceContractRegistry(): ServiceMap["PersistenceContractRegistry"] {
+    return this.registry.resolve("PersistenceContractRegistry");
+  }
+
+  getRepositoryRegistry(): ServiceMap["RepositoryRegistry"] {
+    return this.registry.resolve("RepositoryRegistry");
+  }
+
+  getStorageContractRegistry(): ServiceMap["StorageContractRegistry"] {
+    return this.registry.resolve("StorageContractRegistry");
   }
 
   getDecisionEngineService(): ServiceMap["DecisionEngineService"] {
