@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-28  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-097). Append only — never renumber.
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-098). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -2936,4 +2936,33 @@ Composition Root registers `PersistenceContractRegistry`, `RepositoryRegistry`, 
 
 ---
 
-*New decisions are appended as Decision 097, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 098: Infrastructure Adapter Contracts (Sprint 29.4 product)
+
+**Date:** 2026-07-28
+**Status:** Accepted
+
+**Context:**
+EVOLVE is entering Production Readiness. Future SQLite, PostgreSQL, Supabase, Firebase, Apple Health, Google Fit, Push, Analytics, Logging, and Feature Flag adapters need a stable immutable contract layer between the domain and every external infrastructure. Coupling the domain directly to any infrastructure technology would violate Clean Architecture. Implementing SDKs, HTTP, databases, or adapters in this sprint would violate the contracts-only scope.
+
+**Decision:**
+Introduce `core/infrastructure` as **Infrastructure Adapter Contracts** (not implementations):
+
+Domain → Infrastructure Adapter Contracts → Future Adapter Implementations → External Services.
+
+Adapter contracts cover Storage / Authentication / Notification / Analytics / Synchronization / Logging / FeatureFlag / HealthPlatform / Media / Export / Import / Clock / IdentifierGenerator / ConfigurationProvider. Registry models cover AdapterRegistry / AdapterMetadata / AdapterCapabilities / AdapterRegistration / AdapterResult. Application APIs expose `getAdapterRegistry` / `getRegisteredAdapters` / `validateAdapters` / `getAdapterCapabilities`. Validation covers duplicate adapters, missing adapters, unsupported capabilities, invalid metadata, and invalid registrations. Immutable error models cover adapter-not-found, capability, registration, validation, and unsupported-adapter failures. No SQLite, PostgreSQL, Firebase, Supabase, HTTP, REST, GraphQL, SDK imports, Expo, React Native, network, filesystem, persistence, or business logic is introduced.
+
+Composition Root registers `InfrastructureAdapterRegistry` via `InfrastructureAdapterFactory` (ADR-098) with no adapter implementation dependencies.
+
+**Alternatives considered:**
+- **Bind domain features directly to Firebase / Supabase / SQLite now** — rejected: domain must depend only on immutable adapter contracts; infrastructure technologies stay behind future implementations.
+- **Implement a concrete adapter in this sprint** — rejected: sprint explicitly forbids implementations, SDKs, cloud, database, HTTP.
+- **Reuse `core/storage` string KV adapters as the infrastructure boundary** — rejected: `core/storage` is a low-level string I/O adapter layer; Infrastructure Adapter Contracts are the broader domain-facing infrastructure seam (storage is one of many adapters).
+- **Reuse Persistence Contracts as the only infrastructure boundary** — rejected: Persistence Contracts cover repository/storage ports; Infrastructure Adapter Contracts cover the wider external-service surface (auth, push, analytics, health, flags, etc.).
+
+**Consequences:**
+- Documentation: [INFRASTRUCTURE_ADAPTERS.md](./INFRASTRUCTURE_ADAPTERS.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- Future infrastructure adapters must implement Infrastructure Adapter Contracts; the domain must never depend on concrete external services.
+
+---
+
+*New decisions are appended as Decision 098, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

@@ -28,6 +28,7 @@ import type { RuntimeEnvironmentService } from "../../../features/runtime-enviro
 import type { PersistenceContractRegistry } from "../../persistence/application/PersistenceContractRegistry";
 import type { RepositoryRegistry } from "../../persistence/application/RepositoryRegistry";
 import type { StorageContractRegistry } from "../../persistence/application/StorageContractRegistry";
+import type { InfrastructureAdapterRegistry } from "../../infrastructure/application/InfrastructureAdapterRegistry";
 import type { ExerciseSelectionService } from "../../../features/exercise-selection/services/ExerciseSelectionService";
 import type { ProgramGenerationService } from "../../../features/program-generation/services/ProgramGenerationService";
 import type { ProgrammingService } from "../../../features/programming/services/ProgrammingService";
@@ -81,6 +82,7 @@ export interface ServiceMap {
   PersistenceContractRegistry: PersistenceContractRegistry;
   RepositoryRegistry: RepositoryRegistry;
   StorageContractRegistry: StorageContractRegistry;
+  InfrastructureAdapterRegistry: InfrastructureAdapterRegistry;
 }
 
 export type ServiceToken = keyof ServiceMap;
@@ -126,4 +128,5 @@ export const SERVICE_TOKENS = [
   "PersistenceContractRegistry",
   "RepositoryRegistry",
   "StorageContractRegistry",
+  "InfrastructureAdapterRegistry",
 ] as const satisfies readonly ServiceToken[];

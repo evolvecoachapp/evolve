@@ -49,6 +49,7 @@ describe("CompositionRoot coaching pipeline integration", () => {
     expect(root.resolve("PersistenceContractRegistry")).toBeDefined();
     expect(root.resolve("RepositoryRegistry")).toBeDefined();
     expect(root.resolve("StorageContractRegistry")).toBeDefined();
+    expect(root.resolve("InfrastructureAdapterRegistry")).toBeDefined();
   });
 
   it("executes Conversation → Session → Supervisor path", () => {

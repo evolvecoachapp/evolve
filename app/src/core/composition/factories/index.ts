@@ -105,3 +105,6 @@ export type { RuntimeEnvironmentFactoryDeps } from "./RuntimeEnvironmentFactory"
 
 export { PersistenceContractsFactory } from "./PersistenceContractsFactory";
 export type { PersistenceContractsFactoryDeps } from "./PersistenceContractsFactory";
+
+export { InfrastructureAdapterFactory } from "./InfrastructureAdapterFactory";
+export type { InfrastructureAdapterFactoryDeps } from "./InfrastructureAdapterFactory";

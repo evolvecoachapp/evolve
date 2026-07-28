@@ -197,4 +197,8 @@ export class ServiceRegistry {
   getStorageContractRegistry(): ServiceMap["StorageContractRegistry"] {
     return this.resolve("StorageContractRegistry");
   }
+
+  getInfrastructureAdapterRegistry(): ServiceMap["InfrastructureAdapterRegistry"] {
+    return this.resolve("InfrastructureAdapterRegistry");
+  }
 }

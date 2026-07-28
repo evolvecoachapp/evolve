@@ -195,6 +195,9 @@ Unified Athlete Workspace        ← Sprint 28.3 product (implemented) — canon
 Persistence Contract Foundation  ← Sprint 29.3 product (implemented) — immutable persistence contracts for future adapters
   (`app/src/core/persistence/`)
   ↓
+Infrastructure Adapter Contracts ← Sprint 29.4 product (implemented) — immutable infrastructure adapter contracts for future external services
+  (`app/src/core/infrastructure/`)
+  ↓
 Runtime Environment Foundation   ← Sprint 29.2 product (implemented) — immutable execution-environment layer for production features
   (`app/src/features/runtime-environment/`)
   ↓
@@ -1275,6 +1278,19 @@ Full detail: [RUNTIME_ENVIRONMENT.md](./RUNTIME_ENVIRONMENT.md). ADR-096: [DECIS
 | **Design** | **Contracts only. No SQLite. No PostgreSQL. No Supabase. No AsyncStorage. No Realm. No IndexedDB. No filesystem. No network. No persistence I/O. No serialization. No adapters. No DI framework. No business logic.** |
 
 Full detail: [PERSISTENCE_CONTRACTS.md](./PERSISTENCE_CONTRACTS.md). ADR-097: [DECISIONS.md](./DECISIONS.md).
+
+### Infrastructure Adapter Contracts (`core/infrastructure`) — Sprint 29.4 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Immutable infrastructure adapter contracts for future SQLite / PostgreSQL / Supabase / Firebase / Apple Health / Google Fit / Push / Analytics / Logging / Feature Flag implementations (not implementations) |
+| **Flow** | Domain → Infrastructure Adapter Contracts → Future Adapter Implementations → External Services |
+| **Adapter contracts** | `StorageAdapter`, `AuthenticationAdapter`, `NotificationAdapter`, `AnalyticsAdapter`, `SynchronizationAdapter`, `LoggingAdapter`, `FeatureFlagAdapter`, `HealthPlatformAdapter`, `MediaAdapter`, `ExportAdapter`, `ImportAdapter`, `ClockAdapter`, `IdentifierGenerator`, `ConfigurationProvider` |
+| **Registry models** | `AdapterRegistry`, `AdapterMetadata`, `AdapterCapabilities`, `AdapterRegistration`, `AdapterResult` |
+| **Integration** | Composition Root via `InfrastructureAdapterFactory`; application APIs `getAdapterRegistry` / `getRegisteredAdapters` / `validateAdapters` / `getAdapterCapabilities` |
+| **Design** | **Contracts only. No SQLite. No PostgreSQL. No Firebase. No Supabase. No HTTP. No REST. No GraphQL. No SDK imports. No Expo. No React Native. No network. No filesystem. No persistence. No business logic.** |
+
+Full detail: [INFRASTRUCTURE_ADAPTERS.md](./INFRASTRUCTURE_ADAPTERS.md). ADR-098: [DECISIONS.md](./DECISIONS.md).
 
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 

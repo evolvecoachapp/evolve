@@ -68,6 +68,7 @@ export {
   AthleteIdentityFactory,
   RuntimeEnvironmentFactory,
   PersistenceContractsFactory,
+  InfrastructureAdapterFactory,
 } from "./factories";
 
 export {

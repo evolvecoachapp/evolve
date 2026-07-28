@@ -53,6 +53,7 @@ describe("ServiceRegistry", () => {
       "PersistenceContractRegistry",
       "RepositoryRegistry",
       "StorageContractRegistry",
+      "InfrastructureAdapterRegistry",
     ]);
   });
 

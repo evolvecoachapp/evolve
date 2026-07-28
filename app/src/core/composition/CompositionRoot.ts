@@ -36,6 +36,7 @@ import {
   AthleteIdentityFactory,
   RuntimeEnvironmentFactory,
   PersistenceContractsFactory,
+  InfrastructureAdapterFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -347,6 +348,12 @@ export class CompositionRoot {
     );
 
     container.register(
+      "InfrastructureAdapterRegistry",
+      () => InfrastructureAdapterFactory.create(),
+      { lifecycle },
+    );
+
+    container.register(
       "WorkoutAgentService",
       () => WorkoutAgentFactory.create(),
       { lifecycle },
@@ -630,6 +637,10 @@ export class CompositionRoot {
 
   getStorageContractRegistry(): ServiceMap["StorageContractRegistry"] {
     return this.registry.resolve("StorageContractRegistry");
+  }
+
+  getInfrastructureAdapterRegistry(): ServiceMap["InfrastructureAdapterRegistry"] {
+    return this.registry.resolve("InfrastructureAdapterRegistry");
   }
 
   getDecisionEngineService(): ServiceMap["DecisionEngineService"] {
