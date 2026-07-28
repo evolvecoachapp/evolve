@@ -2820,4 +2820,33 @@ Composition Root registers `AthleteSnapshotService` (ADR-093), depending on Athl
 
 ---
 
-*New decisions are appended as Decision 093, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 094: Unified Athlete Workspace Composition (Sprint 28.3 product)
+
+**Date:** 2026-07-28
+**Status:** Accepted
+
+**Context:**
+EVOLVE now has Athlete Snapshot and the full premium coaching artifact stack. Future Cloud Sync, Coach Portal, Web Dashboard, Mobile Dashboard, Export, Offline Cache, and Analytics consumers need a single canonical immutable read model. Introducing a new intelligence engine, persistence, cache, event bus, scheduler, or LLM-generated workspace would violate sprint constraints and duplicate existing composition.
+
+**Decision:**
+Introduce `features/unified-workspace` as a **composition-only layer** that aggregates existing athlete artifacts into an immutable `Workspace`:
+
+Athlete State → Home Experience → Daily Brief → Weekly Report → Coach Timeline → Explainable Coaching Session → Athlete Snapshot → Unified Athlete Workspace → Consumers.
+
+Header, Summary, Health, Goals, Workout, Nutrition, Recovery, Insights, Timeline, Coach, Snapshot, and Metadata are deterministic projections of existing artifacts only. Athlete Snapshot is projected without transformation. Application APIs expose Workspace / Summary / Health / Insights / Coach getters — presentation only. No persistence, database, cache, event bus, scheduler, UI work, business logic, or LLM behavior is introduced.
+
+Composition Root registers `UnifiedWorkspaceService` (ADR-094), depending on Athlete State, Home Experience, Daily Brief, Weekly Coach Report, Coach Timeline, Proactive Insights, Explainable Coaching Session, and Athlete Snapshot services.
+
+**Alternatives considered:**
+- **New intelligence / scoring engine** — rejected: sprint explicitly forbids new engines and business logic.
+- **Persisted workspace store / cache** — rejected: sprint forbids persistence and cache layers.
+- **Event bus / scheduler-driven assembly** — rejected: sprint forbids event bus and scheduler.
+- **LLM-generated unified workspace** — rejected: must remain deterministic and grounded in existing artifacts.
+
+**Consequences:**
+- Documentation: [UNIFIED_WORKSPACE.md](./UNIFIED_WORKSPACE.md), [ATHLETE_SNAPSHOT.md](./ATHLETE_SNAPSHOT.md), [INTELLIGENCE_WORKSPACE.md](./INTELLIGENCE_WORKSPACE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- Unified Athlete Workspace models are immutable; upstream domain services remain the source of truth.
+
+---
+
+*New decisions are appended as Decision 094, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

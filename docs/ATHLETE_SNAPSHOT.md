@@ -7,7 +7,7 @@
 **Purpose:** Document Athlete Snapshot composition — the immutable point-in-time athlete representation composed from existing EVOLVE artifacts.  
 **Source of Truth:** Yes — for Sprint 28.2 Athlete Snapshot on mobile.
 
-Related: [INTELLIGENCE_WORKSPACE.md](./INTELLIGENCE_WORKSPACE.md), [WEEKLY_REPORT.md](./WEEKLY_REPORT.md), [COACHING_SESSION.md](./COACHING_SESSION.md), [COACH_TIMELINE.md](./COACH_TIMELINE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [DECISIONS.md](./DECISIONS.md) (ADR-093).
+Related: [INTELLIGENCE_WORKSPACE.md](./INTELLIGENCE_WORKSPACE.md), [WEEKLY_REPORT.md](./WEEKLY_REPORT.md), [COACHING_SESSION.md](./COACHING_SESSION.md), [COACH_TIMELINE.md](./COACH_TIMELINE.md), [UNIFIED_WORKSPACE.md](./UNIFIED_WORKSPACE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [DECISIONS.md](./DECISIONS.md) (ADR-093).
 
 ---
 
@@ -52,6 +52,8 @@ Coach Timeline
 Explainable Coaching Session  
 ↓  
 Athlete Snapshot  
+↓  
+Unified Athlete Workspace  
 ↓  
 Future: Cloud / Offline / Cache / Restore / Export / Analytics
 
@@ -107,6 +109,12 @@ Integrity validation checks:
 ## Composition Root
 
 Registers `AthleteSnapshotService` (depends on `AthleteStateService` + `AthleteWorkspaceService` + `CoachTimelineService` + `ExplainableCoachingSessionService` + `WeeklyCoachReportService`).
+
+---
+
+## Downstream Consumer
+
+Unified Athlete Workspace (Sprint 28.3) projects Athlete Snapshot without transformation as the canonical workspace snapshot section ([UNIFIED_WORKSPACE.md](./UNIFIED_WORKSPACE.md), ADR-094).
 
 ---
 

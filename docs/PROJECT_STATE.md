@@ -68,6 +68,7 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Weekly Coach Report | `features/weekly-report` | Foundation complete (27.3) — compose athlete week into deterministic coaching review only |
 | Athlete Intelligence Workspace | `features/intelligence-workspace` | Foundation complete (28.1) — compose premium coaching artifacts into one immutable workspace read model only |
 | Athlete Snapshot | `features/athlete-snapshot` | Foundation complete (28.2) — compose immutable point-in-time athlete representation only |
+| Unified Athlete Workspace | `features/unified-workspace` | Foundation complete (28.3) — compose canonical immutable athlete read model only |
 
 These domains are TypeScript application modules with in-memory repositories. They are **not** backend HTTP APIs and do **not** write to PostgreSQL. The integration framework exercises the full pipeline without modifying engine behavior. Pipeline services are composed through `core/composition`. Decision Intelligence explains pipeline decisions without changing engine behavior. Workout Runtime consumes immutable `WorkoutSession` outputs without modifying Program Generation. Rest Runtime manages rest periods with injected elapsed time and may be owned by Workout Runtime. Domain Events record immutable lifecycle events from Workout/Rest Runtime into an ordered in-memory Event Stream for future subscribers. Performance Engine analyzes completed `WorkoutResult` + `EventStream` into immutable single-session snapshots without mutating execution or program generation. Achievement Engine detects Personal Records from Performance Snapshots via injected baselines without owning history, persistence, or gamification. Athlete History organizes immutable chronological domain facts from workout/performance/achievement outputs without persistence, AI, networking, storage, querying, or timeline UI. Recovery Intelligence derives deterministic recovery metrics/snapshots from Athlete History + Performance Snapshot without AI, recommendations, persistence, networking, predictions, sleep, or wearables. Insight Engine aggregates deterministic domain facts from Performance, Achievement, Recovery, and Athlete History into immutable Insight Snapshots without AI, recommendations, persistence, networking, prompts, LLM, or conversation. Coach Intelligence prepares immutable Coaching Context from Insight Snapshot (optionally referencing Recovery, History, Performance, Achievement) without AI, prompts, LLM providers, networking, HTTP, persistence, or conversation. Conversation Orchestrator prepares immutable Conversation Context from Coaching Context (optionally referencing Insight, Recovery, History, Performance, Achievement) without AI, prompts, LLM providers, networking, HTTP, persistence, or conversation generation. Prompt Composition Engine transforms Conversation Context into an immutable Prompt Package of structured blocks (optionally referencing Coaching Context / Insight Snapshot) without AI, networking, HTTP, OpenAI/Anthropic/Gemini/Ollama, or provider-specific string prompt generation.
 
@@ -166,14 +167,14 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 
 ## Last Completed Sprint
 
-**28.2 — Athlete Snapshot** (2026-07-28)
+**28.3 — Unified Athlete Workspace** (2026-07-28)
 
-- Athlete Snapshot composition (`features/athlete-snapshot`) — immutable point-in-time athlete representation
-- Projections: Identity / State / Workspace / Timeline / Coach / Metadata / Version / Evidence / Integrity
-- Dashboard APIs: `getCurrentSnapshot`, `getSnapshotIdentity`, `getSnapshotState`, `getSnapshotWorkspace`, `getSnapshotTimeline`, `getSnapshotCoach`
-- Composition Root: `AthleteSnapshotService`
-- ADR-093; docs: ATHLETE_SNAPSHOT, INTELLIGENCE_WORKSPACE, WEEKLY_REPORT, ARCHITECTURE
-- No persistence; no database; no cache; no cloud sync; no UI; no LLM
+- Unified Athlete Workspace composition (`features/unified-workspace`) — canonical immutable athlete read model
+- Projections: Header / Summary / Health / Goals / Workout / Nutrition / Recovery / Insights / Timeline / Coach / Snapshot / Metadata
+- Application APIs: `getWorkspace`, `getWorkspaceSummary`, `getWorkspaceHealth`, `getWorkspaceInsights`, `getWorkspaceCoach`
+- Composition Root: `UnifiedWorkspaceService`
+- ADR-094; docs: UNIFIED_WORKSPACE, ATHLETE_SNAPSHOT, ARCHITECTURE
+- No persistence; no database; no cache; no event bus; no scheduler; no LLM; composition only
 
 Previous: **28.1 — Athlete Intelligence Workspace** (2026-07-28)
 

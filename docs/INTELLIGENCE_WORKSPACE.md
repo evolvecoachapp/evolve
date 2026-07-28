@@ -7,7 +7,7 @@
 **Purpose:** Document Athlete Intelligence Workspace composition — the single immutable read model of the athlete's current premium coaching state.  
 **Source of Truth:** Yes — for Sprint 28.1 Athlete Intelligence Workspace on mobile.
 
-Related: [HOME_EXPERIENCE.md](./HOME_EXPERIENCE.md), [DAILY_BRIEF.md](./DAILY_BRIEF.md), [WEEKLY_REPORT.md](./WEEKLY_REPORT.md), [COACHING_SESSION.md](./COACHING_SESSION.md), [PROACTIVE_INSIGHTS.md](./PROACTIVE_INSIGHTS.md), [COACH_TIMELINE.md](./COACH_TIMELINE.md), [PLAN_HISTORY.md](./PLAN_HISTORY.md), [ATHLETE_SNAPSHOT.md](./ATHLETE_SNAPSHOT.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [DECISIONS.md](./DECISIONS.md) (ADR-092).
+Related: [HOME_EXPERIENCE.md](./HOME_EXPERIENCE.md), [DAILY_BRIEF.md](./DAILY_BRIEF.md), [WEEKLY_REPORT.md](./WEEKLY_REPORT.md), [COACHING_SESSION.md](./COACHING_SESSION.md), [PROACTIVE_INSIGHTS.md](./PROACTIVE_INSIGHTS.md), [COACH_TIMELINE.md](./COACH_TIMELINE.md), [PLAN_HISTORY.md](./PLAN_HISTORY.md), [ATHLETE_SNAPSHOT.md](./ATHLETE_SNAPSHOT.md), [UNIFIED_WORKSPACE.md](./UNIFIED_WORKSPACE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [DECISIONS.md](./DECISIONS.md) (ADR-092).
 
 ---
 

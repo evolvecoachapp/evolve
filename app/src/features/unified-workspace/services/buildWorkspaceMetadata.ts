@@ -1,0 +1,44 @@
+import type { WeeklyCoachReport } from "../../weekly-report/models/WeeklyCoachReport";
+import type { WorkspaceMetadata } from "../models/WorkspaceMetadata";
+
+export interface BuildWorkspaceMetadataInput {
+  readonly athleteId: string;
+  readonly generatedAt: string;
+  readonly version?: string;
+  readonly schemaVersion?: string;
+  readonly weeklyReport?: WeeklyCoachReport | null;
+}
+
+function deriveWeekBounds(generatedAt: string): {
+  readonly weekStart: string;
+  readonly weekEnd: string;
+} {
+  const end = new Date(generatedAt);
+  const start = new Date(end);
+  start.setUTCDate(start.getUTCDate() - 6);
+  return {
+    weekStart: start.toISOString(),
+    weekEnd: end.toISOString(),
+  };
+}
+
+/**
+ * Builds deterministic metadata for the Unified Athlete Workspace.
+ */
+export function buildWorkspaceMetadata(
+  input: BuildWorkspaceMetadataInput,
+): WorkspaceMetadata {
+  const defaultBounds = deriveWeekBounds(input.generatedAt);
+  const weekStart = input.weeklyReport?.weekStart ?? defaultBounds.weekStart;
+  const weekEnd = input.weeklyReport?.weekEnd ?? defaultBounds.weekEnd;
+  const workspaceId = `unified-workspace:${input.athleteId}:${input.generatedAt}`;
+
+  return Object.freeze({
+    generatedAt: input.generatedAt,
+    version: input.version ?? "28.3",
+    workspaceId,
+    weekStart,
+    weekEnd,
+    schemaVersion: input.schemaVersion ?? "1.0",
+  });
+}

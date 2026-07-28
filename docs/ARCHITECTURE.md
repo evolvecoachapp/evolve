@@ -189,6 +189,9 @@ Athlete Intelligence Workspace   ← Sprint 28.1 product (implemented) — singl
 Athlete Snapshot                 ← Sprint 28.2 product (implemented) — immutable point-in-time athlete representation
   (`app/src/features/athlete-snapshot/`)
   ↓
+Unified Athlete Workspace        ← Sprint 28.3 product (implemented) — canonical immutable athlete read model
+  (`app/src/features/unified-workspace/`)
+  ↓
 Athlete State Engine             ← Sprint 22.1 (implemented) — immutable athlete truth aggregated from specialists
   (`app/src/features/athlete-state/`)
   ↓
@@ -1209,6 +1212,20 @@ Full detail: [INTELLIGENCE_WORKSPACE.md](./INTELLIGENCE_WORKSPACE.md). ADR-092: 
 | **Models** | `AthleteSnapshot`, `SnapshotIdentity`, `SnapshotState`, `SnapshotWorkspace`, `SnapshotTimeline`, `SnapshotCoach`, `SnapshotMetadata`, `SnapshotVersion`, `SnapshotEvidence`, `SnapshotIntegrity`, `SnapshotResult` |
 | **Services** | `buildIdentity`, `buildState`, `buildWorkspaceProjection`, `buildTimelineProjection`, `buildCoachProjection`, `buildMetadata`, `buildVersion`, `buildEvidence`, `validateIntegrity`, `validateSnapshot`, `buildAthleteSnapshot`, `AthleteSnapshotService` |
 | **Integration** | Athlete Workspace / Athlete State / Home Experience / Daily Brief / Weekly Coach Report / Coach Timeline / Explainable Coaching Session; Composition Root `AthleteSnapshotService` |
+
+Full detail: [ATHLETE_SNAPSHOT.md](./ATHLETE_SNAPSHOT.md). ADR-093: [DECISIONS.md](./DECISIONS.md).
+
+### Unified Athlete Workspace (`features/unified-workspace`) — Sprint 28.3 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Canonical immutable athlete read model aggregating every athlete artifact for future sync / portal / dashboard / export / cache / analytics consumers (not a new engine, not business logic, not AI) |
+| **Flow** | Athlete State → Home Experience → Daily Brief → Weekly Report → Coach Timeline → Explainable Coaching Session → Athlete Snapshot → Unified Athlete Workspace → Consumers |
+| **Models** | `Workspace`, `WorkspaceHeader`, `WorkspaceSummary`, `WorkspaceHealth`, `WorkspaceGoals`, `WorkspaceWorkout`, `WorkspaceNutrition`, `WorkspaceRecovery`, `WorkspaceInsights`, `WorkspaceTimeline`, `WorkspaceCoach`, `WorkspaceSnapshot`, `WorkspaceMetadata`, `WorkspaceResult` |
+| **Services** | `buildWorkspaceHeader`, `buildWorkspaceSummary`, `buildWorkspaceHealth`, `buildWorkspaceGoals`, `buildWorkspaceWorkout`, `buildWorkspaceNutrition`, `buildWorkspaceRecovery`, `buildWorkspaceInsights`, `buildWorkspaceTimeline`, `buildWorkspaceCoach`, `buildWorkspaceSnapshot`, `buildWorkspaceMetadata`, `validateWorkspace`, `buildUnifiedWorkspace`, `UnifiedWorkspaceService` |
+| **Integration** | Athlete State / Home Experience / Daily Brief / Weekly Report / Coach Timeline / Goal Progress / Workout / Nutrition / Recovery / Explainable Coaching Session / Athlete Snapshot; Composition Root `UnifiedWorkspaceService` |
+
+Full detail: [UNIFIED_WORKSPACE.md](./UNIFIED_WORKSPACE.md). ADR-094: [DECISIONS.md](./DECISIONS.md).
 | **Design** | **Compose existing architecture only. No new engines. No LLM. No persistence. No database. No cache. No cloud sync. No UI.** |
 
 Full detail: [ATHLETE_SNAPSHOT.md](./ATHLETE_SNAPSHOT.md). ADR-093: [DECISIONS.md](./DECISIONS.md).

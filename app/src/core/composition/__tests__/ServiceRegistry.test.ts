@@ -47,6 +47,7 @@ describe("ServiceRegistry", () => {
       "WeeklyCoachReportService",
       "AthleteWorkspaceService",
       "AthleteSnapshotService",
+      "UnifiedWorkspaceService",
     ]);
   });
 

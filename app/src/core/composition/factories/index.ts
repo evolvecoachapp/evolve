@@ -93,3 +93,6 @@ export type { AthleteWorkspaceFactoryDeps } from "./AthleteWorkspaceFactory";
 
 export { AthleteSnapshotFactory } from "./AthleteSnapshotFactory";
 export type { AthleteSnapshotFactoryDeps } from "./AthleteSnapshotFactory";
+
+export { UnifiedWorkspaceFactory } from "./UnifiedWorkspaceFactory";
+export type { UnifiedWorkspaceFactoryDeps } from "./UnifiedWorkspaceFactory";
