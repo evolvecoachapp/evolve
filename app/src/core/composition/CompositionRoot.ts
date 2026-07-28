@@ -42,6 +42,7 @@ import {
   AuthenticationFactory,
   SynchronizationFactory,
   BackendFactory,
+  LoggerFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -485,6 +486,30 @@ export class CompositionRoot {
 
     container.register("BackendFactory", () => BackendFactory, { lifecycle });
 
+    const createLoggerBundle = (() => {
+      let bundle: ReturnType<typeof LoggerFactory.create> | undefined;
+      return () => {
+        if (!bundle) {
+          bundle = LoggerFactory.create();
+        }
+        return bundle;
+      };
+    })();
+
+    container.register(
+      "LoggerRegistry",
+      () => createLoggerBundle().registry,
+      { lifecycle },
+    );
+
+    container.register(
+      "MockLogger",
+      () => createLoggerBundle().mockLogger,
+      { lifecycle },
+    );
+
+    container.register("LoggerFactory", () => LoggerFactory, { lifecycle });
+
     container.register(
       "WorkoutAgentService",
       () => WorkoutAgentFactory.create(),
@@ -829,6 +854,18 @@ export class CompositionRoot {
 
   getBackendFactory(): ServiceMap["BackendFactory"] {
     return this.registry.resolve("BackendFactory");
+  }
+
+  getLoggerRegistry(): ServiceMap["LoggerRegistry"] {
+    return this.registry.resolve("LoggerRegistry");
+  }
+
+  getMockLogger(): ServiceMap["MockLogger"] {
+    return this.registry.resolve("MockLogger");
+  }
+
+  getLoggerFactory(): ServiceMap["LoggerFactory"] {
+    return this.registry.resolve("LoggerFactory");
   }
 
   getDecisionEngineService(): ServiceMap["DecisionEngineService"] {

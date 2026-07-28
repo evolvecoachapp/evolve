@@ -68,6 +68,9 @@ describe("ServiceRegistry", () => {
       "BackendRegistry",
       "MockBackendProvider",
       "BackendFactory",
+      "LoggerRegistry",
+      "MockLogger",
+      "LoggerFactory",
     ]);
   });
 

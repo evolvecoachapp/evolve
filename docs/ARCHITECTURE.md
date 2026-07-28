@@ -213,6 +213,9 @@ Synchronization Adapter Foundation ← Sprint 30.4 product (implemented) — det
 Backend API Adapter Foundation ← Sprint 30.5 product (implemented) — first Mock Backend API Adapter behind Backend API Contracts
   (`app/src/infrastructure/backend/`)
   ↓
+Logging & Observability Adapter Foundation ← Sprint 30.6 product (implemented) — first Mock Logger behind Logging Contracts
+  (`app/src/infrastructure/logging/`)
+  ↓
 Runtime Environment Foundation   ← Sprint 29.2 product (implemented) — immutable execution-environment layer for production features
   (`app/src/features/runtime-environment/`)
   ↓
@@ -1300,7 +1303,7 @@ Full detail: [PERSISTENCE_CONTRACTS.md](./PERSISTENCE_CONTRACTS.md). ADR-097: [D
 |--------|----------------|
 | **Purpose** | Immutable infrastructure adapter contracts for future SQLite / PostgreSQL / Supabase / Firebase / Apple Health / Google Fit / Push / Analytics / Logging / Feature Flag implementations (not implementations) |
 | **Flow** | Domain → Infrastructure Adapter Contracts → Future Adapter Implementations → External Services |
-| **Adapter contracts** | `StorageAdapter`, `AuthenticationAdapter`, `NotificationAdapter`, `AnalyticsAdapter`, `SynchronizationAdapter`, `LoggingAdapter`, `FeatureFlagAdapter`, `HealthPlatformAdapter`, `MediaAdapter`, `ExportAdapter`, `ImportAdapter`, `ClockAdapter`, `IdentifierGenerator`, `ConfigurationProvider` |
+| **Adapter contracts** | `StorageAdapter`, `AuthenticationAdapter`, `NotificationAdapter`, `AnalyticsAdapter`, `SynchronizationAdapter`, `BackendAdapter`, `LoggingAdapter`, `FeatureFlagAdapter`, `HealthPlatformAdapter`, `MediaAdapter`, `ExportAdapter`, `ImportAdapter`, `ClockAdapter`, `IdentifierGenerator`, `ConfigurationProvider` |
 | **Registry models** | `AdapterRegistry`, `AdapterMetadata`, `AdapterCapabilities`, `AdapterRegistration`, `AdapterResult` |
 | **Integration** | Composition Root via `InfrastructureAdapterFactory`; application APIs `getAdapterRegistry` / `getRegisteredAdapters` / `validateAdapters` / `getAdapterCapabilities` |
 | **Design** | **Contracts only. No SQLite. No PostgreSQL. No Firebase. No Supabase. No HTTP. No REST. No GraphQL. No SDK imports. No Expo. No React Native. No network. No filesystem. No persistence. No business logic.** |
@@ -1382,6 +1385,23 @@ Full detail: [SYNCHRONIZATION_ADAPTER.md](./SYNCHRONIZATION_ADAPTER.md). ADR-102
 | **Design** | **Infrastructure only. Deterministic Mock. No HTTP. No REST. No GraphQL. No sockets. No networking. No FastAPI. No ASP.NET. No Express. No NestJS. No serialization. No JSON parsing. No cloud. No business logic. Future backends replaceable without Domain changes.** |
 
 Full detail: [BACKEND_API_ADAPTER.md](./BACKEND_API_ADAPTER.md). ADR-103: [DECISIONS.md](./DECISIONS.md).
+
+### Logging & Observability Adapter Foundation (`infrastructure/logging`) — Sprint 30.6 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | First logging infrastructure adapter — deterministic Mock used by every EVOLVE layer |
+| **Flow** | Application → Logging Contract → Logging Adapter → Mock Logger |
+| **Models** | `LogEvent` / `LogEntry` / `LogContext` / `LogScope` / `LogLevel` / `LogMetadata` / `LogCapabilities` / `LogStatistics` / `LogResult` (immutable) |
+| **Logger** | `MockLogger` / `LoggerFactory` / `LoggerRegistry` / `LoggerValidator` / `LogDispatcher` |
+| **Operations** | `trace` / `debug` / `info` / `warn` / `error` / `fatal` / `flush` / `clear` / `statistics` |
+| **Levels** | Trace / Debug / Information / Warning / Error / Fatal |
+| **Context scopes** | Workout / Nutrition / Recovery / Coach / Synchronization / Authentication / Backend / Application |
+| **Registry** | `LoggerRegistry` / `LoggerRegistration` / `LoggerMetadata` / `LoggerResult` |
+| **Integration** | Composition Root via `LoggerFactory`; application APIs `getLogger` / `log` / `getLogStatistics` / `clearLogs` / `validateLogging` |
+| **Design** | **Infrastructure only. Deterministic Mock. No console. No files. No OpenTelemetry. No Sentry. No Datadog. No Azure Monitor. No Grafana. No Elastic. No cloud. No networking. No persistence. No business logic. Future providers replaceable without Domain changes.** |
+
+Full detail: [LOGGING_ADAPTER.md](./LOGGING_ADAPTER.md). ADR-104: [DECISIONS.md](./DECISIONS.md).
 
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 

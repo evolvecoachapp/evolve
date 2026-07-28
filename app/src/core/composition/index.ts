@@ -74,6 +74,7 @@ export {
   AuthenticationFactory,
   SynchronizationFactory,
   BackendFactory,
+  LoggerFactory,
 } from "./factories";
 
 export {

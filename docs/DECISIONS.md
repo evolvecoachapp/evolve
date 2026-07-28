@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-28  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-103). Append only — never renumber.
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-104). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -3100,4 +3100,31 @@ Introduce Infrastructure `BackendAdapter` contract (`adapterId: "backend"`) alon
 
 ---
 
-*New decisions are appended as Decision 103, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 104: Logging & Observability Adapter Foundation (Sprint 30.6 product)
+
+**Date:** 2026-07-28
+**Status:** Accepted
+
+**Context:**
+EVOLVE production readiness requires a deterministic Logging & Observability Adapter used by every layer without binding Domain features to console, files, OpenTelemetry, Sentry, Datadog, or any concrete observability stack. Wiring real logging platforms now would violate Clean Architecture and sprint scope. Real providers must remain replaceable without changing the Domain.
+
+**Decision:**
+Introduce `infrastructure/logging` as the **Logging & Observability Adapter Foundation** (first logging infrastructure adapter):
+
+Application → Logging Contract → Logging Adapter → Mock Logger.
+
+Extend Infrastructure `LoggingAdapter` contract (`adapterId: "logging"`) alongside existing Infrastructure Adapter Contracts. Models cover LogEvent / LogEntry / LogContext / LogScope / LogLevel / LogMetadata / LogCapabilities / LogStatistics / LogResult (all immutable). Logger layer covers MockLogger / LoggerFactory / LoggerRegistry / LoggerValidator / LogDispatcher. Supported operations: trace / debug / info / warn / error / fatal / flush / clear / statistics (deterministic orchestration only). Levels represent Trace / Debug / Information / Warning / Error / Fatal. Context scopes represent Workout / Nutrition / Recovery / Coach / Synchronization / Authentication / Backend / Application. Registry models cover LoggerRegistry / LoggerRegistration / LoggerMetadata / LoggerResult. Application APIs expose getLogger / log / getLogStatistics / clearLogs / validateLogging. Validation covers invalid level, missing metadata, duplicate registrations, invalid context, and invalid event. Composition Root registers MockLogger / LoggerFactory / LoggerRegistry using Infrastructure LoggingAdapter contracts. No console logging, file logging, OpenTelemetry, Sentry, Datadog, Azure Monitor, Grafana, Elastic, cloud, networking, persistence, or business logic.
+
+**Alternatives considered:**
+- **Wire OpenTelemetry / Sentry / Datadog / Azure Monitor now** — rejected: sprint forbids external platforms; Mock establishes the replaceable seam first.
+- **Emit to console or files from the adapter** — rejected: Domain must never depend on sinks; deterministic in-memory orchestration only.
+- **Bind Domain features to a concrete logging SDK** — rejected: Domain must depend only on Logging Contracts.
+- **Add networking / persistence / cloud telemetry** — rejected: adapter remains deterministic and transport-free.
+
+**Consequences:**
+- Documentation: [LOGGING_ADAPTER.md](./LOGGING_ADAPTER.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- Future providers (OpenTelemetry, Sentry, Datadog, Azure Monitor, Grafana, Elastic, Console, File) must implement the same logger contract and register via LoggerRegistry; Domain remains unaware of concrete providers.
+
+---
+
+*New decisions are appended as Decision 104, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

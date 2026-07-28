@@ -138,3 +138,9 @@ export type {
   BackendCompositionFactoryDeps as BackendFactoryDeps,
   BackendBundle,
 } from "./BackendFactory";
+
+export { LoggerCompositionFactory as LoggerFactory } from "./LoggerFactory";
+export type {
+  LoggerCompositionFactoryDeps as LoggerFactoryDeps,
+  LoggerBundle,
+} from "./LoggerFactory";

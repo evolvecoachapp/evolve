@@ -257,4 +257,16 @@ export class ServiceRegistry {
   getBackendFactory(): ServiceMap["BackendFactory"] {
     return this.resolve("BackendFactory");
   }
+
+  getLoggerRegistry(): ServiceMap["LoggerRegistry"] {
+    return this.resolve("LoggerRegistry");
+  }
+
+  getMockLogger(): ServiceMap["MockLogger"] {
+    return this.resolve("MockLogger");
+  }
+
+  getLoggerFactory(): ServiceMap["LoggerFactory"] {
+    return this.resolve("LoggerFactory");
+  }
 }

@@ -52,6 +52,12 @@ import type {
   BackendBundle,
   BackendFactoryDeps,
 } from "../../../infrastructure/backend/application/BackendFactory";
+import type { LoggerRegistry } from "../../../infrastructure/logging/registry/LoggerRegistry";
+import type { MockLogger } from "../../../infrastructure/logging/logger/MockLogger";
+import type {
+  LoggerBundle,
+  LoggerFactoryDeps,
+} from "../../../infrastructure/logging/application/LoggerFactory";
 import type { ExerciseSelectionService } from "../../../features/exercise-selection/services/ExerciseSelectionService";
 import type { ProgramGenerationService } from "../../../features/program-generation/services/ProgramGenerationService";
 import type { ProgrammingService } from "../../../features/programming/services/ProgrammingService";
@@ -130,6 +136,11 @@ export interface ServiceMap {
   BackendFactory: {
     readonly create: (deps?: BackendFactoryDeps) => BackendBundle;
   };
+  LoggerRegistry: LoggerRegistry;
+  MockLogger: MockLogger;
+  LoggerFactory: {
+    readonly create: (deps?: LoggerFactoryDeps) => LoggerBundle;
+  };
 }
 
 export type ServiceToken = keyof ServiceMap;
@@ -190,4 +201,7 @@ export const SERVICE_TOKENS = [
   "BackendRegistry",
   "MockBackendProvider",
   "BackendFactory",
+  "LoggerRegistry",
+  "MockLogger",
+  "LoggerFactory",
 ] as const satisfies readonly ServiceToken[];
