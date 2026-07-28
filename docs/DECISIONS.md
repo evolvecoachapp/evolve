@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-28  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-101). Append only — never renumber.
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-102). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -3046,4 +3046,31 @@ Models cover AuthenticatedUser / AuthenticationSession / AuthenticationToken / R
 
 ---
 
-*New decisions are appended as Decision 101, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 102: Synchronization Adapter Foundation (Sprint 30.4 product)
+
+**Date:** 2026-07-28
+**Status:** Accepted
+
+**Context:**
+EVOLVE Infrastructure Adapter Contracts (ADR-098) define `SynchronizationAdapter`. Production readiness requires a first synchronization foundation that manages synchronization state, pending operations, conflict models, and policies without binding Domain features to cloud backends. Wiring Supabase / Firebase / PostgreSQL / HTTP now would violate Clean Architecture and sprint scope. Real remote providers must remain replaceable without changing the Domain.
+
+**Decision:**
+Introduce `infrastructure/synchronization` as the **Synchronization Adapter Foundation** (deterministic synchronization engine):
+
+Application → Synchronization Contract → Synchronization Adapter → Synchronization Engine → Future Remote Provider.
+
+Models cover SynchronizationState / SynchronizationOperation / SynchronizationBatch / SynchronizationQueue / SynchronizationConflict / SynchronizationPolicy / SynchronizationMetadata / SynchronizationStatistics / SynchronizationCapabilities / SynchronizationResult / SynchronizationCheckpoint (all immutable). Engine layer covers SynchronizationEngine / SynchronizationCoordinator / SynchronizationValidator / SynchronizationBatchProcessor / SynchronizationStateManager. Operations cover enqueue / dequeue / peek / markCompleted / markFailed / cancel / clear / retry (local orchestration only). Queue is immutable FIFO with stable ordering and no background workers. Policies (Manual / Immediate / OfflineFirst / WiFiOnly / Background / Disabled) and conflicts (LocalNewer / RemoteNewer / MergeRequired / DeletedRemotely / DeletedLocally / VersionMismatch) are representations only. State lifecycle covers Idle / Pending / Running / Completed / Failed / Paused. Registry models cover SynchronizationRegistry / SynchronizationProviderRegistration / SynchronizationProviderMetadata / SynchronizationProviderResult. Application APIs expose getSynchronization / getSynchronizationQueue / getSynchronizationState / getSynchronizationStatistics / validateSynchronization. Validation covers duplicate operations, invalid queue, invalid state, missing metadata, and invalid transitions. Composition Root registers SynchronizationEngine / SynchronizationRegistry / SynchronizationFactory using existing SynchronizationAdapter contracts. No networking, HTTP, REST, GraphQL, Supabase, Firebase, PostgreSQL, cloud, sockets, persistence, background services, retries over network, business logic, or synchronization execution.
+
+**Alternatives considered:**
+- **Wire Supabase / Firebase / PostgreSQL now** — rejected: sprint forbids cloud synchronization; engine establishes the replaceable seam first.
+- **Add background workers / network retries** — rejected: out of sprint scope; deterministic local orchestration only.
+- **Embed automatic conflict resolution** — rejected: conflicts are representation-only; resolution is a future concern.
+- **Bind Domain features to a concrete sync SDK** — rejected: Domain must depend only on Synchronization Contracts.
+
+**Consequences:**
+- Documentation: [SYNCHRONIZATION_ADAPTER.md](./SYNCHRONIZATION_ADAPTER.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- Future providers (Supabase, PostgreSQL API, Firebase, Custom Backend) must plug into the same engine/registry contract; Domain remains unaware of concrete providers.
+
+---
+
+*New decisions are appended as Decision 102, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

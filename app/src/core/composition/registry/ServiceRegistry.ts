@@ -233,4 +233,16 @@ export class ServiceRegistry {
   getAuthenticationFactory(): ServiceMap["AuthenticationFactory"] {
     return this.resolve("AuthenticationFactory");
   }
+
+  getSynchronizationRegistry(): ServiceMap["SynchronizationRegistry"] {
+    return this.resolve("SynchronizationRegistry");
+  }
+
+  getSynchronizationEngine(): ServiceMap["SynchronizationEngine"] {
+    return this.resolve("SynchronizationEngine");
+  }
+
+  getSynchronizationFactory(): ServiceMap["SynchronizationFactory"] {
+    return this.resolve("SynchronizationFactory");
+  }
 }

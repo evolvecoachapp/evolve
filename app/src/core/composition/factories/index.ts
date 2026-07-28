@@ -126,3 +126,9 @@ export type {
   AuthenticationCompositionFactoryDeps as AuthenticationFactoryDeps,
   AuthenticationBundle,
 } from "./AuthenticationFactory";
+
+export { SynchronizationCompositionFactory as SynchronizationFactory } from "./SynchronizationFactory";
+export type {
+  SynchronizationCompositionFactoryDeps as SynchronizationFactoryDeps,
+  SynchronizationBundle,
+} from "./SynchronizationFactory";

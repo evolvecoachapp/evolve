@@ -207,6 +207,9 @@ Repository Adapter Integration  ← Sprint 30.2 product (implemented) — Persis
 Authentication Adapter Foundation ← Sprint 30.3 product (implemented) — first Mock Authentication Adapter behind Authentication Contracts
   (`app/src/infrastructure/authentication/`)
   ↓
+Synchronization Adapter Foundation ← Sprint 30.4 product (implemented) — deterministic Synchronization Engine behind Synchronization Contracts
+  (`app/src/infrastructure/synchronization/`)
+  ↓
 Runtime Environment Foundation   ← Sprint 29.2 product (implemented) — immutable execution-environment layer for production features
   (`app/src/features/runtime-environment/`)
   ↓
@@ -1344,6 +1347,21 @@ Full detail: [REPOSITORY_ADAPTERS.md](./REPOSITORY_ADAPTERS.md). ADR-100: [DECIS
 | **Design** | **Infrastructure only. In-memory Mock. No Supabase. No Firebase. No Auth0. No OAuth. No JWT. No OpenID. No HTTP. No networking. No cloud. No SDK. No encryption. No persistence. No business logic. Future providers replaceable without Domain changes.** |
 
 Full detail: [AUTHENTICATION_ADAPTER.md](./AUTHENTICATION_ADAPTER.md). ADR-101: [DECISIONS.md](./DECISIONS.md).
+
+### Synchronization Adapter Foundation (`infrastructure/synchronization`) — Sprint 30.4 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | First synchronization infrastructure adapter — deterministic engine managing state, pending operations, conflict models, and policies |
+| **Flow** | Application → Synchronization Contract → Synchronization Adapter → Synchronization Engine → Future Remote Provider |
+| **Models** | `SynchronizationState` / `SynchronizationOperation` / `SynchronizationBatch` / `SynchronizationQueue` / `SynchronizationConflict` / `SynchronizationPolicy` / `SynchronizationMetadata` / `SynchronizationStatistics` / `SynchronizationCapabilities` / `SynchronizationResult` / `SynchronizationCheckpoint` (immutable) |
+| **Engine** | `SynchronizationEngine` / `SynchronizationCoordinator` / `SynchronizationValidator` / `SynchronizationBatchProcessor` / `SynchronizationStateManager` |
+| **Operations** | `enqueue` / `dequeue` / `peek` / `markCompleted` / `markFailed` / `cancel` / `clear` / `retry` |
+| **Registry** | `SynchronizationRegistry` / `SynchronizationProviderRegistration` / `SynchronizationProviderMetadata` / `SynchronizationProviderResult` |
+| **Integration** | Composition Root via `SynchronizationFactory`; application APIs `getSynchronization` / `getSynchronizationQueue` / `getSynchronizationState` / `getSynchronizationStatistics` / `validateSynchronization` |
+| **Design** | **Infrastructure only. Local orchestration. No networking. No HTTP. No REST. No GraphQL. No Supabase. No Firebase. No PostgreSQL. No cloud. No sockets. No persistence. No background services. No business logic. No synchronization execution. Future providers replaceable without Domain changes.** |
+
+Full detail: [SYNCHRONIZATION_ADAPTER.md](./SYNCHRONIZATION_ADAPTER.md). ADR-102: [DECISIONS.md](./DECISIONS.md).
 
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 

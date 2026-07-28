@@ -40,6 +40,12 @@ import type {
   AuthenticationBundle,
   AuthenticationFactoryDeps,
 } from "../../../infrastructure/authentication/application/AuthenticationFactory";
+import type { SynchronizationRegistry } from "../../../infrastructure/synchronization/registry/SynchronizationRegistry";
+import type { SynchronizationEngine } from "../../../infrastructure/synchronization/engine/SynchronizationEngine";
+import type {
+  SynchronizationBundle,
+  SynchronizationFactoryDeps,
+} from "../../../infrastructure/synchronization/application/SynchronizationFactory";
 import type { ExerciseSelectionService } from "../../../features/exercise-selection/services/ExerciseSelectionService";
 import type { ProgramGenerationService } from "../../../features/program-generation/services/ProgramGenerationService";
 import type { ProgrammingService } from "../../../features/programming/services/ProgrammingService";
@@ -106,6 +112,13 @@ export interface ServiceMap {
       deps?: AuthenticationFactoryDeps,
     ) => AuthenticationBundle;
   };
+  SynchronizationRegistry: SynchronizationRegistry;
+  SynchronizationEngine: SynchronizationEngine;
+  SynchronizationFactory: {
+    readonly create: (
+      deps?: SynchronizationFactoryDeps,
+    ) => SynchronizationBundle;
+  };
 }
 
 export type ServiceToken = keyof ServiceMap;
@@ -160,4 +173,7 @@ export const SERVICE_TOKENS = [
   "AuthenticationRegistry",
   "MockAuthenticationProvider",
   "AuthenticationFactory",
+  "SynchronizationRegistry",
+  "SynchronizationEngine",
+  "SynchronizationFactory",
 ] as const satisfies readonly ServiceToken[];

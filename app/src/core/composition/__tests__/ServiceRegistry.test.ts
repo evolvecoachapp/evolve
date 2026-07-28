@@ -62,6 +62,9 @@ describe("ServiceRegistry", () => {
       "AuthenticationRegistry",
       "MockAuthenticationProvider",
       "AuthenticationFactory",
+      "SynchronizationRegistry",
+      "SynchronizationEngine",
+      "SynchronizationFactory",
     ]);
   });
 

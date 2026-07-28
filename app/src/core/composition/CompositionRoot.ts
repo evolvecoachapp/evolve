@@ -40,6 +40,7 @@ import {
   SQLiteAdapterFactory,
   RepositoryAdapterFactory,
   AuthenticationFactory,
+  SynchronizationFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -431,6 +432,34 @@ export class CompositionRoot {
       { lifecycle },
     );
 
+    const createSynchronizationBundle = (() => {
+      let bundle: ReturnType<typeof SynchronizationFactory.create> | undefined;
+      return () => {
+        if (!bundle) {
+          bundle = SynchronizationFactory.create();
+        }
+        return bundle;
+      };
+    })();
+
+    container.register(
+      "SynchronizationRegistry",
+      () => createSynchronizationBundle().registry,
+      { lifecycle },
+    );
+
+    container.register(
+      "SynchronizationEngine",
+      () => createSynchronizationBundle().engine,
+      { lifecycle },
+    );
+
+    container.register(
+      "SynchronizationFactory",
+      () => SynchronizationFactory,
+      { lifecycle },
+    );
+
     container.register(
       "WorkoutAgentService",
       () => WorkoutAgentFactory.create(),
@@ -751,6 +780,18 @@ export class CompositionRoot {
 
   getAuthenticationFactory(): ServiceMap["AuthenticationFactory"] {
     return this.registry.resolve("AuthenticationFactory");
+  }
+
+  getSynchronizationRegistry(): ServiceMap["SynchronizationRegistry"] {
+    return this.registry.resolve("SynchronizationRegistry");
+  }
+
+  getSynchronizationEngine(): ServiceMap["SynchronizationEngine"] {
+    return this.registry.resolve("SynchronizationEngine");
+  }
+
+  getSynchronizationFactory(): ServiceMap["SynchronizationFactory"] {
+    return this.registry.resolve("SynchronizationFactory");
   }
 
   getDecisionEngineService(): ServiceMap["DecisionEngineService"] {
