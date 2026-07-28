@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-29  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-107). Append only — never renumber.
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-108). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -3228,4 +3228,43 @@ React UI → WorkoutRuntimeViewModel → Application Use Cases → Mappers → W
 
 ---
 
-*New decisions are appended as Decision 107, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 108: Coach Experience (Sprint 31.3 product)
+
+**Date:** 2026-07-29
+**Status:** Accepted
+
+**Context:**
+Phase 31 Product Development continues with the Coach tab. EVOLVE already has deep Coach Intelligence / Conversation / Memory / AI Provider foundations, plus a legacy Coach chat UI. The Coach tab still needed a flagship product experience stack — immutable presentation models, application use cases, a ViewModel, hooks, and reusable components — that consumes Application APIs only, remains provider-agnostic (Mock AI today; OpenAI / Azure / Anthropic / Local LLM later), and is explicitly not a generic chatbot UI with business logic in React.
+
+**Decision:**
+Introduce the **Coach Experience** product module at `features/coach-experience`:
+
+```
+React UI → CoachExperienceViewModel → Application Use Cases → Mappers → CoachExperienceService → Mock/Backend/Local providers
+```
+
+Future provider implementations may bridge to Coach Intelligence → Memory → Context → AI Provider without changing UI.
+
+1. Immutable presentation models (`CoachConversation`, `CoachMessage`, `CoachInsight`, `CoachRecommendation`, `CoachQuickAction`, `CoachMemorySummary`, conversation/typing/loading/error states, `CoachExperience` aggregate).
+2. Application APIs (`loadCoachConversation`, `sendCoachMessage`, `loadDailyInsight`, `loadRecommendations`, `loadQuickActions`, `refreshCoachExperience`, `pinCoachInsight`, `dismissCoachInsight`, `regenerateCoachResponse`, `loadConversationHistory`) are the only operational path for UI.
+3. `CoachExperienceViewModel` owns load/refresh, send/regenerate, insights, quick actions, history, loading/typing/streaming-prepared/error/empty — no UI code.
+4. Hooks (`useCoachConversation`, `useCoachInsights`, `useCoachRecommendations`, `useCoachQuickActions`) subscribe to the ViewModel only.
+5. `CoachExperienceScreen` composes presentation components only; route `app/(app)/(tabs)/coach.tsx` targets it.
+6. `CoachExperienceService` providers remain the replaceable data/AI seam (Mock today; Backend/Local/Coach Intelligence–backed later without UI changes).
+7. Future navigation destinations (history, settings, insight details) are prepared as routes on the read model without implementing new screens in this sprint.
+8. No visual redesign — reuse the Design System; streaming indicator prepared only; no OpenAI SDK / networking in this module.
+
+**Alternatives considered:**
+- **Extend legacy `features/coach` chat UI in place** — deferred: Sprint 31.3 introduces a dedicated experience module matching Home / Workout Runtime product patterns; legacy coach chat remains available for domain adapters.
+- **Bind Coach UI directly to Coach Intelligence / OpenAI provider** — rejected: violates provider-agnostic UI constraint and would couple React to infrastructure.
+- **Call Mock seed data from components** — rejected: mocks stay behind `CoachExperienceService` only.
+- **Ship live OpenAI streaming in this sprint** — rejected: architecture prepares streaming/markdown/citations; Mock AI remains the default provider.
+
+**Consequences:**
+- Documentation: [COACH_EXPERIENCE_ARCHITECTURE.md](./COACH_EXPERIENCE_ARCHITECTURE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Coach UI can swap Mock → Backend/Local/Coach Intelligence–backed providers via `EXPO_PUBLIC_COACH_EXPERIENCE_PROVIDER` without changing screens or components.
+- Existing Coach Intelligence / Conversation / Memory / AI Provider foundations remain unchanged.
+
+---
+
+*New decisions are appended as Decision 108, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

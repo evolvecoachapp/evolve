@@ -1,5 +1,5 @@
-import { CoachScreen } from "../../../src/screens/CoachScreen";
+import { CoachExperienceScreen } from "../../../src/features/coach-experience";
 
 export default function CoachRoute() {
-  return <CoachScreen />;
+  return <CoachExperienceScreen />;
 }

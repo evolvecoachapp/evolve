@@ -231,6 +231,9 @@ Home Dashboard                   ← Sprint 31.1 product (implemented) — opera
 Workout Runtime Experience       ← Sprint 31.2 product (implemented) — operational Workout execution UI via ViewModel → Application → ExperienceService
   (`app/src/features/workout-runtime/` experience layer; engine foundation unchanged)
   ↓
+Coach Experience                 ← Sprint 31.3 product (implemented) — flagship contextual AI Coach UI via ViewModel → Application → ExperienceService
+  (`app/src/features/coach-experience/`)
+  ↓
 Athlete State Engine             ← Sprint 22.1 (implemented) — immutable athlete truth aggregated from specialists
   (`app/src/features/athlete-state/`)
   ↓
@@ -1450,6 +1453,19 @@ Full detail: [HOME_DASHBOARD_ARCHITECTURE.md](./HOME_DASHBOARD_ARCHITECTURE.md).
 
 Full detail: [WORKOUT_RUNTIME_ARCHITECTURE.md](./WORKOUT_RUNTIME_ARCHITECTURE.md). ADR-107: [DECISIONS.md](./DECISIONS.md).
 
+### Coach Experience (`features/coach-experience`) — Sprint 31.3 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Flagship contextual AI Coach experience — presentation composition over Application APIs |
+| **Flow** | React UI → `CoachExperienceViewModel` → Application APIs → Mappers → `CoachExperienceService` → Mock/Backend/Local providers |
+| **Models** | `CoachExperience`, `CoachConversation`, `CoachMessage`, `CoachInsight`, `CoachRecommendation`, `CoachQuickAction`, `CoachMemorySummary`, conversation/typing/loading/error states |
+| **Application** | `loadCoachConversation` / `sendCoachMessage` / `loadDailyInsight` / `loadRecommendations` / `loadQuickActions` / `refreshCoachExperience` / `pinCoachInsight` / `dismissCoachInsight` / `regenerateCoachResponse` / `loadConversationHistory` |
+| **UI** | `CoachExperienceScreen` + header / insights / recommendations / memory / quick actions / conversation / typing / skeleton / empty / error; pull-to-refresh |
+| **Design** | **No business logic in React. No repository/infrastructure calls from components. No provider code in components. No OpenAI SDK. No networking. No mock data in components. No visual redesign.** Streaming/markdown/citations prepared. Distinct from domain Coach Intelligence / legacy `features/coach` chat |
+
+Full detail: [COACH_EXPERIENCE_ARCHITECTURE.md](./COACH_EXPERIENCE_ARCHITECTURE.md). ADR-108: [DECISIONS.md](./DECISIONS.md).
+
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 
 | Aspect | Implementation |
@@ -1766,5 +1782,6 @@ AIOrchestrator.process_message (async)
 | 105 | Architecture Consolidation Complete (Sprint 30.7) |
 | 106 | Home Dashboard Architecture (Sprint 31.1) |
 | 107 | Workout Runtime Experience (Sprint 31.2) |
+| 108 | Coach Experience (Sprint 31.3) |
 
 Full list: [DECISIONS.md](./DECISIONS.md). Audit: [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md).
