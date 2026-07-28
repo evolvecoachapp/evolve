@@ -120,3 +120,9 @@ export type {
   RepositoryAdapterCompositionFactoryDeps as RepositoryAdapterFactoryDeps,
   RepositoryAdapterBundle,
 } from "./RepositoryAdapterFactory";
+
+export { AuthenticationCompositionFactory as AuthenticationFactory } from "./AuthenticationFactory";
+export type {
+  AuthenticationCompositionFactoryDeps as AuthenticationFactoryDeps,
+  AuthenticationBundle,
+} from "./AuthenticationFactory";

@@ -221,4 +221,16 @@ export class ServiceRegistry {
   getRepositoryAdapters(): ServiceMap["RepositoryAdapters"] {
     return this.resolve("RepositoryAdapters");
   }
+
+  getAuthenticationRegistry(): ServiceMap["AuthenticationRegistry"] {
+    return this.resolve("AuthenticationRegistry");
+  }
+
+  getMockAuthenticationProvider(): ServiceMap["MockAuthenticationProvider"] {
+    return this.resolve("MockAuthenticationProvider");
+  }
+
+  getAuthenticationFactory(): ServiceMap["AuthenticationFactory"] {
+    return this.resolve("AuthenticationFactory");
+  }
 }

@@ -39,6 +39,7 @@ import {
   InfrastructureAdapterFactory,
   SQLiteAdapterFactory,
   RepositoryAdapterFactory,
+  AuthenticationFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -402,6 +403,34 @@ export class CompositionRoot {
       { lifecycle },
     );
 
+    const createAuthenticationBundle = (() => {
+      let bundle: ReturnType<typeof AuthenticationFactory.create> | undefined;
+      return () => {
+        if (!bundle) {
+          bundle = AuthenticationFactory.create();
+        }
+        return bundle;
+      };
+    })();
+
+    container.register(
+      "AuthenticationRegistry",
+      () => createAuthenticationBundle().registry,
+      { lifecycle },
+    );
+
+    container.register(
+      "MockAuthenticationProvider",
+      () => createAuthenticationBundle().mockProvider,
+      { lifecycle },
+    );
+
+    container.register(
+      "AuthenticationFactory",
+      () => AuthenticationFactory,
+      { lifecycle },
+    );
+
     container.register(
       "WorkoutAgentService",
       () => WorkoutAgentFactory.create(),
@@ -710,6 +739,18 @@ export class CompositionRoot {
 
   getRepositoryAdapters(): ServiceMap["RepositoryAdapters"] {
     return this.registry.resolve("RepositoryAdapters");
+  }
+
+  getAuthenticationRegistry(): ServiceMap["AuthenticationRegistry"] {
+    return this.registry.resolve("AuthenticationRegistry");
+  }
+
+  getMockAuthenticationProvider(): ServiceMap["MockAuthenticationProvider"] {
+    return this.registry.resolve("MockAuthenticationProvider");
+  }
+
+  getAuthenticationFactory(): ServiceMap["AuthenticationFactory"] {
+    return this.registry.resolve("AuthenticationFactory");
   }
 
   getDecisionEngineService(): ServiceMap["DecisionEngineService"] {

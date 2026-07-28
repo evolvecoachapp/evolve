@@ -1,0 +1,1 @@
+export { validateAuthenticationBundle } from "./validateAuthentication";

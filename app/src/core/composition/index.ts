@@ -71,6 +71,7 @@ export {
   InfrastructureAdapterFactory,
   SQLiteAdapterFactory,
   RepositoryAdapterFactory,
+  AuthenticationFactory,
 } from "./factories";
 
 export {

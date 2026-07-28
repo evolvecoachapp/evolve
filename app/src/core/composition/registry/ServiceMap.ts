@@ -34,6 +34,12 @@ import type { SQLiteAdapter } from "../../../infrastructure/sqlite/application/S
 import type { SQLiteRepositories } from "../../../infrastructure/sqlite/repositories";
 import type { RepositoryAdapterRegistry } from "../../../infrastructure/repositories/registry/RepositoryAdapterRegistry";
 import type { RepositoryAdapters } from "../../../infrastructure/repositories/adapters";
+import type { AuthenticationRegistry } from "../../../infrastructure/authentication/registry/AuthenticationRegistry";
+import type { MockAuthenticationProvider } from "../../../infrastructure/authentication/provider/MockAuthenticationProvider";
+import type {
+  AuthenticationBundle,
+  AuthenticationFactoryDeps,
+} from "../../../infrastructure/authentication/application/AuthenticationFactory";
 import type { ExerciseSelectionService } from "../../../features/exercise-selection/services/ExerciseSelectionService";
 import type { ProgramGenerationService } from "../../../features/program-generation/services/ProgramGenerationService";
 import type { ProgrammingService } from "../../../features/programming/services/ProgrammingService";
@@ -93,6 +99,13 @@ export interface ServiceMap {
   SQLiteRepositories: SQLiteRepositories;
   RepositoryAdapterRegistry: RepositoryAdapterRegistry;
   RepositoryAdapters: RepositoryAdapters;
+  AuthenticationRegistry: AuthenticationRegistry;
+  MockAuthenticationProvider: MockAuthenticationProvider;
+  AuthenticationFactory: {
+    readonly create: (
+      deps?: AuthenticationFactoryDeps,
+    ) => AuthenticationBundle;
+  };
 }
 
 export type ServiceToken = keyof ServiceMap;
@@ -144,4 +157,7 @@ export const SERVICE_TOKENS = [
   "SQLiteRepositories",
   "RepositoryAdapterRegistry",
   "RepositoryAdapters",
+  "AuthenticationRegistry",
+  "MockAuthenticationProvider",
+  "AuthenticationFactory",
 ] as const satisfies readonly ServiceToken[];

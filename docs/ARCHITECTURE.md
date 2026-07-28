@@ -204,6 +204,9 @@ SQLite Infrastructure Adapter   ← Sprint 30.1 product (implemented) — first 
 Repository Adapter Integration  ← Sprint 30.2 product (implemented) — Persistence Contracts bound to SQLite repositories via adapters
   (`app/src/infrastructure/repositories/`)
   ↓
+Authentication Adapter Foundation ← Sprint 30.3 product (implemented) — first Mock Authentication Adapter behind Authentication Contracts
+  (`app/src/infrastructure/authentication/`)
+  ↓
 Runtime Environment Foundation   ← Sprint 29.2 product (implemented) — immutable execution-environment layer for production features
   (`app/src/features/runtime-environment/`)
   ↓
@@ -1326,6 +1329,21 @@ Full detail: [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md). ADR-099: [DECISIONS.md](.
 | **Design** | **Infrastructure only. Delegation only. No domain changes. No SQLite in Domain. No business logic. No AI. No networking. No cloud. No auth. No cache. No sync.** |
 
 Full detail: [REPOSITORY_ADAPTERS.md](./REPOSITORY_ADAPTERS.md). ADR-100: [DECISIONS.md](./DECISIONS.md).
+
+### Authentication Adapter Foundation (`infrastructure/authentication`) — Sprint 30.3 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | First authentication infrastructure adapter implementing Infrastructure `AuthenticationAdapter` via in-memory Mock provider |
+| **Flow** | Application → Authentication Contract → Authentication Adapter → Mock Authentication Provider |
+| **Models** | `AuthenticatedUser` / `AuthenticationSession` / `AuthenticationToken` / `RefreshToken` / `AuthenticationMetadata` / `AuthenticationState` / `AuthenticationResult` / `AuthenticationCapabilities` (immutable) |
+| **Provider** | `MockAuthenticationProvider` / `AuthenticationProviderFactory` / `AuthenticationSessionManager` / `AuthenticationValidator` |
+| **Operations** | `signIn` / `signOut` / `refreshSession` / `getCurrentUser` / `getCurrentSession` / `isAuthenticated` / `validateSession` |
+| **Registry** | `AuthenticationRegistry` / `AuthenticationProviderRegistration` / `AuthenticationProviderMetadata` / `AuthenticationProviderResult` |
+| **Integration** | Composition Root via `AuthenticationFactory`; application APIs `getAuthentication` / `getCurrentUser` / `getCurrentSession` / `isAuthenticated` / `validateAuthentication` |
+| **Design** | **Infrastructure only. In-memory Mock. No Supabase. No Firebase. No Auth0. No OAuth. No JWT. No OpenID. No HTTP. No networking. No cloud. No SDK. No encryption. No persistence. No business logic. Future providers replaceable without Domain changes.** |
+
+Full detail: [AUTHENTICATION_ADAPTER.md](./AUTHENTICATION_ADAPTER.md). ADR-101: [DECISIONS.md](./DECISIONS.md).
 
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 

@@ -59,6 +59,9 @@ describe("ServiceRegistry", () => {
       "SQLiteRepositories",
       "RepositoryAdapterRegistry",
       "RepositoryAdapters",
+      "AuthenticationRegistry",
+      "MockAuthenticationProvider",
+      "AuthenticationFactory",
     ]);
   });
 

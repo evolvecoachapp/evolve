@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-28  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-100). Append only — never renumber.
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-101). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -3019,4 +3019,31 @@ Adapters cover Athlete / Identity / Workspace / Snapshot / Timeline / Workout / 
 
 ---
 
-*New decisions are appended as Decision 100, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 101: Authentication Adapter Foundation (Sprint 30.3 product)
+
+**Date:** 2026-07-28
+**Status:** Accepted
+
+**Context:**
+EVOLVE Infrastructure Adapter Contracts (ADR-098) define `AuthenticationAdapter`. Production readiness requires a first authentication adapter that fully implements those contracts. Binding Domain features to Supabase / Firebase / Auth0 / OAuth / JWT / SDKs would violate Clean Architecture and sprint scope. Real cloud providers must remain replaceable without changing the Domain.
+
+**Decision:**
+Introduce `infrastructure/authentication` as the **Authentication Adapter Foundation** (first authentication infrastructure adapter):
+
+Application → Authentication Contract → Authentication Adapter → Mock Authentication Provider.
+
+Models cover AuthenticatedUser / AuthenticationSession / AuthenticationToken / RefreshToken / AuthenticationMetadata / AuthenticationState / AuthenticationResult / AuthenticationCapabilities (all immutable). Provider layer covers MockAuthenticationProvider / AuthenticationProviderFactory / AuthenticationSessionManager / AuthenticationValidator. Supported operations: signIn / signOut / refreshSession / getCurrentUser / getCurrentSession / isAuthenticated / validateSession (capabilities only). Session management is immutable and deterministic — no expiration timers, no background refresh. Registry models cover AuthenticationRegistry / AuthenticationProviderRegistration / AuthenticationProviderMetadata / AuthenticationProviderResult. Application APIs expose getAuthentication / getCurrentUser / getCurrentSession / isAuthenticated / validateAuthentication. Validation covers missing provider, duplicate provider, invalid session, invalid user, and missing immutable fields. Composition Root registers MockAuthenticationProvider / AuthenticationRegistry / AuthenticationFactory using existing AuthenticationAdapter contracts. Everything remains in-memory. No Supabase, Firebase, Auth0, OAuth, JWT, OpenID, HTTP, networking, cloud, SDK, encryption, persistence, or business logic.
+
+**Alternatives considered:**
+- **Wire Supabase / Firebase / Auth0 now** — rejected: sprint forbids real providers; Mock establishes the replaceable seam first.
+- **Embed OAuth / JWT parsing in the adapter** — rejected: out of sprint scope; opaque token handles only.
+- **Bind Domain identity to a concrete auth SDK** — rejected: Domain must depend only on Authentication Contracts.
+- **Add persistence / encryption / networking** — rejected: adapter remains in-memory and deterministic.
+
+**Consequences:**
+- Documentation: [AUTHENTICATION_ADAPTER.md](./AUTHENTICATION_ADAPTER.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- Future providers (Supabase Auth, Firebase Auth, Auth0, Apple Sign In, Google Sign In, Microsoft Identity) must implement the same provider contract and register via AuthenticationRegistry; Domain remains unaware of concrete providers.
+
+---
+
+*New decisions are appended as Decision 101, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
