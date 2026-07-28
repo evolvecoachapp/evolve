@@ -1,13 +1,11 @@
 /**
- * Workout Runtime Foundation (Sprint 18.0).
+ * Workout Runtime
  *
- * Runtime state of a generated WorkoutSession while it is actively performed.
+ * Sprint 18.0 — Foundation engine (live session execution state).
+ * Sprint 31.2 — Product Workout Runtime Experience (ViewModel → Application → providers).
  *
- * WorkoutSession → WorkoutRuntime → ExerciseRuntime → SetRuntime →
- * SessionState → WorkoutResult
- *
- * Consumes an immutable WorkoutSession. Does not modify Program Generation.
- * No UI. No persistence. No networking. No timers. No analytics. No history.
+ * Engine: WorkoutSession → WorkoutRuntime → ExerciseRuntime → SetRuntime → WorkoutResult
+ * Product: React UI → WorkoutRuntimeViewModel → Application → ExperienceService → Mock/Backend/Local
  */
 
 export * from "./models";
@@ -24,5 +22,36 @@ export {
   completeWorkout,
   skipExercise,
   completeSet,
+  loadWorkoutRuntime,
+  refreshWorkoutRuntime,
+  completeWorkoutSet,
+  updateWorkoutSet,
+  navigateWorkout,
+  finishWorkout,
+  startRestTimer,
+  pauseRestTimer,
+  resumeRestTimer,
+  tickRestTimer,
+  clearRestTimer,
 } from "./application";
 export type { ActiveWorkout } from "./application";
+
+export * from "./hooks";
+export * from "./viewmodels";
+export * from "./screens";
+export * from "./components";
+export * from "./mappers";
+export * as WorkoutRuntimeExperience from "./models/experience";
+export {
+  workoutRuntimeExperienceService,
+  createWorkoutRuntimeExperienceService,
+  resolveWorkoutRuntimeProviderId,
+  mockWorkoutRuntimeService,
+  backendWorkoutRuntimeService,
+  localWorkoutRuntimeService,
+  WorkoutRuntimeExperienceError,
+} from "./services/experience";
+export type {
+  WorkoutRuntimeExperienceService,
+  WorkoutRuntimeProviderId,
+} from "./services/experience";

@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-29  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-105). Append only — never renumber.
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-107). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -3191,4 +3191,41 @@ React UI → HomeDashboardViewModel → Application APIs → Mappers → HomeSer
 
 ---
 
-*New decisions are appended as Decision 106, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 107: Workout Runtime Experience (Sprint 31.2 product)
+
+**Date:** 2026-07-29
+**Status:** Accepted
+
+**Context:**
+Phase 31 Product Development continues with the Workout tab. The existing Workout screen was a program-preview presentation surface. Sprint 18.0 already shipped the Workout Runtime engine foundation (`WorkoutRuntimeEngine`, opaque `ActiveWorkout`, domain models) with an explicit "no UI" boundary. The operational execution UI still needed a Clean Architecture presentation stack: immutable experience read models, application use cases, a ViewModel, hooks, and reusable components — without putting business logic in React, without binding UI to mock seed data, and without modifying the engine foundation.
+
+**Decision:**
+Introduce the **Workout Runtime Experience** layer inside `features/workout-runtime` alongside the untouched Sprint 18.0 engine:
+
+```
+React UI → WorkoutRuntimeViewModel → Application Use Cases → Mappers → WorkoutRuntimeExperienceService → Mock/Backend/Local providers
+```
+
+1. Immutable presentation models (`WorkoutRuntime`, `WorkoutExercise`, `WorkoutSet`, `WorkoutProgress`, `WorkoutTimer`, `WorkoutStatistics`, `WorkoutNotes`, loading/error/runtime states) live under `features/workout-runtime/models/experience` (distinct from engine domain models).
+2. Application APIs (`loadWorkoutRuntime`, `refreshWorkoutRuntime`, `completeWorkoutSet`, `updateWorkoutSet`, `navigateWorkout`, `finishWorkout`, rest-timer helpers) are the only operational path for UI.
+3. `WorkoutRuntimeViewModel` owns load/refresh, current exercise/set, set completion, value edits, navigation, rest timer, finish confirmation, loading/error/empty — no UI code.
+4. Hooks (`useWorkoutRuntime`, `useWorkoutNavigation`, `useRestTimer`, `useWorkoutProgress`) subscribe to the ViewModel / application layer only.
+5. `WorkoutRuntimeScreen` composes presentation components only; route `app/(app)/(tabs)/workout.tsx` targets it.
+6. `WorkoutRuntimeExperienceService` providers remain the replaceable data seam (Mock today; repository/engine/backend later without UI changes).
+7. Future navigation destinations (history, statistics, exercise details) are prepared as routes on the read model without implementing new screens in this sprint.
+8. No visual redesign — reuse the Design System; prioritize large one-handed touch targets.
+
+**Alternatives considered:**
+- **Bind Workout UI directly to `WorkoutRuntimeEngine` / opaque `ActiveWorkout`** — deferred: Sprint 31.2 keeps an experience provider seam for operational UI; engine remains the execution-state domain (ADR-038). Future sprints may bridge providers to the engine without changing the ViewModel contract.
+- **Keep session logic inside `WorkoutSessionScreen` / local hooks only** — rejected for the Workout tab: violates Clean Architecture and sprint constraints for the operational runtime experience.
+- **Call Mock seed data from components** — rejected: mocks stay behind `WorkoutRuntimeExperienceService` only.
+- **Rename/replace engine models to match UI names** — rejected: would break Sprint 18.0 consumers; experience models are namespaced under `models/experience`.
+
+**Consequences:**
+- Documentation: [WORKOUT_RUNTIME_ARCHITECTURE.md](./WORKOUT_RUNTIME_ARCHITECTURE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Workout UI can swap Mock → Backend/Local/repository/engine-backed providers via `EXPO_PUBLIC_WORKOUT_RUNTIME_PROVIDER` without changing screens or components.
+- Sprint 18.0 engine APIs (`startWorkout`, `pauseWorkout`, `resumeWorkout`, `completeWorkout`, `skipExercise`, `completeSet`) remain unchanged.
+
+---
+
+*New decisions are appended as Decision 107, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

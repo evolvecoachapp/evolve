@@ -228,6 +228,9 @@ Architecture Consolidation       ← Sprint 30.7 product (implemented) — archi
 Home Dashboard                   ← Sprint 31.1 product (implemented) — operational Home UI via ViewModel → Application → HomeService
   (`app/src/features/home/`)
   ↓
+Workout Runtime Experience       ← Sprint 31.2 product (implemented) — operational Workout execution UI via ViewModel → Application → ExperienceService
+  (`app/src/features/workout-runtime/` experience layer; engine foundation unchanged)
+  ↓
 Athlete State Engine             ← Sprint 22.1 (implemented) — immutable athlete truth aggregated from specialists
   (`app/src/features/athlete-state/`)
   ↓
@@ -1434,6 +1437,19 @@ Full detail: [LOGGING_ADAPTER.md](./LOGGING_ADAPTER.md). ADR-104: [DECISIONS.md]
 
 Full detail: [HOME_DASHBOARD_ARCHITECTURE.md](./HOME_DASHBOARD_ARCHITECTURE.md). ADR-106: [DECISIONS.md](./DECISIONS.md).
 
+### Workout Runtime Experience (`features/workout-runtime` experience layer) — Sprint 31.2 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Operational Workout execution experience — presentation composition over Application APIs |
+| **Flow** | React UI → `WorkoutRuntimeViewModel` → Application APIs → Mappers → `WorkoutRuntimeExperienceService` → Mock/Backend/Local providers |
+| **Models** | Experience read models under `models/experience/` (`WorkoutRuntime`, `WorkoutExercise`, `WorkoutSet`, `WorkoutProgress`, `WorkoutTimer`, `WorkoutStatistics`, `WorkoutNotes`, loading/error/runtime states) |
+| **Application** | `loadWorkoutRuntime` / `refreshWorkoutRuntime` / `completeWorkoutSet` / `updateWorkoutSet` / `navigateWorkout` / `finishWorkout` / rest-timer helpers |
+| **UI** | `WorkoutRuntimeScreen` + header / carousel / set editors / rest timer / progress / statistics / bottom bar / finish dialog / skeleton / empty / error; pull-to-refresh |
+| **Design** | **No business logic in React. No repository/infrastructure calls from components. No mock data in components. No visual redesign. Sprint 18.0 engine foundation untouched.** Distinct from engine domain `WorkoutRuntime` graph |
+
+Full detail: [WORKOUT_RUNTIME_ARCHITECTURE.md](./WORKOUT_RUNTIME_ARCHITECTURE.md). ADR-107: [DECISIONS.md](./DECISIONS.md).
+
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 
 | Aspect | Implementation |
@@ -1749,5 +1765,6 @@ AIOrchestrator.process_message (async)
 | 104 | Logging & Observability Adapter Foundation |
 | 105 | Architecture Consolidation Complete (Sprint 30.7) |
 | 106 | Home Dashboard Architecture (Sprint 31.1) |
+| 107 | Workout Runtime Experience (Sprint 31.2) |
 
 Full list: [DECISIONS.md](./DECISIONS.md). Audit: [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md).

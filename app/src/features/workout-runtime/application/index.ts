@@ -78,3 +78,37 @@ export function completeSet(
 }
 
 export type { ActiveWorkout };
+
+/* ── Sprint 31.2 product experience application APIs ── */
+
+export {
+  loadWorkoutRuntime,
+  type LoadWorkoutRuntimeOptions,
+} from "./LoadWorkoutRuntime";
+export {
+  refreshWorkoutRuntime,
+  type RefreshWorkoutRuntimeOptions,
+} from "./RefreshWorkoutRuntime";
+export {
+  completeWorkoutSet,
+  type CompleteWorkoutSetInput,
+} from "./CompleteWorkoutSet";
+export {
+  updateWorkoutSet,
+  type UpdateWorkoutSetInput,
+} from "./UpdateWorkoutSet";
+export {
+  navigateWorkout,
+  type NavigateWorkoutDirection,
+} from "./NavigateWorkout";
+export {
+  finishWorkout,
+  type FinishWorkoutOptions,
+} from "./FinishWorkout";
+export {
+  startRestTimer,
+  pauseRestTimer,
+  resumeRestTimer,
+  tickRestTimer,
+  clearRestTimer,
+} from "./RestTimer";
