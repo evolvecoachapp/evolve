@@ -62,6 +62,7 @@ export {
   RecommendationEngineFactory,
   WorkoutGenerationPipelineFactory,
   CoachConversationFactory,
+  AthleteWorkspaceFactory,
 } from "./factories";
 
 export {

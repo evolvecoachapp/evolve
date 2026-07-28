@@ -183,6 +183,9 @@ Athlete Daily Brief              ← Sprint 27.2 product (implemented) — compo
 Weekly Coach Report              ← Sprint 27.3 product (implemented) — compose week into deterministic coaching review
   (`app/src/features/weekly-report/`)
   ↓
+Athlete Intelligence Workspace   ← Sprint 28.1 product (implemented) — single immutable premium coaching read model
+  (`app/src/features/intelligence-workspace/`)
+  ↓
 Athlete State Engine             ← Sprint 22.1 (implemented) — immutable athlete truth aggregated from specialists
   (`app/src/features/athlete-state/`)
   ↓
@@ -1180,6 +1183,19 @@ Full detail: [DAILY_BRIEF.md](./DAILY_BRIEF.md). ADR-090: [DECISIONS.md](./DECIS
 | **Design** | **Compose existing architecture only. No new engines. No LLM. No persistence. No scheduler. No notifications. No PDF. No UI redesign.** |
 
 Full detail: [WEEKLY_REPORT.md](./WEEKLY_REPORT.md). ADR-091: [DECISIONS.md](./DECISIONS.md).
+
+### Athlete Intelligence Workspace (`features/intelligence-workspace`) — Sprint 28.1 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Single immutable premium coaching read model composed from existing artifacts (not a dashboard, not a UI, not a new engine) |
+| **Flow** | Athlete State → Home Experience → Daily Brief → Weekly Coach Report → Coach Timeline → Proactive Insights → Explainable Coaching Session → Athlete Intelligence Workspace → Dashboard / UI / APIs |
+| **Models** | `AthleteWorkspace`, `WorkspaceOverview`, `WorkspaceStatus`, `WorkspaceHome`, `WorkspaceDailyBrief`, `WorkspaceWeeklyReport`, `WorkspaceTimeline`, `WorkspaceInsights`, `WorkspaceCoach`, `WorkspaceMetadata`, `WorkspaceResult` |
+| **Services** | `buildOverview`, `buildStatus`, `buildHomeProjection`, `buildDailyProjection`, `buildWeeklyProjection`, `buildTimelineProjection`, `buildInsightProjection`, `buildCoachProjection`, `buildMetadata`, `buildAthleteWorkspace`, `validateWorkspace`, `AthleteWorkspaceService` |
+| **Integration** | Athlete State / Home Experience / Daily Brief / Weekly Coach Report / Coach Timeline / Plan History / Plan Restore / Proactive Insights / Explainable Coaching Session; Composition Root `AthleteWorkspaceService` |
+| **Design** | **Compose existing architecture only. No new engines. No LLM. No persistence. No caching. No scheduler. No UI redesign.** |
+
+Full detail: [INTELLIGENCE_WORKSPACE.md](./INTELLIGENCE_WORKSPACE.md). ADR-092: [DECISIONS.md](./DECISIONS.md).
 
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 

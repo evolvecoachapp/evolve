@@ -2762,4 +2762,33 @@ Composition Root registers `WeeklyCoachReportService` (ADR-091), depending on Da
 
 ---
 
+## Decision 092: Athlete Intelligence Workspace Composition (Sprint 28.1 product)
+
+**Date:** 2026-07-28
+**Status:** Accepted
+
+**Context:**
+EVOLVE now has premium coaching artifacts across Home Experience, Daily Brief, Weekly Coach Report, Coach Timeline, Proactive Insights, and Explainable Coaching Session. Dashboard and API consumers need one immutable read model representing the athlete's complete current premium coaching state. A new intelligence engine, dashboard-specific model layer, or LLM-generated workspace would duplicate existing logic and violate the sprint constraints.
+
+**Decision:**
+Introduce `features/intelligence-workspace` as a **composition-only layer** that assembles existing outputs into an immutable `AthleteWorkspace`:
+
+Athlete State → Home Experience → Daily Brief → Weekly Coach Report → Coach Timeline → Proactive Insights → Explainable Coaching Session → Athlete Intelligence Workspace → Dashboard / UI / APIs.
+
+Overview, Status, Home / Daily / Weekly projections, Timeline, Insights, Coach, and Metadata are deterministic projections of existing artifacts only. Home Experience, Daily Brief, and Weekly Coach Report are projected without transformation. Dashboard application APIs expose Athlete Workspace / Overview / Status / Timeline / Insights / Coach getters — presentation only. No persistence, caching, scheduler, UI work, or LLM behavior is introduced.
+
+Composition Root registers `AthleteWorkspaceService` (ADR-092), depending on Athlete State, Home Experience, Daily Brief, Weekly Coach Report, Coach Timeline, Plan History, Plan Restore, Proactive Insights, and Explainable Coaching Session services.
+
+**Alternatives considered:**
+- **New Athlete Intelligence engine** — rejected: sprint explicitly forbids new engines; existing artifacts are already the source of truth.
+- **Dashboard-specific transformation logic duplicated in UI/API layers** — rejected: composition must stay in the application layer as one immutable workspace model.
+- **Persisted / cached workspace snapshot** — rejected: sprint forbids persistence and caching.
+- **LLM-generated athlete workspace** — rejected: must remain deterministic and grounded in existing evidence.
+
+**Consequences:**
+- Documentation: [INTELLIGENCE_WORKSPACE.md](./INTELLIGENCE_WORKSPACE.md), [WEEKLY_REPORT.md](./WEEKLY_REPORT.md), [DAILY_BRIEF.md](./DAILY_BRIEF.md), [HOME_EXPERIENCE.md](./HOME_EXPERIENCE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- Athlete Workspace models are immutable; underlying domain services remain the source of truth.
+
+---
+
 *New decisions are appended as Decision 092, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

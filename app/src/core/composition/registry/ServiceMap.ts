@@ -20,6 +20,7 @@ import type { ExplainableCoachingSessionService } from "../../../features/coachi
 import type { HomeExperienceService } from "../../../features/home-experience/services/HomeExperienceService";
 import type { DailyBriefService } from "../../../features/daily-brief/services/DailyBriefService";
 import type { WeeklyCoachReportService } from "../../../features/weekly-report/services/WeeklyCoachReportService";
+import type { AthleteWorkspaceService } from "../../../features/intelligence-workspace/services/AthleteWorkspaceService";
 import type { ExerciseSelectionService } from "../../../features/exercise-selection/services/ExerciseSelectionService";
 import type { ProgramGenerationService } from "../../../features/program-generation/services/ProgramGenerationService";
 import type { ProgrammingService } from "../../../features/programming/services/ProgrammingService";
@@ -65,6 +66,7 @@ export interface ServiceMap {
   HomeExperienceService: HomeExperienceService;
   DailyBriefService: DailyBriefService;
   WeeklyCoachReportService: WeeklyCoachReportService;
+  AthleteWorkspaceService: AthleteWorkspaceService;
 }
 
 export type ServiceToken = keyof ServiceMap;
@@ -102,4 +104,5 @@ export const SERVICE_TOKENS = [
   "HomeExperienceService",
   "DailyBriefService",
   "WeeklyCoachReportService",
+  "AthleteWorkspaceService",
 ] as const satisfies readonly ServiceToken[];

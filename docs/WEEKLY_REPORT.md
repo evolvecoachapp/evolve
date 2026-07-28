@@ -95,6 +95,10 @@ Composition layer only.
 
 ---
 
+Athlete Intelligence Workspace (Sprint 28.1) projects Weekly Coach Report without transformation into the single premium coaching read model ([INTELLIGENCE_WORKSPACE.md](./INTELLIGENCE_WORKSPACE.md), ADR-092).
+
+---
+
 ## Evidence
 
 Collects all evidence references used by the report.

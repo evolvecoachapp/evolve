@@ -45,6 +45,7 @@ describe("ServiceRegistry", () => {
       "HomeExperienceService",
       "DailyBriefService",
       "WeeklyCoachReportService",
+      "AthleteWorkspaceService",
     ]);
   });
 

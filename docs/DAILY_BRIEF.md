@@ -138,3 +138,5 @@ Registers `DailyBriefService` (depends on `HomeExperienceService` + `CoachTimeli
 ## Downstream
 
 Weekly Coach Report (Sprint 27.3) composes Daily Brief and the same coaching domains into a weekly coaching review ([WEEKLY_REPORT.md](./WEEKLY_REPORT.md), ADR-091).
+
+Athlete Intelligence Workspace (Sprint 28.1) projects Daily Brief without transformation into the single premium coaching read model ([INTELLIGENCE_WORKSPACE.md](./INTELLIGENCE_WORKSPACE.md), ADR-092).

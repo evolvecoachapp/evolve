@@ -165,4 +165,8 @@ export class ServiceRegistry {
   getWeeklyCoachReportService(): ServiceMap["WeeklyCoachReportService"] {
     return this.resolve("WeeklyCoachReportService");
   }
+
+  getAthleteWorkspaceService(): ServiceMap["AthleteWorkspaceService"] {
+    return this.resolve("AthleteWorkspaceService");
+  }
 }

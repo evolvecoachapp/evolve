@@ -87,3 +87,6 @@ export type { DailyBriefFactoryDeps } from "./DailyBriefFactory";
 
 export { WeeklyCoachReportFactory } from "./WeeklyCoachReportFactory";
 export type { WeeklyCoachReportFactoryDeps } from "./WeeklyCoachReportFactory";
+
+export { AthleteWorkspaceFactory } from "./AthleteWorkspaceFactory";
+export type { AthleteWorkspaceFactoryDeps } from "./AthleteWorkspaceFactory";

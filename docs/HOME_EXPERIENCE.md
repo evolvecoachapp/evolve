@@ -122,3 +122,5 @@ Registers `HomeExperienceService` (depends on `CoachTimelineService` + `PlanHist
 Athlete Daily Brief (Sprint 27.2) composes Home Experience and the same coaching domains into a daily brief for dashboard presentation ([DAILY_BRIEF.md](./DAILY_BRIEF.md), ADR-090).
 
 Weekly Coach Report (Sprint 27.3) composes Daily Brief, Home Experience, and the same coaching domains into a weekly coaching review ([WEEKLY_REPORT.md](./WEEKLY_REPORT.md), ADR-091).
+
+Athlete Intelligence Workspace (Sprint 28.1) projects Home Experience without transformation into the single premium coaching read model ([INTELLIGENCE_WORKSPACE.md](./INTELLIGENCE_WORKSPACE.md), ADR-092).
