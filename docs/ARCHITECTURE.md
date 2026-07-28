@@ -192,6 +192,9 @@ Athlete Snapshot                 ← Sprint 28.2 product (implemented) — immut
 Unified Athlete Workspace        ← Sprint 28.3 product (implemented) — canonical immutable athlete read model
   (`app/src/features/unified-workspace/`)
   ↓
+Runtime Environment Foundation   ← Sprint 29.2 product (implemented) — immutable execution-environment layer for production features
+  (`app/src/features/runtime-environment/`)
+  ↓
 Athlete Identity Foundation      ← Sprint 29.1 product (implemented) — immutable identity layer for production features
   (`app/src/features/athlete-identity/`)
   ↓
@@ -1242,6 +1245,19 @@ Full detail: [UNIFIED_WORKSPACE.md](./UNIFIED_WORKSPACE.md). ADR-094: [DECISIONS
 | **Design** | **Immutable domain modeling only. No authentication. No OAuth/JWT. No persistence. No database. No cache. No cloud. No networking. No event bus. No scheduler. No LLM.** |
 
 Full detail: [ATHLETE_IDENTITY.md](./ATHLETE_IDENTITY.md). ADR-095: [DECISIONS.md](./DECISIONS.md).
+
+### Runtime Environment Foundation (`features/runtime-environment`) — Sprint 29.2 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Immutable execution-environment foundation for future Auth / Cloud Sync / Push / Offline Cache / Feature Flags / Analytics / Telemetry / Device Sync / Coach Portal (not infrastructure, not React Native, not Expo, not platform APIs) |
+| **Flow** | Runtime Environment → Athlete Identity → Athlete State → Snapshot → Unified Workspace |
+| **Models** | `RuntimeEnvironment`, `DeviceInfo`, `PlatformInfo`, `ApplicationInfo`, `Capabilities`, `FeatureSupport`, `LocaleInfo`, `ConnectivityInfo`, `EnvironmentMetadata`, `RuntimeEnvironmentResult` |
+| **Services** | `buildDeviceInfo`, `buildPlatformInfo`, `buildApplicationInfo`, `buildCapabilities`, `buildFeatureSupport`, `buildLocaleInfo`, `buildConnectivityInfo`, `validateRuntimeEnvironment`, `buildRuntimeEnvironment`, `RuntimeEnvironmentService` |
+| **Integration** | Composition Root `RuntimeEnvironmentService` via `RuntimeEnvironmentFactory`; application APIs `getRuntimeEnvironment` / `getCapabilities` / `getPlatformInfo` / `getApplicationInfo` / `getConnectivityInfo` |
+| **Design** | **Immutable domain modeling only. No React Native. No Expo. No Device APIs. No networking. No persistence. No cache. No cloud. No event bus. No scheduler. No LLM. No business logic.** |
+
+Full detail: [RUNTIME_ENVIRONMENT.md](./RUNTIME_ENVIRONMENT.md). ADR-096: [DECISIONS.md](./DECISIONS.md).
 
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 

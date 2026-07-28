@@ -49,6 +49,7 @@ describe("ServiceRegistry", () => {
       "AthleteSnapshotService",
       "UnifiedWorkspaceService",
       "AthleteIdentityService",
+      "RuntimeEnvironmentService",
     ]);
   });
 

@@ -3,8 +3,8 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
-**Last Updated:** 2026-07-24  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-067). Append only — never renumber.  
+**Last Updated:** 2026-07-28  
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-096). Append only — never renumber.  
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -2878,4 +2878,33 @@ Composition Root registers `AthleteIdentityService` via `AthleteIdentityFactory`
 
 ---
 
-*New decisions are appended as Decision 095, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 096: Runtime Environment Foundation (Sprint 29.2 product)
+
+**Date:** 2026-07-28
+**Status:** Accepted
+
+**Context:**
+EVOLVE is entering Production Readiness. Future Authentication, Cloud Sync, Push Notifications, Offline Cache, Feature Flags, Analytics, Telemetry, Device Sync, and Coach Portal systems need a stable immutable execution-environment reference. Continuing to inspect React Native / Expo / Device APIs directly from those systems would couple production features to platform frameworks. Introducing networking, persistence, or platform API queries in this sprint would violate the foundation-only scope.
+
+**Decision:**
+Introduce `features/runtime-environment` as an **immutable Runtime Environment foundation** (not infrastructure, not React Native, not Expo, not platform APIs):
+
+Runtime Environment → Athlete Identity → Athlete State → Snapshot → Unified Workspace.
+
+`RuntimeEnvironment` aggregates Device, Platform, Application, Capabilities, FeatureSupport, Locale, Connectivity, and Metadata. Builders are single-responsibility composition functions. Application APIs expose Runtime / Capabilities / Platform / Application / Connectivity getters — presentation only. Validation covers missing runtime, invalid platform, invalid locale, duplicate capabilities, invalid app version, and missing immutable fields. Capabilities and connectivity are descriptors only — no hardware queries, no network requests. No React Native, Expo, Device APIs, networking, persistence, cache, cloud, event bus, scheduler, LLM, or business logic is introduced.
+
+Composition Root registers `RuntimeEnvironmentService` via `RuntimeEnvironmentFactory` (ADR-096) with no upstream service dependencies.
+
+**Alternatives considered:**
+- **Inspect React Native / Expo / Device APIs directly from production features** — rejected: production systems must reference a dedicated immutable Runtime Environment layer.
+- **Implement networking / connectivity probing now** — rejected: sprint explicitly forbids networking; connectivity is a model only.
+- **Query hardware for capabilities** — rejected: capabilities are immutable descriptors, not live hardware probes.
+- **Fold runtime into Athlete Identity** — rejected: runtime sits above identity as the execution-environment foundation reference.
+
+**Consequences:**
+- Documentation: [RUNTIME_ENVIRONMENT.md](./RUNTIME_ENVIRONMENT.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- Runtime Environment models are immutable; future Auth / Sync / Push / Cache / Flags / Analytics / Telemetry / Device Sync / Coach Portal must reference Runtime Environment instead of platform APIs.
+
+---
+
+*New decisions are appended as Decision 096, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

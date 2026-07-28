@@ -35,6 +35,9 @@ It is **not**:
 ## Architecture
 
 ```
+Runtime Environment
+        │
+        ▼
 Identity
       │
       ▼
@@ -48,6 +51,8 @@ Unified Workspace
 ```
 
 Future production consumers reference Athlete Identity, not transient Athlete State.
+
+Runtime Environment sits above Athlete Identity as the execution-environment foundation (see [RUNTIME_ENVIRONMENT.md](./RUNTIME_ENVIRONMENT.md)).
 
 ---
 

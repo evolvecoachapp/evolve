@@ -181,4 +181,8 @@ export class ServiceRegistry {
   getAthleteIdentityService(): ServiceMap["AthleteIdentityService"] {
     return this.resolve("AthleteIdentityService");
   }
+
+  getRuntimeEnvironmentService(): ServiceMap["RuntimeEnvironmentService"] {
+    return this.resolve("RuntimeEnvironmentService");
+  }
 }

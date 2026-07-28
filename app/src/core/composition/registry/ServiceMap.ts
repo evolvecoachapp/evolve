@@ -24,6 +24,7 @@ import type { AthleteWorkspaceService } from "../../../features/intelligence-wor
 import type { AthleteSnapshotService } from "../../../features/athlete-snapshot/services/AthleteSnapshotService";
 import type { UnifiedWorkspaceService } from "../../../features/unified-workspace/services/UnifiedWorkspaceService";
 import type { AthleteIdentityService } from "../../../features/athlete-identity/services/AthleteIdentityService";
+import type { RuntimeEnvironmentService } from "../../../features/runtime-environment/services/RuntimeEnvironmentService";
 import type { ExerciseSelectionService } from "../../../features/exercise-selection/services/ExerciseSelectionService";
 import type { ProgramGenerationService } from "../../../features/program-generation/services/ProgramGenerationService";
 import type { ProgrammingService } from "../../../features/programming/services/ProgrammingService";
@@ -73,6 +74,7 @@ export interface ServiceMap {
   AthleteSnapshotService: AthleteSnapshotService;
   UnifiedWorkspaceService: UnifiedWorkspaceService;
   AthleteIdentityService: AthleteIdentityService;
+  RuntimeEnvironmentService: RuntimeEnvironmentService;
 }
 
 export type ServiceToken = keyof ServiceMap;
@@ -114,4 +116,5 @@ export const SERVICE_TOKENS = [
   "AthleteSnapshotService",
   "UnifiedWorkspaceService",
   "AthleteIdentityService",
+  "RuntimeEnvironmentService",
 ] as const satisfies readonly ServiceToken[];

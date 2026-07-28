@@ -34,6 +34,7 @@ import {
   AthleteSnapshotFactory,
   UnifiedWorkspaceFactory,
   AthleteIdentityFactory,
+  RuntimeEnvironmentFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -315,6 +316,12 @@ export class CompositionRoot {
     );
 
     container.register(
+      "RuntimeEnvironmentService",
+      () => RuntimeEnvironmentFactory.create(),
+      { lifecycle },
+    );
+
+    container.register(
       "WorkoutAgentService",
       () => WorkoutAgentFactory.create(),
       { lifecycle },
@@ -582,6 +589,10 @@ export class CompositionRoot {
 
   getAthleteIdentityService(): ServiceMap["AthleteIdentityService"] {
     return this.registry.resolve("AthleteIdentityService");
+  }
+
+  getRuntimeEnvironmentService(): ServiceMap["RuntimeEnvironmentService"] {
+    return this.registry.resolve("RuntimeEnvironmentService");
   }
 
   getDecisionEngineService(): ServiceMap["DecisionEngineService"] {

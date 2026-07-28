@@ -99,3 +99,6 @@ export type { UnifiedWorkspaceFactoryDeps } from "./UnifiedWorkspaceFactory";
 
 export { AthleteIdentityFactory } from "./AthleteIdentityFactory";
 export type { AthleteIdentityFactoryDeps } from "./AthleteIdentityFactory";
+
+export { RuntimeEnvironmentFactory } from "./RuntimeEnvironmentFactory";
+export type { RuntimeEnvironmentFactoryDeps } from "./RuntimeEnvironmentFactory";
