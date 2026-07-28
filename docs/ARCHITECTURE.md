@@ -225,6 +225,9 @@ Logging & Observability Adapter Foundation ← Sprint 30.6 product (implemented)
 Architecture Consolidation       ← Sprint 30.7 product (implemented) — architecture review & production-readiness audit (no features)
   (`docs/ARCHITECTURE_REVIEW.md`)
   ↓
+Home Dashboard                   ← Sprint 31.1 product (implemented) — operational Home UI via ViewModel → Application → HomeService
+  (`app/src/features/home/`)
+  ↓
 Athlete State Engine             ← Sprint 22.1 (implemented) — immutable athlete truth aggregated from specialists
   (`app/src/features/athlete-state/`)
   ↓
@@ -1418,6 +1421,19 @@ Full detail: [LOGGING_ADAPTER.md](./LOGGING_ADAPTER.md). ADR-104: [DECISIONS.md]
 | **ADR** | ADR-105 |
 | **Design** | **Review only.** No new features; no module redesign; no business-logic changes |
 
+### Home Dashboard (`features/home`) — Sprint 31.1 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Operational Home dashboard hub — presentation composition over Application APIs |
+| **Flow** | React UI → `HomeDashboardViewModel` → Application APIs → Mappers → `HomeService` → Mock/Backend/Local providers |
+| **Models** | `HomeDashboard`, `AthleteSnapshotCard`, `WorkoutSummaryCard`, `NutritionSummaryCard`, `RecoverySummaryCard`, `CoachSummaryCard`, `QuickAction`, `HomeLoadingState`, `HomeErrorState` |
+| **Application** | `loadHomeDashboard` / `refreshHomeDashboard` / `loadQuickActions` / `loadAthleteSnapshot` |
+| **UI** | `HomeDashboardScreen` + reusable cards / skeleton / empty / error; pull-to-refresh; quick-action placeholders |
+| **Design** | **No business logic in React. No repository/infrastructure calls from components. No mock data in components. No visual redesign.** Distinct from `features/home-experience` domain composition |
+
+Full detail: [HOME_DASHBOARD_ARCHITECTURE.md](./HOME_DASHBOARD_ARCHITECTURE.md). ADR-106: [DECISIONS.md](./DECISIONS.md).
+
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 
 | Aspect | Implementation |
@@ -1732,5 +1748,6 @@ AIOrchestrator.process_message (async)
 | 103 | Backend API Adapter Foundation |
 | 104 | Logging & Observability Adapter Foundation |
 | 105 | Architecture Consolidation Complete (Sprint 30.7) |
+| 106 | Home Dashboard Architecture (Sprint 31.1) |
 
 Full list: [DECISIONS.md](./DECISIONS.md). Audit: [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md).

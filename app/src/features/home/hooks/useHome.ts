@@ -1,33 +1,40 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { homeService, type HomeService } from "../services";
-import type { HomeDashboard } from "../types/homeDashboard";
+import { useHomeDashboard } from "./useHomeDashboard";
 
 interface UseHomeOptions {
   service?: HomeService;
+  displayName?: string;
+  initials?: string;
 }
 
-export function useHome({ service = homeService }: UseHomeOptions = {}) {
-  const [dashboard, setDashboard] = useState<HomeDashboard | null>(null);
-  const [loading, setLoading] = useState(true);
+/**
+ * Legacy Home hook — delegates to HomeDashboardViewModel.
+ * Prefer `useHomeDashboard` for new screens.
+ */
+export function useHome({
+  service = homeService,
+  displayName = "Athlete",
+  initials = "A",
+}: UseHomeOptions = {}) {
+  const identity = useMemo(
+    () =>
+      Object.freeze({
+        displayName,
+        initials,
+      }),
+    [displayName, initials],
+  );
 
-  useEffect(() => {
-    let cancelled = false;
-
-    void service.getDashboard().then((nextDashboard) => {
-      if (cancelled) {
-        return;
-      }
-      setDashboard(nextDashboard);
-      setLoading(false);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [service]);
+  const { dashboard, loading, error, refresh } = useHomeDashboard({
+    service,
+    identity,
+  });
 
   return {
     dashboard,
-    loading,
+    loading: loading.isLoading,
+    error: error?.message ?? null,
+    refresh,
   };
 }

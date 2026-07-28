@@ -3157,4 +3157,38 @@ Declare **Architecture Consolidation Complete** for the Phase 29–30 foundation
 
 ---
 
-*New decisions are appended as Decision 105, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 106: Home Dashboard Architecture (Sprint 31.1 product)
+
+**Date:** 2026-07-29
+**Status:** Accepted
+
+**Context:**
+Phase 31 Product Development begins with the Home tab. The existing `features/home` surface was a demo screen calling `HomeService.getDashboard()` from a thin hook with inline layout in `DashboardScreen`. Domain composition already exists in `features/home-experience` (ADR-089), but the operational Home UI still needed a Clean Architecture presentation stack: immutable read models, application use cases, a ViewModel, hooks, and reusable components — without putting business logic in React or binding UI to mock seed data.
+
+**Decision:**
+Introduce the **Home Dashboard Architecture** inside `features/home`:
+
+```
+React UI → HomeDashboardViewModel → Application APIs → Mappers → HomeService → Mock/Backend/Local providers
+```
+
+1. Immutable presentation models (`HomeDashboard`, card models, `QuickAction`, loading/error states) live under `features/home/models`.
+2. Application APIs (`loadHomeDashboard`, `refreshHomeDashboard`, `loadQuickActions`, `loadAthleteSnapshot`) are the only load path for UI.
+3. `HomeDashboardViewModel` owns load/refresh, snapshots, summaries, quick actions, loading/error/empty — no UI code.
+4. Hooks (`useHomeDashboard`, `usePullToRefresh`, `useQuickActions`) subscribe to the ViewModel / application layer only.
+5. `HomeDashboardScreen` composes presentation components only; route `app/(app)/(tabs)/index.tsx` targets it.
+6. Existing `HomeService` providers remain the replaceable data seam (Mock today; real repositories later without UI changes).
+7. No visual redesign — reuse the Design System and prior Home composition.
+
+**Alternatives considered:**
+- **Bind Home UI directly to `HomeExperienceService`** — deferred: Sprint 31.1 keeps the existing `HomeService` mock seam for operational UI; `home-experience` remains the coaching-composition domain (ADR-089). Future sprints may bridge providers without changing the ViewModel contract.
+- **Keep business mapping inside `DashboardScreen`** — rejected: violates Clean Architecture and sprint constraints.
+- **Call Mock seed data from components** — rejected: mocks stay behind `HomeService` only.
+
+**Consequences:**
+- Documentation: [HOME_DASHBOARD_ARCHITECTURE.md](./HOME_DASHBOARD_ARCHITECTURE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Home UI can swap Mock → Backend/Local/repository-backed providers via `EXPO_PUBLIC_HOME_PROVIDER` / `HomeService` without changing screens or components.
+
+---
+
+*New decisions are appended as Decision 106, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
