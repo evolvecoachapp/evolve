@@ -77,6 +77,7 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Repository Adapters | `infrastructure/repositories` | Foundation complete (30.2) — Persistence Contracts bound to SQLite repositories via adapters only |
 | Authentication Adapter | `infrastructure/authentication` | Foundation complete (30.3) — Mock Authentication Adapter behind Authentication Contracts only |
 | Synchronization Adapter | `infrastructure/synchronization` | Foundation complete (30.4) — deterministic Synchronization Engine behind Synchronization Contracts only |
+| Backend API Adapter | `infrastructure/backend` | Foundation complete (30.5) — Mock Backend API Adapter behind Backend API Contracts only |
 
 These domains are TypeScript application modules with in-memory repositories. They are **not** backend HTTP APIs and do **not** write to PostgreSQL. The integration framework exercises the full pipeline without modifying engine behavior. Pipeline services are composed through `core/composition`. Decision Intelligence explains pipeline decisions without changing engine behavior. Workout Runtime consumes immutable `WorkoutSession` outputs without modifying Program Generation. Rest Runtime manages rest periods with injected elapsed time and may be owned by Workout Runtime. Domain Events record immutable lifecycle events from Workout/Rest Runtime into an ordered in-memory Event Stream for future subscribers. Performance Engine analyzes completed `WorkoutResult` + `EventStream` into immutable single-session snapshots without mutating execution or program generation. Achievement Engine detects Personal Records from Performance Snapshots via injected baselines without owning history, persistence, or gamification. Athlete History organizes immutable chronological domain facts from workout/performance/achievement outputs without persistence, AI, networking, storage, querying, or timeline UI. Recovery Intelligence derives deterministic recovery metrics/snapshots from Athlete History + Performance Snapshot without AI, recommendations, persistence, networking, predictions, sleep, or wearables. Insight Engine aggregates deterministic domain facts from Performance, Achievement, Recovery, and Athlete History into immutable Insight Snapshots without AI, recommendations, persistence, networking, prompts, LLM, or conversation. Coach Intelligence prepares immutable Coaching Context from Insight Snapshot (optionally referencing Recovery, History, Performance, Achievement) without AI, prompts, LLM providers, networking, HTTP, persistence, or conversation. Conversation Orchestrator prepares immutable Conversation Context from Coaching Context (optionally referencing Insight, Recovery, History, Performance, Achievement) without AI, prompts, LLM providers, networking, HTTP, persistence, or conversation generation. Prompt Composition Engine transforms Conversation Context into an immutable Prompt Package of structured blocks (optionally referencing Coaching Context / Insight Snapshot) without AI, networking, HTTP, OpenAI/Anthropic/Gemini/Ollama, or provider-specific string prompt generation.
 
@@ -175,7 +176,22 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 
 ## Last Completed Sprint
 
-**30.4 — Synchronization Adapter Foundation** (2026-07-28)
+**30.5 — Backend API Adapter Foundation** (2026-07-28)
+
+- Backend API Adapter Foundation (`infrastructure/backend`) — deterministic Mock Backend Provider
+- Implements Infrastructure `BackendAdapter` via local orchestration only
+- Models: BackendRequest / BackendResponse / BackendEndpoint / BackendRoute / BackendMetadata / BackendCapabilities / BackendResult / BackendStatus / BackendHealth / BackendError
+- Provider: MockBackendProvider / BackendProviderFactory / BackendRequestDispatcher / BackendResponseMapper / BackendValidator
+- Operations: send / execute / dispatch / health / capabilities / listEndpoints
+- Routing: `/auth` `/workout` `/nutrition` `/recovery` `/coach` `/sync` `/profile` `/settings` (routes only)
+- Responses: Success / Failure / Unavailable / Unauthorized / Forbidden / Conflict / ValidationError / NotFound
+- Registry: BackendRegistry / BackendRegistration / BackendMetadata / BackendResult
+- Application APIs: `getBackend`, `getBackendHealth`, `getBackendCapabilities`, `listBackendEndpoints`, `validateBackend`
+- Composition Root: `MockBackendProvider` / `BackendRegistry` / `BackendFactory`
+- ADR-103; docs: BACKEND_API_ADAPTER, ARCHITECTURE
+- Orchestration only; no HTTP; no REST; no GraphQL; no sockets; no networking; no FastAPI; no ASP.NET; no Express; no NestJS; no serialization; no JSON parsing; no cloud; no business logic
+
+Previous: **30.4 — Synchronization Adapter Foundation** (2026-07-28)
 
 - Synchronization Adapter Foundation (`infrastructure/synchronization`) — deterministic Synchronization Engine
 - Implements Infrastructure `SynchronizationAdapter` via local orchestration only

@@ -73,6 +73,7 @@ Immutable interfaces:
 - `NotificationAdapter`
 - `AnalyticsAdapter`
 - `SynchronizationAdapter`
+- `BackendAdapter`
 - `LoggingAdapter`
 - `FeatureFlagAdapter`
 - `HealthPlatformAdapter`

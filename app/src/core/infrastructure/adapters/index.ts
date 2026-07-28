@@ -15,3 +15,4 @@ export type { ImportAdapter } from "./ImportAdapter";
 export type { ClockAdapter } from "./ClockAdapter";
 export type { IdentifierGenerator } from "./IdentifierGenerator";
 export type { ConfigurationProvider } from "./ConfigurationProvider";
+export type { BackendAdapter } from "./BackendAdapter";

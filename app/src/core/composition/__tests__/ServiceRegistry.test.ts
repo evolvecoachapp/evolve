@@ -65,6 +65,9 @@ describe("ServiceRegistry", () => {
       "SynchronizationRegistry",
       "SynchronizationEngine",
       "SynchronizationFactory",
+      "BackendRegistry",
+      "MockBackendProvider",
+      "BackendFactory",
     ]);
   });
 

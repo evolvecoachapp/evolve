@@ -210,6 +210,9 @@ Authentication Adapter Foundation ← Sprint 30.3 product (implemented) — firs
 Synchronization Adapter Foundation ← Sprint 30.4 product (implemented) — deterministic Synchronization Engine behind Synchronization Contracts
   (`app/src/infrastructure/synchronization/`)
   ↓
+Backend API Adapter Foundation ← Sprint 30.5 product (implemented) — first Mock Backend API Adapter behind Backend API Contracts
+  (`app/src/infrastructure/backend/`)
+  ↓
 Runtime Environment Foundation   ← Sprint 29.2 product (implemented) — immutable execution-environment layer for production features
   (`app/src/features/runtime-environment/`)
   ↓
@@ -1362,6 +1365,23 @@ Full detail: [AUTHENTICATION_ADAPTER.md](./AUTHENTICATION_ADAPTER.md). ADR-101: 
 | **Design** | **Infrastructure only. Local orchestration. No networking. No HTTP. No REST. No GraphQL. No Supabase. No Firebase. No PostgreSQL. No cloud. No sockets. No persistence. No background services. No business logic. No synchronization execution. Future providers replaceable without Domain changes.** |
 
 Full detail: [SYNCHRONIZATION_ADAPTER.md](./SYNCHRONIZATION_ADAPTER.md). ADR-102: [DECISIONS.md](./DECISIONS.md).
+
+### Backend API Adapter Foundation (`infrastructure/backend`) — Sprint 30.5 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | First backend API infrastructure adapter — deterministic Mock representing every future backend communication |
+| **Flow** | Application → Backend API Contract → Backend API Adapter → Mock Backend Provider |
+| **Models** | `BackendRequest` / `BackendResponse` / `BackendEndpoint` / `BackendRoute` / `BackendMetadata` / `BackendCapabilities` / `BackendResult` / `BackendStatus` / `BackendHealth` / `BackendError` (immutable) |
+| **Provider** | `MockBackendProvider` / `BackendProviderFactory` / `BackendRequestDispatcher` / `BackendResponseMapper` / `BackendValidator` |
+| **Operations** | `send` / `execute` / `dispatch` / `health` / `capabilities` / `listEndpoints` |
+| **Routing** | `/auth` `/workout` `/nutrition` `/recovery` `/coach` `/sync` `/profile` `/settings` (routes only; no URL building; no HTTP verbs) |
+| **Responses** | Success / Failure / Unavailable / Unauthorized / Forbidden / Conflict / ValidationError / NotFound (representation only) |
+| **Registry** | `BackendRegistry` / `BackendRegistration` / `BackendMetadata` / `BackendResult` |
+| **Integration** | Composition Root via `BackendFactory`; application APIs `getBackend` / `getBackendHealth` / `getBackendCapabilities` / `listBackendEndpoints` / `validateBackend` |
+| **Design** | **Infrastructure only. Deterministic Mock. No HTTP. No REST. No GraphQL. No sockets. No networking. No FastAPI. No ASP.NET. No Express. No NestJS. No serialization. No JSON parsing. No cloud. No business logic. Future backends replaceable without Domain changes.** |
+
+Full detail: [BACKEND_API_ADAPTER.md](./BACKEND_API_ADAPTER.md). ADR-103: [DECISIONS.md](./DECISIONS.md).
 
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 

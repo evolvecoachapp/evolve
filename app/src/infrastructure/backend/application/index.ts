@@ -1,0 +1,17 @@
+export {
+  BackendFactory,
+  getBackend,
+  getBackendHealth,
+  getBackendCapabilities,
+  listBackendEndpoints,
+  validateBackend,
+  BACKEND_ADAPTER_VERSION,
+  createBackendResult,
+  type BackendBundle,
+  type BackendFactoryDeps,
+  type BackendValidation,
+  type BackendResult,
+  type BackendCapabilities,
+  type BackendEndpoint,
+  type BackendHealth,
+} from "./BackendFactory";

@@ -16,6 +16,7 @@ export const ADAPTER_TOKENS = [
   "clock",
   "identifier-generator",
   "configuration",
+  "backend",
 ] as const;
 
 export type AdapterToken = (typeof ADAPTER_TOKENS)[number];

@@ -245,4 +245,16 @@ export class ServiceRegistry {
   getSynchronizationFactory(): ServiceMap["SynchronizationFactory"] {
     return this.resolve("SynchronizationFactory");
   }
+
+  getBackendRegistry(): ServiceMap["BackendRegistry"] {
+    return this.resolve("BackendRegistry");
+  }
+
+  getMockBackendProvider(): ServiceMap["MockBackendProvider"] {
+    return this.resolve("MockBackendProvider");
+  }
+
+  getBackendFactory(): ServiceMap["BackendFactory"] {
+    return this.resolve("BackendFactory");
+  }
 }

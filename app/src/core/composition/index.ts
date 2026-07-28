@@ -73,6 +73,7 @@ export {
   RepositoryAdapterFactory,
   AuthenticationFactory,
   SynchronizationFactory,
+  BackendFactory,
 } from "./factories";
 
 export {

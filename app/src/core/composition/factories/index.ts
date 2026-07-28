@@ -132,3 +132,9 @@ export type {
   SynchronizationCompositionFactoryDeps as SynchronizationFactoryDeps,
   SynchronizationBundle,
 } from "./SynchronizationFactory";
+
+export { BackendCompositionFactory as BackendFactory } from "./BackendFactory";
+export type {
+  BackendCompositionFactoryDeps as BackendFactoryDeps,
+  BackendBundle,
+} from "./BackendFactory";

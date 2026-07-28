@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-28  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-102). Append only — never renumber.
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-103). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -3073,4 +3073,31 @@ Models cover SynchronizationState / SynchronizationOperation / SynchronizationBa
 
 ---
 
-*New decisions are appended as Decision 102, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 103: Backend API Adapter Foundation (Sprint 30.5 product)
+
+**Date:** 2026-07-28
+**Status:** Accepted
+
+**Context:**
+EVOLVE production readiness requires a deterministic Backend API Adapter that represents every future backend communication without binding Domain features to HTTP, REST, GraphQL, or a concrete backend stack. Wiring FastAPI / ASP.NET / NestJS / Go / Rust / sockets now would violate Clean Architecture and sprint scope. Real backends must remain replaceable without changing the Domain.
+
+**Decision:**
+Introduce `infrastructure/backend` as the **Backend API Adapter Foundation** (first backend API infrastructure adapter):
+
+Application → Backend API Contract → Backend API Adapter → Mock Backend Provider.
+
+Introduce Infrastructure `BackendAdapter` contract (`adapterId: "backend"`) alongside existing Infrastructure Adapter Contracts. Models cover BackendRequest / BackendResponse / BackendEndpoint / BackendRoute / BackendMetadata / BackendCapabilities / BackendResult / BackendStatus / BackendHealth / BackendError (all immutable). Provider layer covers MockBackendProvider / BackendProviderFactory / BackendRequestDispatcher / BackendResponseMapper / BackendValidator. Supported operations: send / execute / dispatch / health / capabilities / listEndpoints (deterministic orchestration only). Routing represents paths only (`/auth` `/workout` `/nutrition` `/recovery` `/coach` `/sync` `/profile` `/settings`) — no URL building, no HTTP verbs. Responses represent Success / Failure / Unavailable / Unauthorized / Forbidden / Conflict / ValidationError / NotFound — no transport. Registry models cover BackendRegistry / BackendRegistration / BackendMetadata / BackendResult. Application APIs expose getBackend / getBackendHealth / getBackendCapabilities / listBackendEndpoints / validateBackend. Validation covers duplicate endpoints, invalid registrations, invalid capabilities, missing metadata, and unsupported operations. Composition Root registers MockBackendProvider / BackendRegistry / BackendFactory using Infrastructure BackendAdapter contracts. No HTTP, REST, GraphQL, sockets, networking, FastAPI, ASP.NET, Express, NestJS, serialization, JSON parsing, cloud, or business logic.
+
+**Alternatives considered:**
+- **Wire FastAPI / ASP.NET / NestJS / Go / Rust now** — rejected: sprint forbids real backends; Mock establishes the replaceable seam first.
+- **Embed HTTP / REST / GraphQL / sockets in the adapter** — rejected: Domain must never depend on transport; contracts and orchestration only.
+- **Bind Domain features to a concrete backend SDK** — rejected: Domain must depend only on Backend API Contracts.
+- **Add serialization / JSON parsing / networking** — rejected: adapter remains deterministic and transport-free.
+
+**Consequences:**
+- Documentation: [BACKEND_API_ADAPTER.md](./BACKEND_API_ADAPTER.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md).
+- Future backends (FastAPI, ASP.NET, NestJS, Go, Rust, GraphQL, REST) must implement the same provider contract and register via BackendRegistry; Domain remains unaware of concrete providers.
+
+---
+
+*New decisions are appended as Decision 103, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

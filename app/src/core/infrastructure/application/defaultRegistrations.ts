@@ -21,6 +21,7 @@ const ADAPTER_NAMES: Readonly<Record<AdapterToken, string>> = Object.freeze({
   clock: "ClockAdapter",
   "identifier-generator": "IdentifierGenerator",
   configuration: "ConfigurationProvider",
+  backend: "BackendAdapter",
 });
 
 const ADAPTER_DEFAULT_CAPABILITIES = {
@@ -42,6 +43,7 @@ const ADAPTER_DEFAULT_CAPABILITIES = {
   clock: [],
   "identifier-generator": [],
   configuration: ["supportsOffline"],
+  backend: ["supportsOffline"],
 } as const satisfies Record<AdapterToken, readonly AdapterCapability[]>;
 
 /** Canonical infrastructure adapter contract registrations (metadata only). */
