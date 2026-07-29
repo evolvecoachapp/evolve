@@ -446,25 +446,25 @@ Previous: **22.0 — Coaching Session Runtime**, **21.8 — Coach Supervisor Fou
 
 ---
 
-Current: **31.7 — Notification & Reminder Framework Foundation** (2026-07-29)
+Current: **31.8 — Progress & Analytics Framework Foundation** (2026-07-29)
 
-- Notification Center feature (`features/notification-center`) with deterministic notification domain
-- Immutable models: `NotificationItem`, `Reminder`, `ReminderSchedule`, `ReminderType`, `NotificationCategory`, `NotificationPriority`, `NotificationAction`, `NotificationState`, `DeliveryPolicy`, `CoachNotification`, `NotificationSettings`, `NotificationStatistics`, loading/saving/error states
-- Application APIs: `loadNotifications`, `refreshNotifications`, `dismissNotification`, `markNotificationRead`, `createReminder`, `updateReminder`, `deleteReminder`, `updateNotificationSettings`, `getNotificationStatistics`
-- `NotificationCenterViewModel` with subscriber pattern, loading/saving/error/empty state
-- Hooks: `useNotifications`, `useReminder`, `useNotificationSettings`, `useNotificationStatistics`
-- Components: header, notification card, reminder card, reminder editor, coach notification card, settings card, statistics card, skeleton, empty, error
-- `NotificationCenterScreen` presentation composition
-- Mock `NotificationCenterService` seam; Backend/Local stubs prepared
-- Coach Notifications prepared for AI provider integration
-- Delivery Policies and Quiet Hours modeled without scheduling engine
-- No push notifications, Firebase, APNS, Expo Notifications, Android APIs, permissions, background services, timers, networking, persistence
+- Progress Analytics feature (`features/progress-analytics`) with deterministic analytics domain
+- Immutable models: `AthleteProgress`, `ProgressSummary`, `WorkoutHistory`, `WorkoutStatistics`, `StrengthProgress`, `VolumeProgress`, `BodyMeasurement`, `BodyComposition`, `BodyWeightHistory`, `NutritionStatistics`, `RecoveryStatistics`, `SleepStatistics`, `PerformanceTrend`, `GoalProgress`, `PersonalRecord`, `TrainingConsistency`, `ProgressChart`, `AnalyticsPeriod`, `AnalyticsFilter`, `AnalyticsSnapshot`, loading/error states
+- Application APIs: `loadAnalytics`, `refreshAnalytics`, `loadWorkoutHistory`, `loadBodyMeasurements`, `loadStrengthProgress`, `loadNutritionStatistics`, `loadRecoveryStatistics`, `loadGoalProgress`, `loadPersonalRecords`, `loadAnalyticsSnapshot`
+- `ProgressAnalyticsViewModel` with subscriber pattern, loading/error/empty state
+- Hooks: `useAnalytics`, `useWorkoutHistory`, `useStrengthProgress`, `useBodyMeasurements`, `useGoalProgress`, `useAnalyticsSnapshot`
+- Components: header, summary, workout history, strength, body measurements, nutrition, recovery, goals, personal records, chart data, filter, skeleton, empty, error
+- `ProgressAnalyticsScreen` presentation composition
+- Mock `ProgressAnalyticsService` seam; Backend/Local stubs prepared
+- Analytics Categories and Periods represent only; chart data models without chart libraries
+- Navigation destinations prepared on models only
+- No calculations, chart libraries, persistence, networking, backend, wearable APIs
 
-Previous: **31.6 — Profile & Settings Experience** (2026-07-29)
+Previous: **31.7 — Notification & Reminder Framework Foundation** (2026-07-29)
 
 ## Next Sprint
 
-Continue Phase 31 Product Development. Candidate follow-ups: bridge Coach Experience `local` provider to Coach Intelligence → Memory → Context; wire OpenAI / Azure / Anthropic behind `CoachExperienceService` without UI changes; bridge `HomeService` / Workout Runtime / Profile / Notification providers to repository adapters; replace remaining Phase 30 mocks behind contracts (new ADR per provider); wire Profile preferences to backend authentication and cloud sync; wire Notification Center to Expo Notifications / FCM / APNS providers.
+Continue Phase 31 Product Development. Candidate follow-ups: bridge Progress Analytics providers to Workout / Nutrition / Recovery Engines; wire wearables behind `ProgressAnalyticsService` without UI changes; bridge Coach Experience `local` provider to Coach Intelligence → Memory → Context; wire OpenAI / Azure / Anthropic behind `CoachExperienceService`; bridge `HomeService` / Workout Runtime / Profile / Notification providers to repository adapters; replace remaining Phase 30 mocks behind contracts (new ADR per provider); wire Notification Center to Expo Notifications / FCM / APNS providers.
 
 ---
 

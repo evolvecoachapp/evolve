@@ -3440,4 +3440,56 @@ Mock Notification Provider
 
 ---
 
-*New decisions are appended as Decision 113, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+### Decision 113 — Progress & Analytics Framework Foundation (Sprint 31.8)
+
+**Status:** Accepted  
+**Date:** 2026-07-29  
+**ADR:** ADR-113  
+**Context:**
+
+Sprint 31.8 establishes the Progress & Analytics Framework Foundation — a deterministic analytics domain that models athlete progress, historical trends, body measurements, training statistics, recovery metrics, and performance summaries. No real analytics are calculated; no chart libraries or wearable APIs are introduced. The framework is designed so that future providers (Workout Engine, Nutrition Engine, Recovery Engine, Wearables, Backend, AI Coach) plug in without changing the Domain.
+
+**Decision:**
+
+Implement `features/progress-analytics` following the same ViewModel → Application → Service architecture as all Phase 31 experience modules:
+
+```
+React UI
+        │
+        ▼
+ProgressAnalyticsViewModel
+        │
+        ▼
+Application Use Cases
+        │
+        ▼
+ProgressAnalyticsService
+        │
+        ▼
+Mock Analytics Provider
+```
+
+1. Immutable presentation models (`AthleteProgress`, `ProgressSummary`, `WorkoutHistory`, `WorkoutStatistics`, `StrengthProgress`, `VolumeProgress`, `BodyMeasurement`, `BodyComposition`, `BodyWeightHistory`, `NutritionStatistics`, `RecoveryStatistics`, `SleepStatistics`, `PerformanceTrend`, `GoalProgress`, `PersonalRecord`, `TrainingConsistency`, `ProgressChart`, `AnalyticsPeriod`, `AnalyticsFilter`, `AnalyticsSnapshot`, loading/error states).
+2. Application APIs (`loadAnalytics`, `refreshAnalytics`, `loadWorkoutHistory`, `loadBodyMeasurements`, `loadStrengthProgress`, `loadNutritionStatistics`, `loadRecoveryStatistics`, `loadGoalProgress`, `loadPersonalRecords`, `loadAnalyticsSnapshot`) are the only operational path for UI.
+3. `ProgressAnalyticsViewModel` owns analytics loading, refresh, specialized slice loads, loading/error/empty state, and subscriber notifications — no UI code.
+4. Hooks (`useAnalytics`, `useWorkoutHistory`, `useStrengthProgress`, `useBodyMeasurements`, `useGoalProgress`, `useAnalyticsSnapshot`) subscribe to the ViewModel only.
+5. `ProgressAnalyticsScreen` composes presentation components only.
+6. `ProgressAnalyticsService` providers remain the replaceable data seam (Mock today; engines/wearables/backend later without UI changes).
+7. Analytics Categories and Periods represent only — no calculation or date engines.
+8. `ProgressChart` represents chart data only (line/bar/area/radar/scatter) — no chart libraries.
+9. Navigation destinations are prepared on models only.
+
+**Alternatives considered:**
+- **Extend progress-experience with calculation logic** — rejected: this sprint establishes a dedicated analytics domain framework and provider seam; experience UI remains separate.
+- **Introduce Victory/Recharts/D3 now** — rejected: chart data models only; rendering libraries are a future concern.
+- **Wire wearable SDKs now** — rejected: provider seam allows future HealthKit/Google Fit/Garmin/WHOOP integration without domain changes.
+- **Calculate real analytics from engines** — rejected: this sprint is presentation and domain modeling only.
+
+**Consequences:**
+- Documentation: [PROGRESS_ANALYTICS_ARCHITECTURE.md](./PROGRESS_ANALYTICS_ARCHITECTURE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Analytics UI can swap Mock → Backend/Local/Engine providers via `EXPO_PUBLIC_PROGRESS_ANALYTICS_PROVIDER` without changing screens or components.
+- Future engine, wearable, and persistence wiring stays behind `ProgressAnalyticsService`.
+
+---
+
+*New decisions are appended as Decision 114, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

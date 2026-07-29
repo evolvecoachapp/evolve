@@ -240,6 +240,9 @@ Progress Experience              ← Sprint 31.4 product (implemented) — athle
 Nutrition Experience             ← Sprint 31.5 product (implemented) — daily nutrition command center via ViewModel → Application → ExperienceService
   (`app/src/features/nutrition-experience/`)
   ↓
+Progress & Analytics Framework   ← Sprint 31.8 product (implemented) — deterministic analytics domain via ViewModel → Application → ProgressAnalyticsService
+  (`app/src/features/progress-analytics/`)
+  ↓
 Athlete State Engine             ← Sprint 22.1 (implemented) — immutable athlete truth aggregated from specialists
   (`app/src/features/athlete-state/`)
   ↓
@@ -1498,6 +1501,19 @@ Full detail: [PROGRESS_EXPERIENCE_ARCHITECTURE.md](./PROGRESS_EXPERIENCE_ARCHITE
 
 Full detail: [NUTRITION_EXPERIENCE_ARCHITECTURE.md](./NUTRITION_EXPERIENCE_ARCHITECTURE.md). ADR-110: [DECISIONS.md](./DECISIONS.md).
 
+### Progress & Analytics Framework (`features/progress-analytics`) — Sprint 31.8 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Deterministic analytics domain — athlete progress, trends, body measurements, training/recovery/nutrition statistics, and performance summaries for future engine/wearable/backend feeds |
+| **Flow** | React UI → `ProgressAnalyticsViewModel` → Application APIs → Mappers → `ProgressAnalyticsService` → Mock/Backend/Local providers |
+| **Models** | `AthleteProgress`, `ProgressSummary`, `WorkoutHistory`, `WorkoutStatistics`, `StrengthProgress`, `VolumeProgress`, `BodyMeasurement`, `BodyComposition`, `BodyWeightHistory`, `NutritionStatistics`, `RecoveryStatistics`, `SleepStatistics`, `PerformanceTrend`, `GoalProgress`, `PersonalRecord`, `TrainingConsistency`, `ProgressChart`, `AnalyticsPeriod`, `AnalyticsFilter`, `AnalyticsSnapshot`, loading/error states |
+| **Application** | `loadAnalytics` / `refreshAnalytics` / `loadWorkoutHistory` / `loadBodyMeasurements` / `loadStrengthProgress` / `loadNutritionStatistics` / `loadRecoveryStatistics` / `loadGoalProgress` / `loadPersonalRecords` / `loadAnalyticsSnapshot` |
+| **UI** | `ProgressAnalyticsScreen` + header / summary / workout history / strength / body measurements / nutrition / recovery / goals / personal records / chart data / filter / skeleton / empty / error; pull-to-refresh |
+| **Design** | **No calculations. No chart libraries. No Victory/Recharts/D3. No persistence. No networking. No backend. No wearable APIs. Presentation only.** Categories/periods/charts represent data only; destinations prepared |
+
+Full detail: [PROGRESS_ANALYTICS_ARCHITECTURE.md](./PROGRESS_ANALYTICS_ARCHITECTURE.md). ADR-113: [DECISIONS.md](./DECISIONS.md).
+
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 
 | Aspect | Implementation |
@@ -1819,5 +1835,6 @@ AIOrchestrator.process_message (async)
 | 110 | Nutrition Experience (Sprint 31.5) |
 | 111 | Profile Experience (Sprint 31.6) |
 | 112 | Notification & Reminder Framework Foundation (Sprint 31.7) |
+| 113 | Progress & Analytics Framework Foundation (Sprint 31.8) |
 
 Full list: [DECISIONS.md](./DECISIONS.md). Audit: [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md).
