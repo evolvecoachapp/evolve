@@ -2,9 +2,10 @@ import type { CoachTimelineDomain } from "./CoachTimelineEntry";
 import type { CoachTimelineEventCategory } from "./CoachTimelineEvent";
 
 /**
- * Immutable filter criteria for timeline queries.
+ * Immutable filter criteria for Decision Journal timeline queries (ADR-086).
+ * Distinct from the Sprint 31.9 athlete-event TimelineFilter presentation model.
  */
-export interface TimelineFilter {
+export interface CoachTimelineJournalFilter {
   readonly categories?: readonly CoachTimelineEventCategory[];
   readonly domains?: readonly CoachTimelineDomain[];
   readonly conversationId?: string | null;

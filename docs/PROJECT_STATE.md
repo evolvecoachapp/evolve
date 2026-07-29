@@ -18,7 +18,7 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Auth | Connected — login, register, refresh, secure-store tokens |
 | Navigation | 6-tab bottom bar (Home, Workout, Nutrition, Coach, Progress, Profile) |
 | Design system | Token-based theme with light/dark/system preference (`ThemeContext`) |
-| Feature modules | coach, coach-experience, workout, nutrition, nutrition-experience, progress, progress-experience, analytics, home, home-experience, daily-brief, weekly-report, dashboard, profile, profile-experience, shared, athlete-identity, runtime-environment; plus AI/training domains below |
+| Feature modules | coach, coach-experience, coach-timeline, workout, nutrition, nutrition-experience, progress, progress-experience, progress-analytics, notification-center, analytics, home, home-experience, daily-brief, weekly-report, dashboard, profile, profile-experience, shared, athlete-identity, runtime-environment; plus AI/training domains below |
 | Data layer | Service factory pattern; Composition Root DI for Training Intelligence pipeline (`core/composition`, Sprint 17.9); Decision Intelligence explanations (`core/decision-intelligence`, Sprint 17.10); Workout Runtime execution state (`features/workout-runtime`, Sprint 18.0); Rest Runtime rest periods (`features/rest-runtime`, Sprint 18.1); Domain Events execution substrate (`core/domain-events`, Sprint 18.2); Performance Engine single-session snapshots (`features/performance-engine`, Sprint 18.3); Achievement Engine Personal Records (`features/achievement-engine`, Sprint 18.4); Athlete History immutable chronological record (`features/athlete-history`, Sprint 18.5); Recovery Intelligence deterministic recovery snapshots (`features/recovery-intelligence`, Sprint 18.6); Insight Engine deterministic domain insight snapshots (`features/insight-engine`, Sprint 18.7); Coach Intelligence immutable Coaching Context preparation (`features/coach-intelligence`, Sprint 18.8); Conversation Orchestrator immutable Conversation Context preparation (`features/conversation-orchestrator`, Sprint 19.0); Prompt Composition Engine immutable Prompt Package composition (`features/prompt-composition`, Sprint 19.1); Agent Framework / Runtime / Collaboration / Capability foundations (Sprint 21.x); Conversation Memory (`features/conversation-memory`, Sprint 21.4); Coach Timeline (`features/coach-timeline`, Sprint 25.4); Proactive Coach Insights (`features/proactive-insights`, Sprint 25.5); Explainable Coaching Session (`features/coaching-session/composition`, Sprint 26.1); Home Experience (`features/home-experience`, Sprint 27.1); Athlete Daily Brief (`features/daily-brief`, Sprint 27.2); Weekly Coach Report (`features/weekly-report`, Sprint 27.3); Athlete Intelligence Workspace (`features/intelligence-workspace`, Sprint 28.1); Athlete Snapshot (`features/athlete-snapshot`, Sprint 28.2); Unified Athlete Workspace (`features/unified-workspace`, Sprint 28.3); Athlete Identity Foundation (`features/athlete-identity`, Sprint 29.1); Runtime Environment Foundation (`features/runtime-environment`, Sprint 29.2); Persistence Contract Foundation (`core/persistence`, Sprint 29.3); Infrastructure Adapter Contracts (`core/infrastructure`, Sprint 29.4); SQLite Infrastructure Adapter (`infrastructure/sqlite`, Sprint 30.1); Repository Adapter Integration (`infrastructure/repositories`, Sprint 30.2); Authentication Adapter Foundation (`infrastructure/authentication`, Sprint 30.3); Synchronization Adapter Foundation (`infrastructure/synchronization`, Sprint 30.4); Backend API Adapter Foundation (`infrastructure/backend`, Sprint 30.5); Logging Adapter Foundation (`infrastructure/logging`, Sprint 30.6); Architecture Consolidation (`docs/ARCHITECTURE_REVIEW.md`, Sprint 30.7); Real Home Dashboard (`features/home` ViewModel → Application → HomeService, Sprint 31.1); Workout Runtime Experience (`features/workout-runtime` ViewModel → Application → ExperienceService, Sprint 31.2); Coach Experience (`features/coach-experience` ViewModel → Application → ExperienceService, Sprint 31.3); Progress Experience (`features/progress-experience` ViewModel → Application → ExperienceService, Sprint 31.4); Nutrition Experience (`features/nutrition-experience` ViewModel → Application → ExperienceService, Sprint 31.5); Profile Experience (`features/profile-experience` ViewModel → Application → ExperienceService, Sprint 31.6); user/workout backend providers; on-device workout history via `WorkoutHistoryRepository` + `StorageAdapter` (Sprint 13.0); analytics via `WorkoutAnalyticsRepository` (Sprint 14.0) |
 | Backend providers | `BackendUserService`, `BackendWorkoutService` live; other `Backend*Service` classes throw `notConfigured()` |
 | Tests | Jest + jest-expo |
@@ -60,7 +60,7 @@ For onboarding and philosophy see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md). Fo
 | Prompt Composition Engine | `features/prompt-composition` | Foundation complete (19.1) — immutable Prompt Package composition only |
 | Plan History | `features/plan-history` | Foundation complete (25.2) — append-only immutable plan versions only |
 | Plan Restore | `features/plan-restore` | Foundation complete (25.3) — restore snapshot as new version only |
-| Coach Timeline | `features/coach-timeline` | Foundation complete (25.4) — append-only coach decision journal only |
+| Coach Timeline | `features/coach-timeline` | Foundation complete (25.4) — append-only coach decision journal; Framework Foundation complete (31.9) — athlete-event presentation domain via ViewModel → Application → CoachTimelineFrameworkService |
 | Proactive Insights | `features/proactive-insights` | Foundation complete (25.5) — deterministic coach insights from existing evidence only |
 | Explainable Coaching Session | `features/coaching-session/composition` | Foundation complete (26.1) — compose existing evidence into immutable session artifacts only |
 | Home Experience | `features/home-experience` | Foundation complete (27.1) — compose existing coaching knowledge into Home dashboard experience only |
@@ -446,7 +446,22 @@ Previous: **22.0 — Coaching Session Runtime**, **21.8 — Coach Supervisor Fou
 
 ---
 
-Current: **31.8 — Progress & Analytics Framework Foundation** (2026-07-29)
+Current: **31.9 — Coach Timeline Framework Foundation** (2026-07-29)
+
+- Coach Timeline Framework (`features/coach-timeline`) colocated with Decision Journal
+- Immutable models: `TimelineEvent`, `TimelineEventType`, `TimelineCategory`, `TimelinePriority`, `TimelineSection`, `TimelineFilter`, `TimelinePeriod`, `TimelineMetadata`, `TimelineStatistics`, `TimelineSnapshot`, `TimelinePagination`, `TimelineCursor`, `TimelineGroup`, `TimelineAction`, `TimelineBadge`, `TimelineAttachment`, `AthleteTimeline`, loading/error states
+- Application APIs: `loadTimeline`, `refreshTimeline`, `loadMoreTimeline`, `filterTimeline`, `searchTimeline`, `loadTimelineStatistics`, `loadTimelineSnapshot`
+- `CoachTimelineViewModel` with subscriber pattern, loading/error/empty state, cursor pagination, filter/search
+- Hooks: `useTimeline`, `useTimelineFilters`, `useTimelineStatistics`, `useTimelineSnapshot`, `useTimelineSearch`
+- Components: header, event card, group header, statistics, filter, search, section, load more, skeleton, empty, error
+- `CoachTimelineScreen` presentation composition
+- Mock `CoachTimelineFrameworkService` seam; Backend/Local stubs prepared
+- Event types / categories / periods / groups represent only; cursor pagination & search representation only
+- Navigation destinations prepared on models only
+- No event sourcing, realtime, networking, persistence, search engine, analytics calculations
+- Decision Journal (ADR-086) preserved
+
+Previous: **31.8 — Progress & Analytics Framework Foundation** (2026-07-29)
 
 - Progress Analytics feature (`features/progress-analytics`) with deterministic analytics domain
 - Immutable models: `AthleteProgress`, `ProgressSummary`, `WorkoutHistory`, `WorkoutStatistics`, `StrengthProgress`, `VolumeProgress`, `BodyMeasurement`, `BodyComposition`, `BodyWeightHistory`, `NutritionStatistics`, `RecoveryStatistics`, `SleepStatistics`, `PerformanceTrend`, `GoalProgress`, `PersonalRecord`, `TrainingConsistency`, `ProgressChart`, `AnalyticsPeriod`, `AnalyticsFilter`, `AnalyticsSnapshot`, loading/error states
@@ -464,7 +479,7 @@ Previous: **31.7 — Notification & Reminder Framework Foundation** (2026-07-29)
 
 ## Next Sprint
 
-Continue Phase 31 Product Development. Candidate follow-ups: bridge Progress Analytics providers to Workout / Nutrition / Recovery Engines; wire wearables behind `ProgressAnalyticsService` without UI changes; bridge Coach Experience `local` provider to Coach Intelligence → Memory → Context; wire OpenAI / Azure / Anthropic behind `CoachExperienceService`; bridge `HomeService` / Workout Runtime / Profile / Notification providers to repository adapters; replace remaining Phase 30 mocks behind contracts (new ADR per provider); wire Notification Center to Expo Notifications / FCM / APNS providers.
+Continue Phase 31 Product Development. Candidate follow-ups: bridge Coach Timeline Framework providers to Workout / Nutrition / Recovery / Coach / Notification / Analytics / Profile / Sync sources; bridge Progress Analytics providers to Workout / Nutrition / Recovery Engines; wire wearables behind `ProgressAnalyticsService` without UI changes; bridge Coach Experience `local` provider to Coach Intelligence → Memory → Context; wire OpenAI / Azure / Anthropic behind `CoachExperienceService`; bridge `HomeService` / Workout Runtime / Profile / Notification providers to repository adapters; replace remaining Phase 30 mocks behind contracts (new ADR per provider); wire Notification Center to Expo Notifications / FCM / APNS providers.
 
 ---
 

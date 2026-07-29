@@ -243,6 +243,9 @@ Nutrition Experience             ← Sprint 31.5 product (implemented) — daily
 Progress & Analytics Framework   ← Sprint 31.8 product (implemented) — deterministic analytics domain via ViewModel → Application → ProgressAnalyticsService
   (`app/src/features/progress-analytics/`)
   ↓
+Coach Timeline Framework         ← Sprint 31.9 product (implemented) — deterministic athlete-event timeline via ViewModel → Application → CoachTimelineFrameworkService
+  (`app/src/features/coach-timeline/`)
+  ↓
 Athlete State Engine             ← Sprint 22.1 (implemented) — immutable athlete truth aggregated from specialists
   (`app/src/features/athlete-state/`)
   ↓
@@ -1170,12 +1173,25 @@ Full detail: [PLAN_HISTORY.md](./PLAN_HISTORY.md). Workout Pipeline: [WORKOUT_PI
 |--------|----------------|
 | **Purpose** | Chronological reasoning history of the AI Coach (decision journal) |
 | **Flow** | Conversation → Coach Decision → Journal Entry → Timeline → Coach Memory → Conversation |
-| **Models** | `CoachTimeline`, `CoachTimelineEntry`, `CoachTimelineEvent`, `CoachTimelineSummary`, `CoachTimelineSnapshot`, `CoachDecisionReason`, `TimelineFilter`, `TimelineQuery`, `TimelineResult` |
+| **Models** | `CoachTimeline`, `CoachTimelineEntry`, `CoachTimelineEvent`, `CoachTimelineSummary`, `CoachTimelineSnapshot`, `CoachDecisionReason`, `CoachTimelineJournalFilter`, `TimelineQuery`, `TimelineResult` |
 | **Services** | `appendTimelineEntry`, `buildTimelineSummary`, `queryTimeline`, `filterTimeline`, `groupTimelineEvents`, `validateTimeline`, `CoachTimelineService` |
 | **Integration** | Coach Conversation `timeline_query`; Plan History / Restore; Nutrition / Recovery / Decision / Goal Progress hooks; Composition Root `CoachTimelineService` |
 | **Design** | **Not chat history. Not analytics. Not an event bus. No persistence.** Append-only immutable entries; grounded answers only |
 
 Full detail: [COACH_TIMELINE.md](./COACH_TIMELINE.md). ADR-086: [DECISIONS.md](./DECISIONS.md).
+
+### Coach Timeline Framework (`features/coach-timeline`) — Sprint 31.9 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Deterministic athlete-event timeline domain — chronological events from every future EVOLVE module for presentation |
+| **Flow** | React UI → `CoachTimelineViewModel` → Application APIs → Mappers → `CoachTimelineFrameworkService` → Mock/Backend/Local providers |
+| **Models** | `TimelineEvent`, `TimelineEventType`, `TimelineCategory`, `TimelinePriority`, `TimelineSection`, `TimelineFilter`, `TimelinePeriod`, `TimelineMetadata`, `TimelineStatistics`, `TimelineSnapshot`, `TimelinePagination`, `TimelineCursor`, `TimelineGroup`, `TimelineAction`, `TimelineBadge`, `TimelineAttachment`, `AthleteTimeline`, loading/error states |
+| **Application** | `loadTimeline` / `refreshTimeline` / `loadMoreTimeline` / `filterTimeline` / `searchTimeline` / `loadTimelineStatistics` / `loadTimelineSnapshot` |
+| **UI** | `CoachTimelineScreen` + header / event card / group header / statistics / filter / search / section / load more / skeleton / empty / error; pull-to-refresh |
+| **Design** | **No event sourcing. No realtime. No WebSocket/SignalR. No Firebase/Supabase. No networking. No persistence. No search engine. No analytics calculations. Presentation only.** Coexists with ADR-086 Decision Journal; destinations prepared |
+
+Full detail: [COACH_TIMELINE_ARCHITECTURE.md](./COACH_TIMELINE_ARCHITECTURE.md). ADR-114: [DECISIONS.md](./DECISIONS.md).
 
 ### Proactive Coach Insights (`features/proactive-insights`) — Sprint 25.5 product
 
@@ -1836,5 +1852,6 @@ AIOrchestrator.process_message (async)
 | 111 | Profile Experience (Sprint 31.6) |
 | 112 | Notification & Reminder Framework Foundation (Sprint 31.7) |
 | 113 | Progress & Analytics Framework Foundation (Sprint 31.8) |
+| 114 | Coach Timeline Framework Foundation (Sprint 31.9) |
 
 Full list: [DECISIONS.md](./DECISIONS.md). Audit: [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md).

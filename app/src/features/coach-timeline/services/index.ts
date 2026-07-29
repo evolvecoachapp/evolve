@@ -16,3 +16,6 @@ export {
   createCoachTimelineService,
   type CoachTimelineServiceDeps,
 } from "./CoachTimelineService";
+export * from "./CoachTimelineFrameworkService";
+export * from "./coachTimelineFrameworkFactory";
+export * from "./defaultCoachTimelineFrameworkService";

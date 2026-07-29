@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-29  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-109). Append only — never renumber.
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-114). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -3492,4 +3492,61 @@ Mock Analytics Provider
 
 ---
 
-*New decisions are appended as Decision 114, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 114 — Coach Timeline Framework Foundation (Sprint 31.9)
+
+**Status:** Accepted  
+**Date:** 2026-07-29  
+**ADR:** ADR-114  
+**Context:**
+
+Sprint 31.9 establishes the Coach Timeline Framework Foundation — a deterministic timeline domain that aggregates chronological athlete events from every future EVOLVE module. No event sourcing, realtime, networking, persistence, search engine, or analytics calculations are introduced. The framework is designed so that future sources (Workout, Nutrition, Recovery, Coach Intelligence, Notification Center, Progress Analytics, Athlete Profile, Synchronization, Backend) contribute events through the Timeline Service without changing the Domain.
+
+`features/coach-timeline` already hosts the Sprint 25.4 Decision Journal (ADR-086). This sprint colocates the athlete-event presentation framework in the same module (same pattern as Workout Runtime Experience extending the runtime engine module).
+
+**Decision:**
+
+Extend `features/coach-timeline` with the Phase 31 ViewModel → Application → Service framework:
+
+```
+React UI
+        │
+        ▼
+CoachTimelineViewModel
+        │
+        ▼
+Application Use Cases
+        │
+        ▼
+CoachTimelineFrameworkService
+        │
+        ▼
+Mock Timeline Provider
+```
+
+1. Immutable presentation models (`TimelineEvent`, `TimelineEventType`, `TimelineCategory`, `TimelinePriority`, `TimelineSection`, `TimelineFilter`, `TimelinePeriod`, `TimelineMetadata`, `TimelineStatistics`, `TimelineSnapshot`, `TimelinePagination`, `TimelineCursor`, `TimelineGroup`, `TimelineAction`, `TimelineBadge`, `TimelineAttachment`, loading/error states, `AthleteTimeline` aggregate).
+2. Application APIs (`loadTimeline` / `refreshTimeline` / `loadMoreTimeline` / `filterTimeline` / `searchTimeline` / `loadTimelineStatistics` / `loadTimelineSnapshot`) are the only operational path for UI.
+3. `CoachTimelineViewModel` owns timeline loading, refresh, pagination, filter, search, loading/error/empty state, and subscriber notifications — no UI code.
+4. Hooks (`useTimeline`, `useTimelineFilters`, `useTimelineStatistics`, `useTimelineSnapshot`, `useTimelineSearch`) subscribe to the ViewModel only.
+5. `CoachTimelineScreen` composes presentation components only.
+6. `CoachTimelineFrameworkService` providers remain the replaceable data seam (Mock today; engines/backend later without UI changes). Selected via `EXPO_PUBLIC_COACH_TIMELINE_PROVIDER`.
+7. Event types, categories, periods, and groups represent only.
+8. Pagination is cursor-based representation only — no backend.
+9. Search is representation only — no indexing / search engine.
+10. Navigation destinations are prepared on models only — no route wiring.
+11. ADR-086 Decision Journal `CoachTimelineService` class remains unchanged for append-only coach reasoning history. Journal filter criteria are named `CoachTimelineJournalFilter` to avoid colliding with the framework `TimelineFilter` presentation model.
+
+**Alternatives considered:**
+- **Replace the Decision Journal with the athlete-event timeline** — rejected: journal and athlete timeline are distinct bounded contexts; both remain.
+- **Create a separate `timeline-experience` feature folder** — rejected: sprint targets `features/coach-timeline` and Workout Runtime already established colocating experience layers.
+- **Implement event sourcing / realtime / WebSocket now** — rejected: this sprint is presentation and domain modeling only.
+- **Wire networking/backend/search engine now** — rejected: provider seam allows future integration without domain changes.
+
+**Consequences:**
+- Documentation: [COACH_TIMELINE_ARCHITECTURE.md](./COACH_TIMELINE_ARCHITECTURE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Timeline UI can swap Mock → Backend/Local/Engine providers via `EXPO_PUBLIC_COACH_TIMELINE_PROVIDER` without changing screens or components.
+- Future module event feeds stay behind `CoachTimelineFrameworkService` without Domain changes.
+- Decision Journal consumers continue using `CoachTimelineService` (ADR-086).
+
+---
+
+*New decisions are appended as Decision 115, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

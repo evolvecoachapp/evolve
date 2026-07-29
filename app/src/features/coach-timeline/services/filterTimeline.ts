@@ -1,5 +1,5 @@
 import type { CoachTimelineEntry } from "../models/CoachTimelineEntry";
-import type { TimelineFilter } from "../models/TimelineFilter";
+import type { CoachTimelineJournalFilter } from "../models/CoachTimelineJournalFilter";
 
 function matchesSearch(
   entry: CoachTimelineEntry,
@@ -27,7 +27,7 @@ function matchesSearch(
  */
 export function filterTimeline(
   entries: readonly CoachTimelineEntry[],
-  filter: TimelineFilter | null | undefined,
+  filter: CoachTimelineJournalFilter | null | undefined,
 ): readonly CoachTimelineEntry[] {
   if (!filter) {
     return Object.freeze([...entries]);
