@@ -446,9 +446,25 @@ Previous: **22.0 — Coaching Session Runtime**, **21.8 — Coach Supervisor Fou
 
 ---
 
+Current: **31.7 — Notification & Reminder Framework Foundation** (2026-07-29)
+
+- Notification Center feature (`features/notification-center`) with deterministic notification domain
+- Immutable models: `NotificationItem`, `Reminder`, `ReminderSchedule`, `ReminderType`, `NotificationCategory`, `NotificationPriority`, `NotificationAction`, `NotificationState`, `DeliveryPolicy`, `CoachNotification`, `NotificationSettings`, `NotificationStatistics`, loading/saving/error states
+- Application APIs: `loadNotifications`, `refreshNotifications`, `dismissNotification`, `markNotificationRead`, `createReminder`, `updateReminder`, `deleteReminder`, `updateNotificationSettings`, `getNotificationStatistics`
+- `NotificationCenterViewModel` with subscriber pattern, loading/saving/error/empty state
+- Hooks: `useNotifications`, `useReminder`, `useNotificationSettings`, `useNotificationStatistics`
+- Components: header, notification card, reminder card, reminder editor, coach notification card, settings card, statistics card, skeleton, empty, error
+- `NotificationCenterScreen` presentation composition
+- Mock `NotificationCenterService` seam; Backend/Local stubs prepared
+- Coach Notifications prepared for AI provider integration
+- Delivery Policies and Quiet Hours modeled without scheduling engine
+- No push notifications, Firebase, APNS, Expo Notifications, Android APIs, permissions, background services, timers, networking, persistence
+
+Previous: **31.6 — Profile & Settings Experience** (2026-07-29)
+
 ## Next Sprint
 
-Continue Phase 31 Product Development. Candidate follow-ups: bridge Coach Experience `local` provider to Coach Intelligence → Memory → Context; wire OpenAI / Azure / Anthropic behind `CoachExperienceService` without UI changes; bridge `HomeService` / Workout Runtime / Profile providers to repository adapters; replace remaining Phase 30 mocks behind contracts (new ADR per provider); wire Profile preferences to backend authentication and cloud sync.
+Continue Phase 31 Product Development. Candidate follow-ups: bridge Coach Experience `local` provider to Coach Intelligence → Memory → Context; wire OpenAI / Azure / Anthropic behind `CoachExperienceService` without UI changes; bridge `HomeService` / Workout Runtime / Profile / Notification providers to repository adapters; replace remaining Phase 30 mocks behind contracts (new ADR per provider); wire Profile preferences to backend authentication and cloud sync; wire Notification Center to Expo Notifications / FCM / APNS providers.
 
 ---
 
@@ -460,7 +476,7 @@ Continue Phase 31 Product Development. Candidate follow-ups: bridge Coach Experi
 | 2 Authentication | 10% | 90% |
 | 3 Workout Engine | 15% | 100% |
 | 4 AI Coach | 25% | 95% |
-| 5 Mobile App | 30% | 78% |
+| 5 Mobile App | 30% | 80% |
 | 6 Production | 10% | 0% |
 
-**Weighted overall: ~81%**
+**Weighted overall: ~82%**

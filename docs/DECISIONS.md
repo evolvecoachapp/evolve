@@ -3387,4 +3387,57 @@ Future provider implementations may bridge to authentication, backend APIs, clou
 
 ---
 
-*New decisions are appended as Decision 112, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+### Decision 112 — Notification & Reminder Framework Foundation (Sprint 31.7)
+
+**Status:** Accepted  
+**Date:** 2026-07-29  
+**ADR:** ADR-112  
+**Context:**
+
+Sprint 31.7 establishes the Notification & Reminder Framework Foundation — a deterministic notification domain that manages reminders, scheduled events, intelligent coach notifications, delivery policies, and notification state. No real notifications are sent; no OS integrations are made. The framework is designed so that future providers (Expo Notifications, Firebase Cloud Messaging, APNS, Android Notification Manager) plug in without changing the Domain.
+
+**Decision:**
+
+Implement `features/notification-center` following the same ViewModel → Application → Service architecture as all Phase 31 experience modules:
+
+```
+React UI
+        │
+        ▼
+Notification ViewModel
+        │
+        ▼
+Application Use Cases
+        │
+        ▼
+Notification Service Contract
+        │
+        ▼
+Mock Notification Provider
+```
+
+1. Immutable presentation models (`NotificationItem`, `Reminder`, `ReminderSchedule`, `ReminderType`, `NotificationCategory`, `NotificationPriority`, `NotificationAction`, `NotificationState`, `DeliveryPolicy`, `CoachNotification`, `NotificationSettings`, `NotificationStatistics`, loading/saving/error states).
+2. Application APIs (`loadNotifications`, `refreshNotifications`, `dismissNotification`, `markNotificationRead`, `createReminder`, `updateReminder`, `deleteReminder`, `updateNotificationSettings`, `getNotificationStatistics`) are the only operational path for UI.
+3. `NotificationCenterViewModel` owns notification loading, refresh, reminder CRUD, settings updates, loading/saving/error/empty state, and subscriber notifications — no UI code.
+4. Hooks (`useNotifications`, `useReminder`, `useNotificationSettings`, `useNotificationStatistics`) subscribe to the ViewModel only.
+5. `NotificationCenterScreen` composes presentation components only.
+6. `NotificationCenterService` providers remain the replaceable data seam (Mock today; Expo/FCM/APNS/Android later without UI changes).
+7. Coach Notifications are prepared for AI provider integration with context field.
+8. Delivery Policies (immediate/scheduled/daily/weekly/manual/disabled) and Quiet Hours are modeled without scheduling engine.
+9. Reminder Types (workout/nutrition/recovery/hydration/sleep/body_weight/coach/custom) represent only.
+10. Notification States (pending/scheduled/delivered/dismissed/expired/cancelled) represent only — no timers.
+
+**Alternatives considered:**
+- **Use Expo Notifications directly** — rejected: this sprint establishes the domain framework and provider seam only; OS integration is a future concern.
+- **Combine notifications with profile preferences** — rejected: notification center is a distinct bounded context with its own lifecycle.
+- **Implement a scheduling engine** — rejected: this sprint is presentation and domain modeling only.
+- **Wire Firebase/APNS now** — rejected: provider seam allows future integration without domain changes.
+
+**Consequences:**
+- Documentation: [NOTIFICATION_CENTER_ARCHITECTURE.md](./NOTIFICATION_CENTER_ARCHITECTURE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Notification UI can swap Mock → Backend/Local/Expo/FCM providers via `EXPO_PUBLIC_NOTIFICATION_CENTER_PROVIDER` without changing screens or components.
+- Future push notification, scheduling, and persistence wiring stays behind `NotificationCenterService`.
+
+---
+
+*New decisions are appended as Decision 113, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

@@ -1818,5 +1818,6 @@ AIOrchestrator.process_message (async)
 | 109 | Progress Experience (Sprint 31.4) |
 | 110 | Nutrition Experience (Sprint 31.5) |
 | 111 | Profile Experience (Sprint 31.6) |
+| 112 | Notification & Reminder Framework Foundation (Sprint 31.7) |
 
 Full list: [DECISIONS.md](./DECISIONS.md). Audit: [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md).
