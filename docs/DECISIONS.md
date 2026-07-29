@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-29  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-108). Append only — never renumber.
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-109). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -3267,4 +3267,43 @@ Future provider implementations may bridge to Coach Intelligence → Memory → 
 
 ---
 
-*New decisions are appended as Decision 108, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 109: Progress Experience (Sprint 31.4 product)
+
+**Date:** 2026-07-29
+**Status:** Accepted
+
+**Context:**
+Phase 31 Product Development continues with the Progress tab. EVOLVE already has legacy progress mocks, workout analytics foundations, recovery and coach-intelligence domains, and flagship product patterns for Home / Workout Runtime / Coach. The Progress tab still needed a true athlete analytics product layer — immutable presentation models, application use cases, a ViewModel, hooks, and reusable components — that aggregates training, nutrition, recovery, body metrics, records, goals, and coach insights into one dashboard without embedding business logic in React or binding the UI to chart libraries or infrastructure.
+
+**Decision:**
+Introduce the **Progress Experience** product module at `features/progress-experience`:
+
+```
+React UI → ProgressExperienceViewModel → Application Use Cases → Mappers → ProgressExperienceService → Mock/Backend/Local providers
+```
+
+Future provider implementations may bridge to repositories, persistence adapters, backend APIs, or AI-generated insights without changing UI.
+
+1. Immutable presentation models (`ProgressDashboard`, `StrengthProgress`, `VolumeProgress`, `RecoveryProgress`, `NutritionProgress`, `BodyMetrics`, `CoachInsightSummary`, `PersonalRecord`, `TrainingStreak`, `GoalProgress`, `TimeRange`, loading/error states) plus reusable chart-ready models.
+2. Application APIs (`loadProgressDashboard`, `refreshProgressDashboard`, `loadStrengthProgress`, `loadVolumeProgress`, `loadRecoveryProgress`, `loadNutritionProgress`, `loadBodyMetrics`, `loadCoachInsights`, `changeTimeRange`) are the only operational path for UI.
+3. `ProgressExperienceViewModel` owns dashboard loading, refresh, time-range selection, section reloads, loading/error/empty state, and subscriber notifications — no UI code.
+4. Hooks (`useProgressDashboard`, `useTimeRange`, `useCoachInsights`) subscribe to the ViewModel only.
+5. `ProgressExperienceScreen` composes presentation components only; route `app/(app)/(tabs)/progress.tsx` targets it.
+6. `ProgressExperienceService` providers remain the replaceable data seam (Mock today; Backend/Local/persistence-backed later without UI changes).
+7. Future navigation destinations (detailed analytics, exercise history, goal details, body metrics) are prepared as routes on the read model without implementing new screens in this sprint.
+8. No chart-specific dependency is introduced in this sprint; placeholders remain swappable behind reusable chart models.
+
+**Alternatives considered:**
+- **Keep extending the legacy `ProgressScreen` directly** — rejected: Sprint 31.4 needs the same ViewModel → Application → Service product architecture as the other Phase 31 screens.
+- **Read legacy progress mocks directly from React components** — rejected: components must remain presentation-only.
+- **Introduce a chart library now** — rejected: this sprint prepares chart models and card contracts only; visualization technology remains replaceable.
+- **Bind Progress UI directly to repositories/backend/persistence** — rejected: violates the application-layer boundary and prevents provider swapping.
+
+**Consequences:**
+- Documentation: [PROGRESS_EXPERIENCE_ARCHITECTURE.md](./PROGRESS_EXPERIENCE_ARCHITECTURE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Progress UI can swap Mock → Backend/Local/persistence-backed providers via `EXPO_PUBLIC_PROGRESS_EXPERIENCE_PROVIDER` without changing screens or components.
+- Existing legacy `features/progress` mocks remain a source seam for this sprint; future persistence/backend wiring stays behind `ProgressExperienceService`.
+
+---
+
+*New decisions are appended as Decision 109, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

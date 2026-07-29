@@ -234,6 +234,9 @@ Workout Runtime Experience       ← Sprint 31.2 product (implemented) — opera
 Coach Experience                 ← Sprint 31.3 product (implemented) — flagship contextual AI Coach UI via ViewModel → Application → ExperienceService
   (`app/src/features/coach-experience/`)
   ↓
+Progress Experience              ← Sprint 31.4 product (implemented) — athlete analytics dashboard via ViewModel → Application → ExperienceService
+  (`app/src/features/progress-experience/`)
+  ↓
 Athlete State Engine             ← Sprint 22.1 (implemented) — immutable athlete truth aggregated from specialists
   (`app/src/features/athlete-state/`)
   ↓
@@ -1466,6 +1469,19 @@ Full detail: [WORKOUT_RUNTIME_ARCHITECTURE.md](./WORKOUT_RUNTIME_ARCHITECTURE.md
 
 Full detail: [COACH_EXPERIENCE_ARCHITECTURE.md](./COACH_EXPERIENCE_ARCHITECTURE.md). ADR-108: [DECISIONS.md](./DECISIONS.md).
 
+### Progress Experience (`features/progress-experience`) — Sprint 31.4 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Athlete analytics center — one operational dashboard aggregating training, recovery, nutrition, body metrics, goals, records, and coach insights |
+| **Flow** | React UI → `ProgressExperienceViewModel` → Application APIs → Mappers → `ProgressExperienceService` → Mock/Backend/Local providers |
+| **Models** | `ProgressDashboard`, `StrengthProgress`, `VolumeProgress`, `RecoveryProgress`, `NutritionProgress`, `BodyMetrics`, `CoachInsightSummary`, `PersonalRecord`, `TrainingStreak`, `GoalProgress`, `TimeRange`, loading/error states, reusable chart models |
+| **Application** | `loadProgressDashboard` / `refreshProgressDashboard` / `loadStrengthProgress` / `loadVolumeProgress` / `loadRecoveryProgress` / `loadNutritionProgress` / `loadBodyMetrics` / `loadCoachInsights` / `changeTimeRange` |
+| **UI** | `ProgressExperienceScreen` + header / time-range selector / analytics cards / coach insights / records / streak / goal / skeleton / empty / error; pull-to-refresh |
+| **Design** | **No business logic in React. No repository/infrastructure calls from components. No provider code in components. No chart dependency introduced. No mock data in components. No visual redesign.** Future detailed-analytics/body-metrics/exercise-history routes prepared only |
+
+Full detail: [PROGRESS_EXPERIENCE_ARCHITECTURE.md](./PROGRESS_EXPERIENCE_ARCHITECTURE.md). ADR-109: [DECISIONS.md](./DECISIONS.md).
+
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 
 | Aspect | Implementation |
@@ -1783,5 +1799,6 @@ AIOrchestrator.process_message (async)
 | 106 | Home Dashboard Architecture (Sprint 31.1) |
 | 107 | Workout Runtime Experience (Sprint 31.2) |
 | 108 | Coach Experience (Sprint 31.3) |
+| 109 | Progress Experience (Sprint 31.4) |
 
 Full list: [DECISIONS.md](./DECISIONS.md). Audit: [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md).

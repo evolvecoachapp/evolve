@@ -1,5 +1,5 @@
-import { ProgressScreen } from "../../../src/screens/ProgressScreen";
+import { ProgressExperienceScreen } from "../../../src/features/progress-experience";
 
 export default function ProgressRoute() {
-  return <ProgressScreen />;
+  return <ProgressExperienceScreen />;
 }
