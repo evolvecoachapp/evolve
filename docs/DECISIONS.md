@@ -3306,4 +3306,43 @@ Future provider implementations may bridge to repositories, persistence adapters
 
 ---
 
-*New decisions are appended as Decision 109, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+## Decision 110: Nutrition Experience (Sprint 31.5 product)
+
+**Date:** 2026-07-29
+**Status:** Accepted
+
+**Context:**
+Phase 31 Product Development continues with the Nutrition tab. EVOLVE already has legacy nutrition mocks plus flagship product patterns for Home / Workout Runtime / Coach / Progress. The Nutrition tab still needed a true daily product layer — immutable presentation models, application use cases, a ViewModel, hooks, and presentation-only components — that makes meals, macros, hydration, and coach guidance operational without turning the screen into a calorie tracker or pushing business logic into React.
+
+**Decision:**
+Introduce the **Nutrition Experience** product module at `features/nutrition-experience`:
+
+```
+React UI → NutritionExperienceViewModel → Application Use Cases → Mappers → NutritionExperienceService → Mock/Backend/Local providers
+```
+
+Future provider implementations may bridge to repositories, a food database, barcode scanning, backend APIs, or AI-guided nutrition recommendations without changing UI.
+
+1. Immutable presentation models (`NutritionDashboard`, `MealSummary`, `Meal`, `MealFood`, `MacroProgress`, `HydrationProgress`, `NutritionCoachSuggestion`, `DailyCalories`, `DailyProtein`, `DailyCarbohydrates`, `DailyFat`, `NutritionDay`, loading/error states).
+2. Application APIs (`loadNutritionDashboard`, `refreshNutritionDashboard`, `loadMeals`, `loadMacros`, `loadHydration`, `loadCoachSuggestions`, `toggleMealCompletion`, `changeNutritionDay`) are the only operational path for UI.
+3. `NutritionExperienceViewModel` owns dashboard loading, refresh, day selection, section reloads, meal completion toggles, loading/error/empty state, and subscriber notifications — no UI code.
+4. Hooks (`useNutritionDashboard`, `useMeals`, `useHydration`, `useCoachSuggestions`) subscribe to the ViewModel only.
+5. `NutritionExperienceScreen` composes presentation components only; route `app/(app)/(tabs)/nutrition.tsx` targets it.
+6. `NutritionExperienceService` providers remain the replaceable data seam (Mock today; Backend/Local/persistence-backed later without UI changes).
+7. Future navigation destinations (meal details, food search, barcode scanner, nutrition history) are prepared on the read model without implementing new screens in this sprint.
+8. The module is explicitly contextual nutrition guidance for the day, not a calorie-tracker product.
+
+**Alternatives considered:**
+- **Keep extending the legacy `NutritionScreen` directly** — rejected: Sprint 31.5 needs the same ViewModel → Application → Service product architecture as the other Phase 31 screens.
+- **Read nutrition mocks directly from React components** — rejected: components must remain presentation-only.
+- **Wire networking/backend now** — rejected: this sprint establishes the experience architecture and provider seam only.
+- **Store business state independently inside hooks and components** — rejected: the ViewModel owns operational state to avoid duplication.
+
+**Consequences:**
+- Documentation: [NUTRITION_EXPERIENCE_ARCHITECTURE.md](./NUTRITION_EXPERIENCE_ARCHITECTURE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Nutrition UI can swap Mock → Backend/Local/persistence-backed providers via `EXPO_PUBLIC_NUTRITION_EXPERIENCE_PROVIDER` without changing screens or components.
+- Existing legacy `features/nutrition` mocks remain a source seam for this sprint; future persistence/backend/food-search wiring stays behind `NutritionExperienceService`.
+
+---
+
+*New decisions are appended as Decision 110, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

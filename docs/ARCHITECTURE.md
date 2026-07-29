@@ -237,6 +237,9 @@ Coach Experience                 ← Sprint 31.3 product (implemented) — flags
 Progress Experience              ← Sprint 31.4 product (implemented) — athlete analytics dashboard via ViewModel → Application → ExperienceService
   (`app/src/features/progress-experience/`)
   ↓
+Nutrition Experience             ← Sprint 31.5 product (implemented) — daily nutrition command center via ViewModel → Application → ExperienceService
+  (`app/src/features/nutrition-experience/`)
+  ↓
 Athlete State Engine             ← Sprint 22.1 (implemented) — immutable athlete truth aggregated from specialists
   (`app/src/features/athlete-state/`)
   ↓
@@ -1482,6 +1485,19 @@ Full detail: [COACH_EXPERIENCE_ARCHITECTURE.md](./COACH_EXPERIENCE_ARCHITECTURE.
 
 Full detail: [PROGRESS_EXPERIENCE_ARCHITECTURE.md](./PROGRESS_EXPERIENCE_ARCHITECTURE.md). ADR-109: [DECISIONS.md](./DECISIONS.md).
 
+### Nutrition Experience (`features/nutrition-experience`) — Sprint 31.5 product
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Daily nutrition command center — contextual meal, macro, hydration, and coach guidance integrated with Workout, Recovery, and Coach rather than a calorie tracker |
+| **Flow** | React UI → `NutritionExperienceViewModel` → Application APIs → Mappers → `NutritionExperienceService` → Mock/Backend/Local providers |
+| **Models** | `NutritionDashboard`, `MealSummary`, `Meal`, `MealFood`, `MacroProgress`, `HydrationProgress`, `NutritionCoachSuggestion`, `DailyCalories`, `DailyProtein`, `DailyCarbohydrates`, `DailyFat`, `NutritionDay`, loading/error states |
+| **Application** | `loadNutritionDashboard` / `refreshNutritionDashboard` / `loadMeals` / `loadMacros` / `loadHydration` / `loadCoachSuggestions` / `toggleMealCompletion` / `changeNutritionDay` |
+| **UI** | `NutritionExperienceScreen` + header / day selector / summary / calories / hydration / macro targets / meal adherence / meal timeline / coach suggestions / skeleton / empty / error; pull-to-refresh |
+| **Design** | **No business logic in React. No repository/infrastructure calls from components. No provider code in components. No networking. No duplicated state. No mock data in components. No visual redesign.** Future meal-details / food-search / barcode-scanner / history routes prepared only |
+
+Full detail: [NUTRITION_EXPERIENCE_ARCHITECTURE.md](./NUTRITION_EXPERIENCE_ARCHITECTURE.md). ADR-110: [DECISIONS.md](./DECISIONS.md).
+
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 
 | Aspect | Implementation |
@@ -1800,5 +1816,6 @@ AIOrchestrator.process_message (async)
 | 107 | Workout Runtime Experience (Sprint 31.2) |
 | 108 | Coach Experience (Sprint 31.3) |
 | 109 | Progress Experience (Sprint 31.4) |
+| 110 | Nutrition Experience (Sprint 31.5) |
 
 Full list: [DECISIONS.md](./DECISIONS.md). Audit: [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md).
