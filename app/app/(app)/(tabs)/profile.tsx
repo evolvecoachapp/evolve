@@ -1,5 +1,5 @@
-import { ProfileScreen } from "../../../src/screens/ProfileScreen";
+import { ProfileExperienceScreen } from "../../../src/features/profile-experience";
 
 export default function ProfileRoute() {
-  return <ProfileScreen />;
+  return <ProfileExperienceScreen />;
 }

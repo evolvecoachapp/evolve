@@ -3345,4 +3345,46 @@ Future provider implementations may bridge to repositories, a food database, bar
 
 ---
 
-*New decisions are appended as Decision 110, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+### Decision 111 — Profile Experience (Sprint 31.6)
+
+**Date:** 2026-07-29  
+**Status:** Accepted  
+**Sprint:** 31.6 — Profile & Settings Experience
+
+**Context:**
+The Profile tab was a generic settings page that did not align with EVOLVE's product architecture. Sprint 31.6 transforms it into the Digital Athlete Profile — the central identity and preferences hub. The same ViewModel → Application → Service architecture established in prior sprints (Home, Workout, Coach, Progress, Nutrition) applies here.
+
+**Decision:**
+Introduce `app/src/features/profile-experience/` following the established Clean Architecture pattern:
+
+```
+React UI → ProfileExperienceViewModel → Application Use Cases → Mappers → ProfileExperienceService → Mock/Backend/Local providers
+```
+
+Future provider implementations may bridge to authentication, backend APIs, cloud sync, or AI-guided coach preferences without changing UI.
+
+1. Immutable presentation models (`AthleteProfile`, `AthleteGoal`, `TrainingPreferences`, `NutritionPreferences`, `CoachPreferences`, `NotificationPreferences`, `AppearancePreferences`, `MeasurementUnits`, `ConnectedServices`, `ProfileSection`, loading/saving/error states).
+2. Application APIs (`loadProfile`, `refreshProfile`, `updateTrainingPreferences`, `updateNutritionPreferences`, `updateCoachPreferences`, `updateNotificationPreferences`, `updateAppearancePreferences`, `updateMeasurementUnits`, `updateGoals`) are the only operational path for UI.
+3. `ProfileExperienceViewModel` owns profile loading, refresh, preference updates, loading/saving/error/empty state, and subscriber notifications — no UI code.
+4. Hooks (`useProfile`, `useGoals`, `useTrainingPreferences`, `useNutritionPreferences`, `useCoachPreferences`) subscribe to the ViewModel only.
+5. `ProfileExperienceScreen` composes presentation components only; route `app/(app)/(tabs)/profile.tsx` targets it.
+6. `ProfileExperienceService` providers remain the replaceable data seam (Mock today; Backend/Local/persistence-backed later without UI changes).
+7. Connected Services (Apple Health, Google Fit, Garmin, WHOOP, Oura) are prepared without synchronization.
+8. Coach Preferences (coaching style, motivation level, feedback frequency, explanation depth) are prepared for AI provider integration.
+9. Appearance supports Light / Dark / System themes with accent color prepared.
+10. Future navigation destinations (edit profile, goal details, connected service details, notification settings, privacy, about) are prepared on the read model without implementing new screens.
+
+**Alternatives considered:**
+- **Keep extending the legacy `ProfileScreen` directly** — rejected: Sprint 31.6 needs the same ViewModel → Application → Service product architecture as the other Phase 31 screens.
+- **Store preferences directly in React state** — rejected: components must remain presentation-only.
+- **Wire networking/backend now** — rejected: this sprint establishes the experience architecture and provider seam only.
+- **Combine profile with authentication** — rejected: authentication is a future concern; this sprint focuses on the presentation layer.
+
+**Consequences:**
+- Documentation: [PROFILE_EXPERIENCE_ARCHITECTURE.md](./PROFILE_EXPERIENCE_ARCHITECTURE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Profile UI can swap Mock → Backend/Local/persistence-backed providers via `EXPO_PUBLIC_PROFILE_EXPERIENCE_PROVIDER` without changing screens or components.
+- Future authentication, cloud sync, and coach preference wiring stays behind `ProfileExperienceService`.
+
+---
+
+*New decisions are appended as Decision 112, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

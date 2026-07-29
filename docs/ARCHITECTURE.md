@@ -1817,5 +1817,6 @@ AIOrchestrator.process_message (async)
 | 108 | Coach Experience (Sprint 31.3) |
 | 109 | Progress Experience (Sprint 31.4) |
 | 110 | Nutrition Experience (Sprint 31.5) |
+| 111 | Profile Experience (Sprint 31.6) |
 
 Full list: [DECISIONS.md](./DECISIONS.md). Audit: [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md).
