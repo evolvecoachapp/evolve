@@ -144,3 +144,6 @@ export type {
   LoggerCompositionFactoryDeps as LoggerFactoryDeps,
   LoggerBundle,
 } from "./LoggerFactory";
+
+export { WorkoutProgressIntegrationFactory } from "./WorkoutProgressIntegrationFactory";
+export type { WorkoutProgressIntegrationFactoryDeps } from "./WorkoutProgressIntegrationFactory";

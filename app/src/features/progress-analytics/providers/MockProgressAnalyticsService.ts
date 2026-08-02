@@ -11,6 +11,8 @@ import type {
   RecoveryStatisticsDto,
   StrengthProgressDto,
   WorkoutHistoryDto,
+  WorkoutProgressIngestDto,
+  WorkoutProgressIngestResultDto,
 } from "../services";
 
 const defaultPeriod: AnalyticsPeriodDto = {
@@ -528,6 +530,75 @@ function emptyData(): ProgressAnalyticsDataDto {
 }
 
 let currentData: ProgressAnalyticsDataDto = buildDefaultData();
+const ingestedWorkoutProgressEvents: WorkoutProgressIngestDto[] = [];
+
+function applyWorkoutProgressEventToData(event: WorkoutProgressIngestDto): void {
+  switch (event.eventType) {
+    case "WorkoutCompleted": {
+      const entry = Object.freeze({
+        id: event.eventId,
+        title: event.payload.workoutTitle ?? "Workout",
+        completedAt: event.payload.completedAt ?? event.occurredAt,
+        durationMinutes: event.payload.durationMinutes ?? 0,
+        volumeKg: event.payload.volumeKg ?? 0,
+        exerciseCount: event.payload.exerciseCount ?? 0,
+        rpeAverage: event.payload.rpeAverage ?? null,
+        destination: `/workout/${event.payload.sessionId}`,
+      });
+      currentData = Object.freeze({
+        ...currentData,
+        workoutHistory: Object.freeze({
+          entries: Object.freeze([...currentData.workoutHistory.entries, entry]),
+          totalCount: currentData.workoutHistory.totalCount + 1,
+          destination: currentData.workoutHistory.destination ?? null,
+        }),
+        workoutStatistics: Object.freeze({
+          ...currentData.workoutStatistics,
+          totalWorkouts: currentData.workoutStatistics.totalWorkouts + 1,
+        }),
+      });
+      break;
+    }
+    case "PersonalRecordAchieved": {
+      const record = Object.freeze({
+        id: event.payload.personalRecordId ?? event.eventId,
+        exerciseName: event.payload.exerciseName ?? "Exercise",
+        weightKg: event.payload.weightKg ?? 0,
+        reps: event.payload.reps ?? 0,
+        estimatedOneRepMaxKg:
+          event.payload.estimatedOneRepMaxKg ?? event.payload.weightKg ?? 0,
+        achievedAt: event.payload.completedAt ?? event.occurredAt,
+        destination: null,
+      });
+      currentData = Object.freeze({
+        ...currentData,
+        personalRecords: Object.freeze([...currentData.personalRecords, record]),
+      });
+      break;
+    }
+    case "WorkoutVolumeUpdated": {
+      const volume = event.payload.volumeKg ?? 0;
+      currentData = Object.freeze({
+        ...currentData,
+        workoutStatistics: Object.freeze({
+          ...currentData.workoutStatistics,
+          totalVolumeKg: volume,
+        }),
+        volumeProgress: Object.freeze({
+          ...currentData.volumeProgress,
+          totalVolumeKg: volume,
+        }),
+      });
+      break;
+    }
+    default:
+      break;
+  }
+}
+
+export function getIngestedWorkoutProgressEvents(): readonly WorkoutProgressIngestDto[] {
+  return Object.freeze([...ingestedWorkoutProgressEvents]);
+}
 
 export const mockProgressAnalyticsService: ProgressAnalyticsService = {
   providerId: "mock",
@@ -580,6 +651,26 @@ export const mockProgressAnalyticsService: ProgressAnalyticsService = {
     }
     return currentData.snapshot;
   },
+
+  async applyWorkoutProgressEvent(
+    event: WorkoutProgressIngestDto,
+  ): Promise<WorkoutProgressIngestResultDto> {
+    const frozenEvent = Object.freeze({
+      ...event,
+      metadata: Object.freeze({ ...event.metadata }),
+      payload: Object.freeze({
+        ...event.payload,
+        metrics: Object.freeze([...event.payload.metrics]),
+      }),
+    });
+    ingestedWorkoutProgressEvents.push(frozenEvent);
+    applyWorkoutProgressEventToData(frozenEvent);
+    return Object.freeze({
+      eventId: frozenEvent.eventId,
+      accepted: true,
+      appliedAt: frozenEvent.metadata.publishedAt,
+    });
+  },
 };
 
 export const emptyMockProgressAnalyticsService: ProgressAnalyticsService = {
@@ -619,8 +710,17 @@ export const emptyMockProgressAnalyticsService: ProgressAnalyticsService = {
       destination: null,
     };
   },
+
+  async applyWorkoutProgressEvent(event: WorkoutProgressIngestDto) {
+    return Object.freeze({
+      eventId: event.eventId,
+      accepted: true,
+      appliedAt: event.metadata.publishedAt,
+    });
+  },
 };
 
 export function resetMockProgressAnalyticsData(): void {
   currentData = buildDefaultData();
+  ingestedWorkoutProgressEvents.length = 0;
 }

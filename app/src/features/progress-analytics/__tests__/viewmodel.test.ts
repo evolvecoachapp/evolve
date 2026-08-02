@@ -28,6 +28,13 @@ describe("ProgressAnalyticsViewModel", () => {
       async getGoalProgress() { throw new ProgressAnalyticsError("fail", "mock"); },
       async getPersonalRecords() { throw new ProgressAnalyticsError("fail", "mock"); },
       async getAnalyticsSnapshot() { throw new ProgressAnalyticsError("fail", "mock"); },
+      async applyWorkoutProgressEvent() {
+        return Object.freeze({
+          eventId: "evt-fail",
+          accepted: false,
+          appliedAt: "2026-07-29T00:00:00Z",
+        });
+      },
     };
     const viewModel = new ProgressAnalyticsViewModel({ service: failing });
     await viewModel.loadAnalytics();
@@ -52,6 +59,7 @@ describe("ProgressAnalyticsViewModel", () => {
       getGoalProgress: mockProgressAnalyticsService.getGoalProgress,
       getPersonalRecords: mockProgressAnalyticsService.getPersonalRecords,
       getAnalyticsSnapshot: mockProgressAnalyticsService.getAnalyticsSnapshot,
+      applyWorkoutProgressEvent: mockProgressAnalyticsService.applyWorkoutProgressEvent,
     };
     const viewModel = new ProgressAnalyticsViewModel({ service });
     await viewModel.loadAnalytics();

@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-07-29  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-114). Append only — never renumber.
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-115). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -3549,4 +3549,56 @@ Mock Timeline Provider
 
 ---
 
-*New decisions are appended as Decision 115, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*
+### Decision 115 — Workout Progress Integration (Sprint 32.1)
+
+**Status:** Accepted  
+**Date:** 2026-08-02  
+**ADR:** ADR-115  
+**Context:**
+
+Sprint 32.1 establishes the Workout → Progress Analytics integration layer. Workout lifecycle events must feed Progress Analytics read models without coupling the Workout feature to Progress Analytics internals. No analytics calculations, persistence, networking, backend, synchronization, or event sourcing are introduced.
+
+**Decision:**
+
+Implement `integrations/workout-progress` as a deterministic integration layer:
+
+```
+Workout Feature
+        │
+        ▼
+Workout Progress Integration
+        │
+        ▼
+Progress Analytics Contract
+        │
+        ▼
+Progress Analytics Service
+        │
+        ▼
+Mock Analytics Provider
+```
+
+1. Immutable integration models (`WorkoutProgressEvent`, `WorkoutProgressSnapshot`, `WorkoutMetric`, `WorkoutAnalyticsPayload`, `WorkoutProgressMetadata`, `WorkoutProgressResult`).
+2. Supported events represent only (`WorkoutStarted`, `WorkoutCompleted`, `WorkoutCancelled`, `WorkoutSkipped`, `ExerciseCompleted`, `SetCompleted`, `PersonalRecordAchieved`, `WorkoutVolumeUpdated`).
+3. `WorkoutProgressPublisher` publishes immutable events only — no analytics calculations.
+4. `ProgressAnalyticsSubscriber` consumes events through `ProgressAnalyticsService.applyWorkoutProgressEvent` — no direct dependency on Progress Analytics internals.
+5. Mappers convert Workout domain models → `WorkoutAnalyticsPayload` → Progress Analytics contract DTO.
+6. Application APIs (`publishWorkoutProgress`, `publishWorkoutCompletion`, `publishWorkoutCancellation`, `publishPersonalRecord`) are the operational integration path.
+7. Validation rejects missing event, duplicate event id, invalid payload, missing metadata, and unsupported event type.
+8. Composition Root registers `WorkoutProgressPublisher` and `ProgressAnalyticsSubscriber` via `WorkoutProgressIntegrationFactory` using contracts only.
+9. Workout feature must never import Progress Analytics internals.
+
+**Alternatives considered:**
+- **Import Progress Analytics directly from Workout feature** — rejected: violates bounded context separation.
+- **Calculate analytics inside integration layer** — rejected: this sprint wires events only; analytics engines remain future work.
+- **Persist integration events now** — rejected: no persistence in this sprint.
+- **Use Domain Event bus as integration transport** — rejected: integration layer is separate from Sprint 18.2 domain events substrate.
+
+**Consequences:**
+- Documentation: [WORKOUT_PROGRESS_INTEGRATION.md](./WORKOUT_PROGRESS_INTEGRATION.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Progress Analytics providers implement `applyWorkoutProgressEvent` on the public contract; Mock provider appends read-model entries without calculations.
+- Future real analytics engines can replace Mock provider without changing Workout or integration application APIs.
+
+---
+
+*New decisions are appended as Decision 116, etc. Do not delete or renumber existing entries — mark a decision "Superseded by Decision 0XX" if it is later reversed.*

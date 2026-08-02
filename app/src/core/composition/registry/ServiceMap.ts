@@ -58,6 +58,8 @@ import type {
   LoggerBundle,
   LoggerFactoryDeps,
 } from "../../../infrastructure/logging/application/LoggerFactory";
+import type { WorkoutProgressPublisher } from "../../../integrations/workout-progress/publishers/WorkoutProgressPublisher";
+import type { ProgressAnalyticsSubscriber } from "../../../integrations/workout-progress/subscribers/ProgressAnalyticsSubscriber";
 import type { ExerciseSelectionService } from "../../../features/exercise-selection/services/ExerciseSelectionService";
 import type { ProgramGenerationService } from "../../../features/program-generation/services/ProgramGenerationService";
 import type { ProgrammingService } from "../../../features/programming/services/ProgrammingService";
@@ -141,6 +143,8 @@ export interface ServiceMap {
   LoggerFactory: {
     readonly create: (deps?: LoggerFactoryDeps) => LoggerBundle;
   };
+  WorkoutProgressPublisher: WorkoutProgressPublisher;
+  ProgressAnalyticsSubscriber: ProgressAnalyticsSubscriber;
 }
 
 export type ServiceToken = keyof ServiceMap;
@@ -204,4 +208,6 @@ export const SERVICE_TOKENS = [
   "LoggerRegistry",
   "MockLogger",
   "LoggerFactory",
+  "WorkoutProgressPublisher",
+  "ProgressAnalyticsSubscriber",
 ] as const satisfies readonly ServiceToken[];

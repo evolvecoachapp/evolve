@@ -20,7 +20,7 @@ Composition Root
   ↓
 Dependency Container (ApplicationContainer)
   ↓
-Service Registry (typed ServiceMap — 55 tokens)
+Service Registry (typed ServiceMap — 57 tokens)
   ↓
 Factories + thin port adapters (object creation / wiring only)
   ↓
@@ -94,6 +94,7 @@ AuthenticationFactory → AuthenticationRegistry / MockAuthenticationProvider / 
 SynchronizationFactory → SynchronizationRegistry / SynchronizationEngine / SynchronizationFactory
 BackendFactory → BackendRegistry / MockBackendProvider / BackendFactory
 LoggerFactory → LoggerRegistry / MockLogger / LoggerFactory
+WorkoutProgressIntegrationFactory → WorkoutProgressPublisher / ProgressAnalyticsSubscriber
 ```
 
 Execution entry points:

@@ -29,6 +29,13 @@ function createFailingService(): ProgressAnalyticsService {
     async getGoalProgress() { throw new ProgressAnalyticsError("goals failed", "mock"); },
     async getPersonalRecords() { throw new ProgressAnalyticsError("records failed", "mock"); },
     async getAnalyticsSnapshot() { throw new ProgressAnalyticsError("snapshot failed", "mock"); },
+    async applyWorkoutProgressEvent() {
+      return Object.freeze({
+        eventId: "evt-fail",
+        accepted: false,
+        appliedAt: "2026-07-29T00:00:00Z",
+      });
+    },
   };
 }
 

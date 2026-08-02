@@ -229,6 +229,66 @@ export interface ProgressAnalyticsDataDto {
 
 export type ProgressAnalyticsProviderId = "mock" | "backend" | "local";
 
+export type WorkoutProgressIngestEventType =
+  | "WorkoutStarted"
+  | "WorkoutCompleted"
+  | "WorkoutCancelled"
+  | "WorkoutSkipped"
+  | "ExerciseCompleted"
+  | "SetCompleted"
+  | "PersonalRecordAchieved"
+  | "WorkoutVolumeUpdated";
+
+export interface WorkoutProgressIngestMetricDto {
+  readonly key: string;
+  readonly label: string;
+  readonly value: number;
+  readonly unit: string;
+}
+
+export interface WorkoutProgressIngestMetadataDto {
+  readonly source: "workout";
+  readonly correlationId: string;
+  readonly sessionId: string;
+  readonly workoutId: string | null;
+  readonly athleteId: string | null;
+  readonly publishedAt: string;
+}
+
+export interface WorkoutProgressIngestPayloadDto {
+  readonly sessionId: string;
+  readonly workoutId: string | null;
+  readonly workoutTitle: string | null;
+  readonly exerciseId: string | null;
+  readonly exerciseName: string | null;
+  readonly setId: string | null;
+  readonly setNumber: number | null;
+  readonly weightKg: number | null;
+  readonly reps: number | null;
+  readonly volumeKg: number | null;
+  readonly durationMinutes: number | null;
+  readonly exerciseCount: number | null;
+  readonly rpeAverage: number | null;
+  readonly personalRecordId: string | null;
+  readonly estimatedOneRepMaxKg: number | null;
+  readonly completedAt: string | null;
+  readonly metrics: readonly WorkoutProgressIngestMetricDto[];
+}
+
+export interface WorkoutProgressIngestDto {
+  readonly eventId: string;
+  readonly eventType: WorkoutProgressIngestEventType;
+  readonly occurredAt: string;
+  readonly metadata: WorkoutProgressIngestMetadataDto;
+  readonly payload: WorkoutProgressIngestPayloadDto;
+}
+
+export interface WorkoutProgressIngestResultDto {
+  readonly eventId: string;
+  readonly accepted: boolean;
+  readonly appliedAt: string;
+}
+
 export interface ProgressAnalyticsService {
   readonly providerId: ProgressAnalyticsProviderId;
   getAnalytics(filter?: AnalyticsFilterDto): Promise<ProgressAnalyticsDataDto>;
@@ -240,6 +300,9 @@ export interface ProgressAnalyticsService {
   getGoalProgress(period?: AnalyticsPeriodDto): Promise<readonly GoalProgressDto[]>;
   getPersonalRecords(period?: AnalyticsPeriodDto): Promise<readonly PersonalRecordDto[]>;
   getAnalyticsSnapshot(period?: AnalyticsPeriodDto): Promise<AnalyticsSnapshotDto>;
+  applyWorkoutProgressEvent(
+    event: WorkoutProgressIngestDto,
+  ): Promise<WorkoutProgressIngestResultDto>;
 }
 
 export class ProgressAnalyticsError extends Error {

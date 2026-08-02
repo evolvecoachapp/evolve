@@ -71,6 +71,8 @@ describe("ServiceRegistry", () => {
       "LoggerRegistry",
       "MockLogger",
       "LoggerFactory",
+      "WorkoutProgressPublisher",
+      "ProgressAnalyticsSubscriber",
     ]);
   });
 

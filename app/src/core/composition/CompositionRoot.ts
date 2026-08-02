@@ -43,6 +43,7 @@ import {
   SynchronizationFactory,
   BackendFactory,
   LoggerFactory,
+  WorkoutProgressIntegrationFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -665,6 +666,28 @@ export class CompositionRoot {
       { lifecycle },
     );
 
+    let workoutProgressIntegration:
+      | ReturnType<typeof WorkoutProgressIntegrationFactory.create>
+      | undefined;
+
+    container.register(
+      "WorkoutProgressPublisher",
+      () => {
+        workoutProgressIntegration ??= WorkoutProgressIntegrationFactory.create();
+        return workoutProgressIntegration.publisher;
+      },
+      { lifecycle },
+    );
+
+    container.register(
+      "ProgressAnalyticsSubscriber",
+      () => {
+        workoutProgressIntegration ??= WorkoutProgressIntegrationFactory.create();
+        return workoutProgressIntegration.subscriber;
+      },
+      { lifecycle },
+    );
+
     container.validate();
     container.freeze();
 
@@ -866,6 +889,14 @@ export class CompositionRoot {
 
   getLoggerFactory(): ServiceMap["LoggerFactory"] {
     return this.registry.resolve("LoggerFactory");
+  }
+
+  getWorkoutProgressPublisher(): ServiceMap["WorkoutProgressPublisher"] {
+    return this.registry.resolve("WorkoutProgressPublisher");
+  }
+
+  getProgressAnalyticsSubscriber(): ServiceMap["ProgressAnalyticsSubscriber"] {
+    return this.registry.resolve("ProgressAnalyticsSubscriber");
   }
 
   getDecisionEngineService(): ServiceMap["DecisionEngineService"] {
