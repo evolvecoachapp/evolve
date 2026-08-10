@@ -476,6 +476,62 @@ describe("RuntimeSessionProvider observer auto-start integration", () => {
     expect(getRuntimeObserverStatus()).toBe(RUNTIME_OBSERVER_STATUS.idle);
   });
 
+  it("propagates observer failure to provider status", async () => {
+    mockedSecureStorage.getTokens.mockResolvedValue({
+      accessToken: "a",
+      refreshToken: "r",
+    });
+    mockedAuthApi.getCurrentUser.mockResolvedValue(testUser);
+
+    jest.spyOn(observerApplication, "observeRuntime").mockImplementation(() => {
+      throw new Error("observer failed");
+    });
+
+    const { getByTestId } = renderProbe();
+
+    await waitFor(() =>
+      expect(getByTestId("status").props.children).toBe(
+        RUNTIME_SESSION_STATUS.failed,
+      ),
+    );
+    expect(getRuntimeObserverStatus()).toBe(RUNTIME_OBSERVER_STATUS.idle);
+  });
+
+  it("restarts session deterministically after full reset", async () => {
+    mockedSecureStorage.getTokens.mockResolvedValue({
+      accessToken: "a",
+      refreshToken: "r",
+    });
+    mockedAuthApi.getCurrentUser.mockResolvedValue(testUser);
+
+    const { getByTestId, unmount } = renderProbe();
+
+    await waitFor(() =>
+      expect(getByTestId("status").props.children).toBe(
+        RUNTIME_SESSION_STATUS.ready,
+      ),
+    );
+
+    unmount();
+    resetRuntimeSessionForTests();
+    resetCompositionRoot();
+
+    mockedSecureStorage.getTokens.mockResolvedValue({
+      accessToken: "a",
+      refreshToken: "r",
+    });
+    mockedAuthApi.getCurrentUser.mockResolvedValue(testUser);
+
+    const { getByTestId: getByTestIdAfterRestart } = renderProbe();
+
+    await waitFor(() =>
+      expect(getByTestIdAfterRestart("status").props.children).toBe(
+        RUNTIME_SESSION_STATUS.ready,
+      ),
+    );
+    expect(getRuntimeObserverStatus()).toBe(RUNTIME_OBSERVER_STATUS.ready);
+  });
+
   it("exposes ready RuntimeObserverService through composition root after startup", async () => {
     mockedSecureStorage.getTokens.mockResolvedValue({
       accessToken: "a",

@@ -4140,3 +4140,42 @@ Repository Contracts
 - Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
 - Runtime persistence is fully automatic after authenticated startup. No manual `observeRuntime()` calls remain in production paths.
 - Logout cleanly stops observation before the next session restart.
+
+---
+
+## ADR-129: End-to-End Runtime Persistence Validation (Sprint 33.9)
+
+**Status:** Accepted  
+**Date:** 2026-08-10  
+**Context:** Sprints 33.1B–33.8 delivered the complete runtime lifecycle (bootstrap → hydration → dashboard restore → observer → write-through) but lacked comprehensive end-to-end validation. User Story 01 requires proof that application startup is deterministic and runtime state flows correctly through every pipeline stage.
+
+**Decision:**
+
+```
+Authenticated Startup
+  ↓
+Runtime Session
+  ↓
+Repository Hydration
+  ↓
+Dashboard Restore
+  ↓
+Runtime Observer
+  ↓
+Runtime Write-Through
+  ↓
+Repository Contracts
+```
+
+1. Validate the existing runtime lifecycle through integration tests only — no new runtime subsystems, no architecture redesign.
+2. Reuse every existing runtime component (`RuntimeSessionOrchestrator`, `RepositoryHydrationPipeline`, `DashboardRestorePipeline`, `RuntimeObserver`, `RuntimeWriteThroughPipeline`).
+3. Cover empty and populated repository contracts, dashboard restoration, automatic persistence, logout reset, restart sequence, deterministic phase ordering, and failure propagation.
+4. Provider-level tests remain in `startup.integration.test.tsx`; orchestrator-level lifecycle tests live in `lifecycle.integration.test.ts`.
+
+**Alternatives considered:**
+- **New lifecycle orchestrator module** — rejected; duplicates `RuntimeSessionOrchestrator` and violates Sprint 33.5 ADR-125.
+- **SQLite-backed E2E tests** — rejected per sprint scope; repository contract mocks and composition-root adapters suffice for structural validation.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- User Story 01 complete. Phase 33 continues with richer domain-to-record mapping in later sprints.

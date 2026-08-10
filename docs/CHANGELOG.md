@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0 (current release)
 **Status:** Living Document
-**Last Updated:** 2026-07-29  
+**Last Updated:** 2026-08-10  
 **Purpose:** Semantic release history; accumulate changes under `[Unreleased]` until tagged.  
 **Source of Truth:** Yes — for release versions and shipped changes.
 All notable changes to EVOLVE are documented in this file.
@@ -32,6 +32,7 @@ Each release section groups changes under: `Added`, `Changed`, `Deprecated`, `Re
 - Sprint 33.6 (runtime) — Authenticated startup entry point moved from `bootstrapRuntime()` to `startRuntimeSession()` via `RuntimeSessionProvider`; `RuntimeBootstrapProvider` removed from app launch path
 
 ### Added
+- Sprint 33.9 (runtime) — End-to-End Runtime Persistence Validation: comprehensive lifecycle integration tests (`lifecycle.integration.test.ts`, extended `startup.integration.test.tsx`) covering authenticated startup, empty/populated repositories, dashboard restoration, automatic runtime persistence, logout reset, restart sequence, deterministic execution order, and failure propagation; ADR-129 — validation only; no new runtime modules; no SQLite implementation; no networking; User Story 01 complete
 - Sprint 33.8 (runtime) — Runtime Auto-Start Wiring: `RuntimeSessionProvider` invokes `observeRuntime()` immediately after successful `startRuntimeSession()`; `resetRuntimeObserver()` on logout/unauthenticated reset; observer startup integration tests (auto-start, stop on logout, ordering, failure path, composition integration); ADR-128 — wiring only; no new public APIs; no SQLite; no Dashboard/Timeline changes
 - Sprint 33.7 (runtime) — Runtime Change Observer: `runtime/runtime-observer` (`RuntimeObserverState` / `RuntimeObserverResult` / `RuntimeObserverStatus` / `RuntimeObserverInitialization` / `RuntimeObserver` / `RuntimeObserverService` / `RuntimeObserverFactory` / `RuntimeObserverValidation` / `RuntimeObserverError` / `application` / `__tests__`); Application APIs (`observeRuntime` / `getRuntimeObserverStatus`); externally wraps Athlete Identity, Runtime Environment, and Unified Workspace `build()` entry points and triggers `persistRuntime()` on successful mutations; Composition Root registration (`RuntimeObserverService` via `RuntimeObserverFactory`, token #63); ADR-127; [RUNTIME_OBSERVER.md](./RUNTIME_OBSERVER.md) — observer only; no SQLite; no service-internal hooks; no Dashboard/Timeline changes; no retry/debounce/batching
 - Sprint 33.6 (runtime) — Runtime Startup Integration: `RuntimeSessionProvider` / `RuntimeSessionContext` wires authenticated app launch to `startRuntimeSession()` (bootstrap → hydration → dashboard restore); route guards wait for runtime session completion; startup integration tests; ADR-126; completes User Story 01 — orchestration wiring only; no SQLite; no persistence implementation; no networking; no business logic

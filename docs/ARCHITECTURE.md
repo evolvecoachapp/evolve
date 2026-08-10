@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-29  
+**Last Updated:** 2026-08-10  
 **Purpose:** Concise system architecture — layers, patterns, dependency flow.  
 **Source of Truth:** Partial — summary only; deep reference is [EVOLVE_ARCHITECTURE.md](../.cursor/rules/EVOLVE_ARCHITECTURE.md). Architecture consolidation: [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md) (Sprint 30.7 / ADR-105).
 
@@ -492,7 +492,7 @@ Full detail: [DASHBOARD_RESTORE.md](./DASHBOARD_RESTORE.md).
 
 Full detail: [RUNTIME_WRITE_THROUGH.md](./RUNTIME_WRITE_THROUGH.md).
 
-### Runtime Session Orchestrator (`runtime/session`) — Sprint 33.5 / 33.6 / 33.8
+### Runtime Session Orchestrator (`runtime/session`) — Sprint 33.5 / 33.6 / 33.8 / 33.9
 
 | Aspect | Implementation |
 |--------|----------------|
@@ -502,10 +502,11 @@ Full detail: [RUNTIME_WRITE_THROUGH.md](./RUNTIME_WRITE_THROUGH.md).
 | **Provider** | `RuntimeSessionProvider` gates authenticated routes (mirrors Auth `isBootstrapping`); auto-starts observer after session READY; stops observer on logout |
 | **Composition Root** | Registers `RuntimeSessionService` via `RuntimeSessionFactory` (token #62) |
 | **Design** | **Orchestration only.** No business logic, no SQLite, no repository logic, no persistence, no networking, no retries |
+| **Validation (Sprint 33.9)** | End-to-end integration tests validate bootstrap → hydration → dashboard restore → observer → write-through lifecycle; User Story 01 complete |
 
 Full detail: [RUNTIME_SESSION.md](./RUNTIME_SESSION.md).
 
-### Runtime Change Observer (`runtime/runtime-observer`) — Sprint 33.7 / 33.8
+### Runtime Change Observer (`runtime/runtime-observer`) — Sprint 33.7 / 33.8 / 33.9
 
 | Aspect | Implementation |
 |--------|----------------|
@@ -514,6 +515,7 @@ Full detail: [RUNTIME_SESSION.md](./RUNTIME_SESSION.md).
 | **Application API** | `observeRuntime()`, `getRuntimeObserverStatus()` — invoked automatically by `RuntimeSessionProvider`; no manual startup |
 | **Composition Root** | Registers `RuntimeObserverService` via `RuntimeObserverFactory` (token #63) |
 | **Design** | **Observer only.** No SQLite, no service-internal hooks, no Dashboard/Timeline logic, no retry/debounce/batching; stops cleanly on logout |
+| **Validation (Sprint 33.9)** | Integration tests validate automatic write-through after session READY, logout reset, and round-trip re-hydration |
 
 Full detail: [RUNTIME_OBSERVER.md](./RUNTIME_OBSERVER.md).
 
