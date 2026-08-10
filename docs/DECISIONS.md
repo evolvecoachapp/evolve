@@ -4100,4 +4100,43 @@ Persistence Contracts
 
 **Consequences:**
 - Documentation: [RUNTIME_OBSERVER.md](./RUNTIME_OBSERVER.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
-- User Story 02 complete. Phase 33 continues with session-scoped observer startup wiring and richer domain-to-record mapping in later sprints.
+- User Story 02 complete. Phase 33 continues with richer domain-to-record mapping in later sprints.
+
+---
+
+## ADR-128: Runtime Auto-Start Wiring (Sprint 33.8)
+
+**Status:** Accepted  
+**Date:** 2026-08-10  
+**Context:** Sprint 33.7 introduced `RuntimeObserver` and `observeRuntime()` but left observer startup as a manual call. Phase 33 requires runtime persistence to become fully automatic immediately after authenticated startup completes — without new subsystems, public APIs, or circular dependencies.
+
+**Decision:**
+
+```
+Authenticated Startup
+  ↓
+RuntimeSession (READY)
+  ↓
+RuntimeObserver.start() via observeRuntime()
+  ↓
+Runtime Services
+  ↓
+Runtime Write-Through
+  ↓
+Repository Contracts
+```
+
+1. Wire existing `RuntimeObserver` into the `RuntimeSessionProvider` lifecycle — not a new runtime subsystem.
+2. After `startRuntimeSession()` succeeds, `RuntimeSessionProvider` calls `observeRuntime({ athleteIds })` automatically.
+3. If session startup fails, `observeRuntime()` must never be invoked.
+4. On logout or unauthenticated reset, call `resetRuntimeObserver()` before resetting session sub-pipelines — unwrap build wrappers and reset observer state.
+5. Reuse existing Application APIs and `RuntimeObserverService`; no new public APIs.
+
+**Alternatives considered:**
+- **Observer start inside `RuntimeSessionOrchestrator`** — rejected to keep session orchestrator free of observer coupling and preserve Sprint 33.6 provider-level lifecycle pattern.
+- **New observer provider** — rejected; duplicates auth/session gating already owned by `RuntimeSessionProvider`.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Runtime persistence is fully automatic after authenticated startup. No manual `observeRuntime()` calls remain in production paths.
+- Logout cleanly stops observation before the next session restart.

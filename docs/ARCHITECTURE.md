@@ -492,28 +492,28 @@ Full detail: [DASHBOARD_RESTORE.md](./DASHBOARD_RESTORE.md).
 
 Full detail: [RUNTIME_WRITE_THROUGH.md](./RUNTIME_WRITE_THROUGH.md).
 
-### Runtime Session Orchestrator (`runtime/session`) — Sprint 33.5 / 33.6
+### Runtime Session Orchestrator (`runtime/session`) — Sprint 33.5 / 33.6 / 33.8
 
 | Aspect | Implementation |
 |--------|----------------|
 | **Purpose** | Single orchestration entry point for the complete runtime startup lifecycle |
-| **Flow** | Authenticated App Launch → Auth → `RuntimeSessionProvider` → `startRuntimeSession()` → `RuntimeSessionOrchestrator` → Bootstrap → Hydration → Dashboard Restore → `RuntimeSessionResult` → Home |
+| **Flow** | Authenticated App Launch → Auth → `RuntimeSessionProvider` → `startRuntimeSession()` → `RuntimeSessionOrchestrator` → Bootstrap → Hydration → Dashboard Restore → `observeRuntime()` → `RuntimeSessionResult` → Home |
 | **Application API** | `startRuntimeSession()`, `getRuntimeSessionStatus()` |
-| **Provider** | `RuntimeSessionProvider` gates authenticated routes (mirrors Auth `isBootstrapping`) |
+| **Provider** | `RuntimeSessionProvider` gates authenticated routes (mirrors Auth `isBootstrapping`); auto-starts observer after session READY; stops observer on logout |
 | **Composition Root** | Registers `RuntimeSessionService` via `RuntimeSessionFactory` (token #62) |
 | **Design** | **Orchestration only.** No business logic, no SQLite, no repository logic, no persistence, no networking, no retries |
 
 Full detail: [RUNTIME_SESSION.md](./RUNTIME_SESSION.md).
 
-### Runtime Change Observer (`runtime/runtime-observer`) — Sprint 33.7
+### Runtime Change Observer (`runtime/runtime-observer`) — Sprint 33.7 / 33.8
 
 | Aspect | Implementation |
 |--------|----------------|
 | **Purpose** | Automatically trigger write-through persistence whenever runtime composition service state changes |
-| **Flow** | Runtime Services → `RuntimeObserver` (external `build()` wrap) → `persistRuntime()` → `RuntimeWriteThroughPipeline` → Repository Adapters → Persistence Contracts |
-| **Application API** | `observeRuntime()`, `getRuntimeObserverStatus()` |
+| **Flow** | Authenticated Startup → Runtime Session READY → `RuntimeObserver.start()` → Runtime Services → `build()` success → `persistRuntime()` → `RuntimeWriteThroughPipeline` → Repository Adapters → Persistence Contracts |
+| **Application API** | `observeRuntime()`, `getRuntimeObserverStatus()` — invoked automatically by `RuntimeSessionProvider`; no manual startup |
 | **Composition Root** | Registers `RuntimeObserverService` via `RuntimeObserverFactory` (token #63) |
-| **Design** | **Observer only.** No SQLite, no service-internal hooks, no Dashboard/Timeline logic, no retry/debounce/batching |
+| **Design** | **Observer only.** No SQLite, no service-internal hooks, no Dashboard/Timeline logic, no retry/debounce/batching; stops cleanly on logout |
 
 Full detail: [RUNTIME_OBSERVER.md](./RUNTIME_OBSERVER.md).
 

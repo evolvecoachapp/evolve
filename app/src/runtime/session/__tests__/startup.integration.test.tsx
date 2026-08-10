@@ -28,6 +28,10 @@ import {
   useRuntimeSession,
 } from "../RuntimeSessionContext";
 import * as sessionApplication from "../application/startRuntimeSession";
+import { getRuntimeObserverStatus } from "../../runtime-observer/application/getRuntimeObserverStatus";
+import { RUNTIME_OBSERVER_STATUS } from "../../runtime-observer/RuntimeObserverStatus";
+import * as observerApplication from "../../runtime-observer/application/observeRuntime";
+import { useAuth } from "../../../auth/useAuth";
 
 jest.mock("../../../api/auth");
 jest.mock("../../../auth/secureStorage");
@@ -176,6 +180,14 @@ describe("RuntimeSessionProvider startup integration", () => {
       });
     });
 
+    jest.spyOn(observerApplication, "observeRuntime").mockReturnValue({
+      status: "ready",
+      startedAt: "2026-08-10T10:00:00.000Z",
+      completedAt: "2026-08-10T10:00:02.000Z",
+      phases: [],
+      watchedServices: [],
+    });
+
     const { getByTestId } = renderProbe();
 
     await waitFor(() =>
@@ -243,6 +255,14 @@ describe("RuntimeSessionProvider startup integration", () => {
           primaryDashboard: createEmptyHomeDashboard(),
         }),
       });
+
+    jest.spyOn(observerApplication, "observeRuntime").mockReturnValue({
+      status: "ready",
+      startedAt: "2026-08-10T10:00:00.000Z",
+      completedAt: "2026-08-10T10:00:02.000Z",
+      phases: [],
+      watchedServices: [],
+    });
 
     function RetryProbe() {
       const { status, retrySession } = useRuntimeSession();
@@ -318,5 +338,162 @@ describe("RuntimeSessionProvider composition integration", () => {
       RUNTIME_SESSION_STATUS.ready,
     );
     expect(root.resolve("RuntimeBootstrapService").isReady()).toBe(true);
+  });
+});
+
+describe("RuntimeSessionProvider observer auto-start integration", () => {
+  beforeEach(() => {
+    jest.restoreAllMocks();
+    resetRuntimeSessionForTests();
+    resetCompositionRoot();
+  });
+
+  afterEach(() => {
+    resetRuntimeSessionForTests();
+    resetDashboardRestore();
+    resetRepositoryHydration();
+    resetRuntimeBootstrap();
+    resetCompositionRoot();
+  });
+
+  it("starts runtime observer automatically after session reaches ready", async () => {
+    mockedSecureStorage.getTokens.mockResolvedValue({
+      accessToken: "a",
+      refreshToken: "r",
+    });
+    mockedAuthApi.getCurrentUser.mockResolvedValue(testUser);
+
+    const { getByTestId } = renderProbe();
+
+    await waitFor(() =>
+      expect(getByTestId("status").props.children).toBe(
+        RUNTIME_SESSION_STATUS.ready,
+      ),
+    );
+    expect(getRuntimeObserverStatus()).toBe(RUNTIME_OBSERVER_STATUS.ready);
+  });
+
+  it("does not start runtime observer when session startup fails", async () => {
+    mockedSecureStorage.getTokens.mockResolvedValue({
+      accessToken: "a",
+      refreshToken: "r",
+    });
+    mockedAuthApi.getCurrentUser.mockResolvedValue(testUser);
+
+    jest
+      .spyOn(hydrationApplication, "hydrateRuntime")
+      .mockRejectedValue(new Error("hydration failed"));
+
+    const observeSpy = jest.spyOn(observerApplication, "observeRuntime");
+
+    const { getByTestId } = renderProbe();
+
+    await waitFor(() =>
+      expect(getByTestId("status").props.children).toBe(
+        RUNTIME_SESSION_STATUS.failed,
+      ),
+    );
+    expect(observeSpy).not.toHaveBeenCalled();
+    expect(getRuntimeObserverStatus()).toBe(RUNTIME_OBSERVER_STATUS.idle);
+  });
+
+  it("starts runtime observer after session and before provider reports ready", async () => {
+    const callOrder: string[] = [];
+
+    mockedSecureStorage.getTokens.mockResolvedValue({
+      accessToken: "a",
+      refreshToken: "r",
+    });
+    mockedAuthApi.getCurrentUser.mockResolvedValue(testUser);
+
+    const originalStart = sessionApplication.startRuntimeSession;
+    jest.spyOn(sessionApplication, "startRuntimeSession").mockImplementation(async (options) => {
+      callOrder.push("session");
+      return originalStart(options);
+    });
+
+    const originalObserve = observerApplication.observeRuntime;
+    jest.spyOn(observerApplication, "observeRuntime").mockImplementation((options) => {
+      callOrder.push("observer");
+      return originalObserve(options);
+    });
+
+    const { getByTestId } = renderProbe();
+
+    await waitFor(() =>
+      expect(getByTestId("status").props.children).toBe(
+        RUNTIME_SESSION_STATUS.ready,
+      ),
+    );
+    expect(callOrder.indexOf("session")).toBeLessThan(callOrder.indexOf("observer"));
+  });
+
+  it("stops runtime observer and resets state on logout", async () => {
+    mockedSecureStorage.getTokens.mockResolvedValue({
+      accessToken: "a",
+      refreshToken: "r",
+    });
+    mockedAuthApi.getCurrentUser.mockResolvedValue(testUser);
+    mockedSecureStorage.clearTokens.mockResolvedValue(undefined);
+
+    function LogoutProbe() {
+      const { logout } = useAuth();
+      const { status } = useRuntimeSession();
+      return (
+        <View>
+          <Text testID="status">{status}</Text>
+          <Text testID="logout" onPress={() => logout()}>
+            logout
+          </Text>
+        </View>
+      );
+    }
+
+    const { getByTestId } = render(
+      <AuthProvider>
+        <RuntimeSessionProvider>
+          <LogoutProbe />
+        </RuntimeSessionProvider>
+      </AuthProvider>,
+    );
+
+    await waitFor(() =>
+      expect(getByTestId("status").props.children).toBe(
+        RUNTIME_SESSION_STATUS.ready,
+      ),
+    );
+    expect(getRuntimeObserverStatus()).toBe(RUNTIME_OBSERVER_STATUS.ready);
+
+    await act(async () => {
+      await getByTestId("logout").props.onPress();
+    });
+
+    await waitFor(() =>
+      expect(getByTestId("status").props.children).toBe(
+        RUNTIME_SESSION_STATUS.idle,
+      ),
+    );
+    expect(getRuntimeObserverStatus()).toBe(RUNTIME_OBSERVER_STATUS.idle);
+  });
+
+  it("exposes ready RuntimeObserverService through composition root after startup", async () => {
+    mockedSecureStorage.getTokens.mockResolvedValue({
+      accessToken: "a",
+      refreshToken: "r",
+    });
+    mockedAuthApi.getCurrentUser.mockResolvedValue(testUser);
+
+    const { getByTestId } = renderProbe();
+
+    await waitFor(() =>
+      expect(getByTestId("status").props.children).toBe(
+        RUNTIME_SESSION_STATUS.ready,
+      ),
+    );
+
+    const root = getCompositionRoot();
+    expect(root.resolve("RuntimeObserverService").getStatus()).toBe(
+      RUNTIME_OBSERVER_STATUS.ready,
+    );
   });
 });

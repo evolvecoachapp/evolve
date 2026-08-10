@@ -14,6 +14,8 @@ import { getRuntimeSessionStatus } from "./application/getRuntimeSessionStatus";
 import { startRuntimeSession } from "./application/startRuntimeSession";
 import type { RuntimeSessionStatus } from "./RuntimeSessionStatus";
 import { RUNTIME_SESSION_STATUS } from "./RuntimeSessionStatus";
+import { observeRuntime } from "../runtime-observer/application/observeRuntime";
+import { resetRuntimeObserver } from "../runtime-observer/RuntimeObserver";
 import { resetRuntimeSession } from "./RuntimeSessionOrchestrator";
 
 interface RuntimeSessionContextValue {
@@ -55,6 +57,7 @@ export function RuntimeSessionProvider({
     setStatus(RUNTIME_SESSION_STATUS.starting);
     try {
       await startRuntimeSession({ athleteIds });
+      startRuntimeObserver(athleteIds);
       setStatus(RUNTIME_SESSION_STATUS.ready);
     } catch {
       setStatus(RUNTIME_SESSION_STATUS.failed);
@@ -76,8 +79,15 @@ export function RuntimeSessionProvider({
 
     void startRuntimeSession({ athleteIds })
       .then(() => {
-        if (isMounted) {
+        if (!isMounted) {
+          return;
+        }
+
+        try {
+          startRuntimeObserver(athleteIds);
           setStatus(RUNTIME_SESSION_STATUS.ready);
+        } catch {
+          setStatus(RUNTIME_SESSION_STATUS.failed);
         }
       })
       .catch(() => {
@@ -123,7 +133,14 @@ export function useRuntimeSession(): RuntimeSessionContextValue {
   return context;
 }
 
+function startRuntimeObserver(
+  athleteIds: readonly string[] | undefined,
+): void {
+  observeRuntime({ athleteIds });
+}
+
 function resetRuntimeSessionState(): void {
+  resetRuntimeObserver();
   resetRuntimeSession();
   resetRepositoryHydration();
   resetDashboardRestore();
