@@ -1,6 +1,7 @@
 import { RefreshControl, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "../../../auth/useAuth";
 import { GradientBackground } from "../../../components/GradientBackground";
 import { TabScreenContainer } from "../../../components/TabScreenContainer";
 import { useTheme } from "../../../theme/ThemeContext";
@@ -31,7 +32,8 @@ export function ProgressExperienceScreen({ service }: ProgressExperienceScreenPr
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const dashboard = useProgressDashboard({ service });
+  const { user } = useAuth();
+  const dashboard = useProgressDashboard({ service, athleteId: user?.id });
   const timeRange = useTimeRange({ viewModel: dashboard.viewModel });
   const insights = useCoachInsights({ viewModel: dashboard.viewModel });
 

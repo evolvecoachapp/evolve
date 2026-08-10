@@ -4611,6 +4611,45 @@ Notification Center UI
 
 ---
 
+## ADR-142: Progress & Analytics Runtime Activation (Sprint 35.3)
+
+**Status:** Accepted  
+**Date:** 2026-08-11  
+**Context:** Progress Experience UI (Sprint 31.4) loaded exclusively from Mock ProgressExperienceService on the authenticated Progress tab, while Progress Analytics Framework (Sprint 31.8) and integrations 32.1–32.5 already provided deterministic read models, event ingestion, and Coach Timeline projection — but no Progress Experience runtime path consumed those read models in production.
+
+**Decision:**
+
+```
+Runtime Session
+  ↓
+Composition Root (ProgressAnalyticsService via AnalyticsTimelineProjector)
+  ↓
+loadHydratedProgressExperience()
+  ↓
+mapProgressAnalyticsToExperienceDto()
+  ↓
+ProgressExperienceViewModel.applyHydratedProgress()
+  ↓
+Progress Tab UI
+```
+
+1. Wire `useProgressDashboard` to wait for Runtime Session READY and load via `loadHydratedProgressExperience({ athleteId, timeRange })` instead of `ProgressExperienceService.getDashboard()`.
+2. Project Progress Analytics read models into the Progress Experience dashboard via `mapProgressAnalyticsToExperienceDto` — no duplicate analytics engine, no UI-side calculations, no duplicate domain-to-analytics mappings.
+3. Resolve `ProgressAnalyticsService` from Composition Root through existing `AnalyticsTimelineProjector` so production reads the same in-memory read model fed by Sprints 32.1–32.4 runtime integrations.
+4. On refresh/time-range change, re-load analytics and call `reprojectPendingAnalyticsTimeline()` to project unprojected ingest events through existing Sprint 32.5 projector where supported.
+5. Do not modify Runtime Session, Runtime Observer, Runtime Bootstrap, repository contracts, SQLite infrastructure, or integration internals. No new factories or providers. No networking.
+
+**Alternatives considered:**
+- **New RuntimeProgressExperienceService provider** — rejected; violates sprint constraint of no new providers; hook-level bridge from existing Progress Analytics read models is sufficient (mirrors ADR-141).
+- **Calculate analytics in Progress UI from Unified Workspace** — rejected; Progress Analytics service and integrations 32.1–32.4 are the supported analytics seam; duplicating calculations in UI violates architecture.
+- **Build Backend/Local ProgressAnalyticsService in this sprint** — rejected; providers remain stubs; report gap and defer.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Progress tab is driven by Progress Analytics read models in production. Mock ProgressExperienceService remains available for isolated feature tests and preview injection only. Analytics state is in-memory (mock provider) until Backend/Local providers ship; not persisted through Runtime Observer across restart.
+
+---
+
 ## ADR-138: Recovery Runtime Activation (Sprint 34.9)
 
 **Status:** Accepted  

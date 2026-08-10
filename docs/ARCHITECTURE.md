@@ -694,6 +694,22 @@ ADR-140: [DECISIONS.md](./DECISIONS.md).
 
 ADR-141: [DECISIONS.md](./DECISIONS.md).
 
+### Progress & Analytics Runtime Activation — Sprint 35.3 (Phase 35)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Drive the Progress tab from existing Progress Analytics read models and Coach Timeline projection instead of Mock ProgressExperienceService loading |
+| **Flow** | Runtime Session → Composition Root (`ProgressAnalyticsService` via `AnalyticsTimelineProjector`) → `loadHydratedProgressExperience()` → `mapProgressAnalyticsToExperienceDto()` → `ProgressExperienceViewModel.applyHydratedProgress()` → Progress UI |
+| **Production path** | `useProgressDashboard` waits for `RuntimeSessionProvider` READY, loads via `loadHydratedProgressExperience({ athleteId, timeRange })`, applies via ViewModel — no `ProgressExperienceService` fetch |
+| **Analytics source** | Reads `ProgressAnalyticsService.getAnalytics()` (workout, nutrition, recovery, goal progress already ingested via Sprints 32.1–32.4); no duplicate analytics engine or UI-side calculations |
+| **Timeline projection** | Refresh/reprojection calls `reprojectPendingAnalyticsTimeline()` to project unprojected ingest events through existing `AnalyticsTimelineProjector` (Sprint 32.5) |
+| **Refresh** | Pull-to-refresh and time-range changes re-load Progress Analytics read models and reproject timeline where supported |
+| **Test/preview path** | Explicit `service` injection on `ProgressExperienceScreen` / `useProgressDashboard` retains ProgressExperienceService for isolated tests and previews |
+| **Design** | **Application orchestration only.** Uses existing Progress Analytics service, integration ingest read models, and Analytics Timeline projector. No direct SQLite/repository access from Progress UI. No new persistence infrastructure. **Provider gap:** `BackendProgressAnalyticsService` and `LocalProgressAnalyticsService` remain stubs — production uses in-memory mock read model fed by runtime integrations until backend/local providers ship. |
+| **Validation** | Integration tests cover populated/empty runtime startup, workout analytics ingest, timeline reprojection, refresh, failure propagation, ViewModel integration, integrations 32.1–32.5 regression, and no ProgressExperienceService usage in production path |
+
+ADR-142: [DECISIONS.md](./DECISIONS.md).
+
 ### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
 
 | Aspect | Implementation |
@@ -1748,9 +1764,9 @@ Full detail: [COACH_EXPERIENCE_ARCHITECTURE.md](./COACH_EXPERIENCE_ARCHITECTURE.
 | Aspect | Implementation |
 |--------|----------------|
 | **Purpose** | Athlete analytics center — one operational dashboard aggregating training, recovery, nutrition, body metrics, goals, records, and coach insights |
-| **Flow** | React UI → `ProgressExperienceViewModel` → Application APIs → Mappers → `ProgressExperienceService` → Mock/Backend/Local providers |
+| **Flow** | React UI → `ProgressExperienceViewModel` → Application APIs → Mappers → hydrated Progress Analytics read models (production) or `ProgressExperienceService` (test/preview) |
 | **Models** | `ProgressDashboard`, `StrengthProgress`, `VolumeProgress`, `RecoveryProgress`, `NutritionProgress`, `BodyMetrics`, `CoachInsightSummary`, `PersonalRecord`, `TrainingStreak`, `GoalProgress`, `TimeRange`, loading/error states, reusable chart models |
-| **Application** | `loadProgressDashboard` / `refreshProgressDashboard` / `loadStrengthProgress` / `loadVolumeProgress` / `loadRecoveryProgress` / `loadNutritionProgress` / `loadBodyMetrics` / `loadCoachInsights` / `changeTimeRange` |
+| **Application** | `loadProgressDashboard` / `refreshProgressDashboard` / `loadHydratedProgressExperience` / `reprojectPendingAnalyticsTimeline` / section loaders / `changeTimeRange` |
 | **UI** | `ProgressExperienceScreen` + header / time-range selector / analytics cards / coach insights / records / streak / goal / skeleton / empty / error; pull-to-refresh |
 | **Design** | **No business logic in React. No repository/infrastructure calls from components. No provider code in components. No chart dependency introduced. No mock data in components. No visual redesign.** Future detailed-analytics/body-metrics/exercise-history routes prepared only |
 

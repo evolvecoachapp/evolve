@@ -1,3 +1,5 @@
+export { mapProgressAnalyticsToExperienceDto } from "./mapProgressAnalyticsToExperienceDto";
+export { mapTimeRangeToAnalyticsFilter } from "./mapTimeRangeToAnalyticsFilter";
 export {
   mapBodyMetrics,
   mapCoachInsight,

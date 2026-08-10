@@ -1,4 +1,7 @@
 import { emptyMockProgressExperienceService, mockProgressExperienceService } from "../providers/MockProgressExperienceService";
+import { mockProgressAnalyticsService } from "../../progress-analytics/providers/MockProgressAnalyticsService";
+import { mapProgressAnalyticsToExperienceDto } from "../mappers/mapProgressAnalyticsToExperienceDto";
+import { mapProgressDashboard } from "../mappers";
 import { ProgressLoadingStatuses, TimeRanges } from "../models";
 import type { ProgressExperienceService } from "../services";
 import { ProgressExperienceError } from "../services";
@@ -95,5 +98,30 @@ describe("ProgressExperienceViewModel", () => {
     viewModel.subscribe(listener);
     await viewModel.loadDashboard();
     expect(listener.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("applyHydratedProgress drives runtime dashboard without ProgressExperienceService", async () => {
+    const viewModel = new ProgressExperienceViewModel({ athleteId: "athlete-runtime" });
+    expect(viewModel.isRuntimeDriven).toBe(true);
+
+    viewModel.applyHydratedProgress(
+      mapProgressDashboard(
+        mapProgressAnalyticsToExperienceDto({
+          analytics: await mockProgressAnalyticsService.getAnalytics(),
+          timeRange: TimeRanges.LAST_30_DAYS,
+          athleteId: "athlete-runtime",
+        }),
+      ),
+    );
+
+    expect(viewModel.dashboard?.strength.estimatedOneRepMaxKg).toBeGreaterThan(0);
+    expect(viewModel.loading.status).toBe(ProgressLoadingStatuses.IDLE);
+  });
+
+  it("applyProgressFailure clears dashboard for runtime path", () => {
+    const viewModel = new ProgressExperienceViewModel({ athleteId: "athlete-runtime" });
+    viewModel.applyProgressFailure("Progress analytics runtime unavailable.");
+    expect(viewModel.dashboard).toBeNull();
+    expect(viewModel.error?.code).toBe("progress_runtime_unavailable");
   });
 });

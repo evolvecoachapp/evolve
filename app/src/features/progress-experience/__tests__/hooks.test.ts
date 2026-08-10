@@ -1,10 +1,25 @@
 import { act, renderHook, waitFor } from "@testing-library/react-native";
+import { RUNTIME_SESSION_STATUS } from "../../../runtime/session/RuntimeSessionStatus";
+import { useRuntimeSession } from "../../../runtime/session/RuntimeSessionContext";
 import { emptyMockProgressExperienceService, mockProgressExperienceService } from "../providers/MockProgressExperienceService";
 import { useCoachInsights, useProgressDashboard, useTimeRange } from "../hooks";
 import { TimeRanges } from "../models";
 import { ProgressExperienceViewModel } from "../viewmodels";
 
+jest.mock("../../../runtime/session/RuntimeSessionContext", () => ({
+  useRuntimeSession: jest.fn(),
+}));
+
+const mockedUseRuntimeSession = useRuntimeSession as jest.Mock;
+
 describe("progress-experience hooks", () => {
+  beforeEach(() => {
+    mockedUseRuntimeSession.mockReturnValue({
+      isStarting: false,
+      status: RUNTIME_SESSION_STATUS.ready,
+      retrySession: jest.fn(),
+    });
+  });
   it("useProgressDashboard loads the dashboard", async () => {
     const { result } = renderHook(() => useProgressDashboard({ service: mockProgressExperienceService }));
     await waitFor(() => expect(result.current.loading.isLoading).toBe(false));

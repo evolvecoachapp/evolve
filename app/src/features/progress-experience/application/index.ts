@@ -1,4 +1,7 @@
 export { changeTimeRange } from "./ChangeTimeRange";
+export { loadHydratedProgressExperience } from "./loadHydratedProgressExperience";
+export { ProgressRuntimeError } from "./ProgressRuntimeError";
+export { reprojectPendingAnalyticsTimeline } from "./reprojectPendingAnalyticsTimeline";
 export { loadBodyMetrics } from "./LoadBodyMetrics";
 export { loadCoachInsights } from "./LoadCoachInsights";
 export { loadNutritionProgress } from "./LoadNutritionProgress";
