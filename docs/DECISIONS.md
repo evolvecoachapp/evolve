@@ -4489,6 +4489,45 @@ Nutrition Screen
 
 ---
 
+## ADR-138: Recovery Runtime Activation (Sprint 34.9)
+
+**Status:** Accepted  
+**Date:** 2026-08-11  
+**Context:** Recovery UI was reachable only through Home dashboard projection and Progress Experience mock charts. Unified Workspace already projects `WorkspaceRecovery` from Home Experience recovery signals, and Sprint 32.3 shipped Recovery → Progress Analytics integration — but no Recovery Experience runtime path existed to consume hydrated workspace output or publish domain events from supported mutations.
+
+**Decision:**
+
+```
+Runtime Session
+  ↓
+Repository Hydration
+  ↓
+UnifiedWorkspaceService (WorkspaceRecovery)
+  ↓
+loadHydratedRecoveryExperience()
+  ↓
+RecoveryExperienceViewModel.applyHydratedRecovery()
+  ↓
+Recovery Screen
+```
+
+1. Wire `useRecoveryDashboard` to wait for Runtime Session READY and load via `loadHydratedRecoveryExperience({ athleteId })` instead of `RecoveryExperienceService.getDashboard()`.
+2. Project hydrated `WorkspaceRecovery` into the Recovery Experience read model via `mapWorkspaceRecoveryToExperienceDto`.
+3. Retain local presentation mutations (sleep logging, readiness updates, recovery assessment) through minimal runtime application APIs — no new persistence path.
+4. Publish `SleepLogged`, `ReadinessUpdated`, and `RecoveryAssessed` through existing Sprint 32.3 integration on natural domain events only (`assessRuntimeRecovery` delegates to Recovery Agent `buildRecoveryPlan`).
+5. Do not modify Runtime Session, Runtime Observer, Runtime Bootstrap, repository contracts, SQLite infrastructure, or Dashboard Projection models. No new factories or providers. No networking.
+
+**Alternatives considered:**
+- **New RuntimeRecoveryExperienceService provider** — rejected; violates sprint constraint of no new providers; hook-level bridge from existing Unified Workspace is sufficient (mirrors ADR-137).
+- **Direct RecoveryRepository reads from Recovery UI** — rejected; Recovery SQLite mapper remains placeholder; workspace hydration is the supported read path.
+- **Build full recovery domain persistence in this sprint** — rejected; RecoveryRepository contract has no domain-specific methods and mapper is placeholder; report gap and defer.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Recovery screen (`/(app)/recovery`) is driven by hydrated workspace output in production. Mock RecoveryExperienceService remains available for isolated feature tests and preview injection only. In-session recovery mutations are not yet persisted through Runtime Observer (follow-up when Recovery domain serialization is complete).
+
+---
+
 ## ADR-132: Domain Persistence Serialization (Sprint 34.3)
 
 **Status:** Accepted  

@@ -42,7 +42,7 @@ export function mapQuickActions(dto: HomeDashboardDto): readonly QuickAction[] {
       kind: QuickActionKinds.VIEW_RECOVERY,
       label: "Recovery",
       icon: "heart-outline",
-      destination: "/(app)/(tabs)/progress",
+      destination: "/(app)/recovery",
       enabled: dto.recovery.score >= 0,
       reason: "Recovery summary is available.",
     }),

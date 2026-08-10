@@ -634,6 +634,21 @@ ADR-136: [DECISIONS.md](./DECISIONS.md).
 
 ADR-137: [DECISIONS.md](./DECISIONS.md).
 
+### Recovery Runtime Activation — Sprint 34.9 (Phase 34)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Drive the Recovery screen from hydrated Unified Workspace instead of Mock RecoveryExperienceService loading |
+| **Flow** | Runtime Session → Repository Hydration → UnifiedWorkspaceService → `loadHydratedRecoveryExperience()` → `RecoveryExperienceViewModel.applyHydratedRecovery()` → Recovery Screen |
+| **Production path** | `useRecoveryDashboard` waits for `RuntimeSessionProvider` READY, loads via `loadHydratedRecoveryExperience({ athleteId })`, applies via ViewModel — no `RecoveryExperienceService` fetch |
+| **Refresh** | Pull-to-refresh re-loads hydrated workspace output (no provider mock reload) |
+| **Mutations** | Runtime sleep logging, readiness updates, and recovery assessment use local application orchestration (`logRuntimeSleep`, `updateRuntimeReadiness`, `assessRuntimeRecovery` via Recovery Agent); publish `SleepLogged`, `ReadinessUpdated`, and `RecoveryAssessed` through existing Sprint 32.3 integration on natural domain events |
+| **Test/preview path** | Explicit `service` injection on `RecoveryExperienceScreen` / `useRecoveryDashboard` retains RecoveryExperienceService for isolated tests and previews |
+| **Design** | **Application orchestration only.** Uses existing Unified Workspace, Recovery Agent, and Recovery Progress integration contracts. No direct SQLite/repository access from Recovery UI. No new persistence infrastructure. Recovery SQLite mapper remains placeholder — in-session recovery state is not yet persisted through Runtime Observer. |
+| **Validation** | Integration tests cover populated/empty runtime startup, hydrated recovery rendering, sleep/readiness/assessment mutations, restart refresh, progress integration regression, ViewModel integration, and no RecoveryExperienceService usage in production path |
+
+ADR-138: [DECISIONS.md](./DECISIONS.md).
+
 ### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
 
 | Aspect | Implementation |
