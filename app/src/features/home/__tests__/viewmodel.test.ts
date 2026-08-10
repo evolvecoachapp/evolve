@@ -115,4 +115,113 @@ describe("HomeDashboardViewModel", () => {
     await viewModel.load();
     expect(viewModel.isEmpty).toBe(true);
   });
+
+  it("applyRestoredDashboard populates cards without HomeService", () => {
+    const viewModel = new HomeDashboardViewModel({ identity });
+    const dashboard = Object.freeze({
+      athlete: Object.freeze({
+        displayName: "Alex",
+        initials: "AR",
+        greeting: "Good morning",
+        dateLabel: "Today",
+        subtitle: "Ready",
+        streakDays: 3,
+        recoveryScore: 80,
+        workoutsCompleted: 2,
+        workoutsTarget: 4,
+        avgCalories: 2200,
+        present: true,
+      }),
+      workout: Object.freeze({
+        present: true,
+        name: "Lower Body",
+        muscleGroups: "Legs",
+        durationMinutes: 40,
+        statusLabel: "Planned",
+        destination: "/workout",
+      }),
+      nutrition: Object.freeze({
+        present: true,
+        calories: Object.freeze({ current: 1800, target: 2400, progressPercent: 75, unitLabel: "kcal" }),
+        protein: Object.freeze({ current: 120, target: 160, progressPercent: 75, unitLabel: "g" }),
+        carbs: Object.freeze({ current: 200, target: 260, progressPercent: 77, unitLabel: "g" }),
+        fat: Object.freeze({ current: 60, target: 80, progressPercent: 75, unitLabel: "g" }),
+        destination: "/nutrition",
+      }),
+      recovery: Object.freeze({
+        present: true,
+        score: 78,
+        status: "Good",
+        tip: "Stay hydrated",
+      }),
+      coach: Object.freeze({
+        present: true,
+        message: "Strong week",
+        actionLabel: "Open Coach",
+        destination: "/coach",
+      }),
+      quickActions: Object.freeze([]),
+      isEmpty: false,
+    });
+
+    viewModel.applyRestoredDashboard(dashboard);
+
+    expect(viewModel.isRuntimeDriven).toBe(true);
+    expect(viewModel.athlete?.displayName).toBe("Alex");
+    expect(viewModel.workout?.name).toBe("Lower Body");
+    expect(viewModel.loading.status).toBe(HomeLoadingStatuses.IDLE);
+  });
+
+  it("refreshFromRestoredDashboard re-applies runtime output", () => {
+    const viewModel = new HomeDashboardViewModel({ identity });
+    const dashboard = Object.freeze({
+      athlete: Object.freeze({
+        displayName: "Alex",
+        initials: "AR",
+        greeting: "",
+        dateLabel: "",
+        subtitle: "",
+        streakDays: 0,
+        recoveryScore: 0,
+        workoutsCompleted: 0,
+        workoutsTarget: 0,
+        avgCalories: 0,
+        present: true,
+      }),
+      workout: Object.freeze({
+        present: true,
+        name: "Core",
+        muscleGroups: "Abs",
+        durationMinutes: 20,
+        statusLabel: "Planned",
+        destination: "/workout",
+      }),
+      nutrition: Object.freeze({
+        present: false,
+        calories: Object.freeze({ current: 0, target: 0, progressPercent: 0, unitLabel: "" }),
+        protein: Object.freeze({ current: 0, target: 0, progressPercent: 0, unitLabel: "" }),
+        carbs: Object.freeze({ current: 0, target: 0, progressPercent: 0, unitLabel: "" }),
+        fat: Object.freeze({ current: 0, target: 0, progressPercent: 0, unitLabel: "" }),
+        destination: "",
+      }),
+      recovery: Object.freeze({ present: false, score: 0, status: "", tip: "" }),
+      coach: Object.freeze({ present: false, message: "", actionLabel: "", destination: "" }),
+      quickActions: Object.freeze([]),
+      isEmpty: false,
+    });
+
+    viewModel.refreshFromRestoredDashboard(dashboard);
+
+    expect(viewModel.workout?.name).toBe("Core");
+    expect(viewModel.loading.isRefreshing).toBe(false);
+  });
+
+  it("load is a no-op when runtime-driven", async () => {
+    const viewModel = new HomeDashboardViewModel({ identity });
+
+    await viewModel.load();
+
+    expect(viewModel.dashboard).toBeNull();
+    expect(viewModel.loading.status).toBe(HomeLoadingStatuses.LOADING);
+  });
 });

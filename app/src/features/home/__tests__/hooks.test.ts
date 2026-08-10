@@ -1,8 +1,16 @@
 import { act, renderHook, waitFor } from "@testing-library/react-native";
+import { RUNTIME_SESSION_STATUS } from "../../../runtime/session/RuntimeSessionStatus";
+import { useRuntimeSession } from "../../../runtime/session/RuntimeSessionContext";
 import { useHomeDashboard, usePullToRefresh, useQuickActions } from "../hooks";
 import type { HomeService } from "../types/homeService";
 import { HomeServiceError } from "../types/homeService";
 import { mockHomeDashboardData } from "../mocks/dashboardData";
+
+jest.mock("../../../runtime/session/RuntimeSessionContext", () => ({
+  useRuntimeSession: jest.fn(),
+}));
+
+const mockedUseRuntimeSession = useRuntimeSession as jest.Mock;
 
 const identity = Object.freeze({
   displayName: "Casey",
@@ -25,6 +33,14 @@ function createService(options?: { fail?: boolean }): HomeService {
 describe("home hooks", () => {
   const successService = createService();
   const failingService = createService({ fail: true });
+
+  beforeEach(() => {
+    mockedUseRuntimeSession.mockReturnValue({
+      isStarting: false,
+      status: RUNTIME_SESSION_STATUS.ready,
+      retrySession: jest.fn(),
+    });
+  });
 
   it("useHomeDashboard loads dashboard through the ViewModel", async () => {
     const { result } = renderHook(() =>

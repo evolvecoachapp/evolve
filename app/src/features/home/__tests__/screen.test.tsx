@@ -2,6 +2,8 @@ import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 import React from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useAuth } from "../../../auth/useAuth";
+import { RUNTIME_SESSION_STATUS } from "../../../runtime/session/RuntimeSessionStatus";
+import { useRuntimeSession } from "../../../runtime/session/RuntimeSessionContext";
 import { ThemeProvider } from "../../../theme/ThemeContext";
 import type { HomeDashboard as HomeDashboardDto } from "../types/homeDashboard";
 import type { HomeService } from "../types/homeService";
@@ -29,11 +31,16 @@ jest.mock("expo-linear-gradient", () => ({
 
 jest.mock("../../../auth/useAuth");
 
+jest.mock("../../../runtime/session/RuntimeSessionContext", () => ({
+  useRuntimeSession: jest.fn(),
+}));
+
 jest.mock("../../recommendations/components", () => ({
   RecommendationWidget: () => null,
 }));
 
 const mockedUseAuth = useAuth as jest.Mock;
+const mockedUseRuntimeSession = useRuntimeSession as jest.Mock;
 
 const safeAreaMetrics = {
   insets: { top: 0, right: 0, bottom: 0, left: 0 },
@@ -76,6 +83,11 @@ describe("HomeDashboardScreen composition", () => {
       },
       isAuthenticated: true,
       signOut: jest.fn(),
+    });
+    mockedUseRuntimeSession.mockReturnValue({
+      isStarting: false,
+      status: RUNTIME_SESSION_STATUS.ready,
+      retrySession: jest.fn(),
     });
   });
 

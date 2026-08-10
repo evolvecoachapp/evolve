@@ -32,7 +32,8 @@ export interface HomeDashboardScreenProps {
 
 /**
  * Operational Home dashboard screen — composition only.
- * No business logic; data via ViewModel → Application → HomeService.
+ * Production data flows from Dashboard Restore via applyRestoredDashboard().
+ * HomeService is test/preview-only when injected via the service prop.
  */
 export function HomeDashboardScreen({
   service,

@@ -4295,6 +4295,42 @@ Expo SQLite
 
 ---
 
+## ADR-133: Real Home Dashboard Activation (Sprint 34.4)
+
+**Status:** Accepted  
+**Date:** 2026-08-10  
+**Context:** Sprint 34.3 completed domain persistence serialization. The runtime session already restores a `HomeDashboard` read model via Dashboard Restore (Sprint 33.3), but the Home UI still loaded mock data through `HomeService` on mount — creating a parallel data path that ignored restore output.
+
+**Decision:**
+
+```
+Runtime Session
+  ↓
+Repository Hydration
+  ↓
+Dashboard Restore
+  ↓
+HomeDashboardViewModel.applyRestoredDashboard()
+  ↓
+Home Screen
+```
+
+1. Wire `useHomeDashboard` production path to wait for runtime session READY and apply `DashboardRestoreService.getResult().primaryDashboard` via `applyRestoredDashboard()`.
+2. Remove default `HomeService` dependency from `HomeDashboardViewModel` — production constructor is runtime-driven; explicit `service` injection retained for tests and previews.
+3. Pull-to-refresh re-applies restored dashboard from `DashboardRestoreService` instead of calling HomeService.
+4. Do not modify Runtime Session, Runtime Observer, Runtime Bootstrap, repository contracts, Dashboard Projection models, or Composition Root registrations. No new factories or providers. No networking.
+
+**Alternatives considered:**
+- **Pass ViewModel into `restoreDashboard` application API from Composition Root** — rejected; violates sprint constraint of no new providers/factories; hook-level bridge from existing `DashboardRestoreService` is sufficient.
+- **Keep HomeService as production fallback when restore is empty** — rejected; Dashboard Restore already produces structural empty dashboards; dual paths violate single source of truth.
+- **New HomeDashboardProvider context** — rejected; unnecessary new provider; existing runtime session gate + restore service facade suffice.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Home screen is driven entirely by Runtime in production. Mock HomeService remains available for isolated feature tests and preview injection only.
+
+---
+
 ## ADR-132: Domain Persistence Serialization (Sprint 34.3)
 
 **Status:** Accepted  

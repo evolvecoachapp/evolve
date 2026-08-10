@@ -15,7 +15,7 @@ import {
   type HomeLoadingState,
 } from "../models/HomeLoadingState";
 import type { QuickAction } from "../models/QuickAction";
-import { homeService, type HomeService, HomeServiceError } from "../services";
+import { type HomeService, HomeServiceError } from "../services";
 
 export interface HomeDashboardViewModelDeps {
   readonly service?: HomeService;
@@ -27,21 +27,29 @@ export interface HomeDashboardViewModelDeps {
  * No UI code.
  */
 export class HomeDashboardViewModel {
-  private readonly service: HomeService;
+  private readonly service: HomeService | null;
   private identity: AthleteIdentityInput;
   private readonly listeners = new Set<() => void>();
 
   private _dashboard: HomeDashboard | null = null;
   private _athlete: AthleteSnapshotCard | null = null;
   private _quickActions: readonly QuickAction[] = Object.freeze([]);
-  private _loading: HomeLoadingState = createHomeLoadingState(
-    HomeLoadingStatuses.IDLE,
-  );
+  private _loading: HomeLoadingState;
   private _error: HomeErrorState | null = null;
 
   constructor(deps: HomeDashboardViewModelDeps) {
-    this.service = deps.service ?? homeService;
+    this.service = deps.service ?? null;
     this.identity = deps.identity;
+    this._loading = createHomeLoadingState(
+      this.service
+        ? HomeLoadingStatuses.IDLE
+        : HomeLoadingStatuses.LOADING,
+    );
+  }
+
+  /** True when the ViewModel is driven by Dashboard Restore instead of HomeService. */
+  get isRuntimeDriven(): boolean {
+    return this.service === null;
   }
 
   get dashboard(): HomeDashboard | null {
@@ -96,6 +104,10 @@ export class HomeDashboardViewModel {
   }
 
   async load(): Promise<void> {
+    if (!this.service) {
+      return;
+    }
+
     this._loading = createHomeLoadingState(HomeLoadingStatuses.LOADING);
     this._error = null;
     this.notify();
@@ -118,6 +130,10 @@ export class HomeDashboardViewModel {
   }
 
   async refresh(): Promise<void> {
+    if (!this.service) {
+      return;
+    }
+
     this._loading = createHomeLoadingState(HomeLoadingStatuses.REFRESHING);
     this._error = null;
     this.notify();
@@ -139,6 +155,38 @@ export class HomeDashboardViewModel {
   /** Applies a dashboard restored from Unified Workspace projection. */
   applyRestoredDashboard(dashboard: HomeDashboard): void {
     this.applyDashboard(dashboard);
+    this.notify();
+  }
+
+  /** Re-applies the restored dashboard (runtime production refresh path). */
+  refreshFromRestoredDashboard(dashboard: HomeDashboard | null): void {
+    this._loading = createHomeLoadingState(HomeLoadingStatuses.REFRESHING);
+    this._error = null;
+    this.notify();
+
+    if (dashboard) {
+      this.applyDashboard(dashboard);
+    } else {
+      this._loading = createHomeLoadingState(HomeLoadingStatuses.IDLE);
+      this._error = createHomeErrorState(
+        "Dashboard restore unavailable.",
+        "dashboard_restore_unavailable",
+      );
+    }
+
+    this.notify();
+  }
+
+  /** Surfaces a Dashboard Restore failure to the Home UI. */
+  applyRestoreFailure(message: string): void {
+    this._dashboard = null;
+    this._athlete = null;
+    this._quickActions = Object.freeze([]);
+    this._loading = createHomeLoadingState(HomeLoadingStatuses.IDLE);
+    this._error = createHomeErrorState(
+      message,
+      "dashboard_restore_failed",
+    );
     this.notify();
   }
 

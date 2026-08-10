@@ -559,6 +559,20 @@ Full detail: [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md). ADR-131: [DECISIONS.md](.
 
 Full detail: [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md). ADR-132: [DECISIONS.md](./DECISIONS.md).
 
+### Real Home Dashboard Activation — Sprint 34.4 (Phase 34)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Drive the Home screen exclusively from Dashboard Restore output instead of Mock HomeService loading |
+| **Flow** | Runtime Session → Repository Hydration → Dashboard Restore → `HomeDashboardViewModel.applyRestoredDashboard()` → Home Screen |
+| **Production path** | `useHomeDashboard` waits for `RuntimeSessionProvider` READY, reads `DashboardRestoreService.getResult().primaryDashboard`, applies via ViewModel — no `HomeService` fetch |
+| **Refresh** | Pull-to-refresh re-applies restored dashboard from `DashboardRestoreService` (no provider mock reload) |
+| **Test/preview path** | Explicit `service` injection on `HomeDashboardScreen` / `useHomeDashboard` retains HomeService for isolated tests and previews |
+| **Design** | **Presentation wiring only.** No Runtime Session, Observer, Bootstrap, repository contract, or Dashboard Projection model changes. No new factories or providers. |
+| **Validation** | Integration tests cover populated/empty runtime startup, restored dashboard rendering, restart refresh, ViewModel integration, and no HomeService usage in production path |
+
+ADR-133: [DECISIONS.md](./DECISIONS.md).
+
 ### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
 
 | Aspect | Implementation |
