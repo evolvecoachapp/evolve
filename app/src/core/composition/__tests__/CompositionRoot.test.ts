@@ -1,4 +1,5 @@
 import { ProgrammingService } from "../../../features/programming/services/ProgrammingService";
+import { IdentityRepositoryAdapter } from "../../../infrastructure/repositories/adapters/IdentityRepositoryAdapter";
 import {
   createCompositionRoot,
   getCompositionRoot,
@@ -50,14 +51,24 @@ describe("CompositionRoot", () => {
     );
   });
 
-  it("locks configuration to in-memory / default strategies", () => {
+  it("locks configuration to in-memory training repos and sqlite runtime persistence", () => {
     const root = createCompositionRoot({
       configuration: {
         repositoryMode: "in-memory",
+        runtimePersistenceMode: "sqlite",
         strategyMode: "default",
       },
     });
     expect(root.configuration.repositoryMode).toBe("in-memory");
+    expect(root.configuration.runtimePersistenceMode).toBe("sqlite");
     expect(root.configuration.strategyMode).toBe("default");
+  });
+
+  it("exposes PersistenceRepositoryProvider for runtime persistence selection", () => {
+    const root = createCompositionRoot();
+    expect(root.persistenceRepositories).toBeDefined();
+    expect(root.resolve("RepositoryAdapters").identity).toBeInstanceOf(
+      IdentityRepositoryAdapter,
+    );
   });
 });

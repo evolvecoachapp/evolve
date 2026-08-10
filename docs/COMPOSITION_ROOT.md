@@ -36,6 +36,7 @@ Rules:
 - Factories contain **no business logic** — creation and wiring only.
 - Port adapters are **thin** — structural mapping between module contracts only.
 - Training Intelligence providers remain **in-memory** for engine defaults.
+- Runtime persistence providers select **SQLite-backed** repository adapters via `PersistenceRepositoryProvider` (`runtimePersistenceMode: "sqlite"`).
 - Persistence and Infrastructure **implementations** are created only in the Composition Root and must never be imported by Domain/features.
 - Domain depends on **contracts** (`core/persistence`, `core/infrastructure`); Composition Root binds contracts to adapters.
 
@@ -50,7 +51,8 @@ Module: `app/src/core/composition/`.
 ```
 CompositionRoot
  ├─ ConfigurationProvider → CompositionConfiguration
- ├─ RepositoryProvider    → in-memory repositories
+ ├─ RepositoryProvider    → in-memory repositories (Training Intelligence)
+ ├─ PersistenceRepositoryProvider → SQLite repository adapters (runtime persistence)
  ├─ StrategyProvider      → default strategies / assessments
  └─ ApplicationContainer
       ├─ WorkoutBlueprintService
@@ -149,7 +151,7 @@ Public API (`app/src/core/composition`):
 
 Bootstrap sequence:
 
-1. Merge configuration (locked to in-memory / default strategies for training providers).
+1. Merge configuration (in-memory training repos, sqlite runtime persistence, default strategies).
 2. Register all `SERVICE_TOKENS` with factories.
 3. `validate()` — required tokens present; eager resolve surfaces circular/invalid factories.
 4. `freeze()` — reject late registrations.

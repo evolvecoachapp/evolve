@@ -436,7 +436,7 @@ Full detail: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md).
 | **Registry** | Typed `ServiceMap` (60 tokens): Training Intelligence, Coaching Architecture, Persistence/Infrastructure contracts, SQLite, Repository Adapters, Auth, Sync, Backend, Logging, Runtime Bootstrap, Repository Hydration, Dashboard Restore |
 | **Factories** | Creation-only factories (no business logic); Phase 29–30 composition factories wrap infrastructure factories |
 | **Adapters** | Thin port adapters between coaching modules + legacy Recommendation Engine bridge (`RecommendationEngineBridge` / `DefaultRecommendationService` facade) |
-| **Providers** | Configuration, in-memory training repositories, default strategies |
+| **Providers** | Configuration, in-memory training repositories (`RepositoryProvider`), SQLite runtime persistence repositories (`PersistenceRepositoryProvider`), default strategies |
 | **Infrastructure wiring** | `PersistenceContractsFactory`, `InfrastructureAdapterFactory`, `SQLiteAdapterFactory`, `RepositoryAdapterFactory`, `AuthenticationFactory`, `SynchronizationFactory`, `BackendFactory`, `LoggerFactory` |
 | **Application API** | Use-cases / Coach / Dashboard resolve defaults via `resolveService(token)` — no manual `new` |
 | **Design** | **Wiring only.** Factories create objects; no AI/business logic in the Composition Root. Persistence/infra adapters are owned here; Domain never imports them. |
@@ -518,6 +518,19 @@ Full detail: [RUNTIME_SESSION.md](./RUNTIME_SESSION.md).
 | **Validation (Sprint 33.9)** | Integration tests validate automatic write-through after session READY, logout reset, and round-trip re-hydration |
 
 Full detail: [RUNTIME_OBSERVER.md](./RUNTIME_OBSERVER.md).
+
+### SQLite Runtime Persistence Activation — Sprint 34.1 (Phase 34)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Activate SQLite-backed repository adapters for runtime hydration and write-through |
+| **Flow** | Runtime → Repository Contracts → Repository Adapters → SQLite Repositories → SQLite Engine |
+| **Provider** | `PersistenceRepositoryProvider` selects SQLite-backed adapters; `runtimePersistenceMode` hard-locked to `"sqlite"` |
+| **Composition Root** | `SQLiteConnection` / `SQLiteAdapter` / `SQLiteRepositories` / `RepositoryAdapters` wired through `PersistenceRepositoryProvider` |
+| **Design** | **Wiring only.** No runtime pipeline changes. No direct SQLite in runtime modules. Training Intelligence repos remain in-memory via `RepositoryProvider`. No networking. No cloud sync. |
+| **Validation** | Integration tests cover empty/populated startup, write-through, restart persistence, repository integration, and composition wiring |
+
+Full detail: [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
 
 ### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
 

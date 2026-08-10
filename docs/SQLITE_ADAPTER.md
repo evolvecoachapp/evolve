@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-28  
+**Last Updated:** 2026-08-10  
 **Purpose:** Document the first production infrastructure adapter — SQLite storage behind Persistence Contracts.  
 **Source of Truth:** Yes — for Sprint 30.1 SQLite Storage Adapter on mobile.
 
@@ -130,8 +130,11 @@ Registers:
 - `SQLiteConnection`
 - `SQLiteAdapter`
 - `SQLiteRepositories`
+- `RepositoryAdapters`
 
-via `SQLiteAdapterFactory`.
+via `PersistenceRepositoryProvider` → `SQLiteAdapterFactory` → `RepositoryAdapterFactory`.
+
+Runtime hydration and write-through resolve `RepositoryAdapters` from the Composition Root. No direct SQLite imports in runtime modules.
 
 ---
 

@@ -2,6 +2,7 @@ import {
   getCompositionRoot,
   resetCompositionRoot,
 } from "../../../core/composition/createCompositionRoot";
+import { IdentityRepositoryAdapter } from "../../../infrastructure/repositories/adapters/IdentityRepositoryAdapter";
 import { RuntimeBootstrap, resetRuntimeBootstrap } from "../../bootstrap/RuntimeBootstrap";
 import { resetDashboardRestore } from "../../dashboard-restore/DashboardRestorePipeline";
 import { resetRepositoryHydration } from "../../hydration/RepositoryHydrationPipeline";
@@ -28,5 +29,12 @@ describe("runtime session composition", () => {
     expect(service.getStatus()).toBe(RUNTIME_SESSION_STATUS.idle);
     expect(service.isReady()).toBe(false);
     expect(service.getResult()).toBeNull();
+  });
+
+  it("resolves SQLite-backed repository adapters for the runtime session", () => {
+    RuntimeBootstrap.bootstrap();
+
+    const adapters = getCompositionRoot().resolve("RepositoryAdapters");
+    expect(adapters.identity).toBeInstanceOf(IdentityRepositoryAdapter);
   });
 });

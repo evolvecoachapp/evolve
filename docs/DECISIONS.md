@@ -4179,3 +4179,38 @@ Repository Contracts
 **Consequences:**
 - Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
 - User Story 01 complete. Phase 33 continues with richer domain-to-record mapping in later sprints.
+
+---
+
+## ADR-130: SQLite Runtime Persistence Activation (Sprint 34.1)
+
+**Status:** Accepted  
+**Date:** 2026-08-10  
+**Context:** Phase 33 validated runtime persistence orchestration (bootstrap → hydration → dashboard restore → observer → write-through) using repository contracts. Sprint 30 delivered the SQLite infrastructure adapter and repository adapters, but runtime persistence was not formally activated. Phase 34 must wire runtime hydration and write-through to SQLite-backed repository adapters without changing runtime pipeline architecture.
+
+**Decision:**
+
+```
+Runtime
+  ↓
+Repository Contracts
+  ↓
+SQLite Repository Adapters
+  ↓
+SQLite Engine
+```
+
+1. Introduce `PersistenceRepositoryProvider` in the Composition Root to select SQLite-backed repository adapters for runtime persistence.
+2. Add `CompositionConfiguration.runtimePersistenceMode` hard-locked to `"sqlite"`.
+3. Wire `SQLiteConnection` / `SQLiteAdapter` / `SQLiteRepositories` / `RepositoryAdapters` through `PersistenceRepositoryProvider`.
+4. Leave runtime pipelines (`hydrateRuntime`, `persistRuntime`, `RuntimeObserver`, `RuntimeSessionOrchestrator`) unchanged — they continue resolving `RepositoryAdapters` from the Composition Root.
+5. Training Intelligence repositories remain in-memory via `RepositoryProvider`.
+
+**Alternatives considered:**
+- **In-memory persistence contract repositories for runtime** — rejected; Sprint 30 SQLite adapter is the production persistence path.
+- **Direct SQLite imports in runtime modules** — rejected; violates Clean Architecture; runtime must depend on repository contracts only.
+- **Native/file-backed SQLite engine in this sprint** — rejected; activates existing Sprint 30 adapter wiring only; durable engine deferred.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
+- Phase 34 started. Runtime persists to SQLite within the process via repository adapters. Cross-process durability requires a future native SQLite engine sprint.

@@ -58,6 +58,7 @@ import {
 } from "./factories";
 import {
   ConfigurationProvider,
+  PersistenceRepositoryProvider,
   RepositoryProvider,
   StrategyProvider,
 } from "./providers";
@@ -86,6 +87,7 @@ export class CompositionRoot {
   readonly registry: ServiceRegistry;
   readonly configuration: CompositionConfiguration;
   readonly repositories: RepositoryProvider;
+  readonly persistenceRepositories: PersistenceRepositoryProvider;
   readonly strategies: StrategyProvider;
 
   private constructor(
@@ -93,12 +95,14 @@ export class CompositionRoot {
     registry: ServiceRegistry,
     configuration: CompositionConfiguration,
     repositories: RepositoryProvider,
+    persistenceRepositories: PersistenceRepositoryProvider,
     strategies: StrategyProvider,
   ) {
     this.container = container;
     this.registry = registry;
     this.configuration = configuration;
     this.repositories = repositories;
+    this.persistenceRepositories = persistenceRepositories;
     this.strategies = strategies;
   }
 
@@ -109,6 +113,9 @@ export class CompositionRoot {
     const configProvider = new ConfigurationProvider(options.configuration);
     const configuration = configProvider.getConfiguration();
     const repositories = new RepositoryProvider(configuration);
+    const persistenceRepositories = new PersistenceRepositoryProvider(
+      configuration,
+    );
     const strategies = new StrategyProvider(configuration);
 
     const lifecycle = configuration.preferSingletons
@@ -373,7 +380,7 @@ export class CompositionRoot {
 
     container.register(
       "SQLiteConnection",
-      () => SQLiteAdapterFactory.create().connection,
+      () => persistenceRepositories.createSQLiteConnection(),
       { lifecycle },
     );
 
@@ -381,7 +388,7 @@ export class CompositionRoot {
       "SQLiteAdapter",
       () => {
         const connection = container.resolve("SQLiteConnection");
-        return SQLiteAdapterFactory.create({ connection }).adapter;
+        return persistenceRepositories.createSQLiteAdapter(connection);
       },
       { lifecycle },
     );
@@ -398,9 +405,9 @@ export class CompositionRoot {
         | undefined;
       return () => {
         if (!bundle) {
-          bundle = RepositoryAdapterFactory.create({
-            repositories: container.resolve("SQLiteRepositories"),
-          });
+          bundle = persistenceRepositories.createRepositoryAdapterBundle(
+            container.resolve("SQLiteRepositories"),
+          );
         }
         return bundle;
       };
@@ -842,6 +849,7 @@ export class CompositionRoot {
       registry,
       configuration,
       repositories,
+      persistenceRepositories,
       strategies,
     );
   }
