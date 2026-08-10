@@ -3788,3 +3788,46 @@ Coach Timeline Service (consumer)
 - Documentation: [ANALYTICS_TIMELINE_PROJECTION.md](./ANALYTICS_TIMELINE_PROJECTION.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [COACH_TIMELINE.md](./COACH_TIMELINE.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
 - Progress Analytics remains producer; Coach Timeline is consumer only.
 - Future orchestration can invoke projection after analytics ingest without changing domain features.
+
+---
+
+## ADR-120: Unified Workspace → Dashboard Projection (Sprint 32.6)
+
+**Status:** Accepted  
+**Date:** 2026-08-10  
+**Context:** Sprints 32.1–32.5 established deterministic integration and projection patterns feeding Progress Analytics and Coach Timeline read models. Phase 32 completes with Dashboard as the final consumer. Dashboard must consume only Unified Workspace projections and never directly consume Workout, Nutrition, Recovery, Goal Progress, or Coach Timeline.
+
+**Decision:**
+
+```
+Unified Workspace Service (source)
+        │
+        ▼
+Dashboard Projector
+        │
+        ▼
+Dashboard Projection (read model)
+        │
+        ▼
+Dashboard ViewModel → Dashboard UI
+```
+
+1. Immutable integration models (`DashboardProjection`, `DashboardProjectionResult`, `DashboardProjectionSnapshot`, card models).
+2. Supported input is Unified Workspace snapshots only — represent only, no business logic or calculations.
+3. `DashboardProjector` validates immutable workspace input, maps workspace sections to Dashboard cards via mappers, and returns `DashboardProjectionResult`.
+4. Mappers convert Unified Workspace sections → Dashboard card read models with presentation-only formatting.
+5. Application APIs (`projectWorkspaceToDashboard`, `projectAthleteWorkspaceToDashboard`) are the operational projection path.
+6. Validation rejects missing workspace, missing workspace id, missing athlete id, invalid workspace, duplicate workspace id, and missing identity.
+7. Composition Root registers `DashboardProjector` via `DashboardProjectionFactory` using Unified Workspace contract only.
+8. Previous integrations and features remain unchanged. Unified Workspace is not redesigned.
+
+**Alternatives considered:**
+- **Wire Dashboard UI directly to HomeService mock DTOs** — rejected: violates Unified Workspace as canonical source.
+- **Import Workout/Nutrition/Recovery/Goal/Timeline directly in Dashboard** — rejected: violates bounded context; Dashboard consumes Workspace only.
+- **Add persistence or event bus for live projection** — rejected: projection-only sprint; no runtime scheduler.
+- **Perform analytics or readiness calculations in projection layer** — rejected: projection only.
+
+**Consequences:**
+- Documentation: [DASHBOARD_PROJECTION.md](./DASHBOARD_PROJECTION.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
+- Phase 32 complete.
+- Future Home Dashboard ViewModel wiring can consume `DashboardProjection` without changing domain features.

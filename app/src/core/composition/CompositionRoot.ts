@@ -48,6 +48,7 @@ import {
   RecoveryProgressIntegrationFactory,
   GoalProgressIntegrationFactory,
   AnalyticsTimelineIntegrationFactory,
+  DashboardProjectionFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -773,6 +774,21 @@ export class CompositionRoot {
       { lifecycle },
     );
 
+    let dashboardProjectionIntegration:
+      | ReturnType<typeof DashboardProjectionFactory.create>
+      | undefined;
+
+    container.register(
+      "DashboardProjector",
+      () => {
+        dashboardProjectionIntegration ??= DashboardProjectionFactory.create({
+          unifiedWorkspaceService: container.resolve("UnifiedWorkspaceService"),
+        });
+        return dashboardProjectionIntegration.projector;
+      },
+      { lifecycle },
+    );
+
     container.validate();
     container.freeze();
 
@@ -1010,6 +1026,10 @@ export class CompositionRoot {
 
   getAnalyticsTimelineProjector(): ServiceMap["AnalyticsTimelineProjector"] {
     return this.registry.resolve("AnalyticsTimelineProjector");
+  }
+
+  getDashboardProjector(): ServiceMap["DashboardProjector"] {
+    return this.registry.resolve("DashboardProjector");
   }
 
   getDecisionEngineService(): ServiceMap["DecisionEngineService"] {

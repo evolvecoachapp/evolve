@@ -80,6 +80,7 @@ describe("ServiceRegistry", () => {
       "GoalProgressPublisher",
       "GoalProgressSubscriber",
       "AnalyticsTimelineProjector",
+      "DashboardProjector",
     ]);
   });
 

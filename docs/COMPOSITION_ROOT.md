@@ -99,6 +99,7 @@ NutritionProgressIntegrationFactory → NutritionProgressPublisher / NutritionPr
 RecoveryProgressIntegrationFactory → RecoveryProgressPublisher / RecoveryProgressSubscriber
 GoalProgressIntegrationFactory → GoalProgressPublisher / GoalProgressSubscriber
 AnalyticsTimelineIntegrationFactory → AnalyticsTimelineProjector
+DashboardProjectionFactory → DashboardProjector
 ```
 
 Execution entry points:

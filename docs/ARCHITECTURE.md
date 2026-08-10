@@ -1600,6 +1600,20 @@ Full detail: [GOAL_PROGRESS_INTEGRATION.md](./GOAL_PROGRESS_INTEGRATION.md). ADR
 
 Full detail: [ANALYTICS_TIMELINE_PROJECTION.md](./ANALYTICS_TIMELINE_PROJECTION.md). ADR-119: [DECISIONS.md](./DECISIONS.md).
 
+### Dashboard Projection (`integrations/dashboard-projection`) — Sprint 32.6 integration
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Deterministic projection layer translating immutable Unified Workspace snapshots into immutable Dashboard read models |
+| **Flow** | Unified Workspace Service → Dashboard Projector → Dashboard Projection |
+| **Models** | `DashboardProjection`, `DashboardProjectionResult`, `DashboardProjectionSnapshot`, card models |
+| **Projector** | `DashboardProjector` validates workspace input, maps sections to Dashboard cards |
+| **Application** | `projectWorkspaceToDashboard` / `projectAthleteWorkspaceToDashboard` |
+| **Composition Root** | `DashboardProjectionFactory` registers `DashboardProjector` |
+| **Design** | **No business logic. No persistence. No networking. No event bus. No scheduler. Unified Workspace remains producer; Dashboard is consumer only.** Dashboard never directly consumes Workout, Nutrition, Recovery, Goal Progress, or Coach Timeline |
+
+Full detail: [DASHBOARD_PROJECTION.md](./DASHBOARD_PROJECTION.md). ADR-120: [DECISIONS.md](./DECISIONS.md).
+
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 
 | Aspect | Implementation |

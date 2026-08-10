@@ -159,3 +159,6 @@ export type { GoalProgressIntegrationFactoryDeps } from "./GoalProgressIntegrati
 
 export { AnalyticsTimelineIntegrationFactory } from "./AnalyticsTimelineIntegrationFactory";
 export type { AnalyticsTimelineIntegrationFactoryDeps } from "./AnalyticsTimelineIntegrationFactory";
+
+export { DashboardProjectionFactory } from "./DashboardProjectionFactory";
+export type { DashboardProjectionFactoryDeps } from "./DashboardProjectionFactory";
