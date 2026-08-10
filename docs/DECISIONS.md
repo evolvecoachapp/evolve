@@ -3748,3 +3748,43 @@ Mock Analytics Provider
 - Documentation: [GOAL_PROGRESS_INTEGRATION.md](./GOAL_PROGRESS_INTEGRATION.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
 - Progress Analytics providers implement `applyGoalProgressEvent` on the public contract; Mock provider appends immutable goal progress read-model entries without calculations.
 - Future real analytics engines can replace Mock provider without changing Goal Progress or integration application APIs.
+
+---
+
+## ADR-119: Progress Analytics → Coach Timeline Projection (Sprint 32.5)
+
+**Status:** Accepted  
+**Date:** 2026-08-10  
+**Context:** Sprints 32.1–32.4 established deterministic publisher/subscriber integrations feeding Progress Analytics read models from Workout, Nutrition, Recovery, and Goal domains. Coach Timeline (decision journal, ADR-086) must consume Progress Analytics events as immutable timeline entries without introducing another analytics publisher, event bus, or circular dependencies.
+
+**Decision:**
+
+```
+Progress Analytics Service (source)
+        │
+        ▼
+Analytics Timeline Projector
+        │
+        ▼
+Coach Timeline Service (consumer)
+```
+
+1. Immutable integration models (`AnalyticsTimelineEvent`, `AnalyticsTimelineProjectionResult`, `AnalyticsTimelineProjectionSnapshot`).
+2. Supported events are Progress Analytics ingest DTOs across workout, nutrition, recovery, and goal domains — represent only, no analytics calculations.
+3. `AnalyticsTimelineProjector` validates immutable events, maps to `AppendTimelineEntryRequest`, and appends via `CoachTimelineService` — no publisher/subscriber pattern.
+4. Mappers convert Progress Analytics ingest DTOs → Coach Timeline append requests with deterministic entry ids (`tl:analytics:{source}:{eventId}`).
+5. Application APIs (`projectAnalyticsEventToTimeline` and domain-specific helpers) are the operational projection path.
+6. Validation rejects missing event, duplicate event id, invalid payload, missing metadata, unsupported event type, and missing athlete id.
+7. Composition Root registers `AnalyticsTimelineProjector` via `AnalyticsTimelineIntegrationFactory` using Progress Analytics and Coach Timeline contracts only.
+8. Previous integrations (32.1–32.4) remain unchanged. Coach Timeline and Progress Analytics features are not redesigned.
+
+**Alternatives considered:**
+- **Create another Analytics Publisher (mirror 32.1–32.4 pattern)** — rejected: this sprint is projection-only; Progress Analytics is already the producer.
+- **Subscribe Progress Analytics internally via event bus** — rejected: no event bus in this sprint.
+- **Import Coach Timeline directly from Progress Analytics feature** — rejected: violates bounded context separation; integration layer owns projection.
+- **Calculate analytics inside projection layer** — rejected: projection only.
+
+**Consequences:**
+- Documentation: [ANALYTICS_TIMELINE_PROJECTION.md](./ANALYTICS_TIMELINE_PROJECTION.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [COACH_TIMELINE.md](./COACH_TIMELINE.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
+- Progress Analytics remains producer; Coach Timeline is consumer only.
+- Future orchestration can invoke projection after analytics ingest without changing domain features.

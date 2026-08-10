@@ -47,6 +47,7 @@ import {
   NutritionProgressIntegrationFactory,
   RecoveryProgressIntegrationFactory,
   GoalProgressIntegrationFactory,
+  AnalyticsTimelineIntegrationFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -757,6 +758,21 @@ export class CompositionRoot {
       { lifecycle },
     );
 
+    let analyticsTimelineIntegration:
+      | ReturnType<typeof AnalyticsTimelineIntegrationFactory.create>
+      | undefined;
+
+    container.register(
+      "AnalyticsTimelineProjector",
+      () => {
+        analyticsTimelineIntegration ??= AnalyticsTimelineIntegrationFactory.create({
+          coachTimelineService: container.resolve("CoachTimelineService"),
+        });
+        return analyticsTimelineIntegration.projector;
+      },
+      { lifecycle },
+    );
+
     container.validate();
     container.freeze();
 
@@ -990,6 +1006,10 @@ export class CompositionRoot {
 
   getGoalProgressSubscriber(): ServiceMap["GoalProgressSubscriber"] {
     return this.registry.resolve("GoalProgressSubscriber");
+  }
+
+  getAnalyticsTimelineProjector(): ServiceMap["AnalyticsTimelineProjector"] {
+    return this.registry.resolve("AnalyticsTimelineProjector");
   }
 
   getDecisionEngineService(): ServiceMap["DecisionEngineService"] {

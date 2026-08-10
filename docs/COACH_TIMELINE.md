@@ -87,6 +87,7 @@ Appends happen after successful completion via existing orchestration (no event 
 | Nutrition create / modify | Nutrition Agent service |
 | Recovery strategy change | Recovery Agent service |
 | Goal progress / change | Goal Progress Engine service |
+| Progress Analytics projection | Analytics Timeline Projector (`integrations/analytics-timeline`, Sprint 32.5) |
 | Decision Engine decisions | Decision Engine `buildDecision` / `resolveDecision` |
 | Important user requests | Coach Conversation important intents |
 
@@ -108,4 +109,4 @@ Responses are assembled **only** from Timeline entries.
 
 ## Composition Root
 
-Registers `CoachTimelineService` and injects it into Coach Conversation, Plan Restore, Decision Engine, Nutrition Agent, Recovery Agent, Proactive Insights, and Explainable Coaching Session.
+Registers `CoachTimelineService` and injects it into Coach Conversation, Plan Restore, Decision Engine, Nutrition Agent, Recovery Agent, Proactive Insights, and Explainable Coaching Session. Sprint 32.5 registers `AnalyticsTimelineProjector` via `AnalyticsTimelineIntegrationFactory` to project Progress Analytics ingest events into the decision journal (consumer only).

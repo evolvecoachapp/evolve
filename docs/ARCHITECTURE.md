@@ -1586,6 +1586,20 @@ Full detail: [RECOVERY_PROGRESS_INTEGRATION.md](./RECOVERY_PROGRESS_INTEGRATION.
 
 Full detail: [GOAL_PROGRESS_INTEGRATION.md](./GOAL_PROGRESS_INTEGRATION.md). ADR-118: [DECISIONS.md](./DECISIONS.md).
 
+### Analytics Timeline Projection (`integrations/analytics-timeline`) — Sprint 32.5 integration
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Deterministic projection layer translating immutable Progress Analytics events into immutable Coach Timeline entries |
+| **Flow** | Progress Analytics Service → Analytics Timeline Projector → Coach Timeline Service |
+| **Models** | `AnalyticsTimelineEvent`, `AnalyticsTimelineProjectionResult`, `AnalyticsTimelineProjectionSnapshot` |
+| **Projector** | `AnalyticsTimelineProjector` validates ingest DTOs, maps to `AppendTimelineEntryRequest`, appends via `CoachTimelineService` |
+| **Application** | `projectAnalyticsEventToTimeline` / domain-specific projection helpers |
+| **Composition Root** | `AnalyticsTimelineIntegrationFactory` registers `AnalyticsTimelineProjector` |
+| **Design** | **No analytics publisher. No analytics calculations. No persistence. No networking. No event bus. No scheduler. Progress Analytics remains producer; Coach Timeline is consumer only.** Contract-only communication |
+
+Full detail: [ANALYTICS_TIMELINE_PROJECTION.md](./ANALYTICS_TIMELINE_PROJECTION.md). ADR-119: [DECISIONS.md](./DECISIONS.md).
+
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 
 | Aspect | Implementation |

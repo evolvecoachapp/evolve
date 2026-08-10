@@ -98,6 +98,7 @@ WorkoutProgressIntegrationFactory → WorkoutProgressPublisher / ProgressAnalyti
 NutritionProgressIntegrationFactory → NutritionProgressPublisher / NutritionProgressSubscriber
 RecoveryProgressIntegrationFactory → RecoveryProgressPublisher / RecoveryProgressSubscriber
 GoalProgressIntegrationFactory → GoalProgressPublisher / GoalProgressSubscriber
+AnalyticsTimelineIntegrationFactory → AnalyticsTimelineProjector
 ```
 
 Execution entry points:

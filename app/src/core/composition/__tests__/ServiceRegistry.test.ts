@@ -79,6 +79,7 @@ describe("ServiceRegistry", () => {
       "RecoveryProgressSubscriber",
       "GoalProgressPublisher",
       "GoalProgressSubscriber",
+      "AnalyticsTimelineProjector",
     ]);
   });
 
