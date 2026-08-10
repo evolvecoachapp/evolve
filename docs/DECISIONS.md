@@ -3913,3 +3913,40 @@ HydrationResult (frozen)
 **Consequences:**
 - Documentation: [RUNTIME_HYDRATION.md](./RUNTIME_HYDRATION.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
 - Phase 33 continues with Home restore and richer record mapping in later sprints.
+
+---
+
+## ADR-123: Dashboard Restore Pipeline (Sprint 33.3)
+
+**Status:** Accepted  
+**Date:** 2026-08-10  
+**Context:** Sprint 33.2 established Repository Hydration. Phase 33 requires restoring the Home dashboard read model from Unified Workspace after hydration without direct repository access (User Story 01).
+
+**Decision:**
+
+```
+Repository Hydration (ready)
+  ↓
+UnifiedWorkspaceService
+  ↓
+DashboardProjector
+  ↓
+DashboardRestorePipeline
+  ↓
+HomeDashboard → HomeDashboardViewModel
+```
+
+1. Introduce `runtime/dashboard-restore` module with immutable restore models and a read-only `DashboardRestoreService` facade.
+2. `DashboardRestorePipeline` validates hydration readiness, reads cached workspace snapshots, projects via `DashboardProjector`, maps to `HomeDashboard`, and optionally applies to `HomeDashboardViewModel` — no repository or SQLite access.
+3. Application APIs (`restoreDashboard`, `getDashboardRestoreStatus`) are the operational restore path.
+4. Missing workspace snapshots succeed with an empty Home dashboard.
+5. Composition Root registers `DashboardRestoreService` via `DashboardRestoreFactory` (token #60).
+
+**Alternatives considered:**
+- **Restore inside Repository Hydration** — rejected: violates single-responsibility; hydration must not touch Dashboard/Home.
+- **Direct repository reads from dashboard restore** — rejected: Unified Workspace is the sole producer.
+- **Provider-driven HomeService restore** — rejected: Dashboard must depend exclusively on Unified Workspace projection.
+
+**Consequences:**
+- Documentation: [DASHBOARD_RESTORE.md](./DASHBOARD_RESTORE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
+- Phase 33 continues with richer hydration-to-workspace mapping and automatic post-hydration orchestration in later sprints.

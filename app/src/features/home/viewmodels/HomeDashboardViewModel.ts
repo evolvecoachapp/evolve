@@ -136,6 +136,12 @@ export class HomeDashboardViewModel {
     this.notify();
   }
 
+  /** Applies a dashboard restored from Unified Workspace projection. */
+  applyRestoredDashboard(dashboard: HomeDashboard): void {
+    this.applyDashboard(dashboard);
+    this.notify();
+  }
+
   private applyDashboard(dashboard: HomeDashboard): void {
     this._dashboard = dashboard;
     this._athlete = dashboard.athlete;

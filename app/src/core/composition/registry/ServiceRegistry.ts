@@ -281,4 +281,8 @@ export class ServiceRegistry {
   getRepositoryHydrationService(): ServiceMap["RepositoryHydrationService"] {
     return this.resolve("RepositoryHydrationService");
   }
+
+  getDashboardRestoreService(): ServiceMap["DashboardRestoreService"] {
+    return this.resolve("DashboardRestoreService");
+  }
 }

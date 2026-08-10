@@ -174,3 +174,6 @@ export type {
   RepositoryHydrationFactoryDeps,
   HydrationFactoryDeps,
 } from "./RepositoryHydrationCompositionFactory";
+
+export { DashboardRestoreFactory } from "./DashboardRestoreCompositionFactory";
+export type { DashboardRestoreFactoryDeps } from "./DashboardRestoreCompositionFactory";

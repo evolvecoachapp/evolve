@@ -51,6 +51,7 @@ import {
   DashboardProjectionFactory,
   RuntimeBootstrapFactory,
   RepositoryHydrationFactory,
+  DashboardRestoreFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -803,6 +804,12 @@ export class CompositionRoot {
       { lifecycle },
     );
 
+    container.register(
+      "DashboardRestoreService",
+      () => DashboardRestoreFactory.create(),
+      { lifecycle },
+    );
+
     container.validate();
     container.freeze();
 
@@ -1064,5 +1071,9 @@ export class CompositionRoot {
 
   getRepositoryHydrationService(): ServiceMap["RepositoryHydrationService"] {
     return this.registry.resolve("RepositoryHydrationService");
+  }
+
+  getDashboardRestoreService(): ServiceMap["DashboardRestoreService"] {
+    return this.registry.resolve("DashboardRestoreService");
   }
 }

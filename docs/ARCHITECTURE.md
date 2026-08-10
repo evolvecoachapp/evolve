@@ -433,7 +433,7 @@ Full detail: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md).
 | **Purpose** | Centralized object creation and dependency wiring for pipeline + foundation services |
 | **Flow** | Application → Composition Root → `ApplicationContainer` → `ServiceRegistry` → Factories + thin adapters → Feature Services / Infrastructure Adapters |
 | **Container** | Register / resolve, singleton + transient lifecycles, freeze after init, duplicate/missing/circular/late validation |
-| **Registry** | Typed `ServiceMap` (59 tokens): Training Intelligence, Coaching Architecture, Persistence/Infrastructure contracts, SQLite, Repository Adapters, Auth, Sync, Backend, Logging, Runtime Bootstrap, Repository Hydration |
+| **Registry** | Typed `ServiceMap` (60 tokens): Training Intelligence, Coaching Architecture, Persistence/Infrastructure contracts, SQLite, Repository Adapters, Auth, Sync, Backend, Logging, Runtime Bootstrap, Repository Hydration, Dashboard Restore |
 | **Factories** | Creation-only factories (no business logic); Phase 29–30 composition factories wrap infrastructure factories |
 | **Adapters** | Thin port adapters between coaching modules + legacy Recommendation Engine bridge (`RecommendationEngineBridge` / `DefaultRecommendationService` facade) |
 | **Providers** | Configuration, in-memory training repositories, default strategies |
@@ -467,6 +467,18 @@ Full detail: [RUNTIME_BOOTSTRAP.md](./RUNTIME_BOOTSTRAP.md).
 | **Design** | **Pipeline only.** No direct SQLite, no persistence implementation, no Dashboard/Home/Timeline logic, no domain business logic |
 
 Full detail: [RUNTIME_HYDRATION.md](./RUNTIME_HYDRATION.md).
+
+### Dashboard Restore Pipeline (`runtime/dashboard-restore`) — Sprint 33.3
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Restore the Home dashboard read model from Unified Workspace after hydration |
+| **Flow** | Repository Hydration (`ready`) → `UnifiedWorkspaceService` → `DashboardProjector` → `DashboardRestorePipeline` → `HomeDashboard` → `HomeDashboardViewModel` |
+| **Application API** | `restoreDashboard()`, `getDashboardRestoreStatus()` |
+| **Composition Root** | Registers `DashboardRestoreService` via `DashboardRestoreFactory` (token #60) |
+| **Design** | **Pipeline only.** No repository access, no SQLite, no business logic, no analytics, no networking |
+
+Full detail: [DASHBOARD_RESTORE.md](./DASHBOARD_RESTORE.md).
 
 ### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
 
