@@ -1,7 +1,11 @@
 import type { IdentityRepository } from "../../core/persistence/repositories/IdentityRepository";
 import type { RuntimeRepository } from "../../core/persistence/repositories/RuntimeRepository";
+import type { SnapshotRepository } from "../../core/persistence/repositories/SnapshotRepository";
+import type { TimelineRepository } from "../../core/persistence/repositories/TimelineRepository";
 import type { WorkspaceRepository } from "../../core/persistence/repositories/WorkspaceRepository";
 import type { AthleteIdentityService } from "../../features/athlete-identity/services/AthleteIdentityService";
+import type { AthleteSnapshotService } from "../../features/athlete-snapshot/services/AthleteSnapshotService";
+import type { CoachTimelineService } from "../../features/coach-timeline/services/CoachTimelineService";
 import type { RuntimeEnvironmentService } from "../../features/runtime-environment/services/RuntimeEnvironmentService";
 import type { UnifiedWorkspaceService } from "../../features/unified-workspace/services/UnifiedWorkspaceService";
 import { RUNTIME_WRITE_THROUGH_PHASES } from "./RuntimeWriteThroughInitialization";
@@ -20,6 +24,8 @@ import { RuntimeWriteThroughError } from "./RuntimeWriteThroughError";
 import {
   observeIdentityRecords,
   observeRuntimeRecord,
+  observeSnapshotRecords,
+  observeTimelineRecords,
   observeWorkspaceRecords,
   persistRuntimeRecords,
 } from "./RuntimeWriteThroughPersistence";
@@ -35,9 +41,13 @@ export interface RuntimeWriteThroughDeps {
   readonly identityRepository: IdentityRepository;
   readonly runtimeRepository: RuntimeRepository;
   readonly workspaceRepository: WorkspaceRepository;
+  readonly snapshotRepository: SnapshotRepository;
+  readonly timelineRepository: TimelineRepository;
   readonly athleteIdentityService: AthleteIdentityService;
   readonly runtimeEnvironmentService: RuntimeEnvironmentService;
   readonly unifiedWorkspaceService: UnifiedWorkspaceService;
+  readonly athleteSnapshotService: AthleteSnapshotService;
+  readonly coachTimelineService: CoachTimelineService;
   readonly clock?: () => string;
 }
 
@@ -81,14 +91,26 @@ export class RuntimeWriteThroughPipeline {
         options.deps.unifiedWorkspaceService,
         athleteIds,
       );
+      const snapshotRecords = observeSnapshotRecords(
+        options.deps.athleteSnapshotService,
+        athleteIds,
+      );
+      const timelineRecords = observeTimelineRecords(
+        options.deps.coachTimelineService,
+        athleteIds,
+      );
 
       const counts = await persistRuntimeRecords({
         identityRepository: options.deps.identityRepository,
         runtimeRepository: options.deps.runtimeRepository,
         workspaceRepository: options.deps.workspaceRepository,
+        snapshotRepository: options.deps.snapshotRepository,
+        timelineRepository: options.deps.timelineRepository,
         identityRecords,
         runtimeRecord,
         workspaceRecords,
+        snapshotRecords,
+        timelineRecords,
       });
 
       const persistedAt = clock();

@@ -1,11 +1,4 @@
-import type { PersistenceRecord } from "../../../core/persistence/contracts/PersistenceRecord";
-import type { IdentityRepository } from "../../../core/persistence/repositories/IdentityRepository";
-import type { RuntimeRepository } from "../../../core/persistence/repositories/RuntimeRepository";
-import type { WorkspaceRepository } from "../../../core/persistence/repositories/WorkspaceRepository";
 import { resetCompositionRoot } from "../../../core/composition/createCompositionRoot";
-import { createAthleteIdentityService } from "../../../features/athlete-identity/services/AthleteIdentityService";
-import { createRuntimeEnvironmentService } from "../../../features/runtime-environment/services/RuntimeEnvironmentService";
-import { createUnifiedWorkspaceService } from "../../../features/unified-workspace/services/UnifiedWorkspaceService";
 import { RuntimeBootstrap, resetRuntimeBootstrap } from "../../bootstrap/RuntimeBootstrap";
 import { hydrateRuntime, getHydrationStatus } from "../application";
 import { HYDRATION_PHASES } from "../HydrationInitialization";
@@ -15,49 +8,18 @@ import {
   resetRepositoryHydration,
 } from "../RepositoryHydrationPipeline";
 import { HydrationError } from "../HydrationError";
+import {
+  FIXED_DASHBOARD_ATHLETE_ID,
+} from "../../../integrations/dashboard-projection/testSupport/fixtures";
+import {
+  createHydrationTestDeps,
+  createMockRuntimeRepositories,
+  createSeededHydrationRecords,
+  createTestRuntimeServices,
+  seedTestRuntimeDomainState,
+} from "../../testSupport/runtimePersistenceFixtures";
 
-function createRecord(id: string): PersistenceRecord {
-  return Object.freeze({ id });
-}
-
-function createMockIdentityRepository(
-  records: readonly PersistenceRecord[] = [],
-): IdentityRepository {
-  return {
-    repositoryId: "identity",
-    findById: () => null,
-    save: () => undefined,
-    delete: () => undefined,
-    list: () => records,
-    exists: () => false,
-  };
-}
-
-function createMockRuntimeRepository(
-  records: readonly PersistenceRecord[] = [],
-): RuntimeRepository {
-  return {
-    repositoryId: "runtime",
-    findById: () => null,
-    save: () => undefined,
-    delete: () => undefined,
-    list: () => records,
-    exists: () => false,
-  };
-}
-
-function createMockWorkspaceRepository(
-  records: readonly PersistenceRecord[] = [],
-): WorkspaceRepository {
-  return {
-    repositoryId: "workspace",
-    findById: () => null,
-    save: () => undefined,
-    delete: () => undefined,
-    list: () => records,
-    exists: () => false,
-  };
-}
+const TEST_ATHLETE_ID = FIXED_DASHBOARD_ATHLETE_ID;
 
 describe("RepositoryHydrationPipeline", () => {
   afterEach(() => {
@@ -71,30 +33,18 @@ describe("RepositoryHydrationPipeline", () => {
       clock: () => "2026-08-10T10:00:00.000Z",
     });
 
-    const athleteIdentityService = createAthleteIdentityService({
-      clock: () => "2026-08-10T10:00:01.000Z",
-    });
-    const runtimeEnvironmentService = createRuntimeEnvironmentService({
-      clock: () => "2026-08-10T10:00:01.000Z",
-    });
-    const unifiedWorkspaceService = createUnifiedWorkspaceService({
-      clock: () => "2026-08-10T10:00:01.000Z",
-    });
+    const services = createTestRuntimeServices(
+      () => "2026-08-10T10:00:01.000Z",
+    );
+    seedTestRuntimeDomainState(services, TEST_ATHLETE_ID, () =>
+      "2026-08-10T10:00:01.000Z",
+    );
+    const records = createSeededHydrationRecords(services, TEST_ATHLETE_ID);
 
     const result = await RepositoryHydrationPipeline.hydrate({
       deps: {
-        identityRepository: createMockIdentityRepository([
-          createRecord("athlete:1"),
-        ]),
-        runtimeRepository: createMockRuntimeRepository([
-          createRecord("runtime:1"),
-        ]),
-        workspaceRepository: createMockWorkspaceRepository([
-          createRecord("athlete:1"),
-        ]),
-        athleteIdentityService,
-        runtimeEnvironmentService,
-        unifiedWorkspaceService,
+        ...createMockRuntimeRepositories(records),
+        ...services,
         clock: () => "2026-08-10T10:00:01.000Z",
       },
     });
@@ -106,48 +56,39 @@ describe("RepositoryHydrationPipeline", () => {
     expect(result.restoredAt).toBe("2026-08-10T10:00:01.000Z");
     expect(result.phases).toEqual([...HYDRATION_PHASES]);
     expect(getHydrationStatus()).toBe(HYDRATION_STATUS.ready);
-    expect(athleteIdentityService.getAthleteIdentity("athlete:1")).not.toBeNull();
-    expect(runtimeEnvironmentService.getRuntimeEnvironment()).not.toBeNull();
-    expect(unifiedWorkspaceService.getWorkspace("athlete:1")).toBeNull();
+
+    const identity = services.athleteIdentityService.getAthleteIdentity(TEST_ATHLETE_ID);
+    const runtime = services.runtimeEnvironmentService.getRuntimeEnvironment();
+    const workspace = services.unifiedWorkspaceService.getWorkspace(TEST_ATHLETE_ID);
+    const timeline = services.coachTimelineService.getTimeline(TEST_ATHLETE_ID);
+
+    expect(identity?.profile.displayName).toBe("Alex Athlete");
+    expect(runtime?.device.model).toBe("Test Device");
+    expect(workspace).not.toBeNull();
+    expect(timeline?.entryCount).toBeGreaterThanOrEqual(1);
   });
 
   it("succeeds with an empty runtime when repositories return no records", async () => {
     RuntimeBootstrap.bootstrap();
 
-    const athleteIdentityService = createAthleteIdentityService();
-    const runtimeEnvironmentService = createRuntimeEnvironmentService();
-    const unifiedWorkspaceService = createUnifiedWorkspaceService();
+    const deps = createHydrationTestDeps();
 
     const result = await RepositoryHydrationPipeline.hydrate({
-      deps: {
-        identityRepository: createMockIdentityRepository(),
-        runtimeRepository: createMockRuntimeRepository(),
-        workspaceRepository: createMockWorkspaceRepository(),
-        athleteIdentityService,
-        runtimeEnvironmentService,
-        unifiedWorkspaceService,
-      },
+      deps,
     });
 
     expect(result.identityRecordCount).toBe(0);
     expect(result.runtimeRecordCount).toBe(0);
     expect(result.workspaceRecordCount).toBe(0);
-    expect(athleteIdentityService.getAthleteIdentity("athlete:1")).toBeNull();
-    expect(runtimeEnvironmentService.getRuntimeEnvironment()).toBeNull();
-    expect(unifiedWorkspaceService.getWorkspace("athlete:1")).toBeNull();
+    expect(deps.athleteIdentityService.getAthleteIdentity("athlete:1")).toBeNull();
+    expect(deps.runtimeEnvironmentService.getRuntimeEnvironment()).toBeNull();
+    expect(deps.unifiedWorkspaceService.getWorkspace("athlete:1")).toBeNull();
   });
 
   it("rejects duplicate hydration attempts", async () => {
     RuntimeBootstrap.bootstrap();
 
-    const deps = {
-      identityRepository: createMockIdentityRepository(),
-      runtimeRepository: createMockRuntimeRepository(),
-      workspaceRepository: createMockWorkspaceRepository(),
-      athleteIdentityService: createAthleteIdentityService(),
-      runtimeEnvironmentService: createRuntimeEnvironmentService(),
-      unifiedWorkspaceService: createUnifiedWorkspaceService(),
-    };
+    const deps = createHydrationTestDeps();
 
     await RepositoryHydrationPipeline.hydrate({ deps });
 
@@ -162,27 +103,13 @@ describe("RepositoryHydrationPipeline", () => {
   it("requires runtime bootstrap before hydration", async () => {
     await expect(
       RepositoryHydrationPipeline.hydrate({
-        deps: {
-          identityRepository: createMockIdentityRepository(),
-          runtimeRepository: createMockRuntimeRepository(),
-          workspaceRepository: createMockWorkspaceRepository(),
-          athleteIdentityService: createAthleteIdentityService(),
-          runtimeEnvironmentService: createRuntimeEnvironmentService(),
-          unifiedWorkspaceService: createUnifiedWorkspaceService(),
-        },
+        deps: createHydrationTestDeps(),
       }),
     ).rejects.toThrow(HydrationError);
 
     await expect(
       RepositoryHydrationPipeline.hydrate({
-        deps: {
-          identityRepository: createMockIdentityRepository(),
-          runtimeRepository: createMockRuntimeRepository(),
-          workspaceRepository: createMockWorkspaceRepository(),
-          athleteIdentityService: createAthleteIdentityService(),
-          runtimeEnvironmentService: createRuntimeEnvironmentService(),
-          unifiedWorkspaceService: createUnifiedWorkspaceService(),
-        },
+        deps: createHydrationTestDeps(),
       }),
     ).rejects.toThrow(/bootstrap must complete/i);
   });

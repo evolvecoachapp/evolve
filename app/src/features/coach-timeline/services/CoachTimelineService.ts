@@ -50,6 +50,10 @@ export class CoachTimelineService {
     return this.store.getTimeline(athleteId);
   }
 
+  restorePersisted(timeline: CoachTimeline): void {
+    this.store.restoreTimeline(timeline);
+  }
+
   query(query: TimelineQuery): TimelineResult {
     return queryTimeline({
       store: this.store,

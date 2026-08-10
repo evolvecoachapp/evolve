@@ -1,11 +1,19 @@
 import type { PersistenceRecord } from "../../core/persistence/contracts/PersistenceRecord";
+import type { AthleteIdentity } from "../../features/athlete-identity/models/AthleteIdentity";
 import type { AthleteIdentityService } from "../../features/athlete-identity/services/AthleteIdentityService";
+import type { AthleteSnapshot } from "../../features/athlete-snapshot/models/AthleteSnapshot";
+import type { AthleteSnapshotService } from "../../features/athlete-snapshot/services/AthleteSnapshotService";
+import type { CoachTimeline } from "../../features/coach-timeline/models/CoachTimeline";
+import type { CoachTimelineService } from "../../features/coach-timeline/services/CoachTimelineService";
+import type { RuntimeEnvironment } from "../../features/runtime-environment/models/RuntimeEnvironment";
 import type { RuntimeEnvironmentService } from "../../features/runtime-environment/services/RuntimeEnvironmentService";
+import type { Workspace } from "../../features/unified-workspace/models/Workspace";
 import type { UnifiedWorkspaceService } from "../../features/unified-workspace/services/UnifiedWorkspaceService";
+import { readRecordPayload } from "../persistence/DomainRecord";
 
 /**
  * Structural restoration from repository contract records into composition services.
- * Uses record identifiers only — no domain interpretation.
+ * Uses deserialized immutable domain payloads restored by repository mappers.
  */
 export function restoreIdentityRecords(
   service: AthleteIdentityService,
@@ -13,21 +21,21 @@ export function restoreIdentityRecords(
   generatedAt: string,
 ): void {
   for (const record of records) {
+    const identity = readRecordPayload<AthleteIdentity>(record);
+    if (!identity) {
+      continue;
+    }
+
     service.build({
-      athleteId: record.id,
+      athleteId: identity.athleteId,
       requestId: `hydration:identity:${record.id}`,
       generatedAt,
-      profile: {
-        displayName: record.id,
-        givenName: "Hydrated",
-        familyName: "Athlete",
-        sex: "unspecified",
-        birthYear: 1990,
-        experienceLevel: "intermediate",
-      },
-      locale: { languageTag: "en-US" },
-      units: { system: "metric" },
-      timeZone: { iana: "Etc/UTC", displayName: "UTC" },
+      profile: identity.profile,
+      preferences: identity.preferences,
+      settings: identity.settings,
+      locale: identity.locale,
+      units: identity.units,
+      timeZone: identity.timeZone,
     });
   }
 }
@@ -42,41 +50,56 @@ export function restoreRuntimeRecords(
   }
 
   const record = records[0];
+  const runtime = readRecordPayload<RuntimeEnvironment>(record);
+  if (!runtime) {
+    return;
+  }
+
   service.build({
     requestId: `hydration:runtime:${record.id}`,
     generatedAt,
-    device: {
-      deviceId: record.id,
-      model: "Hydrated Device",
-      manufacturer: "EVOLVE",
-      osVersion: "0.0.0",
-      formFactor: "phone",
-    },
-    platform: {
-      kind: "ios",
-      version: "0.0.0",
-    },
-    application: {
-      appId: "com.evolve.app",
-      name: "EVOLVE",
-      version: "0.6.0",
-      buildNumber: "0",
-      channel: "test",
-    },
-    locale: { languageTag: "en-US" },
+    device: runtime.device,
+    platform: runtime.platform,
+    application: runtime.application,
+    capabilities: runtime.capabilities,
+    featureSupport: runtime.featureSupport,
+    locale: runtime.locale,
+    connectivity: runtime.connectivity,
   });
 }
 
 export function restoreWorkspaceRecords(
   service: UnifiedWorkspaceService,
   records: readonly PersistenceRecord[],
-  generatedAt: string,
 ): void {
   for (const record of records) {
-    service.build({
-      athleteId: record.id,
-      requestId: `hydration:workspace:${record.id}`,
-      generatedAt,
-    });
+    const workspace = readRecordPayload<Workspace>(record);
+    if (workspace) {
+      service.restorePersisted(workspace);
+    }
+  }
+}
+
+export function restoreSnapshotRecords(
+  service: AthleteSnapshotService,
+  records: readonly PersistenceRecord[],
+): void {
+  for (const record of records) {
+    const snapshot = readRecordPayload<AthleteSnapshot>(record);
+    if (snapshot) {
+      service.restorePersisted(snapshot);
+    }
+  }
+}
+
+export function restoreTimelineRecords(
+  service: CoachTimelineService,
+  records: readonly PersistenceRecord[],
+): void {
+  for (const record of records) {
+    const timeline = readRecordPayload<CoachTimeline>(record);
+    if (timeline) {
+      service.restorePersisted(timeline);
+    }
   }
 }

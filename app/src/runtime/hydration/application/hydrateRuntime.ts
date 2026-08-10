@@ -33,9 +33,13 @@ export function hydrateRuntime(): Promise<HydrationResult> {
         identityRepository: adapters.identity,
         runtimeRepository: adapters.runtime,
         workspaceRepository: adapters.workspace,
+        snapshotRepository: adapters.snapshot,
+        timelineRepository: adapters.timeline,
         athleteIdentityService: root.resolve("AthleteIdentityService"),
         runtimeEnvironmentService: root.resolve("RuntimeEnvironmentService"),
         unifiedWorkspaceService: root.resolve("UnifiedWorkspaceService"),
+        athleteSnapshotService: root.resolve("AthleteSnapshotService"),
+        coachTimelineService: root.resolve("CoachTimelineService"),
       },
     });
   });

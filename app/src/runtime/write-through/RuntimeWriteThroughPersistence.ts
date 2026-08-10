@@ -1,15 +1,20 @@
 import type { PersistenceRecord } from "../../core/persistence/contracts/PersistenceRecord";
 import type { IdentityRepository } from "../../core/persistence/repositories/IdentityRepository";
 import type { RuntimeRepository } from "../../core/persistence/repositories/RuntimeRepository";
+import type { SnapshotRepository } from "../../core/persistence/repositories/SnapshotRepository";
+import type { TimelineRepository } from "../../core/persistence/repositories/TimelineRepository";
 import type { WorkspaceRepository } from "../../core/persistence/repositories/WorkspaceRepository";
 import type { AthleteIdentityService } from "../../features/athlete-identity/services/AthleteIdentityService";
+import type { AthleteSnapshotService } from "../../features/athlete-snapshot/services/AthleteSnapshotService";
+import type { CoachTimelineService } from "../../features/coach-timeline/services/CoachTimelineService";
 import type { RuntimeEnvironmentService } from "../../features/runtime-environment/services/RuntimeEnvironmentService";
 import type { UnifiedWorkspaceService } from "../../features/unified-workspace/services/UnifiedWorkspaceService";
+import { createPayloadRecord } from "../persistence/DomainRecord";
 import { RuntimeWriteThroughError } from "./RuntimeWriteThroughError";
 
 /**
  * Structural observation from runtime composition services into persistence records.
- * Uses identifiers only — no domain interpretation.
+ * Attaches immutable domain payloads for repository-layer serialization.
  */
 export function observeIdentityRecords(
   service: AthleteIdentityService,
@@ -20,7 +25,7 @@ export function observeIdentityRecords(
   for (const athleteId of athleteIds) {
     const identity = service.getAthleteIdentity(athleteId);
     if (identity) {
-      records.push(Object.freeze({ id: identity.athleteId }));
+      records.push(createPayloadRecord(identity.athleteId, identity));
     }
   }
 
@@ -35,7 +40,7 @@ export function observeRuntimeRecord(
     return null;
   }
 
-  return Object.freeze({ id: runtime.id });
+  return createPayloadRecord(runtime.id, runtime);
 }
 
 export function observeWorkspaceRecords(
@@ -47,7 +52,39 @@ export function observeWorkspaceRecords(
   for (const athleteId of athleteIds) {
     const workspace = service.getWorkspace(athleteId);
     if (workspace) {
-      records.push(Object.freeze({ id: workspace.athleteId }));
+      records.push(createPayloadRecord(workspace.athleteId, workspace));
+    }
+  }
+
+  return Object.freeze(records);
+}
+
+export function observeSnapshotRecords(
+  service: AthleteSnapshotService,
+  athleteIds: readonly string[],
+): readonly PersistenceRecord[] {
+  const records: PersistenceRecord[] = [];
+
+  for (const athleteId of athleteIds) {
+    const snapshot = service.getCurrentSnapshot(athleteId);
+    if (snapshot) {
+      records.push(createPayloadRecord(snapshot.id, snapshot));
+    }
+  }
+
+  return Object.freeze(records);
+}
+
+export function observeTimelineRecords(
+  service: CoachTimelineService,
+  athleteIds: readonly string[],
+): readonly PersistenceRecord[] {
+  const records: PersistenceRecord[] = [];
+
+  for (const athleteId of athleteIds) {
+    const timeline = service.getTimeline(athleteId);
+    if (timeline) {
+      records.push(createPayloadRecord(timeline.athleteId, timeline));
     }
   }
 
@@ -65,15 +102,21 @@ export interface PersistRuntimeRecordsInput {
   readonly identityRepository: IdentityRepository;
   readonly runtimeRepository: RuntimeRepository;
   readonly workspaceRepository: WorkspaceRepository;
+  readonly snapshotRepository: SnapshotRepository;
+  readonly timelineRepository: TimelineRepository;
   readonly identityRecords: readonly PersistenceRecord[];
   readonly runtimeRecord: PersistenceRecord | null;
   readonly workspaceRecords: readonly PersistenceRecord[];
+  readonly snapshotRecords: readonly PersistenceRecord[];
+  readonly timelineRecords: readonly PersistenceRecord[];
 }
 
 export interface PersistRuntimeRecordsResult {
   readonly identityRecordCount: number;
   readonly runtimeRecordCount: number;
   readonly workspaceRecordCount: number;
+  readonly snapshotRecordCount: number;
+  readonly timelineRecordCount: number;
 }
 
 export async function persistRuntimeRecords(
@@ -100,6 +143,20 @@ export async function persistRuntimeRecords(
         record,
       );
     }
+
+    for (const record of input.snapshotRecords) {
+      await invokeRepositorySave(
+        (next) => input.snapshotRepository.save(next),
+        record,
+      );
+    }
+
+    for (const record of input.timelineRecords) {
+      await invokeRepositorySave(
+        (next) => input.timelineRepository.save(next),
+        record,
+      );
+    }
   } catch (error) {
     throw new RuntimeWriteThroughError(
       error instanceof Error
@@ -113,5 +170,7 @@ export async function persistRuntimeRecords(
     identityRecordCount: input.identityRecords.length,
     runtimeRecordCount: input.runtimeRecord ? 1 : 0,
     workspaceRecordCount: input.workspaceRecords.length,
+    snapshotRecordCount: input.snapshotRecords.length,
+    timelineRecordCount: input.timelineRecords.length,
   };
 }

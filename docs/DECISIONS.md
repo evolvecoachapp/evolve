@@ -4253,3 +4253,81 @@ SQLite Database File
 **Consequences:**
 - Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md).
 - Database survives application restart. Repository contracts and runtime pipeline unchanged. Migration system deferred to a future sprint.
+
+---
+
+## ADR-132: Domain Persistence Serialization (Sprint 34.3)
+
+**Status:** Accepted  
+**Date:** 2026-08-10  
+**Context:** Sprint 34.2 enabled native persistent SQLite, but repository mappers stored empty JSON payloads (`"{}"`) and runtime hydration/write-through used structural `{ id }` placeholders. Phase 34 requires complete immutable domain state to survive restart without changing Persistence Contract interfaces or Composition Root wiring.
+
+**Decision:**
+
+```
+Runtime
+  ↓
+Repository Contracts (PersistenceRecord { id } + opaque payload)
+  ↓
+Repository Adapters
+  ↓
+Domain Serializers (JSON)
+  ↓
+SQLite Mappers
+  ↓
+Expo SQLite
+```
+
+1. Implement domain serializers in `infrastructure/repositories/serialization` for Athlete Identity, Runtime Environment, Unified Workspace, Workspace Snapshot, and Coach Timeline.
+2. Extend domain-aware SQLite mappers (`IdentityMapper`, `RuntimeMapper`, `WorkspaceMapper`, `SnapshotMapper`, `TimelineMapper`) to serialize/deserialize `SQLiteRow.payload` JSON.
+3. Keep `PersistenceRecord` contract shape unchanged — runtime passes opaque immutable domain payloads; JSON encoding/decoding stays inside the Repository layer.
+4. Update hydration restoration and write-through observation to attach/restore full domain payloads; remove placeholder rebuild defaults.
+5. Do not modify Runtime Session, Runtime Observer, Runtime Bootstrap, Dashboard Restore lifecycle, Composition Root, repository contract interfaces, or introduce schema migrations, networking, or cloud sync.
+
+**Alternatives considered:**
+- **Extend PersistenceRecord with typed domain fields** — rejected; violates opaque contract boundary established in Sprint 29.3.
+- **Serialize in runtime write-through/hydration modules** — rejected; violates Repository-layer serialization boundary.
+- **Schema migrations for normalized domain tables** — rejected; out of sprint scope; JSON payload column sufficient for Phase 34.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md).
+- Complete runtime domain state round-trips through restart. Legacy `{ id }`-only rows deserialize to id-only records and are skipped during restoration.
+
+---
+
+## ADR-132: Domain Persistence Serialization (Sprint 34.3)
+
+**Status:** Accepted  
+**Date:** 2026-08-10  
+**Context:** Sprint 34.2 enabled native persistent SQLite, but repository mappers stored empty JSON payloads (`"{}"`) and runtime hydration/write-through used structural `{ id }` placeholders. Phase 34 requires complete immutable domain state to survive restart without changing Persistence Contract interfaces or Composition Root wiring.
+
+**Decision:**
+
+```
+Runtime
+  ↓
+Repository Contracts (PersistenceRecord { id } + opaque payload)
+  ↓
+Repository Adapters
+  ↓
+Domain Serializers (JSON)
+  ↓
+SQLite Mappers
+  ↓
+Expo SQLite
+```
+
+1. Implement domain serializers in `infrastructure/repositories/serialization` for Athlete Identity, Runtime Environment, Unified Workspace, Workspace Snapshot, and Coach Timeline.
+2. Extend domain-aware SQLite mappers (`IdentityMapper`, `RuntimeMapper`, `WorkspaceMapper`, `SnapshotMapper`, `TimelineMapper`) to serialize/deserialize `SQLiteRow.payload` JSON.
+3. Keep `PersistenceRecord` contract shape unchanged — runtime passes opaque immutable domain payloads; JSON encoding/decoding stays inside the Repository layer.
+4. Update hydration restoration and write-through observation to attach/restore full domain payloads; remove placeholder rebuild defaults.
+5. Do not modify Runtime Session, Runtime Observer, Runtime Bootstrap, Dashboard Restore lifecycle, Composition Root, repository contract interfaces, or introduce schema migrations, networking, or cloud sync.
+
+**Alternatives considered:**
+- **Extend PersistenceRecord with typed domain fields** — rejected; violates opaque contract boundary established in Sprint 29.3.
+- **Serialize in runtime write-through/hydration modules** — rejected; violates Repository-layer serialization boundary.
+- **Schema migrations for normalized domain tables** — rejected; out of sprint scope; JSON payload column sufficient for Phase 34.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md).
+- Complete runtime domain state round-trips through restart. Legacy `{ id }`-only rows deserialize to id-only records and are skipped during restoration.

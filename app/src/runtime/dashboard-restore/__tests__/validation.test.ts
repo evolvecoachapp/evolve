@@ -1,12 +1,10 @@
 import { resetCompositionRoot } from "../../../core/composition/createCompositionRoot";
-import { createAthleteIdentityService } from "../../../features/athlete-identity/services/AthleteIdentityService";
-import { createRuntimeEnvironmentService } from "../../../features/runtime-environment/services/RuntimeEnvironmentService";
-import { createTestUnifiedWorkspaceServiceForDashboard } from "../../../integrations/dashboard-projection/testSupport/fixtures";
 import { RuntimeBootstrap, resetRuntimeBootstrap } from "../../bootstrap/RuntimeBootstrap";
 import {
   RepositoryHydrationPipeline,
   resetRepositoryHydration,
 } from "../../hydration/RepositoryHydrationPipeline";
+import { createHydrationTestDeps } from "../../testSupport/runtimePersistenceFixtures";
 import { createDashboardRestoreState } from "../DashboardRestoreState";
 import { DASHBOARD_RESTORE_STATUS } from "../DashboardRestoreStatus";
 import { DashboardRestoreError } from "../DashboardRestoreError";
@@ -16,11 +14,6 @@ import {
   validateDashboardRestoreState,
   validateHydrationReadyForRestore,
 } from "../DashboardRestoreValidation";
-import {
-  createMockIdentityRepository,
-  createMockRuntimeRepository,
-  createMockWorkspaceRepository,
-} from "../testSupport/mockRepositories";
 
 describe("dashboard restore validation", () => {
   afterEach(() => {
@@ -82,14 +75,7 @@ describe("dashboard restore validation", () => {
   it("allows restore when hydration is ready", async () => {
     RuntimeBootstrap.bootstrap();
     await RepositoryHydrationPipeline.hydrate({
-      deps: {
-        identityRepository: createMockIdentityRepository(),
-        runtimeRepository: createMockRuntimeRepository(),
-        workspaceRepository: createMockWorkspaceRepository(),
-        athleteIdentityService: createAthleteIdentityService(),
-        runtimeEnvironmentService: createRuntimeEnvironmentService(),
-        unifiedWorkspaceService: createTestUnifiedWorkspaceServiceForDashboard(),
-      },
+      deps: createHydrationTestDeps(),
     });
 
     expect(() => validateHydrationReadyForRestore()).not.toThrow();

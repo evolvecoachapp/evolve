@@ -1,15 +1,15 @@
 import { resetCompositionRoot } from "../../../core/composition/createCompositionRoot";
-import { createAthleteIdentityService } from "../../../features/athlete-identity/services/AthleteIdentityService";
-import { createRuntimeEnvironmentService } from "../../../features/runtime-environment/services/RuntimeEnvironmentService";
-import { createUnifiedWorkspaceService } from "../../../features/unified-workspace/services/UnifiedWorkspaceService";
 import {
   composeTestWorkspaceForAthlete,
-  createTestUnifiedWorkspaceServiceForDashboard,
   FIXED_DASHBOARD_ATHLETE_ID,
 } from "../../../integrations/dashboard-projection/testSupport/fixtures";
 import { RuntimeBootstrap, resetRuntimeBootstrap } from "../../bootstrap/RuntimeBootstrap";
 import { resetRepositoryHydration } from "../../hydration/RepositoryHydrationPipeline";
 import { resetDashboardRestore } from "../../dashboard-restore/DashboardRestorePipeline";
+import {
+  createTestRuntimeServices,
+  createWriteThroughTestDeps,
+} from "../../testSupport/runtimePersistenceFixtures";
 import { persistRuntime, getWriteThroughStatus } from "../application";
 import { RUNTIME_WRITE_THROUGH_PHASES } from "../RuntimeWriteThroughInitialization";
 import { RUNTIME_WRITE_THROUGH_STATUS } from "../RuntimeWriteThroughStatus";
@@ -21,26 +21,23 @@ import { RuntimeWriteThroughError } from "../RuntimeWriteThroughError";
 import {
   createMockIdentityRepository,
   createMockRuntimeRepository,
+  createMockSnapshotRepository,
+  createMockTimelineRepository,
   createMockWorkspaceRepository,
 } from "../testSupport/mockRepositories";
+import { readRecordPayload } from "../../persistence/DomainRecord";
+import type { AthleteIdentity } from "../../../features/athlete-identity/models/AthleteIdentity";
+import type { RuntimeEnvironment } from "../../../features/runtime-environment/models/RuntimeEnvironment";
+import type { Workspace } from "../../../features/unified-workspace/models/Workspace";
 
 const FIXED_CLOCK = () => "2026-08-10T10:00:00.000Z";
 const ATHLETE_ID = FIXED_DASHBOARD_ATHLETE_ID;
 
 function bootstrapRuntimeWithState() {
   RuntimeBootstrap.bootstrap({ clock: FIXED_CLOCK });
+  const services = createTestRuntimeServices(FIXED_CLOCK);
 
-  const athleteIdentityService = createAthleteIdentityService({
-    clock: FIXED_CLOCK,
-  });
-  const runtimeEnvironmentService = createRuntimeEnvironmentService({
-    clock: FIXED_CLOCK,
-  });
-  const unifiedWorkspaceService = createTestUnifiedWorkspaceServiceForDashboard({
-    clock: FIXED_CLOCK,
-  });
-
-  athleteIdentityService.build({
+  services.athleteIdentityService.build({
     athleteId: ATHLETE_ID,
     requestId: `write-through:identity:${ATHLETE_ID}`,
     profile: {
@@ -56,7 +53,7 @@ function bootstrapRuntimeWithState() {
     timeZone: { iana: "Etc/UTC", displayName: "UTC" },
   });
 
-  runtimeEnvironmentService.build({
+  services.runtimeEnvironmentService.build({
     requestId: "write-through:runtime:1",
     device: {
       deviceId: "runtime:write-through:1",
@@ -79,16 +76,26 @@ function bootstrapRuntimeWithState() {
     locale: { languageTag: "en-US" },
   });
 
-  unifiedWorkspaceService.build({
+  services.unifiedWorkspaceService.build({
     athleteId: ATHLETE_ID,
     requestId: `write-through:workspace:${ATHLETE_ID}`,
   });
-  composeTestWorkspaceForAthlete(unifiedWorkspaceService, ATHLETE_ID);
+  composeTestWorkspaceForAthlete(services.unifiedWorkspaceService, ATHLETE_ID);
 
+  return services;
+}
+
+function createPersistDepsFromServices(
+  services: ReturnType<typeof createTestRuntimeServices>,
+) {
   return {
-    athleteIdentityService,
-    runtimeEnvironmentService,
-    unifiedWorkspaceService,
+    ...services,
+    identityRepository: createMockIdentityRepository(),
+    runtimeRepository: createMockRuntimeRepository(),
+    workspaceRepository: createMockWorkspaceRepository(),
+    snapshotRepository: createMockSnapshotRepository(),
+    timelineRepository: createMockTimelineRepository(),
+    clock: FIXED_CLOCK,
   };
 }
 
@@ -110,11 +117,10 @@ describe("RuntimeWriteThroughPipeline", () => {
     const result = await RuntimeWriteThroughPipeline.persist({
       athleteIds: [ATHLETE_ID],
       deps: {
-        ...services,
+        ...createPersistDepsFromServices(services),
         identityRepository,
         runtimeRepository,
         workspaceRepository,
-        clock: FIXED_CLOCK,
       },
     });
 
@@ -123,28 +129,30 @@ describe("RuntimeWriteThroughPipeline", () => {
     expect(result.workspaceRecordCount).toBe(1);
     expect(result.phases).toEqual(RUNTIME_WRITE_THROUGH_PHASES);
     expect(getWriteThroughStatus()).toBe(RUNTIME_WRITE_THROUGH_STATUS.ready);
-    expect(identityRepository.list()).toHaveLength(1);
-    expect(runtimeRepository.list()).toHaveLength(1);
-    expect(workspaceRepository.list()).toHaveLength(1);
+
+    const identityList = identityRepository.list();
+    const runtimeList = runtimeRepository.list();
+    const workspaceList = workspaceRepository.list();
+    const savedIdentity = readRecordPayload<AthleteIdentity>(
+      (Array.isArray(identityList) ? identityList : [])[0],
+    );
+    const savedRuntime = readRecordPayload<RuntimeEnvironment>(
+      (Array.isArray(runtimeList) ? runtimeList : [])[0],
+    );
+    const savedWorkspace = readRecordPayload<Workspace>(
+      (Array.isArray(workspaceList) ? workspaceList : [])[0],
+    );
+
+    expect(savedIdentity?.profile.displayName).toBe("Alex Rivera");
+    expect(savedRuntime?.device.model).toBe("Test Device");
+    expect(savedWorkspace?.athleteId).toBe(ATHLETE_ID);
   });
 
   it("succeeds with zero records when runtime services are empty", async () => {
     RuntimeBootstrap.bootstrap({ clock: FIXED_CLOCK });
 
     const result = await RuntimeWriteThroughPipeline.persist({
-      deps: {
-        athleteIdentityService: createAthleteIdentityService({ clock: FIXED_CLOCK }),
-        runtimeEnvironmentService: createRuntimeEnvironmentService({
-          clock: FIXED_CLOCK,
-        }),
-        unifiedWorkspaceService: createUnifiedWorkspaceService({
-          clock: FIXED_CLOCK,
-        }),
-        identityRepository: createMockIdentityRepository(),
-        runtimeRepository: createMockRuntimeRepository(),
-        workspaceRepository: createMockWorkspaceRepository(),
-        clock: FIXED_CLOCK,
-      },
+      deps: createWriteThroughTestDeps(FIXED_CLOCK),
     });
 
     expect(result.identityRecordCount).toBe(0);
@@ -154,13 +162,7 @@ describe("RuntimeWriteThroughPipeline", () => {
 
   it("prevents duplicate persist starts", async () => {
     const services = bootstrapRuntimeWithState();
-    const deps = {
-      ...services,
-      identityRepository: createMockIdentityRepository(),
-      runtimeRepository: createMockRuntimeRepository(),
-      workspaceRepository: createMockWorkspaceRepository(),
-      clock: FIXED_CLOCK,
-    };
+    const deps = createPersistDepsFromServices(services);
 
     await RuntimeWriteThroughPipeline.persist({ athleteIds: [ATHLETE_ID], deps });
 
@@ -179,13 +181,7 @@ describe("RuntimeWriteThroughPipeline", () => {
     await expect(
       RuntimeWriteThroughPipeline.persist({
         athleteIds: [ATHLETE_ID],
-        deps: {
-          ...services,
-          identityRepository: createMockIdentityRepository(),
-          runtimeRepository: createMockRuntimeRepository(),
-          workspaceRepository: createMockWorkspaceRepository(),
-          clock: FIXED_CLOCK,
-        },
+        deps: createPersistDepsFromServices(services),
       }),
     ).rejects.toThrow(/bootstrap must complete/i);
   });
@@ -204,13 +200,10 @@ describe("RuntimeWriteThroughPipeline", () => {
       RuntimeWriteThroughPipeline.persist({
         athleteIds: [ATHLETE_ID],
         deps: {
-          ...services,
+          ...createPersistDepsFromServices(services),
           identityRepository: createMockIdentityRepository([], {
             rejectSave: true,
           }),
-          runtimeRepository: createMockRuntimeRepository(),
-          workspaceRepository: createMockWorkspaceRepository(),
-          clock: FIXED_CLOCK,
         },
       }),
     ).rejects.toMatchObject({

@@ -133,6 +133,10 @@ export class AthleteSnapshotService {
     return this.latestByAthlete.get(athleteId) ?? null;
   }
 
+  restorePersisted(snapshot: AthleteSnapshot): void {
+    this.latestByAthlete.set(snapshot.athleteId, snapshot);
+  }
+
   getSnapshotIdentity(athleteId: string): SnapshotIdentity | null {
     return this.getCurrentSnapshot(athleteId)?.identity ?? null;
   }

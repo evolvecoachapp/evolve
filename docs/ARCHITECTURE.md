@@ -545,6 +545,20 @@ Full detail: [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md), [COMPOSITION_ROOT.md](./C
 
 Full detail: [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md). ADR-131: [DECISIONS.md](./DECISIONS.md).
 
+### Domain Persistence Serialization — Sprint 34.3 (Phase 34)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Persist and restore full immutable domain models through repository adapters instead of structural `{ id }` placeholders |
+| **Flow** | Runtime → Repository Contracts (`PersistenceRecord` + opaque payload) → Repository Adapters → Domain Serializers → SQLite Mappers → Expo SQLite |
+| **Domains** | Athlete Identity, Runtime Environment, Unified Workspace, Workspace Snapshot (`AthleteSnapshot`), Coach Timeline |
+| **Serialization** | JSON encode/decode in `infrastructure/repositories/serialization` only; `SQLiteRow.payload` stores serialized domain JSON |
+| **Runtime** | Write-through attaches immutable domain payloads; hydration restores via `build()` or `restorePersisted()` — no placeholder defaults |
+| **Design** | **Repository layer only.** `PersistenceRecord` contract unchanged (`{ id }`). Composition Root unchanged. No schema migrations. No networking. No cloud sync. |
+| **Validation** | Unit/integration tests cover serialize, deserialize, round-trip equality, immutable restoration, restart persistence, repository compatibility |
+
+Full detail: [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md). ADR-132: [DECISIONS.md](./DECISIONS.md).
+
 ### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
 
 | Aspect | Implementation |

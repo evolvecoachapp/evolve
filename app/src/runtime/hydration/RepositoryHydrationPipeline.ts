@@ -1,8 +1,12 @@
 import type { IdentityRepository } from "../../core/persistence/repositories/IdentityRepository";
 import type { RuntimeRepository } from "../../core/persistence/repositories/RuntimeRepository";
+import type { SnapshotRepository } from "../../core/persistence/repositories/SnapshotRepository";
+import type { TimelineRepository } from "../../core/persistence/repositories/TimelineRepository";
 import type { WorkspaceRepository } from "../../core/persistence/repositories/WorkspaceRepository";
 import type { PersistenceRecord } from "../../core/persistence/contracts/PersistenceRecord";
 import type { AthleteIdentityService } from "../../features/athlete-identity/services/AthleteIdentityService";
+import type { AthleteSnapshotService } from "../../features/athlete-snapshot/services/AthleteSnapshotService";
+import type { CoachTimelineService } from "../../features/coach-timeline/services/CoachTimelineService";
 import type { RuntimeEnvironmentService } from "../../features/runtime-environment/services/RuntimeEnvironmentService";
 import type { UnifiedWorkspaceService } from "../../features/unified-workspace/services/UnifiedWorkspaceService";
 import { createHydrationResult, type HydrationResult } from "./HydrationResult";
@@ -17,6 +21,8 @@ import { HydrationError } from "./HydrationError";
 import {
   restoreIdentityRecords,
   restoreRuntimeRecords,
+  restoreSnapshotRecords,
+  restoreTimelineRecords,
   restoreWorkspaceRecords,
 } from "./HydrationRestoration";
 import {
@@ -32,9 +38,13 @@ export interface RepositoryHydrationDeps {
   readonly identityRepository: IdentityRepository;
   readonly runtimeRepository: RuntimeRepository;
   readonly workspaceRepository: WorkspaceRepository;
+  readonly snapshotRepository: SnapshotRepository;
+  readonly timelineRepository: TimelineRepository;
   readonly athleteIdentityService: AthleteIdentityService;
   readonly runtimeEnvironmentService: RuntimeEnvironmentService;
   readonly unifiedWorkspaceService: UnifiedWorkspaceService;
+  readonly athleteSnapshotService: AthleteSnapshotService;
+  readonly coachTimelineService: CoachTimelineService;
   readonly clock?: () => string;
 }
 
@@ -82,6 +92,12 @@ export class RepositoryHydrationPipeline {
       const workspaceRecords = await resolveRepositoryList(
         options.deps.workspaceRepository.list(),
       );
+      const snapshotRecords = await resolveRepositoryList(
+        options.deps.snapshotRepository.list(),
+      );
+      const timelineRecords = await resolveRepositoryList(
+        options.deps.timelineRepository.list(),
+      );
 
       const restoredAt = clock();
       restoreIdentityRecords(
@@ -97,7 +113,14 @@ export class RepositoryHydrationPipeline {
       restoreWorkspaceRecords(
         options.deps.unifiedWorkspaceService,
         workspaceRecords,
-        restoredAt,
+      );
+      restoreSnapshotRecords(
+        options.deps.athleteSnapshotService,
+        snapshotRecords,
+      );
+      restoreTimelineRecords(
+        options.deps.coachTimelineService,
+        timelineRecords,
       );
 
       const result = createHydrationResult({

@@ -166,6 +166,10 @@ export class UnifiedWorkspaceService {
     return this.latestByAthlete.get(athleteId) ?? null;
   }
 
+  restorePersisted(workspace: Workspace): void {
+    this.latestByAthlete.set(workspace.athleteId, workspace);
+  }
+
   getWorkspaceSummary(athleteId: string): WorkspaceSummary | null {
     return this.getWorkspace(athleteId)?.summary ?? null;
   }

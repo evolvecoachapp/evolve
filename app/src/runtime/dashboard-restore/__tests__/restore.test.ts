@@ -1,6 +1,5 @@
 import { resetCompositionRoot } from "../../../core/composition/createCompositionRoot";
 import { createAthleteIdentityService } from "../../../features/athlete-identity/services/AthleteIdentityService";
-import { createRuntimeEnvironmentService } from "../../../features/runtime-environment/services/RuntimeEnvironmentService";
 import { HomeDashboardViewModel } from "../../../features/home/viewmodels/HomeDashboardViewModel";
 import { createDashboardProjector } from "../../../integrations/dashboard-projection/projector/DashboardProjector";
 import {
@@ -25,9 +24,15 @@ import { DashboardRestoreError } from "../DashboardRestoreError";
 import {
   createMockIdentityRepository,
   createMockRuntimeRepository,
+  createMockSnapshotRepository,
+  createMockTimelineRepository,
   createMockWorkspaceRepository,
+  createPayloadRecord,
   createRecord,
 } from "../testSupport/mockRepositories";
+import {
+  createTestRuntimeServices,
+} from "../../testSupport/runtimePersistenceFixtures";
 
 async function bootstrapHydratedRuntime(options?: {
   readonly unifiedWorkspaceService?: ReturnType<
@@ -41,17 +46,11 @@ async function bootstrapHydratedRuntime(options?: {
   });
 
   const athleteId = options?.athleteId ?? FIXED_DASHBOARD_ATHLETE_ID;
-  const athleteIdentityService = createAthleteIdentityService({
-    clock: () => FIXED_DASHBOARD_PROJECTED_AT,
-  });
-  const runtimeEnvironmentService = createRuntimeEnvironmentService({
-    clock: () => FIXED_DASHBOARD_PROJECTED_AT,
-  });
+  const services = createTestRuntimeServices(() => FIXED_DASHBOARD_PROJECTED_AT);
+  const athleteIdentityService = services.athleteIdentityService;
+  const runtimeEnvironmentService = services.runtimeEnvironmentService;
   const unifiedWorkspaceService =
-    options?.unifiedWorkspaceService ??
-    createTestUnifiedWorkspaceServiceForDashboard({
-      clock: () => FIXED_DASHBOARD_PROJECTED_AT,
-    });
+    options?.unifiedWorkspaceService ?? services.unifiedWorkspaceService;
 
   athleteIdentityService.build({
     athleteId,
@@ -68,22 +67,64 @@ async function bootstrapHydratedRuntime(options?: {
     units: { system: "metric" },
     timeZone: { iana: "Etc/UTC", displayName: "UTC" },
   });
-
-  await RepositoryHydrationPipeline.hydrate({
-    deps: {
-      identityRepository: createMockIdentityRepository([createRecord(athleteId)]),
-      runtimeRepository: createMockRuntimeRepository([createRecord("runtime:1")]),
-      workspaceRepository: createMockWorkspaceRepository([createRecord(athleteId)]),
-      athleteIdentityService,
-      runtimeEnvironmentService,
-      unifiedWorkspaceService,
-      clock: () => FIXED_DASHBOARD_PROJECTED_AT,
+  runtimeEnvironmentService.build({
+    requestId: "restore:runtime:1",
+    device: {
+      deviceId: "runtime:1",
+      model: "Restore Device",
+      manufacturer: "EVOLVE",
+      osVersion: "0.0.0",
+      formFactor: "phone",
     },
+    platform: { kind: "ios", version: "0.0.0" },
+    application: {
+      appId: "com.evolve.app",
+      name: "EVOLVE",
+      version: "0.6.0",
+      buildNumber: "0",
+      channel: "test",
+    },
+    locale: { languageTag: "en-US" },
   });
 
   if (options?.composeWorkspace) {
+    unifiedWorkspaceService.build({
+      athleteId,
+      requestId: `restore:workspace:${athleteId}`,
+    });
     composeTestWorkspaceForAthlete(unifiedWorkspaceService, athleteId);
   }
+
+  const identity = athleteIdentityService.getAthleteIdentity(athleteId);
+  const runtime = runtimeEnvironmentService.getRuntimeEnvironment();
+  const workspace = unifiedWorkspaceService.getWorkspace(athleteId);
+  const records = {
+    identity: identity
+      ? Object.freeze([createPayloadRecord(identity.athleteId, identity)])
+      : Object.freeze([createRecord(athleteId)]),
+    runtime: runtime
+      ? Object.freeze([createPayloadRecord(runtime.id, runtime)])
+      : Object.freeze([createRecord("runtime:1")]),
+    workspace: workspace
+      ? Object.freeze([createPayloadRecord(workspace.athleteId, workspace)])
+      : Object.freeze([createRecord(athleteId)]),
+  };
+
+  await RepositoryHydrationPipeline.hydrate({
+    deps: {
+      identityRepository: createMockIdentityRepository(records.identity),
+      runtimeRepository: createMockRuntimeRepository(records.runtime),
+      workspaceRepository: createMockWorkspaceRepository(records.workspace),
+      snapshotRepository: createMockSnapshotRepository(),
+      timelineRepository: createMockTimelineRepository(),
+      athleteIdentityService,
+      runtimeEnvironmentService,
+      unifiedWorkspaceService,
+      athleteSnapshotService: services.athleteSnapshotService,
+      coachTimelineService: services.coachTimelineService,
+      clock: () => FIXED_DASHBOARD_PROJECTED_AT,
+    },
+  });
 
   return {
     athleteId,
@@ -130,7 +171,7 @@ describe("DashboardRestorePipeline", () => {
     expect(result.restoredAt).toBe(FIXED_DASHBOARD_PROJECTED_AT);
     expect(result.phases).toEqual([...DASHBOARD_RESTORE_PHASES]);
     expect(result.primaryDashboard.isEmpty).toBe(false);
-    expect(result.primaryDashboard.athlete.displayName).toBe(FIXED_DASHBOARD_ATHLETE_ID);
+    expect(result.primaryDashboard.athlete.displayName).toBe("Alex Rivera");
     expect(getDashboardRestoreStatus()).toBe(DASHBOARD_RESTORE_STATUS.ready);
   });
 

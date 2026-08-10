@@ -1,12 +1,9 @@
 import { resetCompositionRoot } from "../../../core/composition/createCompositionRoot";
-import { createAthleteIdentityService } from "../../../features/athlete-identity/services/AthleteIdentityService";
-import { createRuntimeEnvironmentService } from "../../../features/runtime-environment/services/RuntimeEnvironmentService";
-import { createUnifiedWorkspaceService } from "../../../features/unified-workspace/services/UnifiedWorkspaceService";
 import {
   composeTestWorkspaceForAthlete,
-  createTestUnifiedWorkspaceServiceForDashboard,
   FIXED_DASHBOARD_ATHLETE_ID,
 } from "../../../integrations/dashboard-projection/testSupport/fixtures";
+import { createWriteThroughTestDeps } from "../../testSupport/runtimePersistenceFixtures";
 import { RuntimeBootstrap, resetRuntimeBootstrap } from "../../bootstrap/RuntimeBootstrap";
 import { resetRepositoryHydration } from "../../hydration/RepositoryHydrationPipeline";
 import { resetDashboardRestore } from "../../dashboard-restore/DashboardRestorePipeline";
@@ -100,19 +97,16 @@ describe("runtime write-through repository contract usage", () => {
     resetCompositionRoot();
   });
 
-  it("observes athlete identity, runtime environment, and unified workspace identifiers only", async () => {
+  it("observes athlete identity, runtime environment, and unified workspace payloads", async () => {
     RuntimeBootstrap.bootstrap({ clock: () => "2026-08-10T10:00:00.000Z" });
 
     const athleteId = FIXED_DASHBOARD_ATHLETE_ID;
-    const athleteIdentityService = createAthleteIdentityService({
-      clock: () => "2026-08-10T10:00:00.000Z",
-    });
-    const runtimeEnvironmentService = createRuntimeEnvironmentService({
-      clock: () => "2026-08-10T10:00:00.000Z",
-    });
-    const unifiedWorkspaceService = createTestUnifiedWorkspaceServiceForDashboard({
-      clock: () => "2026-08-10T10:00:00.000Z",
-    });
+    const deps = createWriteThroughTestDeps(() => "2026-08-10T10:00:00.000Z");
+    const {
+      athleteIdentityService,
+      runtimeEnvironmentService,
+      unifiedWorkspaceService,
+    } = deps;
 
     athleteIdentityService.build({
       athleteId,
@@ -191,9 +185,7 @@ describe("runtime write-through repository contract usage", () => {
     await RuntimeWriteThroughPipeline.persist({
       athleteIds: [athleteId],
       deps: {
-        athleteIdentityService,
-        runtimeEnvironmentService,
-        unifiedWorkspaceService,
+        ...deps,
         identityRepository,
         runtimeRepository,
         workspaceRepository,

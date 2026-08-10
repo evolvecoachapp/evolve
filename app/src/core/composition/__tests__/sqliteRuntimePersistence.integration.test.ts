@@ -18,9 +18,7 @@ import { resetRepositoryHydration } from "../../../runtime/hydration/RepositoryH
 import { hydrateRuntime } from "../../../runtime/hydration/application/hydrateRuntime";
 import { resetDashboardRestore } from "../../../runtime/dashboard-restore/DashboardRestorePipeline";
 import { resetRuntimeWriteThrough } from "../../../runtime/write-through/RuntimeWriteThroughPipeline";
-import {
-  getRuntimeWriteThroughPromise,
-} from "../../../runtime/write-through/RuntimeWriteThroughPipeline";
+import { getRuntimeWriteThroughPromise } from "../../../runtime/write-through/RuntimeWriteThroughPipeline";
 import { persistRuntime } from "../../../runtime/write-through/application/persistRuntime";
 import { getWriteThroughStatus } from "../../../runtime/write-through/application/getWriteThroughStatus";
 import { RUNTIME_WRITE_THROUGH_STATUS } from "../../../runtime/write-through/RuntimeWriteThroughStatus";
@@ -28,6 +26,11 @@ import { resetRuntimeSession } from "../../../runtime/session/RuntimeSessionOrch
 import { startRuntimeSession } from "../../../runtime/session/application/startRuntimeSession";
 import { resetRuntimeObserver } from "../../../runtime/runtime-observer/RuntimeObserver";
 import { observeRuntime } from "../../../runtime/runtime-observer/application/observeRuntime";
+import { readRecordPayload } from "../../../runtime/persistence/DomainRecord";
+import type { AthleteIdentity } from "../../../features/athlete-identity/models/AthleteIdentity";
+import type { RuntimeEnvironment } from "../../../features/runtime-environment/models/RuntimeEnvironment";
+import type { Workspace } from "../../../features/unified-workspace/models/Workspace";
+import { createPayloadRecord } from "../../../runtime/write-through/testSupport/mockRepositories";
 
 const ATHLETE_ID = FIXED_DASHBOARD_ATHLETE_ID;
 const FIXED_CLOCK = () => "2026-08-10T10:00:00.000Z";
@@ -120,7 +123,7 @@ async function buildRuntimeStateForPersistence(
   await flushMicrotasks();
 }
 
-describe("SQLite runtime persistence activation (Sprint 34.1)", () => {
+describe("SQLite runtime persistence activation (Sprint 34.1 / 34.3)", () => {
   afterEach(() => {
     resetAllRuntimeState();
   });
@@ -182,10 +185,29 @@ describe("SQLite runtime persistence activation (Sprint 34.1)", () => {
         clock: FIXED_CLOCK,
       });
 
-      const adapters = getCompositionRoot().resolve("RepositoryAdapters");
-      adapters.identity.save(Object.freeze({ id: ATHLETE_ID }));
-      adapters.runtime.save(Object.freeze({ id: "runtime:sqlite:1" }));
-      adapters.workspace.save(Object.freeze({ id: ATHLETE_ID }));
+      await buildRuntimeStateForPersistence();
+
+      const root = getCompositionRoot();
+      const identity = root
+        .resolve("AthleteIdentityService")
+        .getAthleteIdentity(ATHLETE_ID);
+      const runtime = root
+        .resolve("RuntimeEnvironmentService")
+        .getRuntimeEnvironment();
+      const workspace = root
+        .resolve("UnifiedWorkspaceService")
+        .getWorkspace(ATHLETE_ID);
+
+      const adapters = root.resolve("RepositoryAdapters");
+      if (identity) {
+        adapters.identity.save(createPayloadRecord(identity.athleteId, identity));
+      }
+      if (runtime) {
+        adapters.runtime.save(createPayloadRecord(runtime.id, runtime));
+      }
+      if (workspace) {
+        adapters.workspace.save(createPayloadRecord(workspace.athleteId, workspace));
+      }
 
       resetRuntimePipelinesPreservingCompositionRoot();
 
@@ -244,7 +266,7 @@ describe("SQLite runtime persistence activation (Sprint 34.1)", () => {
   });
 
   describe("restart persistence", () => {
-    it("round-trips persisted state through re-hydration after pipeline restart", async () => {
+    it("round-trips persisted domain payloads through re-hydration after pipeline restart", async () => {
       await startRuntimeSession({
         athleteIds: [ATHLETE_ID],
         clock: FIXED_CLOCK,
@@ -254,22 +276,41 @@ describe("SQLite runtime persistence activation (Sprint 34.1)", () => {
       await buildRuntimeStateForPersistence();
       await waitForWriteThrough();
 
-      const adapters = getCompositionRoot().resolve("RepositoryAdapters");
-      const identityCount = adapters.identity.list().length;
-      const runtimeCount = adapters.runtime.list().length;
-      const workspaceCount = adapters.workspace.list().length;
-      expect(identityCount).toBeGreaterThanOrEqual(1);
+      const root = getCompositionRoot();
+      const adapters = root.resolve("RepositoryAdapters");
+      const savedIdentity = readRecordPayload<AthleteIdentity>(
+        adapters.identity.list()[0],
+      );
+      const savedRuntime = readRecordPayload<RuntimeEnvironment>(
+        adapters.runtime.list()[0],
+      );
+      const savedWorkspace = readRecordPayload<Workspace>(
+        adapters.workspace.list()[0],
+      );
+
+      expect(savedIdentity?.profile.displayName).toBe("Alex Rivera");
+      expect(savedRuntime?.device.model).toBe("Test Device");
+      expect(savedWorkspace?.athleteId).toBe(ATHLETE_ID);
 
       resetRuntimePipelinesPreservingCompositionRoot();
 
-      const restarted = await startRuntimeSession({
+      await startRuntimeSession({
         athleteIds: [ATHLETE_ID],
         clock: FIXED_CLOCK,
       });
 
-      expect(restarted.hydration.identityRecordCount).toBe(identityCount);
-      expect(restarted.hydration.runtimeRecordCount).toBe(runtimeCount);
-      expect(restarted.hydration.workspaceRecordCount).toBe(workspaceCount);
+      expect(
+        root.resolve("AthleteIdentityService").getAthleteIdentity(ATHLETE_ID)
+          ?.profile.displayName,
+      ).toBe("Alex Rivera");
+      expect(
+        root.resolve("RuntimeEnvironmentService").getRuntimeEnvironment()
+          ?.device.model,
+      ).toBe("Test Device");
+      expect(
+        root.resolve("UnifiedWorkspaceService").getWorkspace(ATHLETE_ID)
+          ?.athleteId,
+      ).toBe(ATHLETE_ID);
     });
   });
 
@@ -286,6 +327,31 @@ describe("SQLite runtime persistence activation (Sprint 34.1)", () => {
       expect(adapters.identity.findById(ATHLETE_ID)).toEqual(record);
       expect(adapters.identity.exists(ATHLETE_ID)).toBe(true);
       expect(adapters.identity.list()).toEqual([record]);
+    });
+
+    it("persists serialized domain payloads through SQLite adapters", async () => {
+      await startRuntimeSession({
+        athleteIds: [ATHLETE_ID],
+        clock: FIXED_CLOCK,
+      });
+
+      await buildRuntimeStateForPersistence();
+      await persistRuntime({ athleteIds: [ATHLETE_ID] });
+
+      const adapters = getCompositionRoot().resolve("RepositoryAdapters");
+      const identityRecord = adapters.identity.list()[0];
+      const runtimeRecord = adapters.runtime.list()[0];
+      const workspaceRecord = adapters.workspace.list()[0];
+
+      expect(
+        readRecordPayload<AthleteIdentity>(identityRecord)?.profile.givenName,
+      ).toBe("Alex");
+      expect(
+        readRecordPayload<RuntimeEnvironment>(runtimeRecord)?.application.name,
+      ).toBe("EVOLVE");
+      expect(readRecordPayload<Workspace>(workspaceRecord)?.athleteId).toBe(
+        ATHLETE_ID,
+      );
     });
   });
 });

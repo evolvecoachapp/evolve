@@ -32,6 +32,7 @@ import { RUNTIME_SESSION_STATUS } from "../RuntimeSessionStatus";
 import * as bootstrapApplication from "../../bootstrap/application/bootstrapRuntime";
 import * as hydrationApplication from "../../hydration/application/hydrateRuntime";
 import * as restoreApplication from "../../dashboard-restore/application/restoreDashboard";
+import { createPayloadRecord } from "../../write-through/testSupport/mockRepositories";
 import { HydrationError } from "../../hydration/HydrationError";
 import { DashboardRestoreError } from "../../dashboard-restore/DashboardRestoreError";
 
@@ -204,10 +205,70 @@ describe("Runtime lifecycle end-to-end integration", () => {
         clock: FIXED_CLOCK,
       });
 
-      const adapters = getCompositionRoot().resolve("RepositoryAdapters");
-      adapters.identity.save(Object.freeze({ id: ATHLETE_ID }));
-      adapters.runtime.save(Object.freeze({ id: "runtime:1" }));
-      adapters.workspace.save(Object.freeze({ id: ATHLETE_ID }));
+      const root = getCompositionRoot();
+      root.resolve("AthleteIdentityService").build({
+        athleteId: ATHLETE_ID,
+        requestId: `lifecycle:identity:${ATHLETE_ID}`,
+        profile: {
+          displayName: "Alex Rivera",
+          givenName: "Alex",
+          familyName: "Rivera",
+          sex: "unspecified",
+          birthYear: 1990,
+          experienceLevel: "intermediate",
+        },
+        locale: { languageTag: "en-US" },
+        units: { system: "metric" },
+        timeZone: { iana: "Etc/UTC", displayName: "UTC" },
+      });
+      root.resolve("RuntimeEnvironmentService").build({
+        requestId: "lifecycle:runtime:1",
+        device: {
+          deviceId: "runtime:1",
+          model: "Lifecycle Device",
+          manufacturer: "EVOLVE",
+          osVersion: "0.0.0",
+          formFactor: "phone",
+        },
+        platform: { kind: "ios", version: "0.0.0" },
+        application: {
+          appId: "com.evolve.app",
+          name: "EVOLVE",
+          version: "0.6.0",
+          buildNumber: "0",
+          channel: "test",
+        },
+        locale: { languageTag: "en-US" },
+      });
+      root.resolve("UnifiedWorkspaceService").build({
+        athleteId: ATHLETE_ID,
+        requestId: `lifecycle:workspace:${ATHLETE_ID}`,
+      });
+      composeTestWorkspaceForAthlete(
+        root.resolve("UnifiedWorkspaceService"),
+        ATHLETE_ID,
+      );
+
+      const identity = root
+        .resolve("AthleteIdentityService")
+        .getAthleteIdentity(ATHLETE_ID);
+      const runtime = root
+        .resolve("RuntimeEnvironmentService")
+        .getRuntimeEnvironment();
+      const workspace = root
+        .resolve("UnifiedWorkspaceService")
+        .getWorkspace(ATHLETE_ID);
+
+      const adapters = root.resolve("RepositoryAdapters");
+      if (identity) {
+        adapters.identity.save(createPayloadRecord(identity.athleteId, identity));
+      }
+      if (runtime) {
+        adapters.runtime.save(createPayloadRecord(runtime.id, runtime));
+      }
+      if (workspace) {
+        adapters.workspace.save(createPayloadRecord(workspace.athleteId, workspace));
+      }
 
       resetRuntimePipelinesPreservingCompositionRoot();
 
@@ -220,7 +281,6 @@ describe("Runtime lifecycle end-to-end integration", () => {
       expect(restarted.hydration.runtimeRecordCount).toBe(1);
       expect(restarted.hydration.workspaceRecordCount).toBe(1);
 
-      const root = getCompositionRoot();
       expect(
         root.resolve("AthleteIdentityService").getAthleteIdentity(ATHLETE_ID),
       ).not.toBeNull();

@@ -105,7 +105,39 @@ Pure deterministic mappers:
 - `AthleteMapper` / `IdentityMapper` / `WorkspaceMapper` / `SnapshotMapper` / `TimelineMapper`
 - `WorkoutMapper` / `NutritionMapper` / `RecoveryMapper` / `SettingsMapper` / `RuntimeMapper`
 
-`PersistenceRecord` ↔ `SQLiteRow` only. No domain entity mapping logic.
+`PersistenceRecord` ↔ `SQLiteRow`. Domain-aware mappers (Identity, Runtime, Workspace, Snapshot, Timeline) serialize immutable domain JSON into `SQLiteRow.payload` via `infrastructure/repositories/serialization`. Generic mappers remain id-only with empty payload (`"{}"`).
+
+Runtime write-through attaches opaque immutable domain payloads to records; mappers JSON-encode on save and JSON-decode on read. Hydration receives restored domain payloads through unchanged repository contract surfaces.
+
+---
+
+## Domain Serialization (Sprint 34.3)
+
+```
+Runtime (opaque payload on PersistenceRecord)
+      │
+      ▼
+Repository Adapters
+      │
+      ▼
+Domain Serializers (JSON)
+      │
+      ▼
+SQLite Mappers
+      │
+      ▼
+SQLiteRow { id, payload }
+```
+
+Serializers:
+
+- `AthleteIdentitySerializer`
+- `RuntimeEnvironmentSerializer`
+- `WorkspaceSerializer`
+- `WorkspaceSnapshotSerializer` (`AthleteSnapshot`)
+- `CoachTimelineSerializer`
+
+Serialization and deserialization remain **Infrastructure-only**. Domain modules never import serializers. Repository contracts remain `{ id }` at the type boundary.
 
 ---
 

@@ -38,6 +38,10 @@ export class CoachTimelineStore {
     return this.timelines.get(athleteId) ?? null;
   }
 
+  restoreTimeline(timeline: CoachTimeline): void {
+    this.timelines.set(timeline.athleteId, timeline);
+  }
+
   listAthleteIds(): readonly string[] {
     return Object.freeze([...this.timelines.keys()]);
   }
