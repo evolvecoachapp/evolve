@@ -57,6 +57,11 @@ import {
   RuntimeObserverFactory,
 } from "./factories";
 import {
+  createNutritionRuntimePersistenceService,
+  createRecoveryRuntimePersistenceService,
+  createWorkoutRuntimePersistenceService,
+} from "../../runtime/domain-persistence/services";
+import {
   ConfigurationProvider,
   PersistenceRepositoryProvider,
   RepositoryProvider,
@@ -345,6 +350,24 @@ export class CompositionRoot {
     container.register(
       "RuntimeEnvironmentService",
       () => RuntimeEnvironmentFactory.create(),
+      { lifecycle },
+    );
+
+    container.register(
+      "WorkoutRuntimePersistenceService",
+      () => createWorkoutRuntimePersistenceService(),
+      { lifecycle },
+    );
+
+    container.register(
+      "NutritionRuntimePersistenceService",
+      () => createNutritionRuntimePersistenceService(),
+      { lifecycle },
+    );
+
+    container.register(
+      "RecoveryRuntimePersistenceService",
+      () => createRecoveryRuntimePersistenceService(),
       { lifecycle },
     );
 

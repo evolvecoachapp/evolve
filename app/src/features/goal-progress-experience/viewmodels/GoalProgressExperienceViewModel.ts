@@ -22,6 +22,7 @@ import {
   GoalProgressExperienceError,
   type GoalProgressExperienceService,
 } from "../services";
+import { persistGoalProgressRuntimeMutation } from "../../../runtime/domain-persistence/application/persistGoalProgressRuntimeMutation";
 
 export interface GoalProgressExperienceViewModelDeps {
   readonly service?: GoalProgressExperienceService;
@@ -186,6 +187,7 @@ export class GoalProgressExperienceViewModel {
 
     this._dashboard = result.dashboard;
     this._error = null;
+    this.persistGoalRuntime("progress-update", result.progress);
     this.notify();
 
     try {
@@ -239,6 +241,7 @@ export class GoalProgressExperienceViewModel {
       ...new Set([...this._reachedMilestoneIds, milestoneId]),
     ]);
     this._error = null;
+    this.persistGoalRuntime("milestone-complete", result.progress);
     this.notify();
 
     try {
@@ -289,6 +292,7 @@ export class GoalProgressExperienceViewModel {
 
     this._dashboard = result.dashboard;
     this._error = null;
+    this.persistGoalRuntime("goal-complete", result.progress, true);
     this.notify();
 
     try {
@@ -322,5 +326,23 @@ export class GoalProgressExperienceViewModel {
     for (const listener of this.listeners) {
       listener();
     }
+  }
+
+  private persistGoalRuntime(
+    kind: string,
+    progress: import("../../goal-progress/models/GoalProgress").GoalProgress | null,
+    isCompleted = this._dashboard?.isCompleted ?? false,
+  ): void {
+    if (!this.isRuntimeDriven || !this.athleteId) {
+      return;
+    }
+
+    persistGoalProgressRuntimeMutation({
+      athleteId: this.athleteId,
+      requestId: `goal:runtime:${kind}:${this.athleteId}:${this.now().getTime()}`,
+      goalProgress: progress ?? undefined,
+      reachedMilestoneIds: this._reachedMilestoneIds,
+      isCompleted,
+    });
   }
 }

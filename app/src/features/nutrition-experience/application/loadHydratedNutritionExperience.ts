@@ -1,4 +1,5 @@
 import { getCompositionRoot } from "../../../core/composition/createCompositionRoot";
+import { readPersistedNutritionDayState } from "../../../runtime/domain-persistence/application/persistNutritionRuntimeMutation";
 import type { NutritionPlan } from "../../nutrition-agent/models/NutritionPlan";
 import type { PlanHistoryService } from "../../plan-history/services/PlanHistoryService";
 import { mapNutritionDashboard } from "../mappers";
@@ -61,12 +62,17 @@ export async function loadHydratedNutritionExperience({
 
   const planHistory = root.resolve("PlanHistoryService");
   const plan = resolveNutritionPlan(planHistory, workspace.nutrition.planId);
+  const persistedDay = readPersistedNutritionDayState(athleteId, day.isoDate);
   const dto = mapWorkspaceNutritionToExperienceDto({
     nutrition: workspace.nutrition,
     day,
     plan,
-    toggledMealIds,
-    hydrationMl,
+    toggledMealIds:
+      toggledMealIds ??
+      (persistedDay
+        ? new Set(persistedDay.toggledMealIds)
+        : undefined),
+    hydrationMl: hydrationMl ?? persistedDay?.hydrationMl,
   });
 
   return mapNutritionDashboard(dto);

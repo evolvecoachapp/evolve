@@ -1,13 +1,19 @@
 import type { IdentityRepository } from "../../core/persistence/repositories/IdentityRepository";
+import type { NutritionRepository } from "../../core/persistence/repositories/NutritionRepository";
+import type { RecoveryRepository } from "../../core/persistence/repositories/RecoveryRepository";
 import type { RuntimeRepository } from "../../core/persistence/repositories/RuntimeRepository";
 import type { SnapshotRepository } from "../../core/persistence/repositories/SnapshotRepository";
 import type { TimelineRepository } from "../../core/persistence/repositories/TimelineRepository";
+import type { WorkoutRepository } from "../../core/persistence/repositories/WorkoutRepository";
 import type { WorkspaceRepository } from "../../core/persistence/repositories/WorkspaceRepository";
 import type { AthleteIdentityService } from "../../features/athlete-identity/services/AthleteIdentityService";
 import type { AthleteSnapshotService } from "../../features/athlete-snapshot/services/AthleteSnapshotService";
 import type { CoachTimelineService } from "../../features/coach-timeline/services/CoachTimelineService";
 import type { RuntimeEnvironmentService } from "../../features/runtime-environment/services/RuntimeEnvironmentService";
 import type { UnifiedWorkspaceService } from "../../features/unified-workspace/services/UnifiedWorkspaceService";
+import type { NutritionRuntimePersistenceService } from "../domain-persistence/services/NutritionRuntimePersistenceService";
+import type { RecoveryRuntimePersistenceService } from "../domain-persistence/services/RecoveryRuntimePersistenceService";
+import type { WorkoutRuntimePersistenceService } from "../domain-persistence/services/WorkoutRuntimePersistenceService";
 import { RUNTIME_WRITE_THROUGH_PHASES } from "./RuntimeWriteThroughInitialization";
 import {
   createRuntimeWriteThroughResult,
@@ -23,9 +29,12 @@ import { RUNTIME_WRITE_THROUGH_STATUS } from "./RuntimeWriteThroughStatus";
 import { RuntimeWriteThroughError } from "./RuntimeWriteThroughError";
 import {
   observeIdentityRecords,
+  observeNutritionRuntimeRecords,
+  observeRecoveryRuntimeRecords,
   observeRuntimeRecord,
   observeSnapshotRecords,
   observeTimelineRecords,
+  observeWorkoutRuntimeRecords,
   observeWorkspaceRecords,
   persistRuntimeRecords,
 } from "./RuntimeWriteThroughPersistence";
@@ -43,11 +52,17 @@ export interface RuntimeWriteThroughDeps {
   readonly workspaceRepository: WorkspaceRepository;
   readonly snapshotRepository: SnapshotRepository;
   readonly timelineRepository: TimelineRepository;
+  readonly workoutRepository: WorkoutRepository;
+  readonly nutritionRepository: NutritionRepository;
+  readonly recoveryRepository: RecoveryRepository;
   readonly athleteIdentityService: AthleteIdentityService;
   readonly runtimeEnvironmentService: RuntimeEnvironmentService;
   readonly unifiedWorkspaceService: UnifiedWorkspaceService;
   readonly athleteSnapshotService: AthleteSnapshotService;
   readonly coachTimelineService: CoachTimelineService;
+  readonly workoutRuntimePersistenceService: WorkoutRuntimePersistenceService;
+  readonly nutritionRuntimePersistenceService: NutritionRuntimePersistenceService;
+  readonly recoveryRuntimePersistenceService: RecoveryRuntimePersistenceService;
   readonly clock?: () => string;
 }
 
@@ -99,6 +114,18 @@ export class RuntimeWriteThroughPipeline {
         options.deps.coachTimelineService,
         athleteIds,
       );
+      const workoutRecords = observeWorkoutRuntimeRecords(
+        options.deps.workoutRuntimePersistenceService,
+        athleteIds,
+      );
+      const nutritionRecords = observeNutritionRuntimeRecords(
+        options.deps.nutritionRuntimePersistenceService,
+        athleteIds,
+      );
+      const recoveryRecords = observeRecoveryRuntimeRecords(
+        options.deps.recoveryRuntimePersistenceService,
+        athleteIds,
+      );
 
       const counts = await persistRuntimeRecords({
         identityRepository: options.deps.identityRepository,
@@ -106,11 +133,17 @@ export class RuntimeWriteThroughPipeline {
         workspaceRepository: options.deps.workspaceRepository,
         snapshotRepository: options.deps.snapshotRepository,
         timelineRepository: options.deps.timelineRepository,
+        workoutRepository: options.deps.workoutRepository,
+        nutritionRepository: options.deps.nutritionRepository,
+        recoveryRepository: options.deps.recoveryRepository,
         identityRecords,
         runtimeRecord,
         workspaceRecords,
         snapshotRecords,
         timelineRecords,
+        workoutRecords,
+        nutritionRecords,
+        recoveryRecords,
       });
 
       const persistedAt = clock();

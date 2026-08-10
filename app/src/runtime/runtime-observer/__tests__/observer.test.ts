@@ -6,6 +6,11 @@ import {
   createTestUnifiedWorkspaceServiceForDashboard,
   FIXED_DASHBOARD_ATHLETE_ID,
 } from "../../../integrations/dashboard-projection/testSupport/fixtures";
+import {
+  createNutritionRuntimePersistenceService,
+  createRecoveryRuntimePersistenceService,
+  createWorkoutRuntimePersistenceService,
+} from "../../domain-persistence/services";
 import { RuntimeBootstrap, resetRuntimeBootstrap } from "../../bootstrap/RuntimeBootstrap";
 import { resetDashboardRestore } from "../../dashboard-restore/DashboardRestorePipeline";
 import { resetRepositoryHydration } from "../../hydration/RepositoryHydrationPipeline";
@@ -41,6 +46,9 @@ function createObservedServices() {
     athleteIdentityService,
     runtimeEnvironmentService,
     unifiedWorkspaceService,
+    workoutRuntimePersistenceService: createWorkoutRuntimePersistenceService(),
+    nutritionRuntimePersistenceService: createNutritionRuntimePersistenceService(),
+    recoveryRuntimePersistenceService: createRecoveryRuntimePersistenceService(),
   };
 }
 

@@ -8,6 +8,11 @@ import { createMinimalRuntimeInput } from "../../features/runtime-environment/te
 import { createUnifiedWorkspaceService } from "../../features/unified-workspace/services/UnifiedWorkspaceService";
 import { composeTestWorkspaceForAthlete } from "../../integrations/dashboard-projection/testSupport/fixtures";
 import { createStubAthleteSnapshot } from "../../features/unified-workspace/testSupport/fixtures";
+import {
+  createNutritionRuntimePersistenceService,
+  createRecoveryRuntimePersistenceService,
+  createWorkoutRuntimePersistenceService,
+} from "../domain-persistence/services";
 import type { RepositoryHydrationDeps } from "../hydration/RepositoryHydrationPipeline";
 import type { RuntimeWriteThroughDeps } from "../write-through/RuntimeWriteThroughPipeline";
 import {
@@ -18,6 +23,11 @@ import {
   createMockWorkspaceRepository,
   createPayloadRecord,
 } from "../write-through/testSupport/mockRepositories";
+import {
+  createMockNutritionRepository,
+  createMockRecoveryRepository,
+  createMockWorkoutRepository,
+} from "../write-through/testSupport/mockDomainRepositories";
 
 const FIXED_CLOCK = () => "2026-08-10T10:00:01.000Z";
 
@@ -34,6 +44,9 @@ export function createTestRuntimeServices(clock = FIXED_CLOCK) {
     coachTimeline: coachTimelineService,
     athleteSnapshot: athleteSnapshotService,
   });
+  const workoutRuntimePersistenceService = createWorkoutRuntimePersistenceService();
+  const nutritionRuntimePersistenceService = createNutritionRuntimePersistenceService();
+  const recoveryRuntimePersistenceService = createRecoveryRuntimePersistenceService();
 
   return {
     athleteIdentityService,
@@ -41,6 +54,9 @@ export function createTestRuntimeServices(clock = FIXED_CLOCK) {
     unifiedWorkspaceService,
     athleteSnapshotService,
     coachTimelineService,
+    workoutRuntimePersistenceService,
+    nutritionRuntimePersistenceService,
+    recoveryRuntimePersistenceService,
   };
 }
 
@@ -127,6 +143,9 @@ export function createMockRuntimeRepositories(
     readonly workspace?: readonly import("../../core/persistence/contracts/PersistenceRecord").PersistenceRecord[];
     readonly snapshot?: readonly import("../../core/persistence/contracts/PersistenceRecord").PersistenceRecord[];
     readonly timeline?: readonly import("../../core/persistence/contracts/PersistenceRecord").PersistenceRecord[];
+    readonly workout?: readonly import("../../core/persistence/contracts/PersistenceRecord").PersistenceRecord[];
+    readonly nutrition?: readonly import("../../core/persistence/contracts/PersistenceRecord").PersistenceRecord[];
+    readonly recovery?: readonly import("../../core/persistence/contracts/PersistenceRecord").PersistenceRecord[];
   } = {},
 ) {
   return {
@@ -135,6 +154,9 @@ export function createMockRuntimeRepositories(
     workspaceRepository: createMockWorkspaceRepository(records.workspace ?? []),
     snapshotRepository: createMockSnapshotRepository(records.snapshot ?? []),
     timelineRepository: createMockTimelineRepository(records.timeline ?? []),
+    workoutRepository: createMockWorkoutRepository(records.workout ?? []),
+    nutritionRepository: createMockNutritionRepository(records.nutrition ?? []),
+    recoveryRepository: createMockRecoveryRepository(records.recovery ?? []),
   };
 }
 

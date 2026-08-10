@@ -6,6 +6,9 @@ import {
   RuntimeEnvironmentSerializer,
   WorkspaceSerializer,
   WorkspaceSnapshotSerializer,
+  WorkoutRuntimePersistenceSerializer,
+  NutritionRuntimePersistenceSerializer,
+  RecoveryRuntimePersistenceSerializer,
   getRecordPayload,
   type DomainSerializer,
 } from "../../repositories/serialization";
@@ -98,9 +101,18 @@ export const TimelineMapper = createDomainMapper(
   "TimelineMapper",
   CoachTimelineSerializer,
 );
-export const WorkoutMapper = createNamedMapper("WorkoutMapper");
-export const NutritionMapper = createNamedMapper("NutritionMapper");
-export const RecoveryMapper = createNamedMapper("RecoveryMapper");
+export const WorkoutMapper = createDomainMapper(
+  "WorkoutMapper",
+  WorkoutRuntimePersistenceSerializer,
+);
+export const NutritionMapper = createDomainMapper(
+  "NutritionMapper",
+  NutritionRuntimePersistenceSerializer,
+);
+export const RecoveryMapper = createDomainMapper(
+  "RecoveryMapper",
+  RecoveryRuntimePersistenceSerializer,
+);
 export const SettingsMapper = createNamedMapper("SettingsMapper");
 export const RuntimeMapper = createDomainMapper(
   "RuntimeMapper",

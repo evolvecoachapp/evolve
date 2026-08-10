@@ -25,6 +25,11 @@ import {
   createMockTimelineRepository,
   createMockWorkspaceRepository,
 } from "../testSupport/mockRepositories";
+import {
+  createMockNutritionRepository,
+  createMockRecoveryRepository,
+  createMockWorkoutRepository,
+} from "../testSupport/mockDomainRepositories";
 import { readRecordPayload } from "../../persistence/DomainRecord";
 import type { AthleteIdentity } from "../../../features/athlete-identity/models/AthleteIdentity";
 import type { RuntimeEnvironment } from "../../../features/runtime-environment/models/RuntimeEnvironment";
@@ -95,6 +100,9 @@ function createPersistDepsFromServices(
     workspaceRepository: createMockWorkspaceRepository(),
     snapshotRepository: createMockSnapshotRepository(),
     timelineRepository: createMockTimelineRepository(),
+    workoutRepository: createMockWorkoutRepository(),
+    nutritionRepository: createMockNutritionRepository(),
+    recoveryRepository: createMockRecoveryRepository(),
     clock: FIXED_CLOCK,
   };
 }

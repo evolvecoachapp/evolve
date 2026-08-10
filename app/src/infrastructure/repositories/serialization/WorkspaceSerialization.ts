@@ -1,7 +1,8 @@
 import type { Workspace } from "../../../features/unified-workspace/models/Workspace";
 import { createDomainSerializer } from "./createDomainSerializer";
+import { freezeDeep } from "./freezeDeep";
 
-function isWorkspace(value: unknown): value is Workspace {
+function isWorkspaceShape(value: unknown): value is Workspace {
   if (typeof value !== "object" || value === null) {
     return false;
   }
@@ -37,7 +38,38 @@ function isWorkspace(value: unknown): value is Workspace {
   );
 }
 
-export const WorkspaceSerializer = createDomainSerializer<Workspace>({
+function withGoalRuntimeOverlay(value: Workspace): Workspace {
+  if (value.goalRuntimeOverlay !== undefined) {
+    return value;
+  }
+  return Object.freeze({
+    ...value,
+    goalRuntimeOverlay: null,
+  });
+}
+
+const baseSerializer = createDomainSerializer<Workspace>({
   domain: "unified-workspace",
-  isValid: isWorkspace,
+  isValid: isWorkspaceShape,
 });
+
+export const WorkspaceSerializer = Object.freeze({
+  domain: baseSerializer.domain,
+  serialize(value: Workspace): string {
+    return baseSerializer.serialize(withGoalRuntimeOverlay(value));
+  },
+  deserialize(payload: string): Workspace | null {
+    const parsed = baseSerializer.deserialize(payload);
+    if (!parsed) {
+      return null;
+    }
+    return freezeDeep(withGoalRuntimeOverlay(parsed));
+  },
+});
+
+export function normalizeLegacyWorkspacePayload(value: unknown): Workspace | null {
+  if (!isWorkspaceShape(value)) {
+    return null;
+  }
+  return freezeDeep(withGoalRuntimeOverlay(value as Workspace));
+}

@@ -1,4 +1,5 @@
 import { getCompositionRoot } from "../../../core/composition/createCompositionRoot";
+import { readPersistedWorkoutRuntime } from "../../../runtime/domain-persistence/application/persistWorkoutRuntimeMutation";
 import type { WorkoutSession } from "../../workout-assembly/models/WorkoutSession";
 import type { WorkoutAssemblyService } from "../../workout-assembly/services/WorkoutAssemblyService";
 import type { WorkspaceWorkout } from "../../unified-workspace/models/WorkspaceWorkout";
@@ -37,6 +38,11 @@ export async function loadHydratedWorkoutRuntime({
   const workspace = root.resolve("UnifiedWorkspaceService").getWorkspace(athleteId);
   if (!workspace) {
     return null;
+  }
+
+  const persisted = readPersistedWorkoutRuntime(athleteId);
+  if (persisted) {
+    return persisted;
   }
 
   const workout = workspace.workout;

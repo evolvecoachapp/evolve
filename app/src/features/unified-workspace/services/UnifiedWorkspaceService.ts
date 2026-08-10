@@ -9,6 +9,7 @@ import type { ExplainableCoachingSessionService } from "../../coaching-session/c
 import type { DailyBrief } from "../../daily-brief/models/DailyBrief";
 import type { DailyBriefService } from "../../daily-brief/services/DailyBriefService";
 import type { GoalProgress } from "../../goal-progress/models/GoalProgress";
+import type { GoalRuntimePersistenceState } from "../../../runtime/domain-persistence/models/GoalRuntimePersistenceState";
 import type { HomeExperience } from "../../home-experience/models/HomeExperience";
 import type { HomeExperienceService } from "../../home-experience/services/HomeExperienceService";
 import type { CoachInsight } from "../../proactive-insights/models/CoachInsight";
@@ -70,6 +71,7 @@ type WorkspaceBuildInput = Omit<
   readonly criticalFindings?: readonly CoachInsight[];
   readonly coachingSession?: import("../../coaching-session/composition/models/CoachingSession").CoachingSession | null;
   readonly snapshot?: AthleteSnapshot | null;
+  readonly goalRuntimeOverlay?: GoalRuntimePersistenceState | null;
 };
 
 /**
@@ -153,6 +155,7 @@ export class UnifiedWorkspaceService {
         this.athleteSnapshot?.getCurrentSnapshot(input.athleteId) ??
         null,
       goalProgress: input.goalProgress ?? null,
+      goalRuntimeOverlay: input.goalRuntimeOverlay ?? null,
     });
 
     if (result.success && result.workspace) {

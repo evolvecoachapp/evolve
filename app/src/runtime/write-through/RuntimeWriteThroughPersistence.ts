@@ -1,14 +1,20 @@
 import type { PersistenceRecord } from "../../core/persistence/contracts/PersistenceRecord";
 import type { IdentityRepository } from "../../core/persistence/repositories/IdentityRepository";
+import type { NutritionRepository } from "../../core/persistence/repositories/NutritionRepository";
+import type { RecoveryRepository } from "../../core/persistence/repositories/RecoveryRepository";
 import type { RuntimeRepository } from "../../core/persistence/repositories/RuntimeRepository";
 import type { SnapshotRepository } from "../../core/persistence/repositories/SnapshotRepository";
 import type { TimelineRepository } from "../../core/persistence/repositories/TimelineRepository";
+import type { WorkoutRepository } from "../../core/persistence/repositories/WorkoutRepository";
 import type { WorkspaceRepository } from "../../core/persistence/repositories/WorkspaceRepository";
 import type { AthleteIdentityService } from "../../features/athlete-identity/services/AthleteIdentityService";
 import type { AthleteSnapshotService } from "../../features/athlete-snapshot/services/AthleteSnapshotService";
 import type { CoachTimelineService } from "../../features/coach-timeline/services/CoachTimelineService";
 import type { RuntimeEnvironmentService } from "../../features/runtime-environment/services/RuntimeEnvironmentService";
 import type { UnifiedWorkspaceService } from "../../features/unified-workspace/services/UnifiedWorkspaceService";
+import type { NutritionRuntimePersistenceService } from "../domain-persistence/services/NutritionRuntimePersistenceService";
+import type { RecoveryRuntimePersistenceService } from "../domain-persistence/services/RecoveryRuntimePersistenceService";
+import type { WorkoutRuntimePersistenceService } from "../domain-persistence/services/WorkoutRuntimePersistenceService";
 import { createPayloadRecord } from "../persistence/DomainRecord";
 import { RuntimeWriteThroughError } from "./RuntimeWriteThroughError";
 
@@ -91,6 +97,54 @@ export function observeTimelineRecords(
   return Object.freeze(records);
 }
 
+export function observeWorkoutRuntimeRecords(
+  service: WorkoutRuntimePersistenceService,
+  athleteIds: readonly string[],
+): readonly PersistenceRecord[] {
+  const records: PersistenceRecord[] = [];
+
+  for (const athleteId of athleteIds) {
+    const state = service.getState(athleteId);
+    if (state) {
+      records.push(createPayloadRecord(athleteId, state));
+    }
+  }
+
+  return Object.freeze(records);
+}
+
+export function observeNutritionRuntimeRecords(
+  service: NutritionRuntimePersistenceService,
+  athleteIds: readonly string[],
+): readonly PersistenceRecord[] {
+  const records: PersistenceRecord[] = [];
+
+  for (const athleteId of athleteIds) {
+    const state = service.getState(athleteId);
+    if (state) {
+      records.push(createPayloadRecord(athleteId, state));
+    }
+  }
+
+  return Object.freeze(records);
+}
+
+export function observeRecoveryRuntimeRecords(
+  service: RecoveryRuntimePersistenceService,
+  athleteIds: readonly string[],
+): readonly PersistenceRecord[] {
+  const records: PersistenceRecord[] = [];
+
+  for (const athleteId of athleteIds) {
+    const state = service.getState(athleteId);
+    if (state) {
+      records.push(createPayloadRecord(athleteId, state));
+    }
+  }
+
+  return Object.freeze(records);
+}
+
 async function invokeRepositorySave(
   save: (record: PersistenceRecord) => Promise<void> | void,
   record: PersistenceRecord,
@@ -104,11 +158,17 @@ export interface PersistRuntimeRecordsInput {
   readonly workspaceRepository: WorkspaceRepository;
   readonly snapshotRepository: SnapshotRepository;
   readonly timelineRepository: TimelineRepository;
+  readonly workoutRepository: WorkoutRepository;
+  readonly nutritionRepository: NutritionRepository;
+  readonly recoveryRepository: RecoveryRepository;
   readonly identityRecords: readonly PersistenceRecord[];
   readonly runtimeRecord: PersistenceRecord | null;
   readonly workspaceRecords: readonly PersistenceRecord[];
   readonly snapshotRecords: readonly PersistenceRecord[];
   readonly timelineRecords: readonly PersistenceRecord[];
+  readonly workoutRecords: readonly PersistenceRecord[];
+  readonly nutritionRecords: readonly PersistenceRecord[];
+  readonly recoveryRecords: readonly PersistenceRecord[];
 }
 
 export interface PersistRuntimeRecordsResult {
@@ -117,6 +177,9 @@ export interface PersistRuntimeRecordsResult {
   readonly workspaceRecordCount: number;
   readonly snapshotRecordCount: number;
   readonly timelineRecordCount: number;
+  readonly workoutRecordCount: number;
+  readonly nutritionRecordCount: number;
+  readonly recoveryRecordCount: number;
 }
 
 export async function persistRuntimeRecords(
@@ -157,6 +220,27 @@ export async function persistRuntimeRecords(
         record,
       );
     }
+
+    for (const record of input.workoutRecords) {
+      await invokeRepositorySave(
+        (next) => input.workoutRepository.save(next),
+        record,
+      );
+    }
+
+    for (const record of input.nutritionRecords) {
+      await invokeRepositorySave(
+        (next) => input.nutritionRepository.save(next),
+        record,
+      );
+    }
+
+    for (const record of input.recoveryRecords) {
+      await invokeRepositorySave(
+        (next) => input.recoveryRepository.save(next),
+        record,
+      );
+    }
   } catch (error) {
     throw new RuntimeWriteThroughError(
       error instanceof Error
@@ -172,5 +256,8 @@ export async function persistRuntimeRecords(
     workspaceRecordCount: input.workspaceRecords.length,
     snapshotRecordCount: input.snapshotRecords.length,
     timelineRecordCount: input.timelineRecords.length,
+    workoutRecordCount: input.workoutRecords.length,
+    nutritionRecordCount: input.nutritionRecords.length,
+    recoveryRecordCount: input.recoveryRecords.length,
   };
 }

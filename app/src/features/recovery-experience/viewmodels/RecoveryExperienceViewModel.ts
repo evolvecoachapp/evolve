@@ -25,6 +25,7 @@ import {
   RecoveryExperienceError,
   type RecoveryExperienceService,
 } from "../services";
+import { persistRecoveryRuntimeMutation } from "../../../runtime/domain-persistence/application/persistRecoveryRuntimeMutation";
 
 export interface RecoveryExperienceViewModelDeps {
   readonly service?: RecoveryExperienceService;
@@ -204,6 +205,7 @@ export class RecoveryExperienceViewModel {
     this._sleepQuality = this._dashboard.sleep.quality;
     this._sleepLogged = true;
     this._error = null;
+    this.persistRuntimeOverlay("sleep");
     this.notify();
 
     if (this.athleteId) {
@@ -247,6 +249,7 @@ export class RecoveryExperienceViewModel {
     this._dashboard = updateRuntimeReadiness({ dashboard: this._dashboard, score });
     this._readinessScore = this._dashboard.readiness.score;
     this._error = null;
+    this.persistRuntimeOverlay("readiness");
     this.notify();
 
     if (this.athleteId) {
@@ -299,6 +302,7 @@ export class RecoveryExperienceViewModel {
     this._dashboard = result.dashboard;
     this._assessedScore = result.dashboard.recoveryScore;
     this._error = null;
+    this.persistRuntimeOverlay("assessment");
     this.notify();
 
     try {
@@ -352,5 +356,24 @@ export class RecoveryExperienceViewModel {
     for (const listener of this.listeners) {
       listener();
     }
+  }
+
+  private persistRuntimeOverlay(kind: string): void {
+    if (!this.isRuntimeDriven || !this.athleteId) {
+      return;
+    }
+
+    persistRecoveryRuntimeMutation({
+      athleteId: this.athleteId,
+      requestId: `recovery:runtime:${kind}:${this.athleteId}:${this.now().getTime()}`,
+      isoDate: this._day.isoDate,
+      dayState: Object.freeze({
+        sleepHours: this._sleepHours,
+        sleepQuality: this._sleepQuality,
+        sleepLogged: this._sleepLogged,
+        readinessScore: this._readinessScore,
+        assessedScore: this._assessedScore,
+      }),
+    });
   }
 }

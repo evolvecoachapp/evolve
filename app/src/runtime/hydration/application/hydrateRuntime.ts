@@ -40,6 +40,18 @@ export function hydrateRuntime(): Promise<HydrationResult> {
         unifiedWorkspaceService: root.resolve("UnifiedWorkspaceService"),
         athleteSnapshotService: root.resolve("AthleteSnapshotService"),
         coachTimelineService: root.resolve("CoachTimelineService"),
+        workoutRepository: adapters.workout,
+        nutritionRepository: adapters.nutrition,
+        recoveryRepository: adapters.recovery,
+        workoutRuntimePersistenceService: root.resolve(
+          "WorkoutRuntimePersistenceService",
+        ),
+        nutritionRuntimePersistenceService: root.resolve(
+          "NutritionRuntimePersistenceService",
+        ),
+        recoveryRuntimePersistenceService: root.resolve(
+          "RecoveryRuntimePersistenceService",
+        ),
       },
     });
   });

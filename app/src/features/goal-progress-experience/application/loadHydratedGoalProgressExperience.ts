@@ -1,4 +1,5 @@
 import { getCompositionRoot } from "../../../core/composition/createCompositionRoot";
+import { readPersistedGoalRuntimeOverlay } from "../../../runtime/domain-persistence/application/persistGoalProgressRuntimeMutation";
 import type { GoalProgress as GoalProgressDomain } from "../../goal-progress/models/GoalProgress";
 import { mapGoalProgressDashboard } from "../mappers";
 import { mapWorkspaceGoalsToExperienceDto } from "../mappers/mapWorkspaceGoalsToExperienceDto";
@@ -24,10 +25,12 @@ export async function loadHydratedGoalProgressExperience({
     return null;
   }
 
+  const overlay = readPersistedGoalRuntimeOverlay(athleteId);
   const dto = mapWorkspaceGoalsToExperienceDto({
     goals: workspace.goals,
-    reachedMilestoneIds,
-    isCompleted,
+    reachedMilestoneIds:
+      reachedMilestoneIds ?? overlay?.reachedMilestoneIds,
+    isCompleted: isCompleted ?? overlay?.isCompleted,
   });
 
   return mapGoalProgressDashboard(dto);

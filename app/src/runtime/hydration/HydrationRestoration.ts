@@ -9,6 +9,12 @@ import type { RuntimeEnvironment } from "../../features/runtime-environment/mode
 import type { RuntimeEnvironmentService } from "../../features/runtime-environment/services/RuntimeEnvironmentService";
 import type { Workspace } from "../../features/unified-workspace/models/Workspace";
 import type { UnifiedWorkspaceService } from "../../features/unified-workspace/services/UnifiedWorkspaceService";
+import type { NutritionRuntimePersistenceState } from "../domain-persistence/models/NutritionRuntimePersistenceState";
+import type { RecoveryRuntimePersistenceState } from "../domain-persistence/models/RecoveryRuntimePersistenceState";
+import type { WorkoutRuntimePersistenceState } from "../domain-persistence/models/WorkoutRuntimePersistenceState";
+import type { NutritionRuntimePersistenceService } from "../domain-persistence/services/NutritionRuntimePersistenceService";
+import type { RecoveryRuntimePersistenceService } from "../domain-persistence/services/RecoveryRuntimePersistenceService";
+import type { WorkoutRuntimePersistenceService } from "../domain-persistence/services/WorkoutRuntimePersistenceService";
 import { readRecordPayload } from "../persistence/DomainRecord";
 
 /**
@@ -76,6 +82,42 @@ export function restoreWorkspaceRecords(
     const workspace = readRecordPayload<Workspace>(record);
     if (workspace) {
       service.restorePersisted(workspace);
+    }
+  }
+}
+
+export function restoreWorkoutRuntimeRecords(
+  service: WorkoutRuntimePersistenceService,
+  records: readonly PersistenceRecord[],
+): void {
+  for (const record of records) {
+    const state = readRecordPayload<WorkoutRuntimePersistenceState>(record);
+    if (state) {
+      service.restorePersisted(state);
+    }
+  }
+}
+
+export function restoreNutritionRuntimeRecords(
+  service: NutritionRuntimePersistenceService,
+  records: readonly PersistenceRecord[],
+): void {
+  for (const record of records) {
+    const state = readRecordPayload<NutritionRuntimePersistenceState>(record);
+    if (state) {
+      service.restorePersisted(state);
+    }
+  }
+}
+
+export function restoreRecoveryRuntimeRecords(
+  service: RecoveryRuntimePersistenceService,
+  records: readonly PersistenceRecord[],
+): void {
+  for (const record of records) {
+    const state = readRecordPayload<RecoveryRuntimePersistenceState>(record);
+    if (state) {
+      service.restorePersisted(state);
     }
   }
 }

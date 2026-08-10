@@ -33,6 +33,15 @@ export function observeRuntime(
       athleteIdentityService: root.resolve("AthleteIdentityService"),
       runtimeEnvironmentService: root.resolve("RuntimeEnvironmentService"),
       unifiedWorkspaceService: root.resolve("UnifiedWorkspaceService"),
+      workoutRuntimePersistenceService: root.resolve(
+        "WorkoutRuntimePersistenceService",
+      ),
+      nutritionRuntimePersistenceService: root.resolve(
+        "NutritionRuntimePersistenceService",
+      ),
+      recoveryRuntimePersistenceService: root.resolve(
+        "RecoveryRuntimePersistenceService",
+      ),
       clock: options.clock,
     },
   });

@@ -74,6 +74,9 @@ import type { DashboardRestoreService } from "../../../runtime/dashboard-restore
 import type { RuntimeWriteThroughService } from "../../../runtime/write-through/RuntimeWriteThroughService";
 import type { RuntimeSessionService } from "../../../runtime/session/RuntimeSessionService";
 import type { RuntimeObserverService } from "../../../runtime/runtime-observer/RuntimeObserverService";
+import type { WorkoutRuntimePersistenceService } from "../../../runtime/domain-persistence/services/WorkoutRuntimePersistenceService";
+import type { NutritionRuntimePersistenceService } from "../../../runtime/domain-persistence/services/NutritionRuntimePersistenceService";
+import type { RecoveryRuntimePersistenceService } from "../../../runtime/domain-persistence/services/RecoveryRuntimePersistenceService";
 import type { ExerciseSelectionService } from "../../../features/exercise-selection/services/ExerciseSelectionService";
 import type { ProgramGenerationService } from "../../../features/program-generation/services/ProgramGenerationService";
 import type { ProgrammingService } from "../../../features/programming/services/ProgrammingService";
@@ -124,6 +127,9 @@ export interface ServiceMap {
   UnifiedWorkspaceService: UnifiedWorkspaceService;
   AthleteIdentityService: AthleteIdentityService;
   RuntimeEnvironmentService: RuntimeEnvironmentService;
+  WorkoutRuntimePersistenceService: WorkoutRuntimePersistenceService;
+  NutritionRuntimePersistenceService: NutritionRuntimePersistenceService;
+  RecoveryRuntimePersistenceService: RecoveryRuntimePersistenceService;
   PersistenceContractRegistry: PersistenceContractRegistry;
   RepositoryRegistry: RepositoryRegistry;
   StorageContractRegistry: StorageContractRegistry;
@@ -215,6 +221,9 @@ export const SERVICE_TOKENS = [
   "UnifiedWorkspaceService",
   "AthleteIdentityService",
   "RuntimeEnvironmentService",
+  "WorkoutRuntimePersistenceService",
+  "NutritionRuntimePersistenceService",
+  "RecoveryRuntimePersistenceService",
   "PersistenceContractRegistry",
   "RepositoryRegistry",
   "StorageContractRegistry",

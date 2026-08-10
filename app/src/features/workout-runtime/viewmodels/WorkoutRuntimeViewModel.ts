@@ -26,6 +26,7 @@ import {
   WorkoutRuntimeExperienceError,
   type WorkoutRuntimeExperienceService,
 } from "../services/experience";
+import { persistWorkoutRuntimeMutation } from "../../../runtime/domain-persistence/application/persistWorkoutRuntimeMutation";
 
 export interface WorkoutRuntimeViewModelDeps {
   readonly service?: WorkoutRuntimeExperienceService;
@@ -356,8 +357,21 @@ export class WorkoutRuntimeViewModel {
   }
 
   private notify(): void {
+    this.persistIfRuntimeDriven("mutation");
     for (const listener of this.listeners) {
       listener();
     }
+  }
+
+  private persistIfRuntimeDriven(kind: string): void {
+    if (!this.isRuntimeDriven || !this.athleteId) {
+      return;
+    }
+
+    persistWorkoutRuntimeMutation({
+      athleteId: this.athleteId,
+      requestId: `workout:runtime:${kind}:${this.athleteId}:${this.now().getTime()}`,
+      runtime: this._runtime,
+    });
   }
 }

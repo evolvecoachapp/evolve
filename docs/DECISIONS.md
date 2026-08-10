@@ -4650,6 +4650,49 @@ Progress Tab UI
 
 ---
 
+## ADR-143: Domain Runtime Persistence Completion (Sprint 35.4)
+
+**Status:** Accepted  
+**Date:** 2026-08-11  
+**Context:** Sprints 34.7–35.0 activated runtime experience tabs with session-local mutations documented as follow-up persistence work (ADR-136–139). Sprint 34.3 established domain JSON serialization for Identity/Runtime/Workspace/Snapshot/Timeline, but Workout/Nutrition/Recovery repository mappers remained placeholders. Phase 35 must complete persistence for supported in-session mutations without introducing a second persistence architecture or modifying Runtime Session.
+
+**Decision:**
+
+```
+ViewModel mutation
+  ↓
+persist*RuntimeMutation()
+  ↓
+Domain persistence service.build()
+  ↓
+Runtime Observer
+  ↓
+Runtime Write-Through
+  ↓
+Repository Contracts (Workout / Nutrition / Recovery / Workspace)
+  ↓
+SQLite
+  ↓
+Restart → Hydration → loadHydrated*()
+```
+
+1. Introduce `runtime/domain-persistence` with in-memory facades (`WorkoutRuntimePersistenceService`, `NutritionRuntimePersistenceService`, `RecoveryRuntimePersistenceService`) observed by Runtime Observer on successful `build()`.
+2. Activate Workout/Nutrition/Recovery repository serializers and extend write-through + hydration pipelines to persist/restore domain runtime overlays through existing repository contracts only.
+3. Persist Goal Progress milestone/completion overlay through `Workspace.goalRuntimeOverlay` and existing `UnifiedWorkspaceService.build()` write-through — no Goal repository.
+4. Wire runtime-driven experience ViewModels to call `persist*RuntimeMutation()` after supported mutations; hydrate via existing `loadHydrated*()` loaders reading restored overlays.
+5. Do not modify Runtime Session. Do not call SQLite from feature/application UI layers. Do not introduce networking or cloud sync. Do not duplicate Unified Workspace domain data already owned by workspace projections.
+
+**Alternatives considered:**
+- **Five new domain repositories** — rejected; existing Workout/Nutrition/Recovery contracts plus Workspace boundary for goals is sufficient.
+- **Direct `persistRuntime()` from ViewModels** — rejected; ADR-135 pattern requires successful service `build()` observed by Runtime Observer.
+- **Persist full nutrition/recovery dashboard DTOs** — rejected; persist only overlays represented by existing runtime models (meal toggles, hydration ml, sleep/readiness/assessment fields).
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md).
+- Supported runtime mutations survive application restart. Coach conversation, notification read overlay, and Progress Analytics read models remain session-local or in-memory by design.
+
+---
+
 ## ADR-138: Recovery Runtime Activation (Sprint 34.9)
 
 **Status:** Accepted  

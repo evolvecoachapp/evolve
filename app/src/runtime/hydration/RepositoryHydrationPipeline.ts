@@ -1,7 +1,10 @@
 import type { IdentityRepository } from "../../core/persistence/repositories/IdentityRepository";
+import type { NutritionRepository } from "../../core/persistence/repositories/NutritionRepository";
+import type { RecoveryRepository } from "../../core/persistence/repositories/RecoveryRepository";
 import type { RuntimeRepository } from "../../core/persistence/repositories/RuntimeRepository";
 import type { SnapshotRepository } from "../../core/persistence/repositories/SnapshotRepository";
 import type { TimelineRepository } from "../../core/persistence/repositories/TimelineRepository";
+import type { WorkoutRepository } from "../../core/persistence/repositories/WorkoutRepository";
 import type { WorkspaceRepository } from "../../core/persistence/repositories/WorkspaceRepository";
 import type { PersistenceRecord } from "../../core/persistence/contracts/PersistenceRecord";
 import type { AthleteIdentityService } from "../../features/athlete-identity/services/AthleteIdentityService";
@@ -9,6 +12,9 @@ import type { AthleteSnapshotService } from "../../features/athlete-snapshot/ser
 import type { CoachTimelineService } from "../../features/coach-timeline/services/CoachTimelineService";
 import type { RuntimeEnvironmentService } from "../../features/runtime-environment/services/RuntimeEnvironmentService";
 import type { UnifiedWorkspaceService } from "../../features/unified-workspace/services/UnifiedWorkspaceService";
+import type { NutritionRuntimePersistenceService } from "../domain-persistence/services/NutritionRuntimePersistenceService";
+import type { RecoveryRuntimePersistenceService } from "../domain-persistence/services/RecoveryRuntimePersistenceService";
+import type { WorkoutRuntimePersistenceService } from "../domain-persistence/services/WorkoutRuntimePersistenceService";
 import { createHydrationResult, type HydrationResult } from "./HydrationResult";
 import { createHydrationState } from "./HydrationState";
 import {
@@ -20,9 +26,12 @@ import { HYDRATION_STATUS } from "./HydrationStatus";
 import { HydrationError } from "./HydrationError";
 import {
   restoreIdentityRecords,
+  restoreNutritionRuntimeRecords,
+  restoreRecoveryRuntimeRecords,
   restoreRuntimeRecords,
   restoreSnapshotRecords,
   restoreTimelineRecords,
+  restoreWorkoutRuntimeRecords,
   restoreWorkspaceRecords,
 } from "./HydrationRestoration";
 import {
@@ -40,11 +49,17 @@ export interface RepositoryHydrationDeps {
   readonly workspaceRepository: WorkspaceRepository;
   readonly snapshotRepository: SnapshotRepository;
   readonly timelineRepository: TimelineRepository;
+  readonly workoutRepository: WorkoutRepository;
+  readonly nutritionRepository: NutritionRepository;
+  readonly recoveryRepository: RecoveryRepository;
   readonly athleteIdentityService: AthleteIdentityService;
   readonly runtimeEnvironmentService: RuntimeEnvironmentService;
   readonly unifiedWorkspaceService: UnifiedWorkspaceService;
   readonly athleteSnapshotService: AthleteSnapshotService;
   readonly coachTimelineService: CoachTimelineService;
+  readonly workoutRuntimePersistenceService: WorkoutRuntimePersistenceService;
+  readonly nutritionRuntimePersistenceService: NutritionRuntimePersistenceService;
+  readonly recoveryRuntimePersistenceService: RecoveryRuntimePersistenceService;
   readonly clock?: () => string;
 }
 
@@ -98,6 +113,15 @@ export class RepositoryHydrationPipeline {
       const timelineRecords = await resolveRepositoryList(
         options.deps.timelineRepository.list(),
       );
+      const workoutRecords = await resolveRepositoryList(
+        options.deps.workoutRepository.list(),
+      );
+      const nutritionRecords = await resolveRepositoryList(
+        options.deps.nutritionRepository.list(),
+      );
+      const recoveryRecords = await resolveRepositoryList(
+        options.deps.recoveryRepository.list(),
+      );
 
       const restoredAt = clock();
       restoreIdentityRecords(
@@ -121,6 +145,18 @@ export class RepositoryHydrationPipeline {
       restoreTimelineRecords(
         options.deps.coachTimelineService,
         timelineRecords,
+      );
+      restoreWorkoutRuntimeRecords(
+        options.deps.workoutRuntimePersistenceService,
+        workoutRecords,
+      );
+      restoreNutritionRuntimeRecords(
+        options.deps.nutritionRuntimePersistenceService,
+        nutritionRecords,
+      );
+      restoreRecoveryRuntimeRecords(
+        options.deps.recoveryRuntimePersistenceService,
+        recoveryRecords,
       );
 
       const result = createHydrationResult({

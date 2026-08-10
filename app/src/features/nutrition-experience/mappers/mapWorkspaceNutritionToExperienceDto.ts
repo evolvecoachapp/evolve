@@ -311,7 +311,14 @@ export function mapWorkspaceNutritionToExperienceDto(
   const toggledMealIds = input.toggledMealIds ?? new Set<string>();
 
   if (!nutrition.present || !nutrition.macros) {
-    return buildEmptyDashboard(day);
+    const empty = buildEmptyDashboard(day);
+    if (input.hydrationMl != null && input.hydrationMl > 0) {
+      return Object.freeze({
+        ...empty,
+        hydration: buildHydration(null, input.hydrationMl),
+      });
+    }
+    return empty;
   }
 
   const targets = nutrition.macros;

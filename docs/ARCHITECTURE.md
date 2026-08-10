@@ -710,6 +710,21 @@ ADR-141: [DECISIONS.md](./DECISIONS.md).
 
 ADR-142: [DECISIONS.md](./DECISIONS.md).
 
+### Domain Runtime Persistence Completion — Sprint 35.4 (Phase 35)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Persist in-session runtime mutations for Workout, Nutrition, Recovery, and Goal Progress through existing repository contracts and Runtime Observer write-through |
+| **Flow** | ViewModel mutation → `persist*RuntimeMutation()` → domain persistence service `build()` → Runtime Observer → Write-Through → Repository contracts → SQLite → restart → Hydration → `loadHydrated*()` restores state |
+| **Workout** | `WorkoutRuntimePersistenceService` + `WorkoutRepository` serialize Sprint 31.2 `WorkoutRuntime` experience state |
+| **Nutrition** | `NutritionRuntimePersistenceService` + `NutritionRepository` serialize per-day meal toggles and hydration overlays |
+| **Recovery** | `RecoveryRuntimePersistenceService` + `RecoveryRepository` serialize per-day sleep/readiness/assessment overlays |
+| **Goal Progress** | `GoalRuntimePersistenceState` stored on `Workspace.goalRuntimeOverlay`; persisted through existing `WorkspaceRepository` write-through (no Goal repository) |
+| **Design** | **No new persistence architecture.** Reuses Workout/Nutrition/Recovery repositories and Unified Workspace boundary for goals. No direct SQLite from feature layers. Runtime Session unchanged. Minimal Runtime Observer extension wraps domain persistence service `build()` hooks. |
+| **Validation** | `domainPersistence.integration.test.ts` covers mutation, serialization, repository save, SQLite restart, hydration, state equality, empty state, malformed payload handling, and immutability |
+
+ADR-143: [DECISIONS.md](./DECISIONS.md).
+
 ### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
 
 | Aspect | Implementation |

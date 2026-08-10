@@ -45,11 +45,23 @@ export function persistRuntime(
         workspaceRepository: adapters.workspace,
         snapshotRepository: adapters.snapshot,
         timelineRepository: adapters.timeline,
+        workoutRepository: adapters.workout,
+        nutritionRepository: adapters.nutrition,
+        recoveryRepository: adapters.recovery,
         athleteIdentityService: root.resolve("AthleteIdentityService"),
         runtimeEnvironmentService: root.resolve("RuntimeEnvironmentService"),
         unifiedWorkspaceService: root.resolve("UnifiedWorkspaceService"),
         athleteSnapshotService: root.resolve("AthleteSnapshotService"),
         coachTimelineService: root.resolve("CoachTimelineService"),
+        workoutRuntimePersistenceService: root.resolve(
+          "WorkoutRuntimePersistenceService",
+        ),
+        nutritionRuntimePersistenceService: root.resolve(
+          "NutritionRuntimePersistenceService",
+        ),
+        recoveryRuntimePersistenceService: root.resolve(
+          "RecoveryRuntimePersistenceService",
+        ),
       },
     });
   });

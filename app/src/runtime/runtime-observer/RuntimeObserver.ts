@@ -1,6 +1,9 @@
 import type { AthleteIdentityService } from "../../features/athlete-identity/services/AthleteIdentityService";
 import type { RuntimeEnvironmentService } from "../../features/runtime-environment/services/RuntimeEnvironmentService";
 import type { UnifiedWorkspaceService } from "../../features/unified-workspace/services/UnifiedWorkspaceService";
+import type { NutritionRuntimePersistenceService } from "../domain-persistence/services/NutritionRuntimePersistenceService";
+import type { RecoveryRuntimePersistenceService } from "../domain-persistence/services/RecoveryRuntimePersistenceService";
+import type { WorkoutRuntimePersistenceService } from "../domain-persistence/services/WorkoutRuntimePersistenceService";
 import type { PersistRuntimeOptions } from "../write-through/application/persistRuntime";
 import type { RuntimeWriteThroughResult } from "../write-through/RuntimeWriteThroughResult";
 import {
@@ -38,6 +41,9 @@ export interface RuntimeObserverDeps {
   readonly athleteIdentityService: AthleteIdentityService;
   readonly runtimeEnvironmentService: RuntimeEnvironmentService;
   readonly unifiedWorkspaceService: UnifiedWorkspaceService;
+  readonly workoutRuntimePersistenceService: WorkoutRuntimePersistenceService;
+  readonly nutritionRuntimePersistenceService: NutritionRuntimePersistenceService;
+  readonly recoveryRuntimePersistenceService: RecoveryRuntimePersistenceService;
   readonly persist?: (
     options?: PersistRuntimeOptions,
   ) => Promise<RuntimeWriteThroughResult>;
@@ -144,6 +150,18 @@ export class RuntimeObserver {
         ),
         wrapBuildMethod(
           options.deps.unifiedWorkspaceService,
+          onSuccessfulChange,
+        ),
+        wrapBuildMethod(
+          options.deps.workoutRuntimePersistenceService,
+          onSuccessfulChange,
+        ),
+        wrapBuildMethod(
+          options.deps.nutritionRuntimePersistenceService,
+          onSuccessfulChange,
+        ),
+        wrapBuildMethod(
+          options.deps.recoveryRuntimePersistenceService,
           onSuccessfulChange,
         ),
       ] as const;

@@ -1,4 +1,5 @@
 import { getCompositionRoot } from "../../../core/composition/createCompositionRoot";
+import { readPersistedRecoveryDayState } from "../../../runtime/domain-persistence/application/persistRecoveryRuntimeMutation";
 import { mapRecoveryDashboard } from "../mappers";
 import { mapWorkspaceRecoveryToExperienceDto } from "../mappers/mapWorkspaceRecoveryToExperienceDto";
 import {
@@ -44,14 +45,15 @@ export async function loadHydratedRecoveryExperience({
     return null;
   }
 
+  const persistedDay = readPersistedRecoveryDayState(athleteId, day.isoDate);
   const dto = mapWorkspaceRecoveryToExperienceDto({
     recovery: workspace.recovery,
     day,
-    sleepHours,
-    sleepQuality,
-    sleepLogged,
-    readinessScore,
-    assessedScore,
+    sleepHours: sleepHours ?? persistedDay?.sleepHours,
+    sleepQuality: sleepQuality ?? persistedDay?.sleepQuality,
+    sleepLogged: sleepLogged ?? persistedDay?.sleepLogged,
+    readinessScore: readinessScore ?? persistedDay?.readinessScore,
+    assessedScore: assessedScore ?? persistedDay?.assessedScore,
   });
 
   return mapRecoveryDashboard(dto);

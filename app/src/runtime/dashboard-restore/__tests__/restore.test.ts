@@ -31,6 +31,11 @@ import {
   createRecord,
 } from "../testSupport/mockRepositories";
 import {
+  createMockNutritionRepository,
+  createMockRecoveryRepository,
+  createMockWorkoutRepository,
+} from "../../write-through/testSupport/mockDomainRepositories";
+import {
   createTestRuntimeServices,
 } from "../../testSupport/runtimePersistenceFixtures";
 
@@ -117,11 +122,17 @@ async function bootstrapHydratedRuntime(options?: {
       workspaceRepository: createMockWorkspaceRepository(records.workspace),
       snapshotRepository: createMockSnapshotRepository(),
       timelineRepository: createMockTimelineRepository(),
+      workoutRepository: createMockWorkoutRepository(),
+      nutritionRepository: createMockNutritionRepository(),
+      recoveryRepository: createMockRecoveryRepository(),
       athleteIdentityService,
       runtimeEnvironmentService,
       unifiedWorkspaceService,
       athleteSnapshotService: services.athleteSnapshotService,
       coachTimelineService: services.coachTimelineService,
+      workoutRuntimePersistenceService: services.workoutRuntimePersistenceService,
+      nutritionRuntimePersistenceService: services.nutritionRuntimePersistenceService,
+      recoveryRuntimePersistenceService: services.recoveryRuntimePersistenceService,
       clock: () => FIXED_DASHBOARD_PROJECTED_AT,
     },
   });

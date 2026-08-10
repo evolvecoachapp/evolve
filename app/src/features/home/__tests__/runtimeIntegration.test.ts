@@ -36,6 +36,11 @@ import {
   createPayloadRecord,
   createRecord,
 } from "../../../runtime/dashboard-restore/testSupport/mockRepositories";
+import {
+  createMockNutritionRepository,
+  createMockRecoveryRepository,
+  createMockWorkoutRepository,
+} from "../../../runtime/write-through/testSupport/mockDomainRepositories";
 import { createTestRuntimeServices } from "../../../runtime/testSupport/runtimePersistenceFixtures";
 import { mockHomeService } from "../providers/MockHomeService";
 import { useHomeDashboard } from "../hooks/useHomeDashboard";
@@ -144,11 +149,17 @@ async function bootstrapPopulatedRuntimeRestore(): Promise<void> {
       ),
       snapshotRepository: createMockSnapshotRepository(),
       timelineRepository: createMockTimelineRepository(),
+      workoutRepository: createMockWorkoutRepository(),
+      nutritionRepository: createMockNutritionRepository(),
+      recoveryRepository: createMockRecoveryRepository(),
       athleteIdentityService: services.athleteIdentityService,
       runtimeEnvironmentService: services.runtimeEnvironmentService,
       unifiedWorkspaceService,
       athleteSnapshotService: services.athleteSnapshotService,
       coachTimelineService: services.coachTimelineService,
+      workoutRuntimePersistenceService: services.workoutRuntimePersistenceService,
+      nutritionRuntimePersistenceService: services.nutritionRuntimePersistenceService,
+      recoveryRuntimePersistenceService: services.recoveryRuntimePersistenceService,
       clock: () => FIXED_DASHBOARD_PROJECTED_AT,
     },
   });

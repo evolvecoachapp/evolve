@@ -10,6 +10,7 @@ import type { WorkspaceSnapshot } from "./WorkspaceSnapshot";
 import type { WorkspaceSummary } from "./WorkspaceSummary";
 import type { WorkspaceTimeline } from "./WorkspaceTimeline";
 import type { WorkspaceWorkout } from "./WorkspaceWorkout";
+import type { GoalRuntimePersistenceState } from "../../../runtime/domain-persistence/models/GoalRuntimePersistenceState";
 
 /**
  * Immutable Unified Athlete Workspace (Sprint 28.3).
@@ -32,4 +33,5 @@ export interface Workspace {
   readonly coach: WorkspaceCoach;
   readonly snapshot: WorkspaceSnapshot;
   readonly metadata: WorkspaceMetadata;
+  readonly goalRuntimeOverlay: GoalRuntimePersistenceState | null;
 }

@@ -34,6 +34,7 @@ import {
   NutritionExperienceError,
   type NutritionExperienceService,
 } from "../services";
+import { persistNutritionRuntimeMutation } from "../../../runtime/domain-persistence/application/persistNutritionRuntimeMutation";
 
 export interface NutritionExperienceViewModelDeps {
   readonly service?: NutritionExperienceService;
@@ -278,6 +279,7 @@ export class NutritionExperienceViewModel {
     this.toggledMealIds.set(this._day.isoDate, nextToggled);
     this._dashboard = result.dashboard;
     this._error = null;
+    this.persistRuntimeOverlay("meal-toggle");
     this.notify();
 
     if (this.athleteId) {
@@ -323,6 +325,7 @@ export class NutritionExperienceViewModel {
     });
     this._hydrationMl = this._dashboard.hydration.currentMl;
     this._error = null;
+    this.persistRuntimeOverlay("hydration");
     this.notify();
 
     if (this.athleteId) {
@@ -375,5 +378,20 @@ export class NutritionExperienceViewModel {
     for (const listener of this.listeners) {
       listener();
     }
+  }
+
+  private persistRuntimeOverlay(kind: string): void {
+    if (!this.isRuntimeDriven || !this.athleteId || !this._dashboard) {
+      return;
+    }
+
+    const toggled = this.toggledMealIds.get(this._day.isoDate) ?? new Set<string>();
+    persistNutritionRuntimeMutation({
+      athleteId: this.athleteId,
+      requestId: `nutrition:runtime:${kind}:${this.athleteId}:${this.now().getTime()}`,
+      isoDate: this._day.isoDate,
+      toggledMealIds: toggled,
+      hydrationMl: this._hydrationMl,
+    });
   }
 }
