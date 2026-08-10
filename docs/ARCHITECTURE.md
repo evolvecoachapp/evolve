@@ -480,6 +480,18 @@ Full detail: [RUNTIME_HYDRATION.md](./RUNTIME_HYDRATION.md).
 
 Full detail: [DASHBOARD_RESTORE.md](./DASHBOARD_RESTORE.md).
 
+### Runtime Write-Through Pipeline (`runtime/write-through`) — Sprint 33.4
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Persist in-memory runtime state through repository contracts when composition services hold updated snapshots |
+| **Flow** | Runtime Bootstrap (`ready`) → Athlete Identity / Runtime Environment / Unified Workspace services → `RuntimeWriteThroughPipeline` → Repository Adapters → Persistence Contracts |
+| **Application API** | `persistRuntime()`, `getWriteThroughStatus()` |
+| **Composition Root** | Registers `RuntimeWriteThroughService` via `RuntimeWriteThroughFactory` (token #61) |
+| **Design** | **Pipeline only.** No direct SQLite, no runtime mutation on failure, no Dashboard/Home/Timeline logic, no domain business logic, no retry logic |
+
+Full detail: [RUNTIME_WRITE_THROUGH.md](./RUNTIME_WRITE_THROUGH.md).
+
 ### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
 
 | Aspect | Implementation |

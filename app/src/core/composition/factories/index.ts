@@ -177,3 +177,6 @@ export type {
 
 export { DashboardRestoreFactory } from "./DashboardRestoreCompositionFactory";
 export type { DashboardRestoreFactoryDeps } from "./DashboardRestoreCompositionFactory";
+
+export { RuntimeWriteThroughFactory } from "./RuntimeWriteThroughCompositionFactory";
+export type { RuntimeWriteThroughFactoryDeps } from "./RuntimeWriteThroughCompositionFactory";

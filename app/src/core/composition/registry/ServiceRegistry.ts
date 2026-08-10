@@ -285,4 +285,8 @@ export class ServiceRegistry {
   getDashboardRestoreService(): ServiceMap["DashboardRestoreService"] {
     return this.resolve("DashboardRestoreService");
   }
+
+  getRuntimeWriteThroughService(): ServiceMap["RuntimeWriteThroughService"] {
+    return this.resolve("RuntimeWriteThroughService");
+  }
 }

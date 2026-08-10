@@ -103,6 +103,7 @@ DashboardProjectionFactory → DashboardProjector
 RuntimeBootstrapFactory → RuntimeBootstrapService
 RepositoryHydrationFactory → RepositoryHydrationService (HydrationService)
 DashboardRestoreFactory → DashboardRestoreService
+RuntimeWriteThroughFactory → RuntimeWriteThroughService
 ```
 
 Execution entry points:

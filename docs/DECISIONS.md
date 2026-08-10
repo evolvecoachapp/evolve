@@ -3950,3 +3950,40 @@ HomeDashboard → HomeDashboardViewModel
 **Consequences:**
 - Documentation: [DASHBOARD_RESTORE.md](./DASHBOARD_RESTORE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
 - Phase 33 continues with richer hydration-to-workspace mapping and automatic post-hydration orchestration in later sprints.
+
+---
+
+## ADR-124: Runtime Write-Through Pipeline (Sprint 33.4)
+
+**Status:** Accepted  
+**Date:** 2026-08-10  
+**Context:** Sprint 33.2 established Repository Hydration (repos → runtime). Phase 33 requires persisting in-memory runtime state back through repository contracts when Athlete Identity, Runtime Environment, or Unified Workspace snapshots change — without direct SQLite access (User Story 02).
+
+**Decision:**
+
+```
+Application
+  ↓
+Runtime Services
+  ↓
+RuntimeWriteThroughPipeline
+  ↓
+Repository Adapters
+  ↓
+Persistence Contracts
+```
+
+1. Introduce `runtime/write-through` module with immutable persist models and a read-only `RuntimeWriteThroughService` facade.
+2. `RuntimeWriteThroughPipeline` validates bootstrap readiness, observes runtime composition services, maps identifiers to `PersistenceRecord`, and persists via repository contract `save()` only — no SQLite imports.
+3. Application APIs (`persistRuntime`, `getWriteThroughStatus`) are the operational persist path.
+4. Repository rejection yields deterministic `repository_contract_failed` without mutating runtime service state.
+5. Composition Root registers `RuntimeWriteThroughService` via `RuntimeWriteThroughFactory` (token #61).
+
+**Alternatives considered:**
+- **Direct SQLite writes from runtime** — rejected: repositories remain the sole persistence boundary.
+- **Persist inside Repository Hydration** — rejected: violates single-responsibility; hydration is read-only from repos.
+- **Automatic service hooks on every build()** — rejected: modifies composition services; explicit pipeline entry preserves determinism.
+
+**Consequences:**
+- Documentation: [RUNTIME_WRITE_THROUGH.md](./RUNTIME_WRITE_THROUGH.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
+- Phase 33 continues with richer domain-to-record mapping and automatic post-mutation orchestration in later sprints.
