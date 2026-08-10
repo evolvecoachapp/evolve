@@ -1558,6 +1558,20 @@ Full detail: [WORKOUT_PROGRESS_INTEGRATION.md](./WORKOUT_PROGRESS_INTEGRATION.md
 
 Full detail: [NUTRITION_PROGRESS_INTEGRATION.md](./NUTRITION_PROGRESS_INTEGRATION.md). ADR-116: [DECISIONS.md](./DECISIONS.md).
 
+### Recovery Progress Integration (`integrations/recovery-progress`) — Sprint 32.3 integration
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Deterministic integration layer publishing immutable recovery progress events and updating Progress Analytics read models through contracts |
+| **Flow** | Recovery Feature → Recovery Progress Integration → Progress Analytics Contract → Progress Analytics Service → Mock Analytics Provider |
+| **Models** | `RecoveryProgressEvent`, `RecoveryProgressSnapshot`, `RecoveryMetric`, `RecoveryAnalyticsPayload`, `RecoveryProgressMetadata`, `RecoveryProgressResult` |
+| **Publisher / Subscriber** | `RecoveryProgressPublisher` publishes immutable events; `RecoveryProgressSubscriber` consumes via `ProgressAnalyticsService.applyRecoveryProgressEvent` |
+| **Application** | `publishRecoveryProgress` / `publishRecoveryAssessed` / `publishSleepLogged` / `publishReadinessUpdated` |
+| **Composition Root** | `RecoveryProgressIntegrationFactory` registers `RecoveryProgressPublisher` + `RecoveryProgressSubscriber` |
+| **Design** | **No analytics calculations. No repository changes. No persistence. No networking. No backend. No synchronization. No event sourcing. Recovery feature never imports Progress Analytics internals.** Contract-only communication |
+
+Full detail: [RECOVERY_PROGRESS_INTEGRATION.md](./RECOVERY_PROGRESS_INTEGRATION.md). ADR-117: [DECISIONS.md](./DECISIONS.md).
+
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 
 | Aspect | Implementation |

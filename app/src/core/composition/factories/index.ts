@@ -150,3 +150,6 @@ export type { WorkoutProgressIntegrationFactoryDeps } from "./WorkoutProgressInt
 
 export { NutritionProgressIntegrationFactory } from "./NutritionProgressIntegrationFactory";
 export type { NutritionProgressIntegrationFactoryDeps } from "./NutritionProgressIntegrationFactory";
+
+export { RecoveryProgressIntegrationFactory } from "./RecoveryProgressIntegrationFactory";
+export type { RecoveryProgressIntegrationFactoryDeps } from "./RecoveryProgressIntegrationFactory";

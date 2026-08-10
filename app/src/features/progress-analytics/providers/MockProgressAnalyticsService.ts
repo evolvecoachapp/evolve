@@ -15,6 +15,8 @@ import type {
   WorkoutProgressIngestResultDto,
   NutritionProgressIngestDto,
   NutritionProgressIngestResultDto,
+  RecoveryProgressIngestDto,
+  RecoveryProgressIngestResultDto,
 } from "../services";
 
 const defaultPeriod: AnalyticsPeriodDto = {
@@ -246,6 +248,7 @@ function buildDefaultData(): ProgressAnalyticsDataDto {
       readinessLabel: "Ready",
       restingHeartRate: 54,
       hrvAverage: 68,
+      entries: [],
       chart: {
         id: "chart-recovery",
         title: "Recovery Score",
@@ -506,6 +509,7 @@ function emptyData(): ProgressAnalyticsDataDto {
       readinessLabel: "Unknown",
       restingHeartRate: null,
       hrvAverage: null,
+      entries: [],
       chart: null,
       destination: null,
     },
@@ -536,6 +540,7 @@ function emptyData(): ProgressAnalyticsDataDto {
 let currentData: ProgressAnalyticsDataDto = buildDefaultData();
 const ingestedWorkoutProgressEvents: WorkoutProgressIngestDto[] = [];
 const ingestedNutritionProgressEvents: NutritionProgressIngestDto[] = [];
+const ingestedRecoveryProgressEvents: RecoveryProgressIngestDto[] = [];
 
 function applyWorkoutProgressEventToData(event: WorkoutProgressIngestDto): void {
   switch (event.eventType) {
@@ -650,12 +655,83 @@ function applyNutritionProgressEventToData(event: NutritionProgressIngestDto): v
   }
 }
 
+function applyRecoveryProgressEventToData(event: RecoveryProgressIngestDto): void {
+  switch (event.eventType) {
+    case "RecoveryAssessed": {
+      const entry = Object.freeze({
+        id: event.eventId,
+        date: event.payload.dayId,
+        title: "Recovery Assessment",
+        assessedAt: event.payload.assessedAt ?? event.occurredAt,
+        recoveryScore: event.payload.recoveryScore ?? 0,
+        readinessLabel: event.payload.readinessLabel ?? "Unknown",
+        hrvScore: event.payload.hrvScore ?? null,
+        destination: `/recovery/${event.payload.assessmentId ?? event.eventId}`,
+      });
+      currentData = Object.freeze({
+        ...currentData,
+        recoveryStatistics: Object.freeze({
+          ...currentData.recoveryStatistics,
+          entries: Object.freeze([...currentData.recoveryStatistics.entries, entry]),
+        }),
+      });
+      break;
+    }
+    case "SleepLogged": {
+      const entry = Object.freeze({
+        id: event.eventId,
+        date: event.payload.dayId,
+        title: "Sleep Logged",
+        assessedAt: event.payload.completedAt ?? event.occurredAt,
+        recoveryScore: event.payload.recoveryScore ?? 0,
+        readinessLabel: event.payload.readinessLabel ?? "Unknown",
+        hrvScore: event.payload.hrvScore ?? null,
+        destination: null,
+      });
+      currentData = Object.freeze({
+        ...currentData,
+        recoveryStatistics: Object.freeze({
+          ...currentData.recoveryStatistics,
+          entries: Object.freeze([...currentData.recoveryStatistics.entries, entry]),
+        }),
+      });
+      break;
+    }
+    case "ReadinessUpdated": {
+      const entry = Object.freeze({
+        id: event.eventId,
+        date: event.payload.dayId,
+        title: "Readiness Updated",
+        assessedAt: event.payload.completedAt ?? event.occurredAt,
+        recoveryScore: event.payload.recoveryScore ?? 0,
+        readinessLabel: event.payload.readinessLabel ?? "Unknown",
+        hrvScore: event.payload.hrvScore ?? null,
+        destination: null,
+      });
+      currentData = Object.freeze({
+        ...currentData,
+        recoveryStatistics: Object.freeze({
+          ...currentData.recoveryStatistics,
+          entries: Object.freeze([...currentData.recoveryStatistics.entries, entry]),
+        }),
+      });
+      break;
+    }
+    default:
+      break;
+  }
+}
+
 export function getIngestedWorkoutProgressEvents(): readonly WorkoutProgressIngestDto[] {
   return Object.freeze([...ingestedWorkoutProgressEvents]);
 }
 
 export function getIngestedNutritionProgressEvents(): readonly NutritionProgressIngestDto[] {
   return Object.freeze([...ingestedNutritionProgressEvents]);
+}
+
+export function getIngestedRecoveryProgressEvents(): readonly RecoveryProgressIngestDto[] {
+  return Object.freeze([...ingestedRecoveryProgressEvents]);
 }
 
 export const mockProgressAnalyticsService: ProgressAnalyticsService = {
@@ -749,6 +825,26 @@ export const mockProgressAnalyticsService: ProgressAnalyticsService = {
       appliedAt: frozenEvent.metadata.publishedAt,
     });
   },
+
+  async applyRecoveryProgressEvent(
+    event: RecoveryProgressIngestDto,
+  ): Promise<RecoveryProgressIngestResultDto> {
+    const frozenEvent = Object.freeze({
+      ...event,
+      metadata: Object.freeze({ ...event.metadata }),
+      payload: Object.freeze({
+        ...event.payload,
+        metrics: Object.freeze([...event.payload.metrics]),
+      }),
+    });
+    ingestedRecoveryProgressEvents.push(frozenEvent);
+    applyRecoveryProgressEventToData(frozenEvent);
+    return Object.freeze({
+      eventId: frozenEvent.eventId,
+      accepted: true,
+      appliedAt: frozenEvent.metadata.publishedAt,
+    });
+  },
 };
 
 export const emptyMockProgressAnalyticsService: ProgressAnalyticsService = {
@@ -804,10 +900,19 @@ export const emptyMockProgressAnalyticsService: ProgressAnalyticsService = {
       appliedAt: event.metadata.publishedAt,
     });
   },
+
+  async applyRecoveryProgressEvent(event: RecoveryProgressIngestDto) {
+    return Object.freeze({
+      eventId: event.eventId,
+      accepted: true,
+      appliedAt: event.metadata.publishedAt,
+    });
+  },
 };
 
 export function resetMockProgressAnalyticsData(): void {
   currentData = buildDefaultData();
   ingestedWorkoutProgressEvents.length = 0;
   ingestedNutritionProgressEvents.length = 0;
+  ingestedRecoveryProgressEvents.length = 0;
 }

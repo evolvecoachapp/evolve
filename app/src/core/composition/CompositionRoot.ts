@@ -45,6 +45,7 @@ import {
   LoggerFactory,
   WorkoutProgressIntegrationFactory,
   NutritionProgressIntegrationFactory,
+  RecoveryProgressIntegrationFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -711,6 +712,28 @@ export class CompositionRoot {
       { lifecycle },
     );
 
+    let recoveryProgressIntegration:
+      | ReturnType<typeof RecoveryProgressIntegrationFactory.create>
+      | undefined;
+
+    container.register(
+      "RecoveryProgressPublisher",
+      () => {
+        recoveryProgressIntegration ??= RecoveryProgressIntegrationFactory.create();
+        return recoveryProgressIntegration.publisher;
+      },
+      { lifecycle },
+    );
+
+    container.register(
+      "RecoveryProgressSubscriber",
+      () => {
+        recoveryProgressIntegration ??= RecoveryProgressIntegrationFactory.create();
+        return recoveryProgressIntegration.subscriber;
+      },
+      { lifecycle },
+    );
+
     container.validate();
     container.freeze();
 
@@ -928,6 +951,14 @@ export class CompositionRoot {
 
   getNutritionProgressSubscriber(): ServiceMap["NutritionProgressSubscriber"] {
     return this.registry.resolve("NutritionProgressSubscriber");
+  }
+
+  getRecoveryProgressPublisher(): ServiceMap["RecoveryProgressPublisher"] {
+    return this.registry.resolve("RecoveryProgressPublisher");
+  }
+
+  getRecoveryProgressSubscriber(): ServiceMap["RecoveryProgressSubscriber"] {
+    return this.registry.resolve("RecoveryProgressSubscriber");
   }
 
   getDecisionEngineService(): ServiceMap["DecisionEngineService"] {

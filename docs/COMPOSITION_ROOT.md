@@ -96,6 +96,7 @@ BackendFactory → BackendRegistry / MockBackendProvider / BackendFactory
 LoggerFactory → LoggerRegistry / MockLogger / LoggerFactory
 WorkoutProgressIntegrationFactory → WorkoutProgressPublisher / ProgressAnalyticsSubscriber
 NutritionProgressIntegrationFactory → NutritionProgressPublisher / NutritionProgressSubscriber
+RecoveryProgressIntegrationFactory → RecoveryProgressPublisher / RecoveryProgressSubscriber
 ```
 
 Execution entry points:

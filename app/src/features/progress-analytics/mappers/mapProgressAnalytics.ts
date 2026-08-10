@@ -133,6 +133,20 @@ export function mapRecoveryStatistics(dto: RecoveryStatisticsDto): RecoveryStati
     readinessLabel: dto.readinessLabel,
     restingHeartRate: dto.restingHeartRate ?? null,
     hrvAverage: dto.hrvAverage ?? null,
+    entries: Object.freeze(
+      (dto.entries ?? []).map((entry) =>
+        Object.freeze({
+          id: entry.id,
+          date: entry.date,
+          title: entry.title,
+          assessedAt: entry.assessedAt,
+          recoveryScore: entry.recoveryScore,
+          readinessLabel: entry.readinessLabel,
+          hrvScore: entry.hrvScore ?? null,
+          destination: entry.destination ?? null,
+        }),
+      ),
+    ),
     chart: mapChart(dto.chart),
     destination: dto.destination ?? null,
   });

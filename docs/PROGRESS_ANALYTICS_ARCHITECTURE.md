@@ -137,6 +137,7 @@ Represent only — no date-range engines.
 - `getAnalyticsSnapshot(period?)` → snapshot
 - `applyWorkoutProgressEvent(event)` → ingest workout progress integration events (Sprint 32.1)
 - `applyNutritionProgressEvent(event)` → ingest nutrition progress integration events (Sprint 32.2)
+- `applyRecoveryProgressEvent(event)` → ingest recovery progress integration events (Sprint 32.3)
 
 Provider is selected via `EXPO_PUBLIC_PROGRESS_ANALYTICS_PROVIDER` (mock | backend | local).
 
@@ -218,7 +219,7 @@ Navigation destinations are prepared on models (`destination` fields) — no cha
 
 1. **Workout Engine** — feed workout history / volume / strength *(Sprint 32.1 integration layer wires immutable events via `integrations/workout-progress`; no calculations)*
 2. **Nutrition Engine** — feed nutrition statistics *(Sprint 32.2 integration layer wires immutable events via `integrations/nutrition-progress`; no calculations)*
-3. **Recovery Engine** — feed recovery / sleep statistics
+3. **Recovery Engine** — feed recovery statistics *(Sprint 32.3 integration layer wires immutable events via `integrations/recovery-progress`; no calculations)*
 4. **Wearables** — body composition / HRV / sleep providers
 5. **Backend** — remote analytics aggregation
 6. **AI Coach** — consume `AnalyticsSnapshot` for coaching context

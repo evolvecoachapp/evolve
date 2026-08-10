@@ -3654,3 +3654,50 @@ Mock Analytics Provider
 - Documentation: [NUTRITION_PROGRESS_INTEGRATION.md](./NUTRITION_PROGRESS_INTEGRATION.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
 - Progress Analytics providers implement `applyNutritionProgressEvent` on the public contract; Mock provider appends immutable nutrition read-model entries without calculations.
 - Future real analytics engines can replace Mock provider without changing Nutrition or integration application APIs.
+
+---
+
+## ADR-117: Recovery → Progress Analytics Integration (Sprint 32.3)
+
+**Status:** Accepted  
+**Date:** 2026-08-10  
+**Context:** Sprint 32.1 and 32.2 established deterministic integration patterns for Workout and Nutrition domains feeding Progress Analytics read models through contract-only publisher/subscriber wiring. Recovery domain assessments, sleep, and readiness updates must follow the same pattern without coupling Recovery features to Progress Analytics internals.
+
+**Decision:**
+
+```
+Recovery Feature
+        │
+        ▼
+Recovery Progress Integration
+        │
+        ▼
+Progress Analytics Contract
+        │
+        ▼
+Progress Analytics Service
+        │
+        ▼
+Mock Analytics Provider
+```
+
+1. Immutable integration models (`RecoveryProgressEvent`, `RecoveryProgressSnapshot`, `RecoveryMetric`, `RecoveryAnalyticsPayload`, `RecoveryProgressMetadata`, `RecoveryProgressResult`).
+2. Supported events represent only (`RecoveryDayStarted`, `RecoveryAssessed`, `SleepLogged`, `StressUpdated`, `ReadinessUpdated`, `HRVLogged`, `FatigueUpdated`, `RecoveryGoalAchieved`).
+3. `RecoveryProgressPublisher` publishes immutable events only — no analytics calculations.
+4. `RecoveryProgressSubscriber` consumes events through `ProgressAnalyticsService.applyRecoveryProgressEvent` — no direct dependency on Progress Analytics internals.
+5. Mappers convert Recovery domain models → `RecoveryAnalyticsPayload` → Progress Analytics contract DTO.
+6. Application APIs (`publishRecoveryProgress`, `publishRecoveryAssessed`, `publishSleepLogged`, `publishReadinessUpdated`) are the operational integration path.
+7. Validation rejects missing event, duplicate event id, invalid payload, missing metadata, and unsupported event type.
+8. Composition Root registers `RecoveryProgressPublisher` and `RecoveryProgressSubscriber` via `RecoveryProgressIntegrationFactory` using contracts only.
+9. Recovery feature must never import Progress Analytics internals.
+
+**Alternatives considered:**
+- **Import Progress Analytics directly from Recovery feature** — rejected: violates bounded context separation.
+- **Calculate analytics inside integration layer** — rejected: this sprint wires events only; analytics engines remain future work.
+- **Persist integration events now** — rejected: no persistence in this sprint.
+- **Use Domain Event bus as integration transport** — rejected: integration layer is separate from Sprint 18.2 domain events substrate.
+
+**Consequences:**
+- Documentation: [RECOVERY_PROGRESS_INTEGRATION.md](./RECOVERY_PROGRESS_INTEGRATION.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Progress Analytics providers implement `applyRecoveryProgressEvent` on the public contract; Mock provider appends immutable recovery read-model entries without calculations.
+- Future real analytics engines can replace Mock provider without changing Recovery or integration application APIs.

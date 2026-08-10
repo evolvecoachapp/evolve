@@ -149,12 +149,24 @@ export interface NutritionStatisticsDto {
   readonly destination?: string | null;
 }
 
+export interface RecoveryStatisticsEntryDto {
+  readonly id: string;
+  readonly date: string;
+  readonly title: string;
+  readonly assessedAt: string;
+  readonly recoveryScore: number;
+  readonly readinessLabel: string;
+  readonly hrvScore: number | null;
+  readonly destination?: string | null;
+}
+
 export interface RecoveryStatisticsDto {
   readonly averageScore: number;
   readonly trend: "improving" | "stable" | "declining";
   readonly readinessLabel: string;
   readonly restingHeartRate?: number | null;
   readonly hrvAverage?: number | null;
+  readonly entries: readonly RecoveryStatisticsEntryDto[];
   readonly chart?: ProgressChartDto | null;
   readonly destination?: string | null;
 }
@@ -362,6 +374,66 @@ export interface NutritionProgressIngestResultDto {
   readonly appliedAt: string;
 }
 
+export type RecoveryProgressIngestEventType =
+  | "RecoveryDayStarted"
+  | "RecoveryAssessed"
+  | "SleepLogged"
+  | "StressUpdated"
+  | "ReadinessUpdated"
+  | "HRVLogged"
+  | "FatigueUpdated"
+  | "RecoveryGoalAchieved";
+
+export interface RecoveryProgressIngestMetricDto {
+  readonly key: string;
+  readonly label: string;
+  readonly value: number;
+  readonly unit: string;
+}
+
+export interface RecoveryProgressIngestMetadataDto {
+  readonly source: "recovery";
+  readonly correlationId: string;
+  readonly dayId: string;
+  readonly assessmentId: string | null;
+  readonly athleteId: string | null;
+  readonly publishedAt: string;
+}
+
+export interface RecoveryProgressIngestPayloadDto {
+  readonly dayId: string;
+  readonly assessmentId: string | null;
+  readonly recoveryScore: number | null;
+  readonly readinessScore: number | null;
+  readonly readinessLabel: string | null;
+  readonly fatigueLevel: number | null;
+  readonly fatigueLabel: string | null;
+  readonly sleepHours: number | null;
+  readonly sleepQuality: number | null;
+  readonly stressLevel: number | null;
+  readonly stressLabel: string | null;
+  readonly hrvScore: number | null;
+  readonly restingHeartRate: number | null;
+  readonly trainingLoadScore: number | null;
+  readonly assessedAt: string | null;
+  readonly completedAt: string | null;
+  readonly metrics: readonly RecoveryProgressIngestMetricDto[];
+}
+
+export interface RecoveryProgressIngestDto {
+  readonly eventId: string;
+  readonly eventType: RecoveryProgressIngestEventType;
+  readonly occurredAt: string;
+  readonly metadata: RecoveryProgressIngestMetadataDto;
+  readonly payload: RecoveryProgressIngestPayloadDto;
+}
+
+export interface RecoveryProgressIngestResultDto {
+  readonly eventId: string;
+  readonly accepted: boolean;
+  readonly appliedAt: string;
+}
+
 export interface ProgressAnalyticsService {
   readonly providerId: ProgressAnalyticsProviderId;
   getAnalytics(filter?: AnalyticsFilterDto): Promise<ProgressAnalyticsDataDto>;
@@ -379,6 +451,9 @@ export interface ProgressAnalyticsService {
   applyNutritionProgressEvent(
     event: NutritionProgressIngestDto,
   ): Promise<NutritionProgressIngestResultDto>;
+  applyRecoveryProgressEvent(
+    event: RecoveryProgressIngestDto,
+  ): Promise<RecoveryProgressIngestResultDto>;
 }
 
 export class ProgressAnalyticsError extends Error {

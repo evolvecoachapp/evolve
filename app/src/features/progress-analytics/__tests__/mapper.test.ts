@@ -115,6 +115,7 @@ describe("progress-analytics mappers", () => {
         averageScore: 0,
         trend: "stable",
         readinessLabel: "Unknown",
+        entries: [],
       },
       sleepStatistics: { averageHours: 0, consistencyPercent: 0 },
       performanceTrends: [],

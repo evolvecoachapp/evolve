@@ -36,4 +36,7 @@ export const backendProgressAnalyticsService: ProgressAnalyticsService = {
   async applyNutritionProgressEvent() {
     throw new ProgressAnalyticsError("Backend progress analytics provider is not configured.", "backend");
   },
+  async applyRecoveryProgressEvent() {
+    throw new ProgressAnalyticsError("Backend progress analytics provider is not configured.", "backend");
+  },
 };
