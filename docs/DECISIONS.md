@@ -4411,6 +4411,45 @@ SQLite
 
 ---
 
+## ADR-136: Workout Runtime Activation (Sprint 34.7)
+
+**Status:** Accepted  
+**Date:** 2026-08-10  
+**Context:** Sprint 31.2 shipped the Workout Runtime Experience UI with Mock WorkoutRuntimeExperienceService as the default production provider. Runtime Session, Repository Hydration, Unified Workspace, and Workout Assembly were already composed in the application layer — the Workout tab still loaded mock seed data on every authenticated startup.
+
+**Decision:**
+
+```
+Runtime Session
+  ↓
+Repository Hydration
+  ↓
+UnifiedWorkspaceService (+ WorkoutAssemblyService cache)
+  ↓
+loadHydratedWorkoutRuntime()
+  ↓
+WorkoutRuntimeViewModel.applyHydratedWorkout()
+  ↓
+Workout Screen
+```
+
+1. Wire `useWorkoutRuntime` to wait for Runtime Session READY and load via `loadHydratedWorkoutRuntime({ athleteId })` instead of `WorkoutRuntimeExperienceService.getRuntime()`.
+2. Project hydrated `WorkspaceWorkout` into the Sprint 31.2 experience read model; resolve exercises from cached `WorkoutAssemblyService` output when available.
+3. Retain local presentation mutations (set completion, navigation, rest timer) through existing Sprint 31.2 application APIs — no new persistence path for in-session state.
+4. Publish `WorkoutCompleted` through existing Sprint 32.1 integration on runtime-driven `finishWorkout` only (natural completion event).
+5. Do not modify Runtime Session, Runtime Observer, Runtime Bootstrap, repository contracts, SQLite infrastructure, or Dashboard Projection models. No new factories or providers. No networking.
+
+**Alternatives considered:**
+- **New RuntimeWorkoutExperienceService provider** — rejected; violates sprint constraint of no new providers; hook-level bridge from existing Unified Workspace + Workout Assembly is sufficient (mirrors ADR-133/134 Home/Profile pattern).
+- **Direct WorkoutRepository reads from Workout UI** — rejected; workout SQLite mapper remains placeholder; workspace hydration is the supported read path.
+- **Force progress event publication on every screen action** — rejected; integration wired only at finish completion where a natural domain event exists.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Workout tab is driven by hydrated workspace output in production. Mock WorkoutRuntimeExperienceService remains available for isolated feature tests and preview injection only. In-session workout state is not yet persisted through Runtime Observer (follow-up when Workout domain serialization is complete).
+
+---
+
 ## ADR-132: Domain Persistence Serialization (Sprint 34.3)
 
 **Status:** Accepted  

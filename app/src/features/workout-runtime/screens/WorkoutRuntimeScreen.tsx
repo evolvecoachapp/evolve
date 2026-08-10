@@ -2,6 +2,7 @@ import { View } from "react-native";
 import { RefreshControl } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "../../../auth/useAuth";
 import { GradientBackground } from "../../../components/GradientBackground";
 import { TabScreenContainer } from "../../../components/TabScreenContainer";
 import { useTheme } from "../../../theme/ThemeContext";
@@ -41,16 +42,18 @@ export interface WorkoutRuntimeScreenProps {
 
 /**
  * Operational Workout Runtime screen — composition only.
- * No business logic; data via ViewModel → Application → ExperienceService.
+ * Production data flows from hydrated Unified Workspace via applyHydratedWorkout().
+ * WorkoutRuntimeExperienceService is test/preview-only when injected via the service prop.
  */
 export function WorkoutRuntimeScreen({
   service,
 }: WorkoutRuntimeScreenProps = {}) {
   const router = useRouter();
+  const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
 
-  const workout = useWorkoutRuntime({ service });
+  const workout = useWorkoutRuntime({ service, athleteId: user?.id });
   const navigation = useWorkoutNavigation({ viewModel: workout.viewModel });
   const rest = useRestTimer({ viewModel: workout.viewModel });
   const progress = useWorkoutProgress({ runtime: workout.runtime });

@@ -44,4 +44,8 @@ export class WorkoutAssemblyService {
   async loadCached(requestId: string): Promise<WorkoutAssemblyResult | null> {
     return this.repository.load(requestId);
   }
+
+  async listCachedResults(): Promise<readonly WorkoutAssemblyResult[]> {
+    return this.repository.list();
+  }
 }

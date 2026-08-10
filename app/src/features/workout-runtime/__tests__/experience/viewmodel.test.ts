@@ -6,6 +6,7 @@ import { WorkoutTimerStatuses } from "../../models/experience/WorkoutTimer";
 import type { WorkoutRuntimeDto } from "../../types/workoutRuntimeDto";
 import type { WorkoutRuntimeExperienceService } from "../../types/workoutRuntimeService";
 import { WorkoutRuntimeExperienceError } from "../../types/workoutRuntimeService";
+import { mockWorkoutRuntimeService } from "../../providers/MockWorkoutRuntimeService";
 
 function createService(options?: {
   dto?: WorkoutRuntimeDto;
@@ -139,5 +140,16 @@ describe("WorkoutRuntimeViewModel", () => {
     await viewModel.loadWorkout();
     expect(viewModel.isEmpty).toBe(true);
     expect(viewModel.runtime?.state.status).toBe(WorkoutRuntimeStatuses.EMPTY);
+  });
+
+  it("does not load from provider when runtime-driven", async () => {
+    const viewModel = new WorkoutRuntimeViewModel({ athleteId: "athlete:1" });
+    const getRuntimeSpy = jest.spyOn(mockWorkoutRuntimeService, "getRuntime");
+
+    await viewModel.loadWorkout();
+    await viewModel.refresh();
+
+    expect(getRuntimeSpy).not.toHaveBeenCalled();
+    expect(viewModel.isRuntimeDriven).toBe(true);
   });
 });

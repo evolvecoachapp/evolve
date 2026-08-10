@@ -7,32 +7,50 @@ import {
   workoutRuntimeExperienceService,
   type WorkoutRuntimeExperienceService,
 } from "../services/experience";
+import { publishWorkoutRuntimeCompletion } from "./publishWorkoutRuntimeCompletion";
 
 export interface FinishWorkoutOptions {
   readonly service?: WorkoutRuntimeExperienceService;
   readonly now?: Date;
+  readonly athleteId?: string;
+  readonly programName?: string | null;
+  readonly publishProgress?: boolean;
 }
 
 /** Finishes the active workout and notifies the experience provider. */
 export async function finishWorkout(
   runtime: WorkoutRuntime,
   {
-    service = workoutRuntimeExperienceService,
+    service,
     now = new Date(),
+    athleteId,
+    programName = null,
+    publishProgress = false,
   }: FinishWorkoutOptions = {},
 ): Promise<WorkoutRuntime> {
-  await service.finishRuntime({
-    runtimeId: runtime.id,
-    sessionNotes: runtime.notes.sessionNotes,
-  });
+  if (service) {
+    await service.finishRuntime({
+      runtimeId: runtime.id,
+      sessionNotes: runtime.notes.sessionNotes,
+    });
+  }
 
-  return rebuildWorkoutRuntime(runtime, {
+  const completedAt = now.toISOString();
+  const completed = rebuildWorkoutRuntime(runtime, {
     timer: createIdleWorkoutTimer(),
-    notes: createWorkoutNotes(
-      runtime.notes.sessionNotes,
-      now.toISOString(),
-    ),
-    finishedAt: now.toISOString(),
+    notes: createWorkoutNotes(runtime.notes.sessionNotes, completedAt),
+    finishedAt: completedAt,
     status: WorkoutRuntimeStatuses.COMPLETED,
   });
+
+  if (publishProgress && athleteId) {
+    await publishWorkoutRuntimeCompletion({
+      runtime: completed,
+      athleteId,
+      programName,
+      completedAt,
+    });
+  }
+
+  return completed;
 }

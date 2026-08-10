@@ -603,6 +603,22 @@ ADR-134: [DECISIONS.md](./DECISIONS.md).
 
 ADR-135: [DECISIONS.md](./DECISIONS.md).
 
+### Workout Runtime Activation — Sprint 34.7 (Phase 34)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Drive the Workout tab from hydrated Unified Workspace and cached Workout Assembly output instead of Mock WorkoutRuntimeExperienceService loading |
+| **Flow** | Runtime Session → Repository Hydration → UnifiedWorkspaceService (+ WorkoutAssemblyService cache) → `loadHydratedWorkoutRuntime()` → `WorkoutRuntimeViewModel.applyHydratedWorkout()` → Workout Screen |
+| **Production path** | `useWorkoutRuntime` waits for `RuntimeSessionProvider` READY, loads via `loadHydratedWorkoutRuntime({ athleteId })`, applies via ViewModel — no `WorkoutRuntimeExperienceService` fetch |
+| **Refresh** | Pull-to-refresh re-loads hydrated workspace output (no provider mock reload) |
+| **Completion** | Runtime-driven `finishWorkout` publishes `WorkoutCompleted` through existing Sprint 32.1 `WorkoutProgressPublisher` on natural session completion |
+| **Mutations** | Set/exercise/navigation/rest-timer mutations remain local presentation orchestration (Sprint 31.2 application APIs); no new persistence path |
+| **Test/preview path** | Explicit `service` injection on `WorkoutRuntimeScreen` / `useWorkoutRuntime` retains WorkoutRuntimeExperienceService for isolated tests and previews |
+| **Design** | **Application orchestration only.** Uses existing Unified Workspace, Workout Assembly, and Workout Progress integration contracts. No direct SQLite/repository access from Workout UI. No new persistence infrastructure. |
+| **Validation** | Integration tests cover populated/empty runtime startup, hydrated workout rendering, restart refresh, finish → progress integration regression, ViewModel integration, and no WorkoutRuntimeExperienceService usage in production path |
+
+ADR-136: [DECISIONS.md](./DECISIONS.md).
+
 ### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
 
 | Aspect | Implementation |

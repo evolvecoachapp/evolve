@@ -106,6 +106,14 @@ export {
   type FinishWorkoutOptions,
 } from "./FinishWorkout";
 export {
+  loadHydratedWorkoutRuntime,
+  type LoadHydratedWorkoutRuntimeOptions,
+} from "./loadHydratedWorkoutRuntime";
+export {
+  publishWorkoutRuntimeCompletion,
+  type PublishWorkoutRuntimeCompletionOptions,
+} from "./publishWorkoutRuntimeCompletion";
+export {
   startRestTimer,
   pauseRestTimer,
   resumeRestTimer,

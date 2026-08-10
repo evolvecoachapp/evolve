@@ -1,4 +1,6 @@
 import { renderHook, act, waitFor } from "@testing-library/react-native";
+import { RUNTIME_SESSION_STATUS } from "../../../../runtime/session/RuntimeSessionStatus";
+import { useRuntimeSession } from "../../../../runtime/session/RuntimeSessionContext";
 import {
   useWorkoutNavigation,
   useWorkoutProgress,
@@ -6,6 +8,20 @@ import {
 } from "../../hooks";
 import { mockWorkoutRuntimeData } from "../../mocks/workoutRuntimeData";
 import type { WorkoutRuntimeExperienceService } from "../../types/workoutRuntimeService";
+
+jest.mock("../../../../runtime/session/RuntimeSessionContext", () => ({
+  useRuntimeSession: jest.fn(),
+}));
+
+const mockedUseRuntimeSession = useRuntimeSession as jest.Mock;
+
+beforeEach(() => {
+  mockedUseRuntimeSession.mockReturnValue({
+    isStarting: false,
+    status: RUNTIME_SESSION_STATUS.ready,
+    retrySession: jest.fn(),
+  });
+});
 
 function createService(): WorkoutRuntimeExperienceService {
   return {
