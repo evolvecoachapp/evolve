@@ -3,7 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider } from "../src/auth/AuthContext";
-import { RuntimeBootstrapProvider } from "../src/runtime/bootstrap/RuntimeBootstrapContext";
+import { RuntimeSessionProvider } from "../src/runtime/session/RuntimeSessionContext";
 import { ThemeProvider, useStatusBarStyle } from "../src/theme/ThemeContext";
 import { useEffect } from "react";
 import { initializeEventSystem } from "../src/features/events/bootstrap";
@@ -27,10 +27,10 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider>
         <AuthProvider>
-          <RuntimeBootstrapProvider>
+          <RuntimeSessionProvider>
             <RootStatusBar />
             <Stack screenOptions={{ headerShown: false }} />
-          </RuntimeBootstrapProvider>
+          </RuntimeSessionProvider>
         </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>

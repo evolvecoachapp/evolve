@@ -4024,4 +4024,43 @@ Home
 
 **Consequences:**
 - Documentation: [RUNTIME_SESSION.md](./RUNTIME_SESSION.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
-- Phase 33 continues with app launch wiring to `startRuntimeSession()` and automatic post-mutation orchestration in later sprints.
+- Phase 33 continues with automatic post-mutation orchestration and richer session recovery in later sprints.
+
+---
+
+## ADR-126: Runtime Startup Integration (Sprint 33.6)
+
+**Status:** Accepted  
+**Date:** 2026-08-10  
+**Context:** Sprint 33.5 established `RuntimeSessionOrchestrator` and `startRuntimeSession()` as the operational startup path, but app launch still invoked `bootstrapRuntime()` directly through `RuntimeBootstrapProvider`. This duplicated orchestration and left hydration and dashboard restore unwired in production.
+
+**Decision:**
+
+```
+Authenticated User
+  ↓
+RuntimeSessionProvider
+  ↓
+startRuntimeSession()
+  ↓
+RuntimeSessionOrchestrator
+  ├── Runtime Bootstrap
+  ├── Repository Hydration
+  └── Dashboard Restore
+  ↓
+Home Dashboard
+```
+
+1. Replace `RuntimeBootstrapProvider` with `RuntimeSessionProvider` in `app/_layout.tsx`.
+2. Authenticated route guards wait for runtime session completion (`isStarting`) — not bootstrap-only.
+3. `RuntimeSessionProvider` delegates exclusively to `startRuntimeSession()`; no direct `bootstrapRuntime()` calls from the UI layer.
+4. Remove `RuntimeBootstrapProvider` from app launch to eliminate duplicated orchestration.
+5. Unauthenticated users skip runtime session entirely.
+
+**Alternatives considered:**
+- **Keep both providers** — rejected: duplicates orchestration and splits startup state across two gates.
+- **Chain hydrate/restore inside RuntimeBootstrapProvider** — rejected per ADR-125; bootstrap must remain single-responsibility.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- User Story 01 complete. Phase 33 continues with automatic post-mutation write-through orchestration in later sprints.

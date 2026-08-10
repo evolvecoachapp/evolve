@@ -1,7 +1,7 @@
 import { Redirect, Stack } from "expo-router";
 import { LoadingSpinner } from "../../src/components/LoadingSpinner";
 import { useAuth } from "../../src/auth/useAuth";
-import { useRuntimeBootstrap } from "../../src/runtime/bootstrap/RuntimeBootstrapContext";
+import { useRuntimeSession } from "../../src/runtime/session/RuntimeSessionContext";
 import { useTheme } from "../../src/theme/ThemeContext";
 
 /**
@@ -11,14 +11,14 @@ import { useTheme } from "../../src/theme/ThemeContext";
  */
 export default function AppLayout() {
   const { isAuthenticated, isBootstrapping: isAuthBootstrapping } = useAuth();
-  const { isBootstrapping: isRuntimeBootstrapping } = useRuntimeBootstrap();
+  const { isStarting: isRuntimeStarting } = useRuntimeSession();
   const { colors } = useTheme();
 
   if (!isAuthBootstrapping && !isAuthenticated) {
     return <Redirect href="/(onboarding)/welcome" />;
   }
 
-  if (isAuthBootstrapping || isRuntimeBootstrapping) {
+  if (isAuthBootstrapping || isRuntimeStarting) {
     return <LoadingSpinner color={colors.ink} />;
   }
 

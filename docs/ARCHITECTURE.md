@@ -450,7 +450,7 @@ Full detail: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Consolidation: [ARCHI
 | **Purpose** | Deterministic application runtime bootstrap before authenticated content |
 | **Flow** | App Launch → Auth → `RuntimeBootstrap` → `CompositionRoot.create()` → `ServiceRegistry.assertIntegrity()` → frozen `BootstrapState` → authenticated navigation |
 | **Application API** | `bootstrapRuntime()`, `getBootstrapStatus()` |
-| **Provider** | `RuntimeBootstrapProvider` gates authenticated routes (mirrors Auth `isBootstrapping`) |
+| **Provider** | `RuntimeBootstrapProvider` gates authenticated routes (mirrors Auth `isBootstrapping`) — **deprecated for app launch; use Runtime Session (Sprint 33.6)** |
 | **Composition Root** | Registers `RuntimeBootstrapService` via `RuntimeBootstrapFactory` (token #58) |
 | **Design** | **Bootstrap only.** No persistence, SQLite reads, repository hydration, networking, or business logic |
 
@@ -492,13 +492,14 @@ Full detail: [DASHBOARD_RESTORE.md](./DASHBOARD_RESTORE.md).
 
 Full detail: [RUNTIME_WRITE_THROUGH.md](./RUNTIME_WRITE_THROUGH.md).
 
-### Runtime Session Orchestrator (`runtime/session`) — Sprint 33.5
+### Runtime Session Orchestrator (`runtime/session`) — Sprint 33.5 / 33.6
 
 | Aspect | Implementation |
 |--------|----------------|
 | **Purpose** | Single orchestration entry point for the complete runtime startup lifecycle |
-| **Flow** | Application Startup → `RuntimeSessionOrchestrator` → Bootstrap → Hydration → Dashboard Restore → `RuntimeSessionResult` → Home |
+| **Flow** | Authenticated App Launch → Auth → `RuntimeSessionProvider` → `startRuntimeSession()` → `RuntimeSessionOrchestrator` → Bootstrap → Hydration → Dashboard Restore → `RuntimeSessionResult` → Home |
 | **Application API** | `startRuntimeSession()`, `getRuntimeSessionStatus()` |
+| **Provider** | `RuntimeSessionProvider` gates authenticated routes (mirrors Auth `isBootstrapping`) |
 | **Composition Root** | Registers `RuntimeSessionService` via `RuntimeSessionFactory` (token #62) |
 | **Design** | **Orchestration only.** No business logic, no SQLite, no repository logic, no persistence, no networking, no retries |
 

@@ -1,7 +1,7 @@
 import { Redirect } from "expo-router";
 import { BootstrapSkeleton } from "../src/components/Skeleton";
 import { useAuth } from "../src/auth/useAuth";
-import { useRuntimeBootstrap } from "../src/runtime/bootstrap/RuntimeBootstrapContext";
+import { useRuntimeSession } from "../src/runtime/session/RuntimeSessionContext";
 
 /**
  * Entry route: shows a splash/loading indicator while `AuthProvider` checks
@@ -10,9 +10,9 @@ import { useRuntimeBootstrap } from "../src/runtime/bootstrap/RuntimeBootstrapCo
  */
 export default function Index() {
   const { isBootstrapping: isAuthBootstrapping, isAuthenticated } = useAuth();
-  const { isBootstrapping: isRuntimeBootstrapping } = useRuntimeBootstrap();
+  const { isStarting: isRuntimeStarting } = useRuntimeSession();
 
-  if (isAuthBootstrapping || (isAuthenticated && isRuntimeBootstrapping)) {
+  if (isAuthBootstrapping || (isAuthenticated && isRuntimeStarting)) {
     return <BootstrapSkeleton />;
   }
 
