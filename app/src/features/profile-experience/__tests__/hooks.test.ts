@@ -1,4 +1,6 @@
 import { act, renderHook, waitFor } from "@testing-library/react-native";
+import { RUNTIME_SESSION_STATUS } from "../../../runtime/session/RuntimeSessionStatus";
+import { useRuntimeSession } from "../../../runtime/session/RuntimeSessionContext";
 import {
   emptyMockProfileExperienceService,
   mockProfileExperienceService,
@@ -12,7 +14,20 @@ import {
 } from "../hooks";
 import { ProfileExperienceViewModel } from "../viewmodels";
 
+jest.mock("../../../runtime/session/RuntimeSessionContext", () => ({
+  useRuntimeSession: jest.fn(),
+}));
+
+const mockedUseRuntimeSession = useRuntimeSession as jest.Mock;
+
 describe("profile-experience hooks", () => {
+  beforeEach(() => {
+    mockedUseRuntimeSession.mockReturnValue({
+      isStarting: false,
+      status: RUNTIME_SESSION_STATUS.ready,
+      retrySession: jest.fn(),
+    });
+  });
   it("useProfile loads the profile", async () => {
     const { result } = renderHook(() => useProfile({ service: mockProfileExperienceService }));
     await waitFor(() => expect(result.current.loading.isLoading).toBe(false));

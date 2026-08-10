@@ -4331,6 +4331,43 @@ Home Screen
 
 ---
 
+## ADR-134: Real Profile & Identity Persistence (Sprint 34.5)
+
+**Status:** Accepted  
+**Date:** 2026-08-10  
+**Context:** Sprint 34.4 completed Home Dashboard activation. The runtime session already hydrates `AthleteIdentityService` from SQLite (Sprint 33.2), but the Profile UI still loaded mock data through `ProfileExperienceService` on mount — creating a parallel data path that ignored hydrated identity.
+
+**Decision:**
+
+```
+Runtime Session
+  ↓
+Repository Hydration
+  ↓
+AthleteIdentityService
+  ↓
+ProfileExperienceViewModel.applyHydratedProfile()
+  ↓
+Profile Screen
+```
+
+1. Wire `useProfile` production path to wait for runtime session READY and apply identity projected from `AthleteIdentityService.getAthleteIdentity(athleteId)` via `applyHydratedProfile()`.
+2. Remove default `ProfileExperienceService` dependency from `ProfileExperienceViewModel` — production constructor is runtime-driven; explicit `service` injection retained for tests and previews.
+3. Pull-to-refresh re-reads hydrated identity from `AthleteIdentityService` instead of calling ProfileExperienceService.
+4. Do not wire Profile update flows to `AthleteIdentityService.build()` in this sprint — update API is a follow-up; Runtime Write-Through already persists successful `build()` calls when orchestrated.
+5. Do not modify Runtime Session, Runtime Observer, Runtime Bootstrap, repository contracts, Athlete Identity models, or Composition Root registrations. No new factories or providers. No networking.
+
+**Alternatives considered:**
+- **New RuntimeProfileExperienceService provider** — rejected; violates sprint constraint of no new providers; hook-level bridge from existing `AthleteIdentityService` is sufficient (mirrors ADR-133 Home pattern).
+- **Keep ProfileExperienceService as production fallback when identity is empty** — rejected; dual paths violate single source of truth; empty identity surfaces via dedicated UI state.
+- **Wire ProfileExperienceService update methods to AthleteIdentityService.build() in this sprint** — rejected; out of scope; no existing application orchestration for profile mutations.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Profile screen is driven by hydrated Athlete Identity in production. Mock ProfileExperienceService remains available for isolated feature tests and preview injection only. Profile update persistence requires a follow-up sprint to orchestrate `AthleteIdentityService.build()` from UI mutations.
+
+---
+
 ## ADR-132: Domain Persistence Serialization (Sprint 34.3)
 
 **Status:** Accepted  

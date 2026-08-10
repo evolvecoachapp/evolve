@@ -1,5 +1,6 @@
 import { RefreshControl, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "../../../auth/useAuth";
 import { GradientBackground } from "../../../components/GradientBackground";
 import { TabScreenContainer } from "../../../components/TabScreenContainer";
 import { useTheme } from "../../../theme/ThemeContext";
@@ -26,10 +27,19 @@ export interface ProfileExperienceScreenProps {
   readonly service?: ProfileExperienceService;
 }
 
+/**
+ * Digital Athlete Profile screen — composition only.
+ * Production data flows from hydrated Athlete Identity via applyHydratedProfile().
+ * ProfileExperienceService is test/preview-only when injected via the service prop.
+ */
 export function ProfileExperienceScreen({ service }: ProfileExperienceScreenProps = {}) {
+  const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const dashboard = useProfile({ service });
+  const dashboard = useProfile({
+    service,
+    athleteId: user?.id,
+  });
 
   const showContent =
     !dashboard.loading.isLoading &&

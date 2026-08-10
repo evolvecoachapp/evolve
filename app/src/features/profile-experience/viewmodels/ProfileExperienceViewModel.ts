@@ -21,7 +21,6 @@ import {
   type ProfileSavingState,
 } from "../models";
 import {
-  profileExperienceService,
   ProfileExperienceError,
   type AppearancePreferencesDto,
   type AthleteGoalDto,
@@ -37,16 +36,30 @@ export interface ProfileExperienceViewModelDeps {
   readonly service?: ProfileExperienceService;
 }
 
+/**
+ * Profile Experience ViewModel — application orchestration only.
+ * Production path applies hydrated Athlete Identity via applyHydratedProfile().
+ */
 export class ProfileExperienceViewModel {
-  private readonly service: ProfileExperienceService;
+  private readonly service: ProfileExperienceService | null;
   private readonly listeners = new Set<() => void>();
   private _profile: AthleteProfile | null = null;
-  private _loading: ProfileLoadingState = createProfileLoadingState(ProfileLoadingStatuses.IDLE);
+  private _loading: ProfileLoadingState;
   private _saving: ProfileSavingState = createProfileSavingState(ProfileSavingStatuses.IDLE);
   private _error: ProfileErrorState | null = null;
 
   constructor(deps: ProfileExperienceViewModelDeps = {}) {
-    this.service = deps.service ?? profileExperienceService;
+    this.service = deps.service ?? null;
+    this._loading = createProfileLoadingState(
+      this.service
+        ? ProfileLoadingStatuses.IDLE
+        : ProfileLoadingStatuses.LOADING,
+    );
+  }
+
+  /** True when the ViewModel is driven by hydrated Athlete Identity instead of ProfileExperienceService. */
+  get isRuntimeDriven(): boolean {
+    return this.service === null;
   }
 
   get profile(): AthleteProfile | null { return this._profile; }
@@ -67,6 +80,10 @@ export class ProfileExperienceViewModel {
   }
 
   async loadProfile(): Promise<void> {
+    if (!this.service) {
+      return;
+    }
+
     this._loading = createProfileLoadingState(ProfileLoadingStatuses.LOADING);
     this._error = null;
     this.notify();
@@ -81,6 +98,10 @@ export class ProfileExperienceViewModel {
   }
 
   async refresh(): Promise<void> {
+    if (!this.service) {
+      return;
+    }
+
     this._loading = createProfileLoadingState(ProfileLoadingStatuses.REFRESHING);
     this._error = null;
     this.notify();
@@ -93,35 +114,81 @@ export class ProfileExperienceViewModel {
     this.notify();
   }
 
+  /** Applies a profile projected from hydrated Athlete Identity. */
+  applyHydratedProfile(profile: AthleteProfile): void {
+    this._profile = profile;
+    this._loading = createProfileLoadingState(ProfileLoadingStatuses.IDLE);
+    this._error = null;
+    this.notify();
+  }
+
+  /** Re-applies hydrated identity (runtime production refresh path). */
+  refreshFromHydratedProfile(profile: AthleteProfile | null): void {
+    this._loading = createProfileLoadingState(ProfileLoadingStatuses.REFRESHING);
+    this._error = null;
+    this.notify();
+
+    if (profile) {
+      this.applyHydratedProfile(profile);
+      return;
+    }
+
+    this._profile = null;
+    this._loading = createProfileLoadingState(ProfileLoadingStatuses.IDLE);
+    this._error = createProfileErrorState(
+      "Athlete identity unavailable.",
+      "athlete_identity_unavailable",
+    );
+    this.notify();
+  }
+
+  /** Surfaces missing or unavailable hydrated identity to the Profile UI. */
+  applyIdentityFailure(message: string): void {
+    this._profile = null;
+    this._loading = createProfileLoadingState(ProfileLoadingStatuses.IDLE);
+    this._error = createProfileErrorState(message, "athlete_identity_unavailable");
+    this.notify();
+  }
+
   async updateUnits(units: MeasurementUnitsDto): Promise<void> {
-    await this.save(() => updateMeasurementUnits({ service: this.service, units }));
+    await this.save(() => updateMeasurementUnits({ service: this.service!, units }));
   }
 
   async updateTheme(prefs: AppearancePreferencesDto): Promise<void> {
-    await this.save(() => updateAppearancePreferences({ service: this.service, prefs }));
+    await this.save(() => updateAppearancePreferences({ service: this.service!, prefs }));
   }
 
   async updateNotifications(prefs: NotificationPreferencesDto): Promise<void> {
-    await this.save(() => updateNotificationPreferences({ service: this.service, prefs }));
+    await this.save(() => updateNotificationPreferences({ service: this.service!, prefs }));
   }
 
   async updateTrainingPreferences(prefs: TrainingPreferencesDto): Promise<void> {
-    await this.save(() => updateTrainingPreferences({ service: this.service, prefs }));
+    await this.save(() => updateTrainingPreferences({ service: this.service!, prefs }));
   }
 
   async updateNutritionPreferences(prefs: NutritionPreferencesDto): Promise<void> {
-    await this.save(() => updateNutritionPreferences({ service: this.service, prefs }));
+    await this.save(() => updateNutritionPreferences({ service: this.service!, prefs }));
   }
 
   async updateGoals(goals: readonly AthleteGoalDto[]): Promise<void> {
-    await this.save(() => updateGoals({ service: this.service, goals }));
+    await this.save(() => updateGoals({ service: this.service!, goals }));
   }
 
   async updateCoachPreferences(prefs: CoachPreferencesDto): Promise<void> {
-    await this.save(() => updateCoachPreferences({ service: this.service, prefs }));
+    await this.save(() => updateCoachPreferences({ service: this.service!, prefs }));
   }
 
   private async save(action: () => Promise<AthleteProfile>): Promise<void> {
+    if (!this.service) {
+      this._error = createProfileErrorState(
+        "Profile updates are not available in the runtime path.",
+        "profile_update_unavailable",
+        false,
+      );
+      this.notify();
+      return;
+    }
+
     this._saving = createProfileSavingState(ProfileSavingStatuses.SAVING);
     this._error = null;
     this.notify();

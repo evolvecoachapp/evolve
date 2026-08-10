@@ -573,6 +573,21 @@ Full detail: [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md). ADR-132: [DECISIONS.md](.
 
 ADR-133: [DECISIONS.md](./DECISIONS.md).
 
+### Real Profile & Identity Persistence — Sprint 34.5 (Phase 34)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Drive the Profile screen from hydrated Athlete Identity instead of Mock ProfileExperienceService loading |
+| **Flow** | Runtime Session → Repository Hydration → AthleteIdentityService → `ProfileExperienceViewModel.applyHydratedProfile()` → Profile Screen |
+| **Production path** | `useProfile` waits for `RuntimeSessionProvider` READY, reads `AthleteIdentityService.getAthleteIdentity(athleteId)`, projects via `mapAthleteIdentityToProfile`, applies via ViewModel — no `ProfileExperienceService` fetch |
+| **Refresh** | Pull-to-refresh re-reads hydrated identity from `AthleteIdentityService` (no mock reload) |
+| **Test/preview path** | Explicit `service` injection on `ProfileExperienceScreen` / `useProfile` retains ProfileExperienceService for isolated tests and previews |
+| **Updates** | No production update API wired — ProfileExperienceService update methods remain test/preview-only; persistence via Runtime Write-Through requires future `AthleteIdentityService.build()` orchestration |
+| **Design** | **Presentation wiring only.** No Runtime Session, Observer, Bootstrap, repository contract, or Athlete Identity model changes. No new factories or providers. No networking. |
+| **Validation** | Integration tests cover populated/empty runtime startup, hydrated identity rendering, restart refresh, ViewModel integration, and no ProfileExperienceService usage in production path |
+
+ADR-134: [DECISIONS.md](./DECISIONS.md).
+
 ### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
 
 | Aspect | Implementation |
