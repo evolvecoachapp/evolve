@@ -36,6 +36,13 @@ function createFailingService(): ProgressAnalyticsService {
         appliedAt: "2026-07-29T00:00:00Z",
       });
     },
+    async applyNutritionProgressEvent() {
+      return Object.freeze({
+        eventId: "evt-fail",
+        accepted: false,
+        appliedAt: "2026-07-29T00:00:00Z",
+      });
+    },
   };
 }
 

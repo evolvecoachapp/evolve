@@ -60,6 +60,8 @@ import type {
 } from "../../../infrastructure/logging/application/LoggerFactory";
 import type { WorkoutProgressPublisher } from "../../../integrations/workout-progress/publishers/WorkoutProgressPublisher";
 import type { ProgressAnalyticsSubscriber } from "../../../integrations/workout-progress/subscribers/ProgressAnalyticsSubscriber";
+import type { NutritionProgressPublisher } from "../../../integrations/nutrition-progress/publishers/NutritionProgressPublisher";
+import type { NutritionProgressSubscriber } from "../../../integrations/nutrition-progress/subscribers/NutritionProgressSubscriber";
 import type { ExerciseSelectionService } from "../../../features/exercise-selection/services/ExerciseSelectionService";
 import type { ProgramGenerationService } from "../../../features/program-generation/services/ProgramGenerationService";
 import type { ProgrammingService } from "../../../features/programming/services/ProgrammingService";
@@ -145,6 +147,8 @@ export interface ServiceMap {
   };
   WorkoutProgressPublisher: WorkoutProgressPublisher;
   ProgressAnalyticsSubscriber: ProgressAnalyticsSubscriber;
+  NutritionProgressPublisher: NutritionProgressPublisher;
+  NutritionProgressSubscriber: NutritionProgressSubscriber;
 }
 
 export type ServiceToken = keyof ServiceMap;
@@ -210,4 +214,6 @@ export const SERVICE_TOKENS = [
   "LoggerFactory",
   "WorkoutProgressPublisher",
   "ProgressAnalyticsSubscriber",
+  "NutritionProgressPublisher",
+  "NutritionProgressSubscriber",
 ] as const satisfies readonly ServiceToken[];

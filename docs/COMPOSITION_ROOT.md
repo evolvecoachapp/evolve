@@ -95,6 +95,7 @@ SynchronizationFactory → SynchronizationRegistry / SynchronizationEngine / Syn
 BackendFactory → BackendRegistry / MockBackendProvider / BackendFactory
 LoggerFactory → LoggerRegistry / MockLogger / LoggerFactory
 WorkoutProgressIntegrationFactory → WorkoutProgressPublisher / ProgressAnalyticsSubscriber
+NutritionProgressIntegrationFactory → NutritionProgressPublisher / NutritionProgressSubscriber
 ```
 
 Execution entry points:

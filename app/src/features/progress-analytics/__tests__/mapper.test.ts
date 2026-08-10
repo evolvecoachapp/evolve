@@ -109,6 +109,7 @@ describe("progress-analytics mappers", () => {
         averageFatGrams: 0,
         calorieAdherencePercent: 0,
         proteinAdherencePercent: 0,
+        entries: [],
       },
       recoveryStatistics: {
         averageScore: 0,

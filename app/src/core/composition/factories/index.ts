@@ -147,3 +147,6 @@ export type {
 
 export { WorkoutProgressIntegrationFactory } from "./WorkoutProgressIntegrationFactory";
 export type { WorkoutProgressIntegrationFactoryDeps } from "./WorkoutProgressIntegrationFactory";
+
+export { NutritionProgressIntegrationFactory } from "./NutritionProgressIntegrationFactory";
+export type { NutritionProgressIntegrationFactoryDeps } from "./NutritionProgressIntegrationFactory";

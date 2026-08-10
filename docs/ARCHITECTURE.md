@@ -1544,6 +1544,20 @@ Full detail: [PROGRESS_ANALYTICS_ARCHITECTURE.md](./PROGRESS_ANALYTICS_ARCHITECT
 
 Full detail: [WORKOUT_PROGRESS_INTEGRATION.md](./WORKOUT_PROGRESS_INTEGRATION.md). ADR-115: [DECISIONS.md](./DECISIONS.md).
 
+### Nutrition Progress Integration (`integrations/nutrition-progress`) — Sprint 32.2 integration
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Deterministic integration layer publishing immutable nutrition progress events and updating Progress Analytics read models through contracts |
+| **Flow** | Nutrition Feature → Nutrition Progress Integration → Progress Analytics Contract → Progress Analytics Service → Mock Analytics Provider |
+| **Models** | `NutritionProgressEvent`, `NutritionProgressSnapshot`, `NutritionMetric`, `NutritionAnalyticsPayload`, `NutritionProgressMetadata`, `NutritionProgressResult` |
+| **Publisher / Subscriber** | `NutritionProgressPublisher` publishes immutable events; `NutritionProgressSubscriber` consumes via `ProgressAnalyticsService.applyNutritionProgressEvent` |
+| **Application** | `publishNutritionProgress` / `publishMealLogged` / `publishDailyNutritionCompleted` / `publishHydrationLogged` |
+| **Composition Root** | `NutritionProgressIntegrationFactory` registers `NutritionProgressPublisher` + `NutritionProgressSubscriber` |
+| **Design** | **No analytics calculations. No repository changes. No persistence. No networking. No backend. No synchronization. No event sourcing. Nutrition feature never imports Progress Analytics internals.** Contract-only communication |
+
+Full detail: [NUTRITION_PROGRESS_INTEGRATION.md](./NUTRITION_PROGRESS_INTEGRATION.md). ADR-116: [DECISIONS.md](./DECISIONS.md).
+
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 
 | Aspect | Implementation |

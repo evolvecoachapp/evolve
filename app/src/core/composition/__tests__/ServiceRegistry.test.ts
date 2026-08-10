@@ -73,6 +73,8 @@ describe("ServiceRegistry", () => {
       "LoggerFactory",
       "WorkoutProgressPublisher",
       "ProgressAnalyticsSubscriber",
+      "NutritionProgressPublisher",
+      "NutritionProgressSubscriber",
     ]);
   });
 

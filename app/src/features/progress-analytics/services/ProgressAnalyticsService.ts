@@ -125,6 +125,18 @@ export interface BodyWeightHistoryDto {
   readonly destination?: string | null;
 }
 
+export interface NutritionStatisticsEntryDto {
+  readonly id: string;
+  readonly date: string;
+  readonly title: string;
+  readonly loggedAt: string;
+  readonly calories: number;
+  readonly proteinGrams: number;
+  readonly carbohydrateGrams: number;
+  readonly fatGrams: number;
+  readonly destination?: string | null;
+}
+
 export interface NutritionStatisticsDto {
   readonly averageCalories: number;
   readonly averageProteinGrams: number;
@@ -132,6 +144,7 @@ export interface NutritionStatisticsDto {
   readonly averageFatGrams: number;
   readonly calorieAdherencePercent: number;
   readonly proteinAdherencePercent: number;
+  readonly entries: readonly NutritionStatisticsEntryDto[];
   readonly chart?: ProgressChartDto | null;
   readonly destination?: string | null;
 }
@@ -289,6 +302,66 @@ export interface WorkoutProgressIngestResultDto {
   readonly appliedAt: string;
 }
 
+export type NutritionProgressIngestEventType =
+  | "NutritionDayStarted"
+  | "MealLogged"
+  | "MealRemoved"
+  | "DailyNutritionCompleted"
+  | "HydrationLogged"
+  | "MacroTargetUpdated"
+  | "NutritionGoalAchieved"
+  | "NutritionAdherenceUpdated";
+
+export interface NutritionProgressIngestMetricDto {
+  readonly key: string;
+  readonly label: string;
+  readonly value: number;
+  readonly unit: string;
+}
+
+export interface NutritionProgressIngestMetadataDto {
+  readonly source: "nutrition";
+  readonly correlationId: string;
+  readonly dayId: string;
+  readonly mealPlanId: string | null;
+  readonly athleteId: string | null;
+  readonly publishedAt: string;
+}
+
+export interface NutritionProgressIngestPayloadDto {
+  readonly dayId: string;
+  readonly mealPlanId: string | null;
+  readonly mealId: string | null;
+  readonly mealName: string | null;
+  readonly mealEntryId: string | null;
+  readonly foodId: string | null;
+  readonly foodName: string | null;
+  readonly servings: number | null;
+  readonly calories: number | null;
+  readonly proteinGrams: number | null;
+  readonly carbohydrateGrams: number | null;
+  readonly fatGrams: number | null;
+  readonly hydrationMl: number | null;
+  readonly targetHydrationMl: number | null;
+  readonly mealsLogged: number | null;
+  readonly completedAt: string | null;
+  readonly metrics: readonly NutritionProgressIngestMetricDto[];
+}
+
+export interface NutritionProgressIngestDto {
+  readonly eventId: string;
+  readonly eventType: NutritionProgressIngestEventType;
+  readonly occurredAt: string;
+  readonly metadata: NutritionProgressIngestMetadataDto;
+  readonly payload: NutritionProgressIngestPayloadDto;
+}
+
+export interface NutritionProgressIngestResultDto {
+  readonly eventId: string;
+  readonly accepted: boolean;
+  readonly appliedAt: string;
+}
+
 export interface ProgressAnalyticsService {
   readonly providerId: ProgressAnalyticsProviderId;
   getAnalytics(filter?: AnalyticsFilterDto): Promise<ProgressAnalyticsDataDto>;
@@ -303,6 +376,9 @@ export interface ProgressAnalyticsService {
   applyWorkoutProgressEvent(
     event: WorkoutProgressIngestDto,
   ): Promise<WorkoutProgressIngestResultDto>;
+  applyNutritionProgressEvent(
+    event: NutritionProgressIngestDto,
+  ): Promise<NutritionProgressIngestResultDto>;
 }
 
 export class ProgressAnalyticsError extends Error {

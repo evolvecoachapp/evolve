@@ -13,6 +13,8 @@ import type {
   WorkoutHistoryDto,
   WorkoutProgressIngestDto,
   WorkoutProgressIngestResultDto,
+  NutritionProgressIngestDto,
+  NutritionProgressIngestResultDto,
 } from "../services";
 
 const defaultPeriod: AnalyticsPeriodDto = {
@@ -220,6 +222,7 @@ function buildDefaultData(): ProgressAnalyticsDataDto {
       averageFatGrams: 72,
       calorieAdherencePercent: 92,
       proteinAdherencePercent: 95,
+      entries: [],
       chart: {
         id: "chart-nutrition",
         title: "Calorie Adherence",
@@ -493,6 +496,7 @@ function emptyData(): ProgressAnalyticsDataDto {
       averageFatGrams: 0,
       calorieAdherencePercent: 0,
       proteinAdherencePercent: 0,
+      entries: [],
       chart: null,
       destination: null,
     },
@@ -531,6 +535,7 @@ function emptyData(): ProgressAnalyticsDataDto {
 
 let currentData: ProgressAnalyticsDataDto = buildDefaultData();
 const ingestedWorkoutProgressEvents: WorkoutProgressIngestDto[] = [];
+const ingestedNutritionProgressEvents: NutritionProgressIngestDto[] = [];
 
 function applyWorkoutProgressEventToData(event: WorkoutProgressIngestDto): void {
   switch (event.eventType) {
@@ -596,8 +601,61 @@ function applyWorkoutProgressEventToData(event: WorkoutProgressIngestDto): void 
   }
 }
 
+function applyNutritionProgressEventToData(event: NutritionProgressIngestDto): void {
+  switch (event.eventType) {
+    case "DailyNutritionCompleted": {
+      const entry = Object.freeze({
+        id: event.eventId,
+        date: event.payload.dayId,
+        title: "Daily Summary",
+        loggedAt: event.payload.completedAt ?? event.occurredAt,
+        calories: event.payload.calories ?? 0,
+        proteinGrams: event.payload.proteinGrams ?? 0,
+        carbohydrateGrams: event.payload.carbohydrateGrams ?? 0,
+        fatGrams: event.payload.fatGrams ?? 0,
+        destination: `/nutrition/${event.payload.dayId}`,
+      });
+      currentData = Object.freeze({
+        ...currentData,
+        nutritionStatistics: Object.freeze({
+          ...currentData.nutritionStatistics,
+          entries: Object.freeze([...currentData.nutritionStatistics.entries, entry]),
+        }),
+      });
+      break;
+    }
+    case "MealLogged": {
+      const entry = Object.freeze({
+        id: event.payload.mealEntryId ?? event.eventId,
+        date: event.payload.dayId,
+        title: event.payload.mealName ?? event.payload.foodName ?? "Meal",
+        loggedAt: event.payload.completedAt ?? event.occurredAt,
+        calories: event.payload.calories ?? 0,
+        proteinGrams: event.payload.proteinGrams ?? 0,
+        carbohydrateGrams: event.payload.carbohydrateGrams ?? 0,
+        fatGrams: event.payload.fatGrams ?? 0,
+        destination: null,
+      });
+      currentData = Object.freeze({
+        ...currentData,
+        nutritionStatistics: Object.freeze({
+          ...currentData.nutritionStatistics,
+          entries: Object.freeze([...currentData.nutritionStatistics.entries, entry]),
+        }),
+      });
+      break;
+    }
+    default:
+      break;
+  }
+}
+
 export function getIngestedWorkoutProgressEvents(): readonly WorkoutProgressIngestDto[] {
   return Object.freeze([...ingestedWorkoutProgressEvents]);
+}
+
+export function getIngestedNutritionProgressEvents(): readonly NutritionProgressIngestDto[] {
+  return Object.freeze([...ingestedNutritionProgressEvents]);
 }
 
 export const mockProgressAnalyticsService: ProgressAnalyticsService = {
@@ -671,6 +729,26 @@ export const mockProgressAnalyticsService: ProgressAnalyticsService = {
       appliedAt: frozenEvent.metadata.publishedAt,
     });
   },
+
+  async applyNutritionProgressEvent(
+    event: NutritionProgressIngestDto,
+  ): Promise<NutritionProgressIngestResultDto> {
+    const frozenEvent = Object.freeze({
+      ...event,
+      metadata: Object.freeze({ ...event.metadata }),
+      payload: Object.freeze({
+        ...event.payload,
+        metrics: Object.freeze([...event.payload.metrics]),
+      }),
+    });
+    ingestedNutritionProgressEvents.push(frozenEvent);
+    applyNutritionProgressEventToData(frozenEvent);
+    return Object.freeze({
+      eventId: frozenEvent.eventId,
+      accepted: true,
+      appliedAt: frozenEvent.metadata.publishedAt,
+    });
+  },
 };
 
 export const emptyMockProgressAnalyticsService: ProgressAnalyticsService = {
@@ -718,9 +796,18 @@ export const emptyMockProgressAnalyticsService: ProgressAnalyticsService = {
       appliedAt: event.metadata.publishedAt,
     });
   },
+
+  async applyNutritionProgressEvent(event: NutritionProgressIngestDto) {
+    return Object.freeze({
+      eventId: event.eventId,
+      accepted: true,
+      appliedAt: event.metadata.publishedAt,
+    });
+  },
 };
 
 export function resetMockProgressAnalyticsData(): void {
   currentData = buildDefaultData();
   ingestedWorkoutProgressEvents.length = 0;
+  ingestedNutritionProgressEvents.length = 0;
 }
