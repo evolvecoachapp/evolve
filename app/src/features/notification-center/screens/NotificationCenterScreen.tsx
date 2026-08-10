@@ -1,5 +1,6 @@
 import { RefreshControl, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "../../../auth/useAuth";
 import { GradientBackground } from "../../../components/GradientBackground";
 import { TabScreenContainer } from "../../../components/TabScreenContainer";
 import { useTheme } from "../../../theme/ThemeContext";
@@ -22,10 +23,16 @@ export interface NotificationCenterScreenProps {
   readonly service?: NotificationCenterService;
 }
 
+/**
+ * Notification Center screen — composition only.
+ * Production data flows from hydrated Unified Workspace via applyHydratedNotifications().
+ * NotificationCenterService is test/preview-only when injected via the service prop.
+ */
 export function NotificationCenterScreen({ service }: NotificationCenterScreenProps = {}) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const dashboard = useNotifications({ service });
+  const { user } = useAuth();
+  const dashboard = useNotifications({ service, athleteId: user?.id });
 
   const showContent =
     !dashboard.loading.isLoading &&

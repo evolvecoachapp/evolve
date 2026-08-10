@@ -1,4 +1,6 @@
 import { renderHook, waitFor } from "@testing-library/react-native";
+import { RUNTIME_SESSION_STATUS } from "../../../runtime/session/RuntimeSessionStatus";
+import { useRuntimeSession } from "../../../runtime/session/RuntimeSessionContext";
 import {
   emptyMockNotificationCenterService,
   mockNotificationCenterService,
@@ -11,7 +13,20 @@ import {
 } from "../hooks";
 import { NotificationCenterViewModel } from "../viewmodels";
 
+jest.mock("../../../runtime/session/RuntimeSessionContext", () => ({
+  useRuntimeSession: jest.fn(),
+}));
+
+const mockedUseRuntimeSession = useRuntimeSession as jest.Mock;
+
 describe("notification-center hooks", () => {
+  beforeEach(() => {
+    mockedUseRuntimeSession.mockReturnValue({
+      isStarting: false,
+      status: RUNTIME_SESSION_STATUS.ready,
+      retrySession: jest.fn(),
+    });
+  });
   it("useNotifications loads notifications", async () => {
     const { result } = renderHook(() => useNotifications({ service: mockNotificationCenterService }));
     await waitFor(() => expect(result.current.loading.isLoading).toBe(false));

@@ -100,4 +100,58 @@ describe("NotificationCenterViewModel", () => {
     });
     expect(viewModel.settings?.workoutReminders).toBe(false);
   });
+
+  it("applyHydratedNotifications marks runtime-driven ViewModel", () => {
+    const viewModel = new NotificationCenterViewModel({ athleteId: "athlete:1" });
+    viewModel.applyHydratedNotifications({
+      notifications: Object.freeze([]),
+      reminders: Object.freeze([]),
+      coachNotifications: Object.freeze([
+        Object.freeze({
+          id: "coach:1",
+          title: "Insight",
+          message: "Body",
+          category: "coach",
+          priority: "normal",
+          state: "pending",
+          coachContext: "context",
+          actionDestination: null,
+          createdAt: "2026-01-01T00:00:00.000Z",
+          readAt: null,
+        }),
+      ]),
+      settings: Object.freeze({
+        workoutReminders: false,
+        nutritionReminders: false,
+        hydrationReminders: false,
+        recoveryReminders: false,
+        sleepReminders: false,
+        coachMessages: true,
+        progressUpdates: false,
+        globalDeliveryPolicy: "manual",
+        quietHoursEnabled: false,
+        quietHoursStart: "22:00",
+        quietHoursEnd: "07:00",
+      }),
+      statistics: Object.freeze({
+        totalNotifications: 1,
+        unreadCount: 1,
+        dismissedCount: 0,
+        activeReminders: 0,
+        deliveredToday: 0,
+        pendingCount: 1,
+      }),
+    });
+
+    expect(viewModel.isRuntimeDriven).toBe(true);
+    expect(viewModel.coachNotifications.length).toBe(1);
+    expect(viewModel.loading.status).toBe(NotificationLoadingStatuses.IDLE);
+  });
+
+  it("loadNotifications is a no-op when runtime-driven", async () => {
+    const viewModel = new NotificationCenterViewModel({ athleteId: "athlete:1" });
+    await viewModel.loadNotifications();
+    expect(viewModel.notifications.length).toBe(0);
+    expect(viewModel.isRuntimeDriven).toBe(true);
+  });
 });

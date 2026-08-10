@@ -4569,6 +4569,48 @@ Coach Screen
 
 ---
 
+---
+
+## ADR-141: Notification Runtime Activation (Sprint 35.2)
+
+**Status:** Accepted  
+**Date:** 2026-08-11  
+**Context:** Notification Center UI (Sprint 31.7) loaded exclusively from Mock NotificationCenterService when no explicit provider was injected, while Unified Workspace already projects Proactive Insights and workout/recovery signals suitable for notification presentation, and Coach Timeline already defines `reminder_created` / `notification_dismissed` event types. No dedicated Notification SQLite repository exists on mobile.
+
+**Decision:**
+
+```
+Runtime Session
+  ↓
+Repository Hydration
+  ↓
+UnifiedWorkspaceService (WorkspaceInsights, workout/recovery)
+  + CoachTimelineService (lifecycle journal)
+  ↓
+loadHydratedNotificationExperience()
+  ↓
+NotificationCenterViewModel.applyHydratedNotifications()
+  ↓
+Notification Center UI
+```
+
+1. Wire `useNotifications` to wait for Runtime Session READY and load via `loadHydratedNotificationExperience({ athleteId })` instead of `NotificationCenterService.getNotifications()`.
+2. Project hydrated workspace insights, home insight cards, and workout/recovery signals into the Notification Center read model via `mapWorkspaceNotificationsToExperienceDto`.
+3. Retain in-session overlay (read/dismiss/reminder/settings) in the ViewModel; re-project via `loadHydratedNotificationExperience` after mutations.
+4. Append dismiss and reminder-create lifecycle events to Coach Timeline using existing `SYSTEM_EVENT` category and `TimelineEventTypes` metadata — no new timeline publisher.
+5. Do not modify Runtime Session, Runtime Observer, Runtime Bootstrap, repository contracts, SQLite infrastructure, or Dashboard Projection models. No new factories or providers. No networking. No push notification implementation.
+
+**Alternatives considered:**
+- **New RuntimeNotificationCenterService provider** — rejected; violates sprint constraint of no new providers; hook-level bridge from existing Unified Workspace + Coach Timeline is sufficient (mirrors ADR-140).
+- **Build Notification SQLite repository in this sprint** — rejected; no Notification repository contract on mobile; timeline write-through is the supported persistence seam for lifecycle events.
+- **Wire Expo Notifications / FCM / APNS** — rejected; belongs to later backend/cloud phase per sprint scope.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Notification Center screen is driven by hydrated workspace output in production. Mock NotificationCenterService remains available for isolated feature tests and preview injection only. In-session read/settings overlay is not yet persisted through Runtime Observer. Push notification delivery remains a follow-up sprint.
+
+---
+
 ## ADR-138: Recovery Runtime Activation (Sprint 34.9)
 
 **Status:** Accepted  

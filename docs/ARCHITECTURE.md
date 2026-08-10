@@ -679,6 +679,21 @@ ADR-139: [DECISIONS.md](./DECISIONS.md).
 
 ADR-140: [DECISIONS.md](./DECISIONS.md).
 
+### Notification Runtime Activation — Sprint 35.2 (Phase 35)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Drive Notification Center from hydrated Unified Workspace + Coach Timeline instead of default Mock NotificationCenterService loading |
+| **Flow** | Runtime Session → Repository Hydration → UnifiedWorkspaceService (`WorkspaceInsights`, workout/recovery projections) + CoachTimelineService → `loadHydratedNotificationExperience()` → `NotificationCenterViewModel.applyHydratedNotifications()` → Notification UI |
+| **Production path** | `useNotifications` waits for `RuntimeSessionProvider` READY, loads via `loadHydratedNotificationExperience({ athleteId })`, applies via ViewModel — no `NotificationCenterService` fetch |
+| **Mutations** | Dismiss/mark-read/reminder CRUD/settings use runtime application APIs with in-session overlay; dismiss and reminder create append `notification_dismissed` / `reminder_created` entries to Coach Timeline (`SYSTEM_EVENT` + `TimelineEventTypes` metadata) for write-through where supported |
+| **Refresh** | Pull-to-refresh re-loads hydrated workspace output preserving in-session overlay (no provider mock reload) |
+| **Test/preview path** | Explicit `service` injection on `NotificationCenterScreen` / `useNotifications` retains NotificationCenterService for isolated tests and previews |
+| **Design** | **Application orchestration only.** Uses existing Unified Workspace, Proactive Insights projections, and Coach Timeline contracts. No direct SQLite/repository access from Notification UI. No new persistence infrastructure. No duplicate notification architecture. **No push/network:** Expo Notifications, FCM, APNS, push tokens, and background scheduling remain future backend/cloud phase. **Provider gap:** no dedicated Notification SQLite repository — notification list/settings overlay and read state are in-session; timeline journal persists dismiss/reminder lifecycle events through existing TimelineRepository write-through. |
+| **Validation** | Integration tests cover populated/empty runtime startup, hydrated notification rendering, dismiss/read/reminder mutations, timeline integration, failure propagation, ViewModel integration, and no NotificationCenterService usage in production path |
+
+ADR-141: [DECISIONS.md](./DECISIONS.md).
+
 ### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
 
 | Aspect | Implementation |
