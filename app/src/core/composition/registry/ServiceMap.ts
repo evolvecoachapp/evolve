@@ -73,6 +73,7 @@ import type { HydrationService } from "../../../runtime/hydration/HydrationServi
 import type { DashboardRestoreService } from "../../../runtime/dashboard-restore/DashboardRestoreService";
 import type { RuntimeWriteThroughService } from "../../../runtime/write-through/RuntimeWriteThroughService";
 import type { RuntimeSessionService } from "../../../runtime/session/RuntimeSessionService";
+import type { RuntimeObserverService } from "../../../runtime/runtime-observer/RuntimeObserverService";
 import type { ExerciseSelectionService } from "../../../features/exercise-selection/services/ExerciseSelectionService";
 import type { ProgramGenerationService } from "../../../features/program-generation/services/ProgramGenerationService";
 import type { ProgrammingService } from "../../../features/programming/services/ProgrammingService";
@@ -171,6 +172,7 @@ export interface ServiceMap {
   DashboardRestoreService: DashboardRestoreService;
   RuntimeWriteThroughService: RuntimeWriteThroughService;
   RuntimeSessionService: RuntimeSessionService;
+  RuntimeObserverService: RuntimeObserverService;
 }
 
 export type ServiceToken = keyof ServiceMap;
@@ -249,4 +251,5 @@ export const SERVICE_TOKENS = [
   "DashboardRestoreService",
   "RuntimeWriteThroughService",
   "RuntimeSessionService",
+  "RuntimeObserverService",
 ] as const satisfies readonly ServiceToken[];

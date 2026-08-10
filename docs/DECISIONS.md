@@ -4064,3 +4064,40 @@ Home Dashboard
 **Consequences:**
 - Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
 - User Story 01 complete. Phase 33 continues with automatic post-mutation write-through orchestration in later sprints.
+
+---
+
+## ADR-127: Runtime Change Observer (Sprint 33.7)
+
+**Status:** Accepted  
+**Date:** 2026-08-10  
+**Context:** Sprint 33.4 established on-demand write-through via `persistRuntime()`. Phase 33 requires automatic persistence whenever Athlete Identity, Runtime Environment, or Unified Workspace in-memory state changes — without modifying composition service internals (ADR-124) or introducing SQLite access.
+
+**Decision:**
+
+```
+Runtime Services
+  ↓ build() success
+Runtime Change Observer
+  ↓ persistRuntime()
+Runtime Write-Through Pipeline
+  ↓
+Repository Adapters
+  ↓
+Persistence Contracts
+```
+
+1. Introduce `runtime/runtime-observer` module with immutable observer models and a read-only `RuntimeObserverService` facade.
+2. `RuntimeObserver` wraps runtime composition service `build()` entry points **externally** — no hooks inside service implementations.
+3. On each successful `build()`, reset write-through lifecycle state and invoke `persistRuntime()` — no retry, debounce, or batching.
+4. Application APIs (`observeRuntime`, `getRuntimeObserverStatus`) are the operational observation path.
+5. Composition Root registers `RuntimeObserverService` via `RuntimeObserverFactory` (token #63).
+
+**Alternatives considered:**
+- **Internal hooks inside AthleteIdentityService.build()** — rejected per ADR-124; explicit external orchestration preserves determinism.
+- **Automatic persist on session completion only** — rejected per ADR-125; persistence must follow every runtime mutation.
+- **Polling service snapshots** — rejected: non-deterministic and wasteful; wrap successful mutation entry points instead.
+
+**Consequences:**
+- Documentation: [RUNTIME_OBSERVER.md](./RUNTIME_OBSERVER.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
+- User Story 02 complete. Phase 33 continues with session-scoped observer startup wiring and richer domain-to-record mapping in later sprints.

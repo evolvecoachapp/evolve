@@ -293,4 +293,8 @@ export class ServiceRegistry {
   getRuntimeSessionService(): ServiceMap["RuntimeSessionService"] {
     return this.resolve("RuntimeSessionService");
   }
+
+  getRuntimeObserverService(): ServiceMap["RuntimeObserverService"] {
+    return this.resolve("RuntimeObserverService");
+  }
 }

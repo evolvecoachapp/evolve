@@ -54,6 +54,7 @@ import {
   DashboardRestoreFactory,
   RuntimeWriteThroughFactory,
   RuntimeSessionFactory,
+  RuntimeObserverFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -824,6 +825,12 @@ export class CompositionRoot {
       { lifecycle },
     );
 
+    container.register(
+      "RuntimeObserverService",
+      () => RuntimeObserverFactory.create(),
+      { lifecycle },
+    );
+
     container.validate();
     container.freeze();
 
@@ -1097,5 +1104,9 @@ export class CompositionRoot {
 
   getRuntimeSessionService(): ServiceMap["RuntimeSessionService"] {
     return this.registry.resolve("RuntimeSessionService");
+  }
+
+  getRuntimeObserverService(): ServiceMap["RuntimeObserverService"] {
+    return this.registry.resolve("RuntimeObserverService");
   }
 }

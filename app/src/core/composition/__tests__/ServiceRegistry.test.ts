@@ -86,6 +86,7 @@ describe("ServiceRegistry", () => {
       "DashboardRestoreService",
       "RuntimeWriteThroughService",
       "RuntimeSessionService",
+      "RuntimeObserverService",
     ]);
   });
 

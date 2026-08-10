@@ -505,6 +505,18 @@ Full detail: [RUNTIME_WRITE_THROUGH.md](./RUNTIME_WRITE_THROUGH.md).
 
 Full detail: [RUNTIME_SESSION.md](./RUNTIME_SESSION.md).
 
+### Runtime Change Observer (`runtime/runtime-observer`) — Sprint 33.7
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Automatically trigger write-through persistence whenever runtime composition service state changes |
+| **Flow** | Runtime Services → `RuntimeObserver` (external `build()` wrap) → `persistRuntime()` → `RuntimeWriteThroughPipeline` → Repository Adapters → Persistence Contracts |
+| **Application API** | `observeRuntime()`, `getRuntimeObserverStatus()` |
+| **Composition Root** | Registers `RuntimeObserverService` via `RuntimeObserverFactory` (token #63) |
+| **Design** | **Observer only.** No SQLite, no service-internal hooks, no Dashboard/Timeline logic, no retry/debounce/batching |
+
+Full detail: [RUNTIME_OBSERVER.md](./RUNTIME_OBSERVER.md).
+
 ### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
 
 | Aspect | Implementation |

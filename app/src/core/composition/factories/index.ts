@@ -182,3 +182,5 @@ export { RuntimeWriteThroughFactory } from "./RuntimeWriteThroughCompositionFact
 export type { RuntimeWriteThroughFactoryDeps } from "./RuntimeWriteThroughCompositionFactory";
 export { RuntimeSessionFactory } from "./RuntimeSessionCompositionFactory";
 export type { RuntimeSessionFactoryDeps } from "./RuntimeSessionCompositionFactory";
+export { RuntimeObserverFactory } from "./RuntimeObserverCompositionFactory";
+export type { RuntimeObserverFactoryDeps } from "./RuntimeObserverCompositionFactory";

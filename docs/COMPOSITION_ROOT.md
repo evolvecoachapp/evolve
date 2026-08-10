@@ -20,7 +20,7 @@ Composition Root
   ↓
 Dependency Container (ApplicationContainer)
   ↓
-Service Registry (typed ServiceMap — 60 tokens)
+Service Registry (typed ServiceMap — 63 tokens)
   ↓
 Factories + thin port adapters (object creation / wiring only)
   ↓
@@ -105,6 +105,7 @@ RepositoryHydrationFactory → RepositoryHydrationService (HydrationService)
 DashboardRestoreFactory → DashboardRestoreService
 RuntimeWriteThroughFactory → RuntimeWriteThroughService
 RuntimeSessionFactory → RuntimeSessionService
+RuntimeObserverFactory → RuntimeObserverService
 ```
 
 Execution entry points:
