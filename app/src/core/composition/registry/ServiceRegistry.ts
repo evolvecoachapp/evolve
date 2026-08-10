@@ -289,4 +289,8 @@ export class ServiceRegistry {
   getRuntimeWriteThroughService(): ServiceMap["RuntimeWriteThroughService"] {
     return this.resolve("RuntimeWriteThroughService");
   }
+
+  getRuntimeSessionService(): ServiceMap["RuntimeSessionService"] {
+    return this.resolve("RuntimeSessionService");
+  }
 }

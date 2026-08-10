@@ -180,3 +180,5 @@ export type { DashboardRestoreFactoryDeps } from "./DashboardRestoreCompositionF
 
 export { RuntimeWriteThroughFactory } from "./RuntimeWriteThroughCompositionFactory";
 export type { RuntimeWriteThroughFactoryDeps } from "./RuntimeWriteThroughCompositionFactory";
+export { RuntimeSessionFactory } from "./RuntimeSessionCompositionFactory";
+export type { RuntimeSessionFactoryDeps } from "./RuntimeSessionCompositionFactory";

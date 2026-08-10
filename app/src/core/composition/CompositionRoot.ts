@@ -53,6 +53,7 @@ import {
   RepositoryHydrationFactory,
   DashboardRestoreFactory,
   RuntimeWriteThroughFactory,
+  RuntimeSessionFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -817,6 +818,12 @@ export class CompositionRoot {
       { lifecycle },
     );
 
+    container.register(
+      "RuntimeSessionService",
+      () => RuntimeSessionFactory.create(),
+      { lifecycle },
+    );
+
     container.validate();
     container.freeze();
 
@@ -1086,5 +1093,9 @@ export class CompositionRoot {
 
   getRuntimeWriteThroughService(): ServiceMap["RuntimeWriteThroughService"] {
     return this.registry.resolve("RuntimeWriteThroughService");
+  }
+
+  getRuntimeSessionService(): ServiceMap["RuntimeSessionService"] {
+    return this.registry.resolve("RuntimeSessionService");
   }
 }

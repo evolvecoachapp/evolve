@@ -492,6 +492,18 @@ Full detail: [DASHBOARD_RESTORE.md](./DASHBOARD_RESTORE.md).
 
 Full detail: [RUNTIME_WRITE_THROUGH.md](./RUNTIME_WRITE_THROUGH.md).
 
+### Runtime Session Orchestrator (`runtime/session`) — Sprint 33.5
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Single orchestration entry point for the complete runtime startup lifecycle |
+| **Flow** | Application Startup → `RuntimeSessionOrchestrator` → Bootstrap → Hydration → Dashboard Restore → `RuntimeSessionResult` → Home |
+| **Application API** | `startRuntimeSession()`, `getRuntimeSessionStatus()` |
+| **Composition Root** | Registers `RuntimeSessionService` via `RuntimeSessionFactory` (token #62) |
+| **Design** | **Orchestration only.** No business logic, no SQLite, no repository logic, no persistence, no networking, no retries |
+
+Full detail: [RUNTIME_SESSION.md](./RUNTIME_SESSION.md).
+
 ### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
 
 | Aspect | Implementation |

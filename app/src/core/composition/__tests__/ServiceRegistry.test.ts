@@ -85,6 +85,7 @@ describe("ServiceRegistry", () => {
       "RepositoryHydrationService",
       "DashboardRestoreService",
       "RuntimeWriteThroughService",
+      "RuntimeSessionService",
     ]);
   });
 

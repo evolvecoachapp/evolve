@@ -104,6 +104,7 @@ RuntimeBootstrapFactory → RuntimeBootstrapService
 RepositoryHydrationFactory → RepositoryHydrationService (HydrationService)
 DashboardRestoreFactory → DashboardRestoreService
 RuntimeWriteThroughFactory → RuntimeWriteThroughService
+RuntimeSessionFactory → RuntimeSessionService
 ```
 
 Execution entry points:

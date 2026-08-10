@@ -3987,3 +3987,41 @@ Persistence Contracts
 **Consequences:**
 - Documentation: [RUNTIME_WRITE_THROUGH.md](./RUNTIME_WRITE_THROUGH.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
 - Phase 33 continues with richer domain-to-record mapping and automatic post-mutation orchestration in later sprints.
+
+---
+
+## ADR-125: Runtime Session Orchestrator (Sprint 33.5)
+
+**Status:** Accepted  
+**Date:** 2026-08-10  
+**Context:** Sprints 33.1B–33.3 established independent runtime pipelines (bootstrap, hydration, dashboard restore). Phase 33 requires a single orchestration entry point that coordinates the complete startup lifecycle without duplicating pipeline logic or introducing business rules.
+
+**Decision:**
+
+```
+Application Startup
+  ↓
+RuntimeSessionOrchestrator
+  ├── RuntimeBootstrap
+  ├── RepositoryHydration
+  └── DashboardRestore
+  ↓
+RuntimeSessionResult
+  ↓
+Home
+```
+
+1. Introduce `runtime/session` module with immutable session models and a read-only `RuntimeSessionService` facade.
+2. `RuntimeSessionOrchestrator` delegates to existing application APIs (`bootstrapRuntime`, `hydrateRuntime`, `restoreDashboard`) in deterministic order — no duplicated pipeline logic.
+3. Application APIs (`startRuntimeSession`, `getRuntimeSessionStatus`) are the operational startup path.
+4. Failure in any step stops immediately with typed `RuntimeSessionError` — no retries.
+5. Composition Root registers `RuntimeSessionService` via `RuntimeSessionFactory` (token #62).
+
+**Alternatives considered:**
+- **Orchestration inside RuntimeBootstrapProvider** — rejected: bootstrap gate must remain single-responsibility; session spans three pipelines.
+- **Implicit chaining inside hydration or restore** — rejected: violates pipeline boundaries established in ADR-122/123.
+- **Automatic write-through on session completion** — rejected: write-through remains on-demand per ADR-124.
+
+**Consequences:**
+- Documentation: [RUNTIME_SESSION.md](./RUNTIME_SESSION.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
+- Phase 33 continues with app launch wiring to `startRuntimeSession()` and automatic post-mutation orchestration in later sprints.
