@@ -1,14 +1,30 @@
 import { act, renderHook, waitFor } from "@testing-library/react-native";
-import { resetCompositionRoot } from "../../../core/composition/createCompositionRoot";
+import { resetCompositionRoot, getCompositionRoot } from "../../../core/composition/createCompositionRoot";
 import {
   FIXED_DASHBOARD_ATHLETE_ID,
 } from "../../../integrations/dashboard-projection/testSupport/fixtures";
+import { resetNativeSQLiteTestState } from "../../../infrastructure/sqlite/testSupport/resetNativeSQLiteTestState";
+import { resetRuntimeBootstrap } from "../../../runtime/bootstrap/RuntimeBootstrap";
+import { resetRepositoryHydration } from "../../../runtime/hydration/RepositoryHydrationPipeline";
+import { resetDashboardRestore } from "../../../runtime/dashboard-restore/DashboardRestorePipeline";
+import { resetRuntimeWriteThrough, getRuntimeWriteThroughPromise } from "../../../runtime/write-through/RuntimeWriteThroughPipeline";
+import { getWriteThroughStatus } from "../../../runtime/write-through/application/getWriteThroughStatus";
+import { RUNTIME_WRITE_THROUGH_STATUS } from "../../../runtime/write-through/RuntimeWriteThroughStatus";
+import { resetRuntimeSession } from "../../../runtime/session/RuntimeSessionOrchestrator";
+import { startRuntimeSession } from "../../../runtime/session/application/startRuntimeSession";
+import { resetRuntimeObserver } from "../../../runtime/runtime-observer/RuntimeObserver";
+import { observeRuntime } from "../../../runtime/runtime-observer/application/observeRuntime";
+import { readRecordPayload } from "../../../runtime/persistence/DomainRecord";
+import type { AthleteIdentity } from "../../../features/athlete-identity/models/AthleteIdentity";
 import { RUNTIME_SESSION_STATUS } from "../../../runtime/session/RuntimeSessionStatus";
 import { useRuntimeSession } from "../../../runtime/session/RuntimeSessionContext";
 import { mockProfileExperienceService } from "../providers/MockProfileExperienceService";
 import { useProfile } from "../hooks/useProfile";
 import { ProfileExperienceViewModel } from "../viewmodels/ProfileExperienceViewModel";
-import { ProfileLoadingStatuses } from "../models";
+import { ProfileLoadingStatuses, ProfileSavingStatuses } from "../models";
+import { updateMeasurementUnits } from "../application";
+import { ProfileExperienceError } from "../services";
+import { readHydratedProfile } from "../services/readHydratedProfile";
 
 jest.mock("../../../runtime/session/RuntimeSessionContext", () => ({
   useRuntimeSession: jest.fn(),
@@ -17,6 +33,42 @@ jest.mock("../../../runtime/session/RuntimeSessionContext", () => ({
 const mockedUseRuntimeSession = useRuntimeSession as jest.Mock;
 
 const ATHLETE_ID = FIXED_DASHBOARD_ATHLETE_ID;
+const FIXED_CLOCK = () => "2026-08-10T10:00:00.000Z";
+
+function resetRuntimePipelinesPreservingCompositionRoot(): void {
+  resetRuntimeObserver();
+  resetRuntimeSession();
+  resetRepositoryHydration();
+  resetDashboardRestore();
+  resetRuntimeWriteThrough();
+}
+
+function resetAllRuntimeState(): void {
+  resetRuntimePipelinesPreservingCompositionRoot();
+  resetRuntimeBootstrap();
+  resetCompositionRoot();
+  resetNativeSQLiteTestState();
+}
+
+async function waitForWriteThrough(): Promise<void> {
+  for (let index = 0; index < 50; index += 1) {
+    const inFlight = getRuntimeWriteThroughPromise();
+    if (inFlight) {
+      await inFlight.catch(() => undefined);
+    }
+    if (getWriteThroughStatus() === RUNTIME_WRITE_THROUGH_STATUS.ready) {
+      return;
+    }
+    await Promise.resolve();
+  }
+  throw new Error("Write-through did not reach ready state");
+}
+
+async function flushMicrotasks(count = 5): Promise<void> {
+  for (let index = 0; index < count; index += 1) {
+    await Promise.resolve();
+  }
+}
 
 function mockRuntimeReady(): void {
   mockedUseRuntimeSession.mockReturnValue({
@@ -261,5 +313,191 @@ describe("Profile runtime integration", () => {
 
     expect(getProfileSpy).not.toHaveBeenCalled();
     expect(viewModel.isRuntimeDriven).toBe(true);
+  });
+});
+
+describe("Profile runtime update persistence (Sprint 34.6)", () => {
+  beforeEach(() => {
+    jest.restoreAllMocks();
+    resetAllRuntimeState();
+    mockRuntimeReady();
+  });
+
+  afterEach(() => {
+    resetAllRuntimeState();
+  });
+
+  async function startObservedRuntime(): Promise<void> {
+    await startRuntimeSession({
+      athleteIds: [ATHLETE_ID],
+      clock: FIXED_CLOCK,
+    });
+    seedHydratedIdentity();
+    await flushMicrotasks();
+    observeRuntime({ athleteIds: [ATHLETE_ID], clock: FIXED_CLOCK });
+  }
+
+  it("persists supported measurement unit updates through identity build and write-through", async () => {
+    await startObservedRuntime();
+
+    const viewModel = new ProfileExperienceViewModel({ athleteId: ATHLETE_ID });
+    viewModel.applyHydratedProfile(readHydratedProfile(ATHLETE_ID)!);
+
+    await viewModel.updateUnits({ weight: "lb", distance: "mi", height: "ft_in" });
+
+    expect(viewModel.saving.status).toBe(ProfileSavingStatuses.IDLE);
+    expect(viewModel.error).toBeNull();
+    expect(viewModel.profile?.measurementUnits.weight).toBe("lb");
+    expect(viewModel.profile?.measurementUnits.distance).toBe("mi");
+
+    const identity = getCompositionRoot()
+      .resolve("AthleteIdentityService")
+      .getAthleteIdentity(ATHLETE_ID);
+    expect(identity?.units.mass).toBe("lb");
+    expect(identity?.units.distance).toBe("mi");
+
+    await waitForWriteThrough();
+
+    const adapters = getCompositionRoot().resolve("RepositoryAdapters");
+    expect(adapters.identity.list().length).toBeGreaterThanOrEqual(1);
+    const persisted = readRecordPayload<AthleteIdentity>(adapters.identity.list()[0]);
+    expect(persisted?.units.mass).toBe("lb");
+    expect(persisted?.units.system).toBe("imperial");
+  });
+
+  it("surfaces domain validation failures from AthleteIdentityService.build()", async () => {
+    await startObservedRuntime();
+
+    const identityService = getCompositionRoot().resolve("AthleteIdentityService");
+    const current = identityService.getAthleteIdentity(ATHLETE_ID)!;
+
+    const invalidResult = identityService.build({
+      athleteId: ATHLETE_ID,
+      requestId: "profile:update:invalid:units",
+      profile: current.profile,
+      preferences: current.preferences,
+      settings: current.settings,
+      locale: current.locale,
+      units: {
+        system: "metric",
+        mass: "lb",
+        length: "cm",
+        distance: "km",
+        energy: "kcal",
+      },
+      timeZone: current.timeZone,
+    });
+
+    expect(invalidResult.success).toBe(false);
+
+    await expect(
+      updateMeasurementUnits({
+        athleteId: ATHLETE_ID,
+        units: { weight: "kg", distance: "mi", height: "ft_in" },
+      }),
+    ).rejects.toThrow(ProfileExperienceError);
+  });
+
+  it("triggers Runtime Observer write-through on successful identity mutation", async () => {
+    await startObservedRuntime();
+
+    const adapters = getCompositionRoot().resolve("RepositoryAdapters");
+    expect(adapters.identity.list()).toHaveLength(0);
+
+    const viewModel = new ProfileExperienceViewModel({ athleteId: ATHLETE_ID });
+    viewModel.applyHydratedProfile(readHydratedProfile(ATHLETE_ID)!);
+
+    await viewModel.updateTheme({ theme: "light", accentColor: null });
+    await waitForWriteThrough();
+
+    expect(adapters.identity.list().length).toBeGreaterThanOrEqual(1);
+    const persisted = readRecordPayload<AthleteIdentity>(adapters.identity.list()[0]);
+    expect(persisted?.settings.appearance).toBe("light");
+  });
+
+  it("restores updated identity after restart hydration", async () => {
+    await startObservedRuntime();
+
+    const viewModel = new ProfileExperienceViewModel({ athleteId: ATHLETE_ID });
+    viewModel.applyHydratedProfile(readHydratedProfile(ATHLETE_ID)!);
+    await viewModel.updateTheme({ theme: "dark", accentColor: null });
+    await waitForWriteThrough();
+
+    resetRuntimePipelinesPreservingCompositionRoot();
+
+    await startRuntimeSession({
+      athleteIds: [ATHLETE_ID],
+      clock: FIXED_CLOCK,
+    });
+
+    const restored = readHydratedProfile(ATHLETE_ID);
+    expect(restored?.appearancePreferences.theme).toBe("dark");
+  });
+
+  it("leaves unsupported profile fields unchanged in runtime path", async () => {
+    await startObservedRuntime();
+
+    const viewModel = new ProfileExperienceViewModel({ athleteId: ATHLETE_ID });
+    viewModel.applyHydratedProfile(readHydratedProfile(ATHLETE_ID)!);
+
+    await viewModel.updateGoals([
+      {
+        id: "goal-1",
+        kind: "strength",
+        title: "Bench 100kg",
+        description: "Target bench press.",
+        targetDate: null,
+        progress: 0,
+        isPrimary: true,
+      },
+    ]);
+
+    expect(viewModel.error).toBeNull();
+    expect(viewModel.profile?.goals).toHaveLength(0);
+
+    await viewModel.updateNotifications({
+      workoutReminders: true,
+      mealReminders: true,
+      hydrationReminders: true,
+      coachMessages: true,
+      progressUpdates: true,
+    });
+
+    expect(viewModel.profile?.notificationPreferences.workoutReminders).toBe(false);
+  });
+
+  it("useProfile runtime path persists supported updates without ProfileExperienceService", async () => {
+    await startObservedRuntime();
+
+    const updateUnitsSpy = jest.spyOn(mockProfileExperienceService, "updateMeasurementUnits");
+    const { result } = renderHook(() => useProfile({ athleteId: ATHLETE_ID }));
+
+    await waitFor(() => {
+      expect(result.current.loading.isLoading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.updateUnits({ weight: "lb", distance: "mi", height: "ft_in" });
+    });
+
+    expect(updateUnitsSpy).not.toHaveBeenCalled();
+    expect(result.current.profile?.measurementUnits.weight).toBe("lb");
+    expect(result.current.error).toBeNull();
+  });
+
+  it("profile update path does not import SQLite or repository adapters directly", () => {
+    const updateModule = require("../application/updateAthleteIdentityFromProfile");
+    const viewModelModule = require("../viewmodels/ProfileExperienceViewModel");
+    const updateUnitsModule = require("../application/UpdateMeasurementUnits");
+
+    for (const source of [
+      updateModule.updateAthleteIdentityFromProfile.toString(),
+      viewModelModule.ProfileExperienceViewModel.toString(),
+      updateUnitsModule.updateMeasurementUnits.toString(),
+    ]) {
+      expect(source).not.toMatch(/sqlite/i);
+      expect(source).not.toMatch(/IdentityRepository/);
+      expect(source).not.toMatch(/RepositoryAdapter/);
+    }
   });
 });

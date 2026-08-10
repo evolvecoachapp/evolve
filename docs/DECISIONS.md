@@ -4368,6 +4368,49 @@ Profile Screen
 
 ---
 
+## ADR-135: Profile Update Persistence (Sprint 34.6)
+
+**Status:** Accepted  
+**Date:** 2026-08-10  
+**Context:** Sprint 34.5 wired Profile read path to hydrated Athlete Identity but left all update flows returning `profile_update_unavailable`. Runtime Observer and Write-Through already persist successful `AthleteIdentityService.build()` mutations — Profile updates needed application orchestration through existing domain APIs without new persistence infrastructure.
+
+**Decision:**
+
+```
+Profile UI
+  ↓
+ProfileExperienceViewModel
+  ↓
+Application update APIs
+  ↓
+AthleteIdentityService.build()
+  ↓
+Runtime Observer
+  ↓
+Runtime Write-Through
+  ↓
+Repository Contracts
+  ↓
+SQLite
+```
+
+1. Extend existing Profile Application update APIs to rebuild Athlete Identity when `athleteId` is provided and no `ProfileExperienceService` is injected.
+2. Map supported Profile DTO fields to existing Athlete Identity domain fields only (`AthleteUnits`, `AthleteSettings.appearance`, `AthleteProfile.experienceLevel`, `AthletePreferences`).
+3. Leave unsupported Profile fields unchanged (goals, notifications, height/weight, email/avatar, connected services, coach motivation/feedback depth, nutrition calorie/meals/allergies/supplements) — do not add new domain fields.
+4. Runtime-driven ViewModel receives `athleteId` from `useProfile`; successful identity rebuilds trigger persistence via existing Runtime Observer — no direct `persistRuntime()` from Profile.
+5. Do not modify Runtime Session, Runtime Observer, Runtime Bootstrap, repository contracts, Athlete Identity models, or Composition Root registrations. No new factories or providers. No networking.
+
+**Alternatives considered:**
+- **New ProfilePersistenceService** — rejected; violates sprint constraint of no new persistence infrastructure; existing Observer + Write-Through pipeline is sufficient.
+- **Direct repository writes from Profile Application layer** — rejected; bypasses domain composition and duplicates persistence logic.
+- **Extend Athlete Identity model for goals/notifications** — rejected; out of scope; unsupported fields documented as integration risks.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Supported Profile edits survive application restart via existing hydration path. Unsupported fields remain presentation-only until future domain work.
+
+---
+
 ## ADR-132: Domain Persistence Serialization (Sprint 34.3)
 
 **Status:** Accepted  

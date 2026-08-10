@@ -1,3 +1,4 @@
+export * from "./updateAthleteIdentityFromProfile";
 export * from "./LoadProfile";
 export * from "./RefreshProfile";
 export * from "./UpdateAppearancePreferences";

@@ -29,8 +29,8 @@ export function useProfile({
   const athleteKey = athleteId ?? "";
 
   const viewModel = useMemo(
-    () => injected ?? new ProfileExperienceViewModel({ service }),
-    [injected, service],
+    () => injected ?? new ProfileExperienceViewModel({ service, athleteId }),
+    [injected, service, athleteId],
   );
 
   useEffect(() => viewModel.subscribe(bump), [viewModel]);

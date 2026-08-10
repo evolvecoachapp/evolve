@@ -184,4 +184,108 @@ describe("ProfileExperienceViewModel", () => {
     await viewModel.loadProfile();
     expect(viewModel.profile).toBeNull();
   });
+
+  it("persists measurement units through runtime identity path", async () => {
+    const { getCompositionRoot, resetCompositionRoot } = require("../../../core/composition/createCompositionRoot");
+    resetCompositionRoot();
+    const root = getCompositionRoot();
+    root.resolve("AthleteIdentityService").build({
+      athleteId: "athlete-001",
+      requestId: "vm:identity:1",
+      profile: {
+        displayName: "Alex Rivera",
+        givenName: "Alex",
+        familyName: "Rivera",
+        sex: "unspecified",
+        birthYear: 1990,
+        experienceLevel: "intermediate",
+      },
+      preferences: {
+        preferredTrainingTimes: Object.freeze(["Morning"]),
+        preferredModalities: Object.freeze(["Strength"]),
+        dietaryPreferences: Object.freeze(["balanced"]),
+        communicationTone: "analytical",
+        notes: Object.freeze([]),
+      },
+      settings: {
+        weekStartsOn: 1,
+        use24HourClock: true,
+        appearance: "dark",
+      },
+      locale: { languageTag: "en-US" },
+      units: { system: "metric" },
+      timeZone: { iana: "Etc/UTC", displayName: "UTC" },
+    });
+
+    const viewModel = new ProfileExperienceViewModel({ athleteId: "athlete-001" });
+    viewModel.applyHydratedProfile({
+      id: "athlete-001",
+      displayName: "Alex Rivera",
+      email: null,
+      avatarUrl: null,
+      joinDate: "2026-01-01",
+      bio: "",
+      age: 28,
+      heightCm: null,
+      weightKg: null,
+      goals: Object.freeze([]),
+      trainingPreferences: {
+        level: "intermediate",
+        sessionsPerWeek: 0,
+        preferredDuration: 0,
+        preferredTime: "",
+        focusAreas: Object.freeze([]),
+        equipmentAvailable: Object.freeze([]),
+        destination: null,
+      },
+      nutritionPreferences: {
+        dietaryApproach: "balanced",
+        calorieTarget: 0,
+        mealsPerDay: 0,
+        allergies: Object.freeze([]),
+        supplements: Object.freeze([]),
+        destination: null,
+      },
+      coachPreferences: {
+        coachingStyle: "supportive",
+        motivationLevel: "moderate",
+        feedbackFrequency: "regular",
+        explanationDepth: "moderate",
+        destination: null,
+      },
+      notificationPreferences: {
+        workoutReminders: false,
+        mealReminders: false,
+        hydrationReminders: false,
+        coachMessages: false,
+        progressUpdates: false,
+        destination: null,
+      },
+      appearancePreferences: {
+        theme: "dark",
+        accentColor: null,
+        destination: null,
+      },
+      measurementUnits: {
+        weight: "kg",
+        distance: "km",
+        height: "cm",
+      },
+      connectedServices: { services: Object.freeze([]) },
+      sections: Object.freeze([]),
+      accountStatus: "Active",
+      appVersion: "0.6.0",
+      editProfileDestination: null,
+      privacyDestination: null,
+      aboutDestination: null,
+    });
+
+    await viewModel.updateUnits({ weight: "lb", distance: "mi", height: "ft_in" });
+
+    expect(viewModel.error).toBeNull();
+    expect(viewModel.profile?.measurementUnits.weight).toBe("lb");
+    expect(
+      root.resolve("AthleteIdentityService").getAthleteIdentity("athlete-001")?.units.mass,
+    ).toBe("lb");
+  });
 });

@@ -34,6 +34,7 @@ import {
 
 export interface ProfileExperienceViewModelDeps {
   readonly service?: ProfileExperienceService;
+  readonly athleteId?: string;
 }
 
 /**
@@ -42,6 +43,7 @@ export interface ProfileExperienceViewModelDeps {
  */
 export class ProfileExperienceViewModel {
   private readonly service: ProfileExperienceService | null;
+  private readonly athleteId: string | null;
   private readonly listeners = new Set<() => void>();
   private _profile: AthleteProfile | null = null;
   private _loading: ProfileLoadingState;
@@ -50,6 +52,7 @@ export class ProfileExperienceViewModel {
 
   constructor(deps: ProfileExperienceViewModelDeps = {}) {
     this.service = deps.service ?? null;
+    this.athleteId = deps.athleteId ?? null;
     this._loading = createProfileLoadingState(
       this.service
         ? ProfileLoadingStatuses.IDLE
@@ -151,35 +154,51 @@ export class ProfileExperienceViewModel {
   }
 
   async updateUnits(units: MeasurementUnitsDto): Promise<void> {
-    await this.save(() => updateMeasurementUnits({ service: this.service!, units }));
+    await this.save((athleteId) =>
+      updateMeasurementUnits({ service: this.service ?? undefined, athleteId, units }),
+    );
   }
 
   async updateTheme(prefs: AppearancePreferencesDto): Promise<void> {
-    await this.save(() => updateAppearancePreferences({ service: this.service!, prefs }));
+    await this.save((athleteId) =>
+      updateAppearancePreferences({ service: this.service ?? undefined, athleteId, prefs }),
+    );
   }
 
   async updateNotifications(prefs: NotificationPreferencesDto): Promise<void> {
-    await this.save(() => updateNotificationPreferences({ service: this.service!, prefs }));
+    await this.save((athleteId) =>
+      updateNotificationPreferences({ service: this.service ?? undefined, athleteId, prefs }),
+    );
   }
 
   async updateTrainingPreferences(prefs: TrainingPreferencesDto): Promise<void> {
-    await this.save(() => updateTrainingPreferences({ service: this.service!, prefs }));
+    await this.save((athleteId) =>
+      updateTrainingPreferences({ service: this.service ?? undefined, athleteId, prefs }),
+    );
   }
 
   async updateNutritionPreferences(prefs: NutritionPreferencesDto): Promise<void> {
-    await this.save(() => updateNutritionPreferences({ service: this.service!, prefs }));
+    await this.save((athleteId) =>
+      updateNutritionPreferences({ service: this.service ?? undefined, athleteId, prefs }),
+    );
   }
 
   async updateGoals(goals: readonly AthleteGoalDto[]): Promise<void> {
-    await this.save(() => updateGoals({ service: this.service!, goals }));
+    await this.save((athleteId) =>
+      updateGoals({ service: this.service ?? undefined, athleteId, goals }),
+    );
   }
 
   async updateCoachPreferences(prefs: CoachPreferencesDto): Promise<void> {
-    await this.save(() => updateCoachPreferences({ service: this.service!, prefs }));
+    await this.save((athleteId) =>
+      updateCoachPreferences({ service: this.service ?? undefined, athleteId, prefs }),
+    );
   }
 
-  private async save(action: () => Promise<AthleteProfile>): Promise<void> {
-    if (!this.service) {
+  private async save(
+    action: (athleteId: string | undefined) => Promise<AthleteProfile>,
+  ): Promise<void> {
+    if (!this.service && !this.athleteId) {
       this._error = createProfileErrorState(
         "Profile updates are not available in the runtime path.",
         "profile_update_unavailable",
@@ -193,7 +212,7 @@ export class ProfileExperienceViewModel {
     this._error = null;
     this.notify();
     try {
-      this._profile = await action();
+      this._profile = await action(this.athleteId ?? undefined);
     } catch (caught) {
       this._error = this.toErrorState(caught);
     }

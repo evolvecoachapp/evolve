@@ -582,11 +582,26 @@ ADR-133: [DECISIONS.md](./DECISIONS.md).
 | **Production path** | `useProfile` waits for `RuntimeSessionProvider` READY, reads `AthleteIdentityService.getAthleteIdentity(athleteId)`, projects via `mapAthleteIdentityToProfile`, applies via ViewModel — no `ProfileExperienceService` fetch |
 | **Refresh** | Pull-to-refresh re-reads hydrated identity from `AthleteIdentityService` (no mock reload) |
 | **Test/preview path** | Explicit `service` injection on `ProfileExperienceScreen` / `useProfile` retains ProfileExperienceService for isolated tests and previews |
-| **Updates** | No production update API wired — ProfileExperienceService update methods remain test/preview-only; persistence via Runtime Write-Through requires future `AthleteIdentityService.build()` orchestration |
-| **Design** | **Presentation wiring only.** No Runtime Session, Observer, Bootstrap, repository contract, or Athlete Identity model changes. No new factories or providers. No networking. |
-| **Validation** | Integration tests cover populated/empty runtime startup, hydrated identity rendering, restart refresh, ViewModel integration, and no ProfileExperienceService usage in production path |
+| **Updates** | Supported profile edits call existing Application update APIs → `AthleteIdentityService.build()` → Runtime Observer → Write-Through → SQLite; unsupported fields remain unchanged |
+| **Design** | **Application orchestration only.** Uses existing Athlete Identity domain fields and validation. No direct SQLite/repository access from Profile. No new domain fields. No networking. |
+| **Validation** | Integration tests cover populated/empty runtime startup, hydrated identity rendering, restart refresh, supported update persistence, validation failures, observer write-through, restart hydration, unsupported fields, and no ProfileExperienceService usage in production path |
 
 ADR-134: [DECISIONS.md](./DECISIONS.md).
+
+### Profile Update Persistence — Sprint 34.6 (Phase 34)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Persist supported Profile edits through the existing Athlete Identity composition and Runtime Write-Through pipeline |
+| **Flow** | Profile UI → `ProfileExperienceViewModel` → Application update APIs (`updateMeasurementUnits`, `updateAppearancePreferences`, etc.) → `updateAthleteIdentityFromProfile()` → `AthleteIdentityService.build()` → Runtime Observer → Write-Through → Repository Contracts → SQLite |
+| **Supported updates** | Measurement units (`AthleteUnits`); appearance theme (`AthleteSettings.appearance`); training level/times/modalities (`AthleteProfile.experienceLevel`, `AthletePreferences`); dietary approach (`AthletePreferences.dietaryPreferences`); coaching tone (`AthletePreferences.communicationTone`) |
+| **Unsupported updates** | Goals, notification preferences, height/weight, email/avatar, connected services, coach motivation/feedback/explanation depth, nutrition calorie/meals/allergies/supplements — left unchanged; no new domain fields |
+| **Production path** | Runtime-driven ViewModel receives `athleteId`; update methods route through identity rebuild instead of `ProfileExperienceService` |
+| **Persistence** | No direct `persistRuntime()` from Profile; Runtime Observer detects successful `build()` and triggers write-through automatically |
+| **Design** | **Application orchestration only.** No Runtime Session/Observer/Bootstrap/repository contract changes. No new factories or providers. No networking. |
+| **Validation** | Integration tests cover supported updates, validation failures, observer persistence, SQLite round-trip, restart hydration, unsupported fields, and no direct persistence access from Profile |
+
+ADR-135: [DECISIONS.md](./DECISIONS.md).
 
 ### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
 
