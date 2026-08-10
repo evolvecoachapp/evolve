@@ -3,12 +3,15 @@ import {
   loadCoachConversation,
   loadConversationHistory,
   loadDailyInsight,
+  loadHydratedCoachExperience,
   loadQuickActions,
   loadRecommendations,
   pinCoachInsight,
   refreshCoachExperience,
   regenerateCoachResponse,
+  regenerateRuntimeCoachResponse,
   sendCoachMessage,
+  sendRuntimeCoachMessage,
 } from "../application";
 import type { CoachConversationHistoryItem } from "../models/CoachExperience";
 import type { CoachExperience } from "../models/CoachExperience";
@@ -30,36 +33,55 @@ import {
   type CoachTypingState,
 } from "../models/CoachTypingState";
 import { rebuildCoachExperience } from "../mappers";
+import type { CoachMessageDto } from "../types/coachExperienceDto";
+import { CoachRuntimeError } from "../application/sendRuntimeCoachMessage";
 import {
-  coachExperienceService,
   CoachExperienceError,
   type CoachExperienceService,
 } from "../services";
 
 export interface CoachExperienceViewModelDeps {
   readonly service?: CoachExperienceService;
+  readonly athleteId?: string;
+  readonly now?: () => Date;
 }
 
 /**
  * Coach Experience ViewModel — application orchestration only.
- * No UI code. Streaming state is prepared for future live providers.
+ * Production path applies hydrated Unified Workspace via applyHydratedCoachExperience().
  */
 export class CoachExperienceViewModel {
-  private readonly service: CoachExperienceService;
+  private readonly service: CoachExperienceService | null;
+  private readonly athleteId: string | null;
+  private readonly now: () => Date;
   private readonly listeners = new Set<() => void>();
 
   private _experience: CoachExperience | null = null;
-  private _loading: CoachLoadingState = createCoachLoadingState(
-    CoachLoadingStatuses.IDLE,
-  );
+  private _loading: CoachLoadingState;
   private _typing: CoachTypingState = createCoachTypingState(
     CoachTypingStatuses.IDLE,
   );
   private _error: CoachErrorState | null = null;
   private _streamingPrepared = false;
+  private _sessionId: string | null = null;
+  private _sessionMessages: readonly CoachMessageDto[] = Object.freeze([]);
+  private _pinnedInsightId: string | null = null;
+  private readonly _dismissedInsightIds = new Set<string>();
 
   constructor(deps: CoachExperienceViewModelDeps = {}) {
-    this.service = deps.service ?? coachExperienceService;
+    this.service = deps.service ?? null;
+    this.athleteId = deps.athleteId ?? null;
+    this.now = deps.now ?? (() => new Date());
+    this._loading = createCoachLoadingState(
+      this.service
+        ? CoachLoadingStatuses.IDLE
+        : CoachLoadingStatuses.LOADING,
+    );
+  }
+
+  /** True when the ViewModel is driven by hydrated workspace instead of CoachExperienceService. */
+  get isRuntimeDriven(): boolean {
+    return this.service === null;
   }
 
   get experience(): CoachExperience | null {
@@ -127,6 +149,10 @@ export class CoachExperienceViewModel {
   }
 
   async loadConversation(): Promise<void> {
+    if (!this.service) {
+      return;
+    }
+
     this._loading = createCoachLoadingState(CoachLoadingStatuses.LOADING);
     this._error = null;
     this.notify();
@@ -146,8 +172,63 @@ export class CoachExperienceViewModel {
     this.notify();
   }
 
+  /** Applies Coach Experience projected from hydrated Unified Workspace output. */
+  applyHydratedCoachExperience(experience: CoachExperience): void {
+    this._experience = experience;
+    this._sessionMessages = Object.freeze(
+      experience.conversation.messages.map((message) =>
+        Object.freeze({
+          id: message.id,
+          role: message.role,
+          content: message.content,
+          createdAt: message.createdAt,
+          citations:
+            message.citations.length > 0 ? message.citations : undefined,
+        }),
+      ),
+    );
+    this._loading = createCoachLoadingState(CoachLoadingStatuses.IDLE);
+    this._error = null;
+    this.notify();
+  }
+
+  /** Re-applies hydrated workspace output (runtime production refresh path). */
+  async refreshFromHydratedCoachExperience(
+    experience: CoachExperience | null,
+  ): Promise<void> {
+    this._loading = createCoachLoadingState(CoachLoadingStatuses.REFRESHING);
+    this._error = null;
+    this.notify();
+
+    if (experience) {
+      this.applyHydratedCoachExperience(experience);
+      return;
+    }
+
+    this._experience = null;
+    this._loading = createCoachLoadingState(CoachLoadingStatuses.IDLE);
+    this._error = createCoachErrorState(
+      "Coach runtime unavailable.",
+      "coach_runtime_unavailable",
+    );
+    this.notify();
+  }
+
+  /** Surfaces missing or unavailable hydrated coach output to the Coach UI. */
+  applyCoachFailure(message: string): void {
+    this._experience = null;
+    this._loading = createCoachLoadingState(CoachLoadingStatuses.IDLE);
+    this._error = createCoachErrorState(message, "coach_runtime_unavailable");
+    this.notify();
+  }
+
   async loadDailyInsight(): Promise<void> {
     if (!this._experience) {
+      return;
+    }
+
+    if (!this.service) {
+      await this.reloadHydratedExperience();
       return;
     }
 
@@ -181,11 +262,42 @@ export class CoachExperienceViewModel {
     this.notify();
 
     try {
-      this._experience = await sendCoachMessage({
-        service: this.service,
-        experience: this._experience,
-        message: trimmed,
-      });
+      if (this.service) {
+        this._experience = await sendCoachMessage({
+          service: this.service,
+          experience: this._experience,
+          message: trimmed,
+        });
+      } else if (this.athleteId) {
+        const createdAt = this.now().toISOString();
+        const turn = sendRuntimeCoachMessage({
+          athleteId: this.athleteId,
+          conversationId: this._experience.conversation.id,
+          message: trimmed,
+          sessionId: this._sessionId,
+          createdAt,
+        });
+        this._sessionId = turn.sessionId;
+        this._sessionMessages = Object.freeze([
+          ...this._sessionMessages,
+          turn.userMessage,
+          turn.coachMessage,
+        ]);
+        const hydrated = await loadHydratedCoachExperience({
+          athleteId: this.athleteId,
+          sessionMessages: this._sessionMessages,
+          sessionId: this._sessionId,
+          pinnedInsightId: this._pinnedInsightId,
+          dismissedInsightIds: [...this._dismissedInsightIds],
+        });
+        if (!hydrated) {
+          throw new CoachRuntimeError("Coach runtime unavailable.");
+        }
+        this._experience = hydrated;
+      } else {
+        throw new CoachRuntimeError("Coach runtime unavailable.");
+      }
+
       this._loading = createCoachLoadingState(CoachLoadingStatuses.IDLE);
       this._typing = createCoachTypingState(CoachTypingStatuses.IDLE);
       this._error = null;
@@ -208,11 +320,38 @@ export class CoachExperienceViewModel {
     this.notify();
 
     try {
-      this._experience = await regenerateCoachResponse({
-        service: this.service,
-        experience: this._experience,
-        messageId,
-      });
+      if (this.service) {
+        this._experience = await regenerateCoachResponse({
+          service: this.service,
+          experience: this._experience,
+          messageId,
+        });
+      } else if (this.athleteId) {
+        const createdAt = this.now().toISOString();
+        const turn = regenerateRuntimeCoachResponse({
+          experience: this._experience,
+          athleteId: this.athleteId,
+          messageId,
+          sessionId: this._sessionId,
+          createdAt,
+        });
+        this._sessionId = turn.sessionId;
+        this._sessionMessages = turn.messages;
+        const hydrated = await loadHydratedCoachExperience({
+          athleteId: this.athleteId,
+          sessionMessages: this._sessionMessages,
+          sessionId: this._sessionId,
+          pinnedInsightId: this._pinnedInsightId,
+          dismissedInsightIds: [...this._dismissedInsightIds],
+        });
+        if (!hydrated) {
+          throw new CoachRuntimeError("Coach runtime unavailable.");
+        }
+        this._experience = hydrated;
+      } else {
+        throw new CoachRuntimeError("Coach runtime unavailable.");
+      }
+
       this._typing = createCoachTypingState(CoachTypingStatuses.IDLE);
       this._error = null;
     } catch (caught: unknown) {
@@ -225,6 +364,11 @@ export class CoachExperienceViewModel {
 
   async suggestActions(): Promise<void> {
     if (!this._experience) {
+      return;
+    }
+
+    if (!this.service) {
+      await this.reloadHydratedExperience();
       return;
     }
 
@@ -243,6 +387,11 @@ export class CoachExperienceViewModel {
 
   async loadConversationHistory(): Promise<void> {
     if (!this._experience) {
+      return;
+    }
+
+    if (!this.service) {
+      await this.reloadHydratedExperience();
       return;
     }
 
@@ -266,6 +415,12 @@ export class CoachExperienceViewModel {
       return;
     }
 
+    if (!this.service) {
+      this._pinnedInsightId = insightId;
+      await this.reloadHydratedExperience();
+      return;
+    }
+
     try {
       this._experience = await pinCoachInsight({
         service: this.service,
@@ -285,6 +440,15 @@ export class CoachExperienceViewModel {
       return;
     }
 
+    if (!this.service) {
+      this._dismissedInsightIds.add(insightId);
+      if (this._pinnedInsightId === insightId) {
+        this._pinnedInsightId = null;
+      }
+      await this.reloadHydratedExperience();
+      return;
+    }
+
     try {
       this._experience = await dismissCoachInsight({
         service: this.service,
@@ -300,6 +464,23 @@ export class CoachExperienceViewModel {
   }
 
   async refresh(): Promise<void> {
+    if (!this.service) {
+      if (!this.athleteId) {
+        this.applyCoachFailure("Coach runtime unavailable.");
+        return;
+      }
+
+      const experience = await loadHydratedCoachExperience({
+        athleteId: this.athleteId,
+        sessionMessages: this._sessionMessages,
+        sessionId: this._sessionId,
+        pinnedInsightId: this._pinnedInsightId,
+        dismissedInsightIds: [...this._dismissedInsightIds],
+      });
+      await this.refreshFromHydratedCoachExperience(experience);
+      return;
+    }
+
     this._loading = createCoachLoadingState(CoachLoadingStatuses.REFRESHING);
     this._error = null;
     this.notify();
@@ -323,6 +504,11 @@ export class CoachExperienceViewModel {
       return;
     }
 
+    if (!this.service) {
+      await this.reloadHydratedExperience();
+      return;
+    }
+
     try {
       const recommendations = await loadRecommendations({
         service: this.service,
@@ -338,6 +524,28 @@ export class CoachExperienceViewModel {
     this.notify();
   }
 
+  private async reloadHydratedExperience(): Promise<void> {
+    if (!this.athleteId) {
+      this.applyCoachFailure("Coach runtime unavailable.");
+      return;
+    }
+
+    const experience = await loadHydratedCoachExperience({
+      athleteId: this.athleteId,
+      sessionMessages: this._sessionMessages,
+      sessionId: this._sessionId,
+      pinnedInsightId: this._pinnedInsightId,
+      dismissedInsightIds: [...this._dismissedInsightIds],
+    });
+
+    if (!experience) {
+      this.applyCoachFailure("Coach runtime unavailable.");
+      return;
+    }
+
+    this.applyHydratedCoachExperience(experience);
+  }
+
   private toErrorState(caught: unknown): CoachErrorState {
     if (caught instanceof CoachExperienceError) {
       return createCoachErrorState(
@@ -345,6 +553,9 @@ export class CoachExperienceViewModel {
         "coach_experience_service_error",
         true,
       );
+    }
+    if (caught instanceof CoachRuntimeError) {
+      return createCoachErrorState(caught.message, "coach_runtime_error", true);
     }
     if (caught instanceof Error) {
       return createCoachErrorState(caught.message);

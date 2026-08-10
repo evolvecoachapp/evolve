@@ -1,4 +1,6 @@
 import { act, renderHook, waitFor } from "@testing-library/react-native";
+import { RUNTIME_SESSION_STATUS } from "../../../runtime/session/RuntimeSessionStatus";
+import { useRuntimeSession } from "../../../runtime/session/RuntimeSessionContext";
 import {
   useCoachConversation,
   useCoachInsights,
@@ -10,6 +12,20 @@ import { mockCoachExperienceData } from "../mocks/coachExperienceData";
 import type { CoachExperienceService } from "../types/coachExperienceService";
 import { CoachExperienceError } from "../types/coachExperienceService";
 import { CoachExperienceViewModel } from "../viewmodels";
+
+jest.mock("../../../runtime/session/RuntimeSessionContext", () => ({
+  useRuntimeSession: jest.fn(),
+}));
+
+const mockedUseRuntimeSession = useRuntimeSession as jest.Mock;
+
+beforeEach(() => {
+  mockedUseRuntimeSession.mockReturnValue({
+    isStarting: false,
+    status: RUNTIME_SESSION_STATUS.ready,
+    retrySession: jest.fn(),
+  });
+});
 
 function createService(options?: { fail?: boolean }): CoachExperienceService {
   const seed = {

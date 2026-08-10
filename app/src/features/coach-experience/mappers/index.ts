@@ -9,3 +9,4 @@ export {
   mapCoachRecommendation,
   rebuildCoachExperience,
 } from "./mapCoachExperience";
+export { mapWorkspaceCoachToExperienceDto } from "./mapWorkspaceCoachToExperienceDto";

@@ -2,6 +2,7 @@ import { View } from "react-native";
 import { RefreshControl } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "../../../auth/useAuth";
 import { GradientBackground } from "../../../components/GradientBackground";
 import { TabScreenContainer } from "../../../components/TabScreenContainer";
 import { useTheme } from "../../../theme/ThemeContext";
@@ -36,7 +37,8 @@ export interface CoachExperienceScreenProps {
 
 /**
  * Flagship Coach Experience screen — composition only.
- * No business logic; data via ViewModel → Application → ExperienceService.
+ * Production data flows from hydrated Unified Workspace via applyHydratedCoachExperience().
+ * CoachExperienceService is test/preview-only when injected via the service prop.
  */
 export function CoachExperienceScreen({
   service,
@@ -44,8 +46,9 @@ export function CoachExperienceScreen({
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { user } = useAuth();
 
-  const conversation = useCoachConversation({ service });
+  const conversation = useCoachConversation({ service, athleteId: user?.id });
   const insights = useCoachInsights({ viewModel: conversation.viewModel });
   const recommendations = useCoachRecommendations({
     viewModel: conversation.viewModel,

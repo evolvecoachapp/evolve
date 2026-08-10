@@ -8,3 +8,10 @@ export { pinCoachInsight } from "./PinCoachInsight";
 export { dismissCoachInsight } from "./DismissCoachInsight";
 export { loadConversationHistory } from "./LoadConversationHistory";
 export { regenerateCoachResponse } from "./RegenerateCoachResponse";
+export { buildRuntimeCoachConversationRequest } from "./buildRuntimeCoachConversationRequest";
+export { loadHydratedCoachExperience } from "./loadHydratedCoachExperience";
+export {
+  CoachRuntimeError,
+  sendRuntimeCoachMessage,
+} from "./sendRuntimeCoachMessage";
+export { regenerateRuntimeCoachResponse } from "./regenerateRuntimeCoachResponse";

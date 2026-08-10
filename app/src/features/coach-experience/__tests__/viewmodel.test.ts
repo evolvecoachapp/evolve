@@ -4,6 +4,16 @@ import {
   mockCoachExperienceData,
 } from "../mocks/coachExperienceData";
 import { CoachLoadingStatuses } from "../models/CoachLoadingState";
+import {
+  createCoachConversation,
+  createCoachExperience,
+  createCoachMessage,
+} from "../models";
+import {
+  CoachConversationStatuses,
+  createCoachConversationState,
+} from "../models/CoachConversationState";
+import { CoachMessageRoles } from "../models/CoachMessage";
 import type { CoachExperienceDto } from "../types/coachExperienceDto";
 import type { CoachExperienceService } from "../types/coachExperienceService";
 import { CoachExperienceError } from "../types/coachExperienceService";
@@ -240,5 +250,33 @@ describe("CoachExperienceViewModel", () => {
     await viewModel.loadConversation();
 
     expect(listener.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("applyHydratedCoachExperience drives runtime path without service", async () => {
+    const viewModel = new CoachExperienceViewModel({ athleteId: "athlete:1" });
+    expect(viewModel.isRuntimeDriven).toBe(true);
+
+    viewModel.applyHydratedCoachExperience(
+      createCoachExperience({
+        conversation: createCoachConversation({
+          id: "conv-runtime",
+          title: "Today's Coaching",
+          messages: [
+            createCoachMessage({
+              id: "msg-1",
+              role: CoachMessageRoles.COACH,
+              content: "Hold intensity this week",
+              createdAt: "2026-07-29T09:00:00.000Z",
+            }),
+          ],
+          state: createCoachConversationState(CoachConversationStatuses.READY),
+          createdAt: "2026-07-29T08:00:00.000Z",
+          updatedAt: "2026-07-29T09:00:00.000Z",
+        }),
+      }),
+    );
+
+    expect(viewModel.messages.length).toBe(1);
+    expect(viewModel.loading.status).toBe(CoachLoadingStatuses.IDLE);
   });
 });

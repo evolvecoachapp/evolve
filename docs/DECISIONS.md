@@ -4528,6 +4528,47 @@ Goal Progress Screen
 
 ---
 
+## ADR-140: Coach Runtime Activation (Sprint 35.1)
+
+**Status:** Accepted  
+**Date:** 2026-08-11  
+**Context:** Coach Experience UI (Sprint 31.3) loaded exclusively from Mock CoachExperienceService on the authenticated Coach tab, while the real coaching intelligence pipeline (Coach Conversation Orchestrator, Conversation Memory, Agent Collaboration, Coach Timeline) already existed in the Composition Root from Sprints 24.x–26.x. Unified Workspace projects `WorkspaceCoach` from Explainable Coaching Session artifacts, but no Coach Experience runtime path consumed hydrated workspace output or executed coaching turns through the existing pipeline.
+
+**Decision:**
+
+```
+Runtime Session
+  ↓
+Repository Hydration
+  ↓
+UnifiedWorkspaceService (WorkspaceCoach)
+  + Composition Root (CoachConversationService, ConversationMemoryService, CoachTimelineService)
+  ↓
+loadHydratedCoachExperience()
+  ↓
+CoachExperienceViewModel.applyHydratedCoachExperience()
+  ↓
+Coach Screen
+```
+
+1. Wire `useCoachConversation` to wait for Runtime Session READY and load via `loadHydratedCoachExperience({ athleteId })` instead of `CoachExperienceService.getExperience()`.
+2. Project hydrated `WorkspaceCoach` (and Composition Root memory snapshot) into the Coach Experience read model via `mapWorkspaceCoachToExperienceDto`.
+3. Execute runtime coaching turns through existing `processCoachConversationTurn` application API — no duplicate orchestration layer, no direct LLM provider in UI.
+4. Preserve in-session conversation state in the ViewModel; re-project via `loadHydratedCoachExperience` after each turn.
+5. Coach Timeline appends remain owned by the existing Coach Conversation orchestrator (`timelineIntegration` helpers) — no new timeline publisher.
+6. Do not modify Runtime Session, Runtime Observer, Runtime Bootstrap, repository contracts, SQLite infrastructure, or Dashboard Projection models. No new factories or providers. No networking.
+
+**Alternatives considered:**
+- **New RuntimeCoachExperienceService provider** — rejected; violates sprint constraint of no new providers; hook-level bridge from existing Unified Workspace + Coach Conversation pipeline is sufficient (mirrors ADR-139).
+- **Wire OpenAI/Anthropic directly in Coach UI** — rejected; no live LLM provider exists in mobile production architecture; deterministic Coach Conversation pipeline is the supported seam until provider integration sprint.
+- **Build Conversation Persistence SQLite in this sprint** — rejected; `ConversationPersistenceRepository` has InMemoryStorageAdapter only; report gap and defer.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Coach tab is driven by hydrated workspace output and existing Coach Conversation orchestration in production. Mock CoachExperienceService remains available for isolated feature tests and preview injection only. In-session conversation state is not yet persisted through Runtime Observer. Live LLM provider integration remains a follow-up sprint.
+
+---
+
 ## ADR-138: Recovery Runtime Activation (Sprint 34.9)
 
 **Status:** Accepted  

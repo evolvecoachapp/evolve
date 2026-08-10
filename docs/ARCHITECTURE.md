@@ -664,6 +664,21 @@ ADR-138: [DECISIONS.md](./DECISIONS.md).
 
 ADR-139: [DECISIONS.md](./DECISIONS.md).
 
+### Coach Runtime Activation — Sprint 35.1 (Phase 35)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Drive the Coach tab from hydrated Unified Workspace and existing Coach Conversation orchestration instead of Mock CoachExperienceService loading |
+| **Flow** | Runtime Session → Repository Hydration → UnifiedWorkspaceService (`WorkspaceCoach`) + Composition Root (`CoachConversationService`, `ConversationMemoryService`, `CoachTimelineService`) → `loadHydratedCoachExperience()` → `CoachExperienceViewModel.applyHydratedCoachExperience()` → Coach Screen |
+| **Production path** | `useCoachConversation` waits for `RuntimeSessionProvider` READY, loads via `loadHydratedCoachExperience({ athleteId })`, applies via ViewModel — no `CoachExperienceService` fetch |
+| **Coaching turns** | Runtime send/regenerate execute through existing `processCoachConversationTurn` application API (Intent Routing → Coaching Session → Coach Supervisor → Agent Collaboration → Conversation Memory → Coach Timeline append where supported) — deterministic orchestration only, no direct LLM provider in UI |
+| **Refresh** | Pull-to-refresh re-loads hydrated workspace output preserving in-session conversation state (no provider mock reload) |
+| **Test/preview path** | Explicit `service` injection on `CoachExperienceScreen` / `useCoachConversation` retains CoachExperienceService for isolated tests and previews |
+| **Design** | **Application orchestration only.** Uses existing Unified Workspace, Coach Conversation, Conversation Memory, Agent Collaboration, and Coach Timeline contracts. No direct SQLite/repository access from Coach UI. No new persistence infrastructure. No duplicate AI orchestration or memory system. Conversation PersistenceRepository has no SQLite implementation — in-session chat state is not yet persisted through Runtime Observer. **Provider gap:** live LLM/AI provider not wired; production seam uses deterministic Coach Conversation pipeline. |
+| **Validation** | Integration tests cover populated/empty runtime startup, hydrated coach rendering, coaching turn execution, Conversation Memory integration, Agent Collaboration integration, Coach Timeline integration, failure propagation, deterministic orchestration, ViewModel integration, and no CoachExperienceService usage in production path |
+
+ADR-140: [DECISIONS.md](./DECISIONS.md).
+
 ### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
 
 | Aspect | Implementation |
