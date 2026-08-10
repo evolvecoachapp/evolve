@@ -4450,6 +4450,45 @@ Workout Screen
 
 ---
 
+## ADR-137: Nutrition Runtime Activation (Sprint 34.8)
+
+**Status:** Accepted  
+**Date:** 2026-08-10  
+**Context:** Sprint 31.5 shipped the Nutrition Experience UI with Mock NutritionExperienceService as the default production provider. Runtime Session, Repository Hydration, and Unified Workspace were already composed in the application layer — the Nutrition tab still loaded mock seed data on every authenticated startup.
+
+**Decision:**
+
+```
+Runtime Session
+  ↓
+Repository Hydration
+  ↓
+UnifiedWorkspaceService (+ PlanHistoryService nutrition plan)
+  ↓
+loadHydratedNutritionExperience()
+  ↓
+NutritionExperienceViewModel.applyHydratedDashboard()
+  ↓
+Nutrition Screen
+```
+
+1. Wire `useNutritionDashboard` to wait for Runtime Session READY and load via `loadHydratedNutritionExperience({ athleteId })` instead of `NutritionExperienceService.getDashboard()`.
+2. Project hydrated `WorkspaceNutrition` (+ optional Plan History nutrition plan) into the Sprint 31.5 experience read model.
+3. Retain local presentation mutations (meal completion toggle, hydration logging) through minimal runtime application APIs — no new persistence path.
+4. Publish `MealLogged`, `MealRemoved`, `HydrationLogged`, and `DailyNutritionCompleted` through existing Sprint 32.2 integration on natural domain events only.
+5. Do not modify Runtime Session, Runtime Observer, Runtime Bootstrap, repository contracts, SQLite infrastructure, or Dashboard Projection models. No new factories or providers. No networking.
+
+**Alternatives considered:**
+- **New RuntimeNutritionExperienceService provider** — rejected; violates sprint constraint of no new providers; hook-level bridge from existing Unified Workspace + Plan History is sufficient (mirrors ADR-133/134/136).
+- **Direct NutritionRepository reads from Nutrition UI** — rejected; nutrition SQLite mapper remains placeholder; workspace hydration is the supported read path.
+- **Build full nutrition domain persistence in this sprint** — rejected; NutritionRepository contract has no domain-specific methods and mapper is placeholder; report gap and defer.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Nutrition tab is driven by hydrated workspace output in production. Mock NutritionExperienceService remains available for isolated feature tests and preview injection only. In-session nutrition state is not yet persisted through Runtime Observer (follow-up when Nutrition domain serialization is complete).
+
+---
+
 ## ADR-132: Domain Persistence Serialization (Sprint 34.3)
 
 **Status:** Accepted  

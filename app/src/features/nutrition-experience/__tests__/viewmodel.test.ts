@@ -1,4 +1,4 @@
-import { createNutritionDay, NutritionLoadingStatuses } from "../models";
+import { createNutritionDay, createDailyCalories, createDailyCarbohydrates, createDailyFat, createDailyProtein, createHydrationProgress, createMacroProgress, createMealSummary, createNutritionDashboard, NutritionLoadingStatuses } from "../models";
 import { emptyMockNutritionExperienceService, mockNutritionExperienceService } from "../providers/MockNutritionExperienceService";
 import type { NutritionExperienceService } from "../services";
 import { NutritionExperienceError } from "../services";
@@ -113,5 +113,67 @@ describe("NutritionExperienceViewModel", () => {
     viewModel.subscribe(listener);
     await viewModel.loadDashboard();
     expect(listener.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("applyHydratedDashboard is the runtime production entry point", () => {
+    const viewModel = new NutritionExperienceViewModel({ athleteId: "athlete:1" });
+    viewModel.applyHydratedDashboard(
+      createNutritionDashboard({
+        day: TODAY,
+        availableDays: Object.freeze([TODAY]),
+        headline: "1200 of 2400 kcal",
+        summary: "Hydrated nutrition summary",
+        todaysGoal: "Follow plan",
+        nutritionScore: 42,
+        macros: createMacroProgress({
+          calories: createDailyCalories({
+            current: 1200,
+            target: 2400,
+            remaining: 1200,
+            completionPercent: 50,
+          }),
+          protein: createDailyProtein({
+            currentGrams: 90,
+            targetGrams: 180,
+            remainingGrams: 90,
+            completionPercent: 50,
+          }),
+          carbohydrates: createDailyCarbohydrates({
+            currentGrams: 120,
+            targetGrams: 250,
+            remainingGrams: 130,
+            completionPercent: 48,
+          }),
+          fat: createDailyFat({
+            currentGrams: 30,
+            targetGrams: 70,
+            remainingGrams: 40,
+            completionPercent: 43,
+          }),
+          score: 47,
+        }),
+        hydration: createHydrationProgress({
+          currentMl: 1200,
+          goalMl: 3200,
+          remainingMl: 2000,
+          completionPercent: 38,
+          destination: "/(app)/nutrition/history",
+        }),
+        meals: Object.freeze([]),
+        mealSummary: createMealSummary({
+          totalMeals: 0,
+          completedMeals: 0,
+          completionPercent: 0,
+          nextMealLabel: "No meals planned",
+        }),
+        coachSuggestions: Object.freeze([]),
+        mealDetailsDestination: null,
+        foodSearchDestination: null,
+        barcodeScannerDestination: null,
+        historyDestination: null,
+      }),
+    );
+    expect(viewModel.isRuntimeDriven).toBe(true);
+    expect(viewModel.dashboard?.summary).toBe("Hydrated nutrition summary");
   });
 });

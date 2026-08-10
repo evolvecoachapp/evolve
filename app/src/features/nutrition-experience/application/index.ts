@@ -6,3 +6,7 @@ export * from "./LoadMeals";
 export * from "./LoadNutritionDashboard";
 export * from "./RefreshNutritionDashboard";
 export * from "./ToggleMealCompletion";
+export * from "./loadHydratedNutritionExperience";
+export * from "./toggleRuntimeMealCompletion";
+export * from "./logRuntimeHydration";
+export * from "./publishNutritionRuntimeProgress";

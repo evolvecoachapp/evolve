@@ -1,8 +1,16 @@
 import { act, renderHook, waitFor } from "@testing-library/react-native";
+import { RUNTIME_SESSION_STATUS } from "../../../runtime/session/RuntimeSessionStatus";
+import { useRuntimeSession } from "../../../runtime/session/RuntimeSessionContext";
 import { createNutritionDay } from "../models";
 import { emptyMockNutritionExperienceService, mockNutritionExperienceService } from "../providers/MockNutritionExperienceService";
 import { useCoachSuggestions, useHydration, useMeals, useNutritionDashboard } from "../hooks";
 import { NutritionExperienceViewModel } from "../viewmodels";
+
+jest.mock("../../../runtime/session/RuntimeSessionContext", () => ({
+  useRuntimeSession: jest.fn(),
+}));
+
+const mockedUseRuntimeSession = useRuntimeSession as jest.Mock;
 
 const TODAY = createNutritionDay({
   id: "today",
@@ -14,6 +22,14 @@ const TODAY = createNutritionDay({
 });
 
 describe("nutrition-experience hooks", () => {
+  beforeEach(() => {
+    mockedUseRuntimeSession.mockReturnValue({
+      isStarting: false,
+      status: RUNTIME_SESSION_STATUS.ready,
+      retrySession: jest.fn(),
+    });
+  });
+
   it("useNutritionDashboard loads the dashboard", async () => {
     const { result } = renderHook(() => useNutritionDashboard({ service: mockNutritionExperienceService }));
     await waitFor(() => expect(result.current.loading.isLoading).toBe(false));

@@ -619,6 +619,21 @@ ADR-135: [DECISIONS.md](./DECISIONS.md).
 
 ADR-136: [DECISIONS.md](./DECISIONS.md).
 
+### Nutrition Runtime Activation — Sprint 34.8 (Phase 34)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Drive the Nutrition tab from hydrated Unified Workspace and cached Nutrition Plan history instead of Mock NutritionExperienceService loading |
+| **Flow** | Runtime Session → Repository Hydration → UnifiedWorkspaceService (+ PlanHistoryService nutrition plan) → `loadHydratedNutritionExperience()` → `NutritionExperienceViewModel.applyHydratedDashboard()` → Nutrition Screen |
+| **Production path** | `useNutritionDashboard` waits for `RuntimeSessionProvider` READY, loads via `loadHydratedNutritionExperience({ athleteId })`, applies via ViewModel — no `NutritionExperienceService` fetch |
+| **Refresh** | Pull-to-refresh re-loads hydrated workspace output (no provider mock reload) |
+| **Mutations** | Runtime meal toggle and hydration logging use local application orchestration (`toggleRuntimeMealCompletion`, `logRuntimeHydration`); publish `MealLogged` / `MealRemoved` / `HydrationLogged` / `DailyNutritionCompleted` through existing Sprint 32.2 integration on natural domain events |
+| **Test/preview path** | Explicit `service` injection on `NutritionExperienceScreen` / `useNutritionDashboard` retains NutritionExperienceService for isolated tests and previews |
+| **Design** | **Application orchestration only.** Uses existing Unified Workspace, Plan History, and Nutrition Progress integration contracts. No direct SQLite/repository access from Nutrition UI. No new persistence infrastructure. Nutrition SQLite mapper remains placeholder — in-session nutrition state is not yet persisted through Runtime Observer. |
+| **Validation** | Integration tests cover populated/empty runtime startup, hydrated nutrition rendering, meal/hydration mutations, restart refresh, progress integration regression, ViewModel integration, and no NutritionExperienceService usage in production path |
+
+ADR-137: [DECISIONS.md](./DECISIONS.md).
+
 ### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
 
 | Aspect | Implementation |
@@ -1686,7 +1701,7 @@ Full detail: [PROGRESS_EXPERIENCE_ARCHITECTURE.md](./PROGRESS_EXPERIENCE_ARCHITE
 | Aspect | Implementation |
 |--------|----------------|
 | **Purpose** | Daily nutrition command center — contextual meal, macro, hydration, and coach guidance integrated with Workout, Recovery, and Coach rather than a calorie tracker |
-| **Flow** | React UI → `NutritionExperienceViewModel` → Application APIs → Mappers → `NutritionExperienceService` → Mock/Backend/Local providers |
+| **Flow** | React UI → `NutritionExperienceViewModel` → Application APIs → Mappers → hydrated Unified Workspace (production) or `NutritionExperienceService` (test/preview) |
 | **Models** | `NutritionDashboard`, `MealSummary`, `Meal`, `MealFood`, `MacroProgress`, `HydrationProgress`, `NutritionCoachSuggestion`, `DailyCalories`, `DailyProtein`, `DailyCarbohydrates`, `DailyFat`, `NutritionDay`, loading/error states |
 | **Application** | `loadNutritionDashboard` / `refreshNutritionDashboard` / `loadMeals` / `loadMacros` / `loadHydration` / `loadCoachSuggestions` / `toggleMealCompletion` / `changeNutritionDay` |
 | **UI** | `NutritionExperienceScreen` + header / day selector / summary / calories / hydration / macro targets / meal adherence / meal timeline / coach suggestions / skeleton / empty / error; pull-to-refresh |

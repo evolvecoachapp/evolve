@@ -1,5 +1,6 @@
 import { RefreshControl, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "../../../auth/useAuth";
 import { GradientBackground } from "../../../components/GradientBackground";
 import { TabScreenContainer } from "../../../components/TabScreenContainer";
 import { useTheme } from "../../../theme/ThemeContext";
@@ -30,10 +31,16 @@ export interface NutritionExperienceScreenProps {
   readonly service?: NutritionExperienceService;
 }
 
+/**
+ * Operational Nutrition Experience screen — composition only.
+ * Production data flows from hydrated Unified Workspace via applyHydratedDashboard().
+ * NutritionExperienceService is test/preview-only when injected via the service prop.
+ */
 export function NutritionExperienceScreen({ service }: NutritionExperienceScreenProps = {}) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const dashboard = useNutritionDashboard({ service });
+  const { user } = useAuth();
+  const dashboard = useNutritionDashboard({ service, athleteId: user?.id });
   const meals = useMeals({ viewModel: dashboard.viewModel });
   const hydration = useHydration({ viewModel: dashboard.viewModel });
   const suggestions = useCoachSuggestions({ viewModel: dashboard.viewModel });
