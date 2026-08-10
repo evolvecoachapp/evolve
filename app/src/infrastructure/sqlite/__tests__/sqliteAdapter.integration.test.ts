@@ -29,14 +29,16 @@ import { SQLiteAdapter } from "../application/SQLiteAdapter";
 import { begin, commit, rollback } from "../transactions";
 import { ValidationError } from "../../../core/persistence/errors";
 import type { PersistenceRecord } from "../../../core/persistence/contracts/PersistenceRecord";
+import { resetNativeSQLiteTestState } from "../testSupport/resetNativeSQLiteTestState";
 
-describe("SQLite Infrastructure Adapter integration (Sprint 30.1)", () => {
+describe("SQLite Infrastructure Adapter integration (Sprint 30.1 / 34.2)", () => {
   afterEach(() => {
     resetCompositionRoot();
+    resetNativeSQLiteTestState();
   });
 
   describe("connection", () => {
-    it("opens an in-memory SQLite connection", () => {
+    it("opens a persistent native SQLite connection", () => {
       const connection = new SQLiteConnection({ name: "test-db" });
       expect(connection.isConnected()).toBe(true);
       expect(connection.name).toBe("test-db");

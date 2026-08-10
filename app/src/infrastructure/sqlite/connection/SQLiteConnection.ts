@@ -20,7 +20,7 @@ export interface SQLiteConnectionOptions {
 
 /**
  * SQLite connection — engine access + storage port facades.
- * No domain logic. No React Native. No Expo.
+ * No domain logic. Opens a persistent native database automatically.
  */
 export class SQLiteConnection {
   readonly name: string;
@@ -33,7 +33,7 @@ export class SQLiteConnection {
 
   constructor(options: SQLiteConnectionOptions = {}) {
     this.name = options.name ?? "evolve-sqlite";
-    this.engine = new SQLiteEngine();
+    this.engine = new SQLiteEngine(this.name);
     this.transactions = new SQLiteTransaction(this.engine);
     this.health = new ConnectionHealth(this.engine);
     this.reader = this.createReader();

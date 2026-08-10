@@ -6,6 +6,12 @@ export {
   type SQLiteEngineSnapshot,
 } from "./SQLiteEngine";
 export {
+  SQLITE_REPOSITORY_TABLES,
+  assertValidTableName,
+  initializeSQLiteSchema,
+  createRepositoryTableSql,
+} from "./SQLiteSchema";
+export {
   SQLiteConnection,
   type SQLiteConnectionOptions,
 } from "./SQLiteConnection";

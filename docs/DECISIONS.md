@@ -4214,3 +4214,42 @@ SQLite Engine
 **Consequences:**
 - Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
 - Phase 34 started. Runtime persists to SQLite within the process via repository adapters. Cross-process durability requires a future native SQLite engine sprint.
+
+---
+
+## ADR-131: Native SQLite Engine Integration (Sprint 34.2)
+
+**Status:** Accepted  
+**Date:** 2026-08-10  
+**Context:** Sprint 34.1 activated SQLite-backed repository adapters for runtime hydration and write-through, but the SQLite engine remained an in-process memory implementation. Phase 34 requires physically persistent storage so runtime state survives application restart without changing repository contracts or runtime pipeline architecture.
+
+**Decision:**
+
+```
+Runtime
+  ↓
+Repository Contracts
+  ↓
+Repository Adapters
+  ↓
+SQLite Adapter
+  ↓
+Expo SQLite Driver
+  ↓
+SQLite Database File
+```
+
+1. Replace the in-memory `SQLiteEngine` with a native persistent implementation using **Expo SQLite** (`expo-sqlite`).
+2. Preserve public interfaces of `SQLiteConnection`, `SQLiteAdapter`, and `SQLiteRepositories` unchanged.
+3. Add automatic database open and idempotent schema initialization (`SQLiteSchema`); no migration system yet; no seed data.
+4. Confine all Expo SQLite imports to `app/src/infrastructure/sqlite/` — no direct SQLite access outside Infrastructure.
+5. Leave Runtime Session, Runtime Observer, Runtime Hydration, Runtime WriteThrough, Dashboard, Workspace, Repository Contracts, and Composition Root resolution unchanged.
+
+**Alternatives considered:**
+- **Keep in-memory engine with AsyncStorage snapshot** — rejected; duplicates persistence semantics and violates single SQLite authority.
+- **Direct expo-sqlite in runtime modules** — rejected; violates Clean Architecture layer separation.
+- **Migration framework in this sprint** — rejected; schema is initial-only; migrations deferred.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md).
+- Database survives application restart. Repository contracts and runtime pipeline unchanged. Migration system deferred to a future sprint.

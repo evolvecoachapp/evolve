@@ -524,13 +524,26 @@ Full detail: [RUNTIME_OBSERVER.md](./RUNTIME_OBSERVER.md).
 | Aspect | Implementation |
 |--------|----------------|
 | **Purpose** | Activate SQLite-backed repository adapters for runtime hydration and write-through |
-| **Flow** | Runtime → Repository Contracts → Repository Adapters → SQLite Repositories → SQLite Engine |
+| **Flow** | Runtime → Repository Contracts → Repository Adapters → SQLite Repositories → Expo SQLite Engine |
 | **Provider** | `PersistenceRepositoryProvider` selects SQLite-backed adapters; `runtimePersistenceMode` hard-locked to `"sqlite"` |
 | **Composition Root** | `SQLiteConnection` / `SQLiteAdapter` / `SQLiteRepositories` / `RepositoryAdapters` wired through `PersistenceRepositoryProvider` |
 | **Design** | **Wiring only.** No runtime pipeline changes. No direct SQLite in runtime modules. Training Intelligence repos remain in-memory via `RepositoryProvider`. No networking. No cloud sync. |
 | **Validation** | Integration tests cover empty/populated startup, write-through, restart persistence, repository integration, and composition wiring |
 
 Full detail: [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
+
+### Native SQLite Engine Integration — Sprint 34.2 (Phase 34)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Replace process-memory SQLite engine with native persistent Expo SQLite while preserving repository contracts and runtime pipeline |
+| **Flow** | Runtime → Repository Contracts → Repository Adapters → SQLite Repositories → SQLite Adapter → Expo SQLite Driver → Database File |
+| **Engine** | `SQLiteEngine` backed by `expo-sqlite`; automatic open + idempotent schema init (`SQLiteSchema`); no migration system yet |
+| **Composition Root** | Unchanged — `SQLiteConnection` / `SQLiteAdapter` / `SQLiteRepositories` public interfaces preserved |
+| **Design** | **Infrastructure only.** Database survives app restart. No runtime pipeline changes. No direct SQLite outside Infrastructure. No networking. No cloud sync. |
+| **Validation** | Integration tests cover first launch, reopen, cross-restart persistence, repository compatibility, and composition compatibility |
+
+Full detail: [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md). ADR-131: [DECISIONS.md](./DECISIONS.md).
 
 ### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
 
@@ -1442,14 +1455,14 @@ Full detail: [INFRASTRUCTURE_ADAPTERS.md](./INFRASTRUCTURE_ADAPTERS.md). ADR-098
 
 | Aspect | Implementation |
 |--------|----------------|
-| **Purpose** | First production infrastructure adapter implementing Persistence Contracts + Infrastructure `StorageAdapter` against a SQLite-compatible engine |
-| **Flow** | Domain → Persistence Contracts → SQLite Adapter → SQLite Database |
-| **Connection** | `SQLiteConnection` / `SQLiteConnectionFactory` / `SQLiteSession` / `SQLiteTransaction` / `ConnectionHealth` |
+| **Purpose** | First production infrastructure adapter implementing Persistence Contracts + Infrastructure `StorageAdapter` against native persistent SQLite |
+| **Flow** | Domain → Persistence Contracts → SQLite Adapter → Expo SQLite → Database File |
+| **Connection** | `SQLiteConnection` / `SQLiteConnectionFactory` / `SQLiteSession` / `SQLiteTransaction` / `ConnectionHealth` / `SQLiteSchema` |
 | **Repositories** | Athlete / Identity / Workspace / Snapshot / Timeline / Workout / Nutrition / Recovery / Settings / Runtime |
 | **Mappers** | Pure `PersistenceRecord` ↔ `SQLiteRow` mappers (no domain logic) |
 | **Health** | `isConnected` / `databaseVersion` / `storageUsage` / `adapterVersion` |
 | **Integration** | Composition Root via `SQLiteAdapterFactory`; application APIs `getSQLiteHealth` / `getSQLiteRepositories` / `getSQLiteConnection` |
-| **Design** | **Infrastructure only. Domain never imports SQLite. No React Native. No Expo. No cloud sync. No authentication. No networking. No business logic. No AI.** |
+| **Design** | **Infrastructure only. Domain never imports SQLite. Expo SQLite driver confined to Infrastructure. No cloud sync. No authentication. No networking. No business logic. No AI.** |
 
 Full detail: [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md). ADR-099: [DECISIONS.md](./DECISIONS.md).
 
@@ -1458,7 +1471,7 @@ Full detail: [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md). ADR-099: [DECISIONS.md](.
 | Aspect | Implementation |
 |--------|----------------|
 | **Purpose** | First production repository adapter layer binding Persistence Contracts to SQLite repositories |
-| **Flow** | Domain → Persistence Contracts → Repository Adapters → SQLite Repositories → SQLite Engine |
+| **Flow** | Domain → Persistence Contracts → Repository Adapters → SQLite Repositories → Expo SQLite Engine |
 | **Adapters** | Athlete / Identity / Workspace / Snapshot / Timeline / Workout / Nutrition / Recovery / Settings / Runtime |
 | **Registry** | `RepositoryAdapterRegistry` / `RepositoryAdapterMetadata` / `RepositoryAdapterResult` / `RepositoryAdapterRegistration` |
 | **Validation** | Missing repository / duplicate registrations / contract compliance / adapter registration / repository compatibility |

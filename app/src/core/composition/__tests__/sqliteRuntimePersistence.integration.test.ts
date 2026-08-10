@@ -8,6 +8,7 @@ import {
   getCompositionRoot,
   resetCompositionRoot,
 } from "../createCompositionRoot";
+import { resetNativeSQLiteTestState } from "../../../infrastructure/sqlite/testSupport/resetNativeSQLiteTestState";
 import {
   composeTestWorkspaceForAthlete,
   FIXED_DASHBOARD_ATHLETE_ID,
@@ -43,6 +44,7 @@ function resetAllRuntimeState(): void {
   resetRuntimePipelinesPreservingCompositionRoot();
   resetRuntimeBootstrap();
   resetCompositionRoot();
+  resetNativeSQLiteTestState();
 }
 
 async function flushMicrotasks(count = 5): Promise<void> {

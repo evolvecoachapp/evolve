@@ -43,7 +43,10 @@ Persistence Contracts
 SQLite Adapter
       │
       ▼
-SQLite Database
+Expo SQLite (native driver)
+      │
+      ▼
+SQLite Database File
 ```
 
 The Domain depends only on Persistence Contracts. The SQLite Adapter depends on those contracts. The Domain never imports SQLite.
@@ -72,8 +75,9 @@ app/src/infrastructure/sqlite/
 - `SQLiteSession`
 - `SQLiteTransaction`
 - `ConnectionHealth`
+- `SQLiteSchema` — automatic idempotent schema initialization on first open
 
-Pure TypeScript SQLite-compatible engine (no Expo / React Native / native bindings in this sprint). Transactions support `begin` / `commit` / `rollback` only — no retry logic.
+Native persistent SQLite via **Expo SQLite** (`expo-sqlite`). The database file survives application restart. Transactions support `begin` / `commit` / `rollback` only — no retry logic. No migration system yet.
 
 ---
 
