@@ -649,6 +649,21 @@ ADR-137: [DECISIONS.md](./DECISIONS.md).
 
 ADR-138: [DECISIONS.md](./DECISIONS.md).
 
+### Goal Progress Runtime Activation — Sprint 35.0 (Phase 35)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Drive the Goal Progress screen from hydrated Unified Workspace instead of Mock GoalProgressExperienceService loading |
+| **Flow** | Runtime Session → Repository Hydration → UnifiedWorkspaceService (`WorkspaceGoals`) → `loadHydratedGoalProgressExperience()` → `GoalProgressExperienceViewModel.applyHydratedGoalProgress()` → Goal Progress Screen |
+| **Production path** | `useGoalProgressDashboard` waits for `RuntimeSessionProvider` READY, loads via `loadHydratedGoalProgressExperience({ athleteId })`, applies via ViewModel — no `GoalProgressExperienceService` fetch |
+| **Refresh** | Pull-to-refresh re-loads hydrated workspace output (no provider mock reload) |
+| **Mutations** | Runtime progress update, milestone completion, and goal completion use local application orchestration (`updateRuntimeGoalProgress` via Goal Progress Engine `evaluateGoalProgress`, `completeRuntimeMilestone`, `completeRuntimeGoal` via `createGoalSnapshot`); publish `GoalProgressUpdated`, `GoalMilestoneReached`, and `GoalCompleted` through existing Sprint 32.4 integration on natural domain events |
+| **Test/preview path** | Explicit `service` injection on `GoalProgressExperienceScreen` / `useGoalProgressDashboard` retains GoalProgressExperienceService for isolated tests and previews |
+| **Design** | **Application orchestration only.** Uses existing Unified Workspace, Goal Progress Engine, and Goal Progress integration contracts. No direct SQLite/repository access from Goal Progress UI. No new persistence infrastructure. Goal Progress has no dedicated SQLite repository — in-session goal mutations are not yet persisted through Runtime Observer; workspace hydration restores seeded goal progress only. |
+| **Validation** | Integration tests cover populated/empty runtime startup, hydrated goal rendering, progress/milestone/completion mutations, restart refresh, progress integration regression, ViewModel integration, and no GoalProgressExperienceService usage in production path |
+
+ADR-139: [DECISIONS.md](./DECISIONS.md).
+
 ### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
 
 | Aspect | Implementation |

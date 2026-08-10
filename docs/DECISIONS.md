@@ -4489,6 +4489,45 @@ Nutrition Screen
 
 ---
 
+## ADR-139: Goal Progress Runtime Activation (Sprint 35.0)
+
+**Status:** Accepted  
+**Date:** 2026-08-11  
+**Context:** Goal Progress UI was reachable only through Progress Experience mock charts and Progress Analytics read models. Unified Workspace already projects `WorkspaceGoals` from Goal Progress Engine output, and Sprint 32.4 shipped Goal Progress → Progress Analytics integration — but no Goal Progress Experience runtime path existed to consume hydrated workspace output or publish domain events from supported mutations.
+
+**Decision:**
+
+```
+Runtime Session
+  ↓
+Repository Hydration
+  ↓
+UnifiedWorkspaceService (WorkspaceGoals)
+  ↓
+loadHydratedGoalProgressExperience()
+  ↓
+GoalProgressExperienceViewModel.applyHydratedGoalProgress()
+  ↓
+Goal Progress Screen
+```
+
+1. Wire `useGoalProgressDashboard` to wait for Runtime Session READY and load via `loadHydratedGoalProgressExperience({ athleteId })` instead of `GoalProgressExperienceService.getDashboard()`.
+2. Project hydrated `WorkspaceGoals` into the Goal Progress Experience read model via `mapWorkspaceGoalsToExperienceDto`.
+3. Retain local presentation mutations (progress update, milestone completion, goal completion) through minimal runtime application APIs delegating to existing Goal Progress Engine application APIs — no new persistence path.
+4. Publish `GoalProgressUpdated`, `GoalMilestoneReached`, and `GoalCompleted` through existing Sprint 32.4 integration on natural domain events only (`evaluateGoalProgress`, `createGoalSnapshot`).
+5. Do not modify Runtime Session, Runtime Observer, Runtime Bootstrap, repository contracts, SQLite infrastructure, or Dashboard Projection models. No new factories or providers. No networking.
+
+**Alternatives considered:**
+- **New RuntimeGoalProgressExperienceService provider** — rejected; violates sprint constraint of no new providers; hook-level bridge from existing Unified Workspace is sufficient (mirrors ADR-138).
+- **Direct GoalRepository reads from Goal Progress UI** — rejected; no mobile Goal Progress SQLite repository exists; workspace hydration is the supported read path.
+- **Build full goal progress domain persistence in this sprint** — rejected; no Goal Progress repository contract on mobile; report gap and defer.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Goal Progress screen (`/(app)/goals`) is driven by hydrated workspace output in production. Mock GoalProgressExperienceService remains available for isolated feature tests and preview injection only. In-session goal mutations are not yet persisted through Runtime Observer (follow-up when Goal Progress domain serialization is complete).
+
+---
+
 ## ADR-138: Recovery Runtime Activation (Sprint 34.9)
 
 **Status:** Accepted  

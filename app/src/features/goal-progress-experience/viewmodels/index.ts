@@ -1,0 +1,1 @@
+export { GoalProgressExperienceViewModel } from "./GoalProgressExperienceViewModel";
