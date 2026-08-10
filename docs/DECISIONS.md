@@ -3876,3 +3876,40 @@ Authenticated Navigation → Home
 - Documentation: [RUNTIME_BOOTSTRAP.md](./RUNTIME_BOOTSTRAP.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
 - Phase 33 started.
 - Future sprints can extend the gate with hydration steps without redesigning the bootstrap module.
+
+---
+
+## ADR-122: Repository Hydration Pipeline (Sprint 33.2)
+
+**Status:** Accepted  
+**Date:** 2026-08-10  
+**Context:** Sprint 33.1B established the Runtime Bootstrap gate. Phase 33 requires restoring in-memory runtime state from persistence contract repositories before Home and Dashboard consumers load athlete context (User Story 01).
+
+**Decision:**
+
+```
+Runtime Bootstrap (ready)
+  ↓
+RepositoryHydrationPipeline
+  ↓
+Repository Adapters (Persistence Contracts)
+  ↓
+AthleteIdentityService / RuntimeEnvironmentService / UnifiedWorkspaceService
+  ↓
+HydrationResult (frozen)
+```
+
+1. Introduce `runtime/hydration` module with immutable hydration models and a read-only `RepositoryHydrationService` facade (`HydrationService`).
+2. `RepositoryHydrationPipeline` validates bootstrap readiness, reads identity/runtime/workspace repository contracts via existing adapters, and restores composition services — no direct SQLite or persistence implementation.
+3. Application APIs (`hydrateRuntime`, `getHydrationStatus`) are the operational hydration path.
+4. Empty repository data succeeds with zero restored records and an empty in-memory runtime.
+5. Composition Root registers `RepositoryHydrationService` via `RepositoryHydrationFactory` (token #59).
+
+**Alternatives considered:**
+- **Hydrate inside Runtime Bootstrap** — rejected: violates single-responsibility; bootstrap must not touch repositories.
+- **Direct SQLite reads from hydration** — rejected: repositories remain the only source; adapters bind contracts to storage.
+- **Domain mappers in hydration** — rejected for 33.2: structural record-id restoration only; rich mapping belongs to later sprints.
+
+**Consequences:**
+- Documentation: [RUNTIME_HYDRATION.md](./RUNTIME_HYDRATION.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
+- Phase 33 continues with Home restore and richer record mapping in later sprints.

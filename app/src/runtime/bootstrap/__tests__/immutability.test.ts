@@ -1,3 +1,4 @@
+import { SERVICE_TOKENS } from "../../../core/composition/registry/ServiceMap";
 import { createBootstrapResult } from "../BootstrapResult";
 import { createBootstrapState } from "../BootstrapState";
 import { BOOTSTRAP_STATUS } from "../BootstrapStatus";
@@ -7,7 +8,7 @@ import { RUNTIME_INITIALIZATION_PHASES } from "../RuntimeInitialization";
 describe("runtime bootstrap immutability", () => {
   it("freezes bootstrap state and results", () => {
     const result = createBootstrapResult({
-      serviceTokenCount: 58,
+      serviceTokenCount: SERVICE_TOKENS.length,
       validatedAt: "2026-08-10T10:00:00.000Z",
       phases: RUNTIME_INITIALIZATION_PHASES,
     });

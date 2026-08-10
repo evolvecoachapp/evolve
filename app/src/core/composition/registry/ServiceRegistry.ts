@@ -277,4 +277,8 @@ export class ServiceRegistry {
   getRuntimeBootstrapService(): ServiceMap["RuntimeBootstrapService"] {
     return this.resolve("RuntimeBootstrapService");
   }
+
+  getRepositoryHydrationService(): ServiceMap["RepositoryHydrationService"] {
+    return this.resolve("RepositoryHydrationService");
+  }
 }

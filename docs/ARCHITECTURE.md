@@ -433,7 +433,7 @@ Full detail: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md).
 | **Purpose** | Centralized object creation and dependency wiring for pipeline + foundation services |
 | **Flow** | Application → Composition Root → `ApplicationContainer` → `ServiceRegistry` → Factories + thin adapters → Feature Services / Infrastructure Adapters |
 | **Container** | Register / resolve, singleton + transient lifecycles, freeze after init, duplicate/missing/circular/late validation |
-| **Registry** | Typed `ServiceMap` (58 tokens): Training Intelligence, Coaching Architecture, Persistence/Infrastructure contracts, SQLite, Repository Adapters, Auth, Sync, Backend, Logging, Runtime Bootstrap |
+| **Registry** | Typed `ServiceMap` (59 tokens): Training Intelligence, Coaching Architecture, Persistence/Infrastructure contracts, SQLite, Repository Adapters, Auth, Sync, Backend, Logging, Runtime Bootstrap, Repository Hydration |
 | **Factories** | Creation-only factories (no business logic); Phase 29–30 composition factories wrap infrastructure factories |
 | **Adapters** | Thin port adapters between coaching modules + legacy Recommendation Engine bridge (`RecommendationEngineBridge` / `DefaultRecommendationService` facade) |
 | **Providers** | Configuration, in-memory training repositories, default strategies |
@@ -455,6 +455,18 @@ Full detail: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Consolidation: [ARCHI
 | **Design** | **Bootstrap only.** No persistence, SQLite reads, repository hydration, networking, or business logic |
 
 Full detail: [RUNTIME_BOOTSTRAP.md](./RUNTIME_BOOTSTRAP.md).
+
+### Repository Hydration Pipeline (`runtime/hydration`) — Sprint 33.2
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Restore in-memory runtime state from persistence contract repositories after bootstrap |
+| **Flow** | Runtime Bootstrap (`ready`) → `RepositoryHydrationPipeline` → Repository Adapters → Identity / Runtime / Workspace services → frozen `HydrationResult` |
+| **Application API** | `hydrateRuntime()`, `getHydrationStatus()` |
+| **Composition Root** | Registers `RepositoryHydrationService` via `RepositoryHydrationFactory` (token #59) |
+| **Design** | **Pipeline only.** No direct SQLite, no persistence implementation, no Dashboard/Home/Timeline logic, no domain business logic |
+
+Full detail: [RUNTIME_HYDRATION.md](./RUNTIME_HYDRATION.md).
 
 ### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
 

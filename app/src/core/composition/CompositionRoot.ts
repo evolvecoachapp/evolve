@@ -50,6 +50,7 @@ import {
   AnalyticsTimelineIntegrationFactory,
   DashboardProjectionFactory,
   RuntimeBootstrapFactory,
+  RepositoryHydrationFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -796,6 +797,12 @@ export class CompositionRoot {
       { lifecycle },
     );
 
+    container.register(
+      "RepositoryHydrationService",
+      () => RepositoryHydrationFactory.create(),
+      { lifecycle },
+    );
+
     container.validate();
     container.freeze();
 
@@ -1053,5 +1060,9 @@ export class CompositionRoot {
 
   getRuntimeBootstrapService(): ServiceMap["RuntimeBootstrapService"] {
     return this.registry.resolve("RuntimeBootstrapService");
+  }
+
+  getRepositoryHydrationService(): ServiceMap["RepositoryHydrationService"] {
+    return this.registry.resolve("RepositoryHydrationService");
   }
 }

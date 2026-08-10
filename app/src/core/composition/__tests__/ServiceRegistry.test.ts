@@ -82,6 +82,7 @@ describe("ServiceRegistry", () => {
       "AnalyticsTimelineProjector",
       "DashboardProjector",
       "RuntimeBootstrapService",
+      "RepositoryHydrationService",
     ]);
   });
 

@@ -165,3 +165,12 @@ export type { DashboardProjectionFactoryDeps } from "./DashboardProjectionFactor
 
 export { RuntimeBootstrapFactory } from "./RuntimeBootstrapCompositionFactory";
 export type { RuntimeBootstrapFactoryDeps } from "./RuntimeBootstrapCompositionFactory";
+
+export {
+  RepositoryHydrationFactory,
+  HydrationFactory,
+} from "./RepositoryHydrationCompositionFactory";
+export type {
+  RepositoryHydrationFactoryDeps,
+  HydrationFactoryDeps,
+} from "./RepositoryHydrationCompositionFactory";
