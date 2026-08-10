@@ -83,6 +83,7 @@ export {
   SynchronizationFactory,
   BackendFactory,
   LoggerFactory,
+  RuntimeBootstrapFactory,
 } from "./factories";
 
 export {

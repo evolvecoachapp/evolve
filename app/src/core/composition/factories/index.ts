@@ -162,3 +162,6 @@ export type { AnalyticsTimelineIntegrationFactoryDeps } from "./AnalyticsTimelin
 
 export { DashboardProjectionFactory } from "./DashboardProjectionFactory";
 export type { DashboardProjectionFactoryDeps } from "./DashboardProjectionFactory";
+
+export { RuntimeBootstrapFactory } from "./RuntimeBootstrapCompositionFactory";
+export type { RuntimeBootstrapFactoryDeps } from "./RuntimeBootstrapCompositionFactory";

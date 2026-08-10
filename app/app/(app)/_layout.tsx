@@ -1,6 +1,7 @@
 import { Redirect, Stack } from "expo-router";
 import { LoadingSpinner } from "../../src/components/LoadingSpinner";
 import { useAuth } from "../../src/auth/useAuth";
+import { useRuntimeBootstrap } from "../../src/runtime/bootstrap/RuntimeBootstrapContext";
 import { useTheme } from "../../src/theme/ThemeContext";
 
 /**
@@ -9,14 +10,15 @@ import { useTheme } from "../../src/theme/ThemeContext";
  * onboarding rather than ever rendering an authenticated screen.
  */
 export default function AppLayout() {
-  const { isAuthenticated, isBootstrapping } = useAuth();
+  const { isAuthenticated, isBootstrapping: isAuthBootstrapping } = useAuth();
+  const { isBootstrapping: isRuntimeBootstrapping } = useRuntimeBootstrap();
   const { colors } = useTheme();
 
-  if (!isBootstrapping && !isAuthenticated) {
+  if (!isAuthBootstrapping && !isAuthenticated) {
     return <Redirect href="/(onboarding)/welcome" />;
   }
 
-  if (isBootstrapping) {
+  if (isAuthBootstrapping || isRuntimeBootstrapping) {
     return <LoadingSpinner color={colors.ink} />;
   }
 

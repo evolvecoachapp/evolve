@@ -49,6 +49,7 @@ import {
   GoalProgressIntegrationFactory,
   AnalyticsTimelineIntegrationFactory,
   DashboardProjectionFactory,
+  RuntimeBootstrapFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -789,6 +790,12 @@ export class CompositionRoot {
       { lifecycle },
     );
 
+    container.register(
+      "RuntimeBootstrapService",
+      () => RuntimeBootstrapFactory.create(),
+      { lifecycle },
+    );
+
     container.validate();
     container.freeze();
 
@@ -1042,5 +1049,9 @@ export class CompositionRoot {
 
   getAthleteStateService(): ServiceMap["AthleteStateService"] {
     return this.registry.resolve("AthleteStateService");
+  }
+
+  getRuntimeBootstrapService(): ServiceMap["RuntimeBootstrapService"] {
+    return this.registry.resolve("RuntimeBootstrapService");
   }
 }

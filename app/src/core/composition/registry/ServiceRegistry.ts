@@ -269,4 +269,12 @@ export class ServiceRegistry {
   getLoggerFactory(): ServiceMap["LoggerFactory"] {
     return this.resolve("LoggerFactory");
   }
+
+  getDashboardProjector(): ServiceMap["DashboardProjector"] {
+    return this.resolve("DashboardProjector");
+  }
+
+  getRuntimeBootstrapService(): ServiceMap["RuntimeBootstrapService"] {
+    return this.resolve("RuntimeBootstrapService");
+  }
 }

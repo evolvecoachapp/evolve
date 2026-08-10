@@ -17,6 +17,7 @@ See [TECH_STACK.md](./TECH_STACK.md) for versions. Onboarding: [PROJECT_CONTEXT.
 ┌─────────────────────────────────────────────────────────────────┐
 │                        MOBILE CLIENT (app/)                      │
 │  Expo Router → Screens → Features → Service Factory → Provider  │
+│  Runtime Bootstrap Gate (Sprint 33.1B) → Composition Root       │
 │                                                                 │
 │  AI runtime (application layer, in-memory):                     │
 │  Application → Composition Root → Container → Registry →        │
@@ -432,7 +433,7 @@ Full detail: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md).
 | **Purpose** | Centralized object creation and dependency wiring for pipeline + foundation services |
 | **Flow** | Application → Composition Root → `ApplicationContainer` → `ServiceRegistry` → Factories + thin adapters → Feature Services / Infrastructure Adapters |
 | **Container** | Register / resolve, singleton + transient lifecycles, freeze after init, duplicate/missing/circular/late validation |
-| **Registry** | Typed `ServiceMap` (55 tokens): Training Intelligence, Coaching Architecture, Persistence/Infrastructure contracts, SQLite, Repository Adapters, Auth, Sync, Backend, Logging |
+| **Registry** | Typed `ServiceMap` (58 tokens): Training Intelligence, Coaching Architecture, Persistence/Infrastructure contracts, SQLite, Repository Adapters, Auth, Sync, Backend, Logging, Runtime Bootstrap |
 | **Factories** | Creation-only factories (no business logic); Phase 29–30 composition factories wrap infrastructure factories |
 | **Adapters** | Thin port adapters between coaching modules + legacy Recommendation Engine bridge (`RecommendationEngineBridge` / `DefaultRecommendationService` facade) |
 | **Providers** | Configuration, in-memory training repositories, default strategies |
@@ -441,6 +442,19 @@ Full detail: [INTEGRATION_TESTING.md](./INTEGRATION_TESTING.md).
 | **Design** | **Wiring only.** Factories create objects; no AI/business logic in the Composition Root. Persistence/infra adapters are owned here; Domain never imports them. |
 
 Full detail: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Consolidation: [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md).
+
+### Runtime Bootstrap Gate (`runtime/bootstrap`) — Sprint 33.1B
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Deterministic application runtime bootstrap before authenticated content |
+| **Flow** | App Launch → Auth → `RuntimeBootstrap` → `CompositionRoot.create()` → `ServiceRegistry.assertIntegrity()` → frozen `BootstrapState` → authenticated navigation |
+| **Application API** | `bootstrapRuntime()`, `getBootstrapStatus()` |
+| **Provider** | `RuntimeBootstrapProvider` gates authenticated routes (mirrors Auth `isBootstrapping`) |
+| **Composition Root** | Registers `RuntimeBootstrapService` via `RuntimeBootstrapFactory` (token #58) |
+| **Design** | **Bootstrap only.** No persistence, SQLite reads, repository hydration, networking, or business logic |
+
+Full detail: [RUNTIME_BOOTSTRAP.md](./RUNTIME_BOOTSTRAP.md).
 
 ### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
 

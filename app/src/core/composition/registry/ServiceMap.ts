@@ -68,6 +68,7 @@ import type { GoalProgressPublisher } from "../../../integrations/goal-progress/
 import type { GoalProgressSubscriber } from "../../../integrations/goal-progress/subscribers/GoalProgressSubscriber";
 import type { AnalyticsTimelineProjector } from "../../../integrations/analytics-timeline/projector/AnalyticsTimelineProjector";
 import type { DashboardProjector } from "../../../integrations/dashboard-projection/projector/DashboardProjector";
+import type { RuntimeBootstrapService } from "../../../runtime/bootstrap/RuntimeBootstrapService";
 import type { ExerciseSelectionService } from "../../../features/exercise-selection/services/ExerciseSelectionService";
 import type { ProgramGenerationService } from "../../../features/program-generation/services/ProgramGenerationService";
 import type { ProgrammingService } from "../../../features/programming/services/ProgrammingService";
@@ -161,6 +162,7 @@ export interface ServiceMap {
   GoalProgressSubscriber: GoalProgressSubscriber;
   AnalyticsTimelineProjector: AnalyticsTimelineProjector;
   DashboardProjector: DashboardProjector;
+  RuntimeBootstrapService: RuntimeBootstrapService;
 }
 
 export type ServiceToken = keyof ServiceMap;
@@ -234,4 +236,5 @@ export const SERVICE_TOKENS = [
   "GoalProgressSubscriber",
   "AnalyticsTimelineProjector",
   "DashboardProjector",
+  "RuntimeBootstrapService",
 ] as const satisfies readonly ServiceToken[];

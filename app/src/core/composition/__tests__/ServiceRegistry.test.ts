@@ -81,6 +81,7 @@ describe("ServiceRegistry", () => {
       "GoalProgressSubscriber",
       "AnalyticsTimelineProjector",
       "DashboardProjector",
+      "RuntimeBootstrapService",
     ]);
   });
 

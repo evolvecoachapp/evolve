@@ -3831,3 +3831,48 @@ Dashboard ViewModel → Dashboard UI
 - Documentation: [DASHBOARD_PROJECTION.md](./DASHBOARD_PROJECTION.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
 - Phase 32 complete.
 - Future Home Dashboard ViewModel wiring can consume `DashboardProjection` without changing domain features.
+
+---
+
+## ADR-121: Runtime Bootstrap Gate (Sprint 33.1B)
+
+**Status:** Accepted  
+**Date:** 2026-08-10  
+**Context:** Sprint 33.1A architecture review identified that the Composition Root is never created during normal app launch. Phase 33 requires a deterministic startup gate before authenticated content and before future persistence hydration (User Story 01).
+
+**Decision:**
+
+```
+App Launch
+  ↓
+AuthProvider
+  ↓
+RuntimeBootstrapProvider (authenticated)
+  ↓
+RuntimeBootstrap.bootstrap()
+  ↓
+CompositionRoot.create()
+  ↓
+ServiceRegistry.assertIntegrity()
+  ↓
+BootstrapState (frozen)
+  ↓
+Authenticated Navigation → Home
+```
+
+1. Introduce `runtime/bootstrap` module with immutable bootstrap models and a read-only `RuntimeBootstrapService`.
+2. `RuntimeBootstrap` creates the process-wide Composition Root, validates the Service Registry, and freezes bootstrap state — no persistence or business logic.
+3. Application APIs (`bootstrapRuntime`, `getBootstrapStatus`) are the operational bootstrap path.
+4. `RuntimeBootstrapProvider` gates authenticated routes using the same pattern as Auth `isBootstrapping`.
+5. Composition Root registers `RuntimeBootstrapService` via `RuntimeBootstrapFactory` (token #58).
+6. Unauthenticated onboarding routes skip runtime bootstrap.
+
+**Alternatives considered:**
+- **Lazy Composition Root on first `resolveService()`** — rejected: no deterministic startup gate; hydration cannot be sequenced before Home.
+- **Bootstrap inside Composition Root only** — rejected: circular lifecycle; gate must orchestrate root creation from application layer.
+- **Hydrate repositories in 33.1B** — rejected: out of sprint scope; belongs to 33.3+.
+
+**Consequences:**
+- Documentation: [RUNTIME_BOOTSTRAP.md](./RUNTIME_BOOTSTRAP.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md).
+- Phase 33 started.
+- Future sprints can extend the gate with hydration steps without redesigning the bootstrap module.
