@@ -77,6 +77,8 @@ describe("ServiceRegistry", () => {
       "NutritionProgressSubscriber",
       "RecoveryProgressPublisher",
       "RecoveryProgressSubscriber",
+      "GoalProgressPublisher",
+      "GoalProgressSubscriber",
     ]);
   });
 

@@ -3701,3 +3701,50 @@ Mock Analytics Provider
 - Documentation: [RECOVERY_PROGRESS_INTEGRATION.md](./RECOVERY_PROGRESS_INTEGRATION.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
 - Progress Analytics providers implement `applyRecoveryProgressEvent` on the public contract; Mock provider appends immutable recovery read-model entries without calculations.
 - Future real analytics engines can replace Mock provider without changing Recovery or integration application APIs.
+
+---
+
+## ADR-118: Goal Progress → Progress Analytics Integration (Sprint 32.4)
+
+**Status:** Accepted  
+**Date:** 2026-08-10  
+**Context:** Sprint 32.1–32.3 established deterministic integration patterns for Workout, Nutrition, and Recovery domains feeding Progress Analytics read models through contract-only publisher/subscriber wiring. Goal Progress domain evaluations, milestones, and completions must follow the same pattern without coupling Goal Progress features to Progress Analytics internals.
+
+**Decision:**
+
+```
+Goal Progress Feature
+        │
+        ▼
+Goal Progress Integration
+        │
+        ▼
+Progress Analytics Contract
+        │
+        ▼
+Progress Analytics Service
+        │
+        ▼
+Mock Analytics Provider
+```
+
+1. Immutable integration models (`GoalProgressEvent`, `GoalProgressSnapshot`, `GoalMetric`, `GoalAnalyticsPayload`, `GoalProgressMetadata`, `GoalProgressResult`).
+2. Supported events represent only (`GoalTrackingStarted`, `GoalProgressUpdated`, `GoalMilestoneReached`, `GoalTargetUpdated`, `GoalCompleted`, `GoalDeviationDetected`, `GoalAdherenceUpdated`, `GoalAchieved`).
+3. `GoalProgressPublisher` publishes immutable events only — no analytics calculations.
+4. `GoalProgressSubscriber` consumes events through `ProgressAnalyticsService.applyGoalProgressEvent` — no direct dependency on Progress Analytics internals.
+5. Mappers convert Goal Progress domain models → `GoalAnalyticsPayload` → Progress Analytics contract DTO.
+6. Application APIs (`publishGoalProgress`, `publishGoalProgressUpdated`, `publishGoalMilestoneReached`, `publishGoalCompleted`) are the operational integration path.
+7. Validation rejects missing event, duplicate event id, invalid payload, missing metadata, and unsupported event type.
+8. Composition Root registers `GoalProgressPublisher` and `GoalProgressSubscriber` via `GoalProgressIntegrationFactory` using contracts only.
+9. Goal Progress feature must never import Progress Analytics internals.
+
+**Alternatives considered:**
+- **Import Progress Analytics directly from Goal Progress feature** — rejected: violates bounded context separation.
+- **Calculate analytics inside integration layer** — rejected: this sprint wires events only; analytics engines remain future work.
+- **Persist integration events now** — rejected: no persistence in this sprint.
+- **Use Domain Event bus as integration transport** — rejected: integration layer is separate from Sprint 18.2 domain events substrate.
+
+**Consequences:**
+- Documentation: [GOAL_PROGRESS_INTEGRATION.md](./GOAL_PROGRESS_INTEGRATION.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Progress Analytics providers implement `applyGoalProgressEvent` on the public contract; Mock provider appends immutable goal progress read-model entries without calculations.
+- Future real analytics engines can replace Mock provider without changing Goal Progress or integration application APIs.

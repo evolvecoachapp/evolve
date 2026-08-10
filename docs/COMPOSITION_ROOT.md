@@ -97,6 +97,7 @@ LoggerFactory → LoggerRegistry / MockLogger / LoggerFactory
 WorkoutProgressIntegrationFactory → WorkoutProgressPublisher / ProgressAnalyticsSubscriber
 NutritionProgressIntegrationFactory → NutritionProgressPublisher / NutritionProgressSubscriber
 RecoveryProgressIntegrationFactory → RecoveryProgressPublisher / RecoveryProgressSubscriber
+GoalProgressIntegrationFactory → GoalProgressPublisher / GoalProgressSubscriber
 ```
 
 Execution entry points:

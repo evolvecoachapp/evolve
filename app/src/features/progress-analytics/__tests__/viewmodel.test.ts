@@ -49,6 +49,13 @@ describe("ProgressAnalyticsViewModel", () => {
           appliedAt: "2026-07-29T00:00:00Z",
         });
       },
+      async applyGoalProgressEvent() {
+        return Object.freeze({
+          eventId: "evt-fail",
+          accepted: false,
+          appliedAt: "2026-07-29T00:00:00Z",
+        });
+      },
     };
     const viewModel = new ProgressAnalyticsViewModel({ service: failing });
     await viewModel.loadAnalytics();
@@ -76,6 +83,7 @@ describe("ProgressAnalyticsViewModel", () => {
       applyWorkoutProgressEvent: mockProgressAnalyticsService.applyWorkoutProgressEvent,
       applyNutritionProgressEvent: mockProgressAnalyticsService.applyNutritionProgressEvent,
       applyRecoveryProgressEvent: mockProgressAnalyticsService.applyRecoveryProgressEvent,
+      applyGoalProgressEvent: mockProgressAnalyticsService.applyGoalProgressEvent,
     };
     const viewModel = new ProgressAnalyticsViewModel({ service });
     await viewModel.loadAnalytics();

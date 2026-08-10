@@ -39,4 +39,7 @@ export const backendProgressAnalyticsService: ProgressAnalyticsService = {
   async applyRecoveryProgressEvent() {
     throw new ProgressAnalyticsError("Backend progress analytics provider is not configured.", "backend");
   },
+  async applyGoalProgressEvent() {
+    throw new ProgressAnalyticsError("Backend progress analytics provider is not configured.", "backend");
+  },
 };

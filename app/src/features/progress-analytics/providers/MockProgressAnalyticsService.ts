@@ -17,6 +17,8 @@ import type {
   NutritionProgressIngestResultDto,
   RecoveryProgressIngestDto,
   RecoveryProgressIngestResultDto,
+  GoalProgressIngestDto,
+  GoalProgressIngestResultDto,
 } from "../services";
 
 const defaultPeriod: AnalyticsPeriodDto = {
@@ -541,6 +543,7 @@ let currentData: ProgressAnalyticsDataDto = buildDefaultData();
 const ingestedWorkoutProgressEvents: WorkoutProgressIngestDto[] = [];
 const ingestedNutritionProgressEvents: NutritionProgressIngestDto[] = [];
 const ingestedRecoveryProgressEvents: RecoveryProgressIngestDto[] = [];
+const ingestedGoalProgressEvents: GoalProgressIngestDto[] = [];
 
 function applyWorkoutProgressEventToData(event: WorkoutProgressIngestDto): void {
   switch (event.eventType) {
@@ -722,6 +725,67 @@ function applyRecoveryProgressEventToData(event: RecoveryProgressIngestDto): voi
   }
 }
 
+function applyGoalProgressEventToData(event: GoalProgressIngestDto): void {
+  switch (event.eventType) {
+    case "GoalProgressUpdated": {
+      const entry = Object.freeze({
+        id: event.eventId,
+        title: event.payload.title ?? "Goal Progress",
+        category: event.payload.category ?? "general",
+        currentValue: event.payload.currentValue ?? 0,
+        targetValue: event.payload.targetValue ?? 0,
+        unit: event.payload.unit ?? "",
+        completionPercent: event.payload.completionPercent ?? 0,
+        status: event.payload.status ?? "on_track",
+        destination: `/goals/${event.payload.goalId}`,
+      });
+      currentData = Object.freeze({
+        ...currentData,
+        goalProgress: Object.freeze([...currentData.goalProgress, entry]),
+      });
+      break;
+    }
+    case "GoalMilestoneReached": {
+      const entry = Object.freeze({
+        id: event.eventId,
+        title: event.payload.title ?? "Goal Milestone",
+        category: event.payload.category ?? "general",
+        currentValue: event.payload.currentValue ?? 0,
+        targetValue: event.payload.targetValue ?? 0,
+        unit: event.payload.unit ?? "",
+        completionPercent: event.payload.completionPercent ?? 0,
+        status: event.payload.status ?? "milestone",
+        destination: null,
+      });
+      currentData = Object.freeze({
+        ...currentData,
+        goalProgress: Object.freeze([...currentData.goalProgress, entry]),
+      });
+      break;
+    }
+    case "GoalCompleted": {
+      const entry = Object.freeze({
+        id: event.eventId,
+        title: event.payload.title ?? "Goal Completed",
+        category: event.payload.category ?? "general",
+        currentValue: event.payload.currentValue ?? 0,
+        targetValue: event.payload.targetValue ?? 0,
+        unit: event.payload.unit ?? "",
+        completionPercent: event.payload.completionPercent ?? 100,
+        status: event.payload.status ?? "completed",
+        destination: `/goals/${event.payload.goalId}`,
+      });
+      currentData = Object.freeze({
+        ...currentData,
+        goalProgress: Object.freeze([...currentData.goalProgress, entry]),
+      });
+      break;
+    }
+    default:
+      break;
+  }
+}
+
 export function getIngestedWorkoutProgressEvents(): readonly WorkoutProgressIngestDto[] {
   return Object.freeze([...ingestedWorkoutProgressEvents]);
 }
@@ -732,6 +796,10 @@ export function getIngestedNutritionProgressEvents(): readonly NutritionProgress
 
 export function getIngestedRecoveryProgressEvents(): readonly RecoveryProgressIngestDto[] {
   return Object.freeze([...ingestedRecoveryProgressEvents]);
+}
+
+export function getIngestedGoalProgressEvents(): readonly GoalProgressIngestDto[] {
+  return Object.freeze([...ingestedGoalProgressEvents]);
 }
 
 export const mockProgressAnalyticsService: ProgressAnalyticsService = {
@@ -845,6 +913,26 @@ export const mockProgressAnalyticsService: ProgressAnalyticsService = {
       appliedAt: frozenEvent.metadata.publishedAt,
     });
   },
+
+  async applyGoalProgressEvent(
+    event: GoalProgressIngestDto,
+  ): Promise<GoalProgressIngestResultDto> {
+    const frozenEvent = Object.freeze({
+      ...event,
+      metadata: Object.freeze({ ...event.metadata }),
+      payload: Object.freeze({
+        ...event.payload,
+        metrics: Object.freeze([...event.payload.metrics]),
+      }),
+    });
+    ingestedGoalProgressEvents.push(frozenEvent);
+    applyGoalProgressEventToData(frozenEvent);
+    return Object.freeze({
+      eventId: frozenEvent.eventId,
+      accepted: true,
+      appliedAt: frozenEvent.metadata.publishedAt,
+    });
+  },
 };
 
 export const emptyMockProgressAnalyticsService: ProgressAnalyticsService = {
@@ -908,6 +996,14 @@ export const emptyMockProgressAnalyticsService: ProgressAnalyticsService = {
       appliedAt: event.metadata.publishedAt,
     });
   },
+
+  async applyGoalProgressEvent(event: GoalProgressIngestDto) {
+    return Object.freeze({
+      eventId: event.eventId,
+      accepted: true,
+      appliedAt: event.metadata.publishedAt,
+    });
+  },
 };
 
 export function resetMockProgressAnalyticsData(): void {
@@ -915,4 +1011,5 @@ export function resetMockProgressAnalyticsData(): void {
   ingestedWorkoutProgressEvents.length = 0;
   ingestedNutritionProgressEvents.length = 0;
   ingestedRecoveryProgressEvents.length = 0;
+  ingestedGoalProgressEvents.length = 0;
 }

@@ -153,3 +153,6 @@ export type { NutritionProgressIntegrationFactoryDeps } from "./NutritionProgres
 
 export { RecoveryProgressIntegrationFactory } from "./RecoveryProgressIntegrationFactory";
 export type { RecoveryProgressIntegrationFactoryDeps } from "./RecoveryProgressIntegrationFactory";
+
+export { GoalProgressIntegrationFactory } from "./GoalProgressIntegrationFactory";
+export type { GoalProgressIntegrationFactoryDeps } from "./GoalProgressIntegrationFactory";

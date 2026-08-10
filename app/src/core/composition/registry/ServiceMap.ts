@@ -64,6 +64,8 @@ import type { NutritionProgressPublisher } from "../../../integrations/nutrition
 import type { NutritionProgressSubscriber } from "../../../integrations/nutrition-progress/subscribers/NutritionProgressSubscriber";
 import type { RecoveryProgressPublisher } from "../../../integrations/recovery-progress/publishers/RecoveryProgressPublisher";
 import type { RecoveryProgressSubscriber } from "../../../integrations/recovery-progress/subscribers/RecoveryProgressSubscriber";
+import type { GoalProgressPublisher } from "../../../integrations/goal-progress/publishers/GoalProgressPublisher";
+import type { GoalProgressSubscriber } from "../../../integrations/goal-progress/subscribers/GoalProgressSubscriber";
 import type { ExerciseSelectionService } from "../../../features/exercise-selection/services/ExerciseSelectionService";
 import type { ProgramGenerationService } from "../../../features/program-generation/services/ProgramGenerationService";
 import type { ProgrammingService } from "../../../features/programming/services/ProgrammingService";
@@ -153,6 +155,8 @@ export interface ServiceMap {
   NutritionProgressSubscriber: NutritionProgressSubscriber;
   RecoveryProgressPublisher: RecoveryProgressPublisher;
   RecoveryProgressSubscriber: RecoveryProgressSubscriber;
+  GoalProgressPublisher: GoalProgressPublisher;
+  GoalProgressSubscriber: GoalProgressSubscriber;
 }
 
 export type ServiceToken = keyof ServiceMap;
@@ -222,4 +226,6 @@ export const SERVICE_TOKENS = [
   "NutritionProgressSubscriber",
   "RecoveryProgressPublisher",
   "RecoveryProgressSubscriber",
+  "GoalProgressPublisher",
+  "GoalProgressSubscriber",
 ] as const satisfies readonly ServiceToken[];

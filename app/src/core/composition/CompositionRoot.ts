@@ -46,6 +46,7 @@ import {
   WorkoutProgressIntegrationFactory,
   NutritionProgressIntegrationFactory,
   RecoveryProgressIntegrationFactory,
+  GoalProgressIntegrationFactory,
 } from "./factories";
 import {
   ConfigurationProvider,
@@ -734,6 +735,28 @@ export class CompositionRoot {
       { lifecycle },
     );
 
+    let goalProgressIntegration:
+      | ReturnType<typeof GoalProgressIntegrationFactory.create>
+      | undefined;
+
+    container.register(
+      "GoalProgressPublisher",
+      () => {
+        goalProgressIntegration ??= GoalProgressIntegrationFactory.create();
+        return goalProgressIntegration.publisher;
+      },
+      { lifecycle },
+    );
+
+    container.register(
+      "GoalProgressSubscriber",
+      () => {
+        goalProgressIntegration ??= GoalProgressIntegrationFactory.create();
+        return goalProgressIntegration.subscriber;
+      },
+      { lifecycle },
+    );
+
     container.validate();
     container.freeze();
 
@@ -959,6 +982,14 @@ export class CompositionRoot {
 
   getRecoveryProgressSubscriber(): ServiceMap["RecoveryProgressSubscriber"] {
     return this.registry.resolve("RecoveryProgressSubscriber");
+  }
+
+  getGoalProgressPublisher(): ServiceMap["GoalProgressPublisher"] {
+    return this.registry.resolve("GoalProgressPublisher");
+  }
+
+  getGoalProgressSubscriber(): ServiceMap["GoalProgressSubscriber"] {
+    return this.registry.resolve("GoalProgressSubscriber");
   }
 
   getDecisionEngineService(): ServiceMap["DecisionEngineService"] {

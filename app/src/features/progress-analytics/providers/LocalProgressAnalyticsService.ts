@@ -39,4 +39,7 @@ export const localProgressAnalyticsService: ProgressAnalyticsService = {
   async applyRecoveryProgressEvent() {
     throw new ProgressAnalyticsError("Local progress analytics provider is not configured.", "local");
   },
+  async applyGoalProgressEvent() {
+    throw new ProgressAnalyticsError("Local progress analytics provider is not configured.", "local");
+  },
 };

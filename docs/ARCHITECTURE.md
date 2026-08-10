@@ -1572,6 +1572,20 @@ Full detail: [NUTRITION_PROGRESS_INTEGRATION.md](./NUTRITION_PROGRESS_INTEGRATIO
 
 Full detail: [RECOVERY_PROGRESS_INTEGRATION.md](./RECOVERY_PROGRESS_INTEGRATION.md). ADR-117: [DECISIONS.md](./DECISIONS.md).
 
+### Goal Progress Integration (`integrations/goal-progress`) — Sprint 32.4 integration
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Deterministic integration layer publishing immutable goal progress events and updating Progress Analytics read models through contracts |
+| **Flow** | Goal Progress Feature → Goal Progress Integration → Progress Analytics Contract → Progress Analytics Service → Mock Analytics Provider |
+| **Models** | `GoalProgressEvent`, `GoalProgressSnapshot`, `GoalMetric`, `GoalAnalyticsPayload`, `GoalProgressMetadata`, `GoalProgressResult` |
+| **Publisher / Subscriber** | `GoalProgressPublisher` publishes immutable events; `GoalProgressSubscriber` consumes via `ProgressAnalyticsService.applyGoalProgressEvent` |
+| **Application** | `publishGoalProgress` / `publishGoalProgressUpdated` / `publishGoalMilestoneReached` / `publishGoalCompleted` |
+| **Composition Root** | `GoalProgressIntegrationFactory` registers `GoalProgressPublisher` + `GoalProgressSubscriber` |
+| **Design** | **No analytics calculations. No repository changes. No persistence. No networking. No backend. No synchronization. No event sourcing. Goal Progress feature never imports Progress Analytics internals.** Contract-only communication |
+
+Full detail: [GOAL_PROGRESS_INTEGRATION.md](./GOAL_PROGRESS_INTEGRATION.md). ADR-118: [DECISIONS.md](./DECISIONS.md).
+
 ### Workout Adaptation Engine (`features/workout-adaptation`) — Sprint 24.1
 
 | Aspect | Implementation |

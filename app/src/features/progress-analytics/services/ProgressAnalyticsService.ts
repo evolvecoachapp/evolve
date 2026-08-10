@@ -434,6 +434,61 @@ export interface RecoveryProgressIngestResultDto {
   readonly appliedAt: string;
 }
 
+export type GoalProgressIngestEventType =
+  | "GoalTrackingStarted"
+  | "GoalProgressUpdated"
+  | "GoalMilestoneReached"
+  | "GoalTargetUpdated"
+  | "GoalCompleted"
+  | "GoalDeviationDetected"
+  | "GoalAdherenceUpdated"
+  | "GoalAchieved";
+
+export interface GoalProgressIngestMetricDto {
+  readonly key: string;
+  readonly label: string;
+  readonly value: number;
+  readonly unit: string;
+}
+
+export interface GoalProgressIngestMetadataDto {
+  readonly source: "goal";
+  readonly correlationId: string;
+  readonly goalId: string;
+  readonly snapshotId: string | null;
+  readonly athleteId: string | null;
+  readonly publishedAt: string;
+}
+
+export interface GoalProgressIngestPayloadDto {
+  readonly goalId: string;
+  readonly snapshotId: string | null;
+  readonly title: string | null;
+  readonly category: string | null;
+  readonly currentValue: number | null;
+  readonly targetValue: number | null;
+  readonly unit: string | null;
+  readonly completionPercent: number | null;
+  readonly status: string | null;
+  readonly evaluatedAt: string | null;
+  readonly completedAt: string | null;
+  readonly metrics: readonly GoalProgressIngestMetricDto[];
+}
+
+export interface GoalProgressIngestDto {
+  readonly eventId: string;
+  readonly eventType: GoalProgressIngestEventType;
+  readonly occurredAt: string;
+  readonly metadata: GoalProgressIngestMetadataDto;
+  readonly payload: GoalProgressIngestPayloadDto;
+}
+
+export interface GoalProgressIngestResultDto {
+  readonly eventId: string;
+  readonly accepted: boolean;
+  readonly appliedAt: string;
+}
+
 export interface ProgressAnalyticsService {
   readonly providerId: ProgressAnalyticsProviderId;
   getAnalytics(filter?: AnalyticsFilterDto): Promise<ProgressAnalyticsDataDto>;
@@ -454,6 +509,9 @@ export interface ProgressAnalyticsService {
   applyRecoveryProgressEvent(
     event: RecoveryProgressIngestDto,
   ): Promise<RecoveryProgressIngestResultDto>;
+  applyGoalProgressEvent(
+    event: GoalProgressIngestDto,
+  ): Promise<GoalProgressIngestResultDto>;
 }
 
 export class ProgressAnalyticsError extends Error {
