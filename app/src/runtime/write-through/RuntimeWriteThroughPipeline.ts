@@ -43,6 +43,10 @@ import {
   validateRuntimeWriteThroughCanStart,
   validateRuntimeWriteThroughState,
 } from "./RuntimeWriteThroughValidation";
+import {
+  isStaleWriteThroughSequence,
+  markWriteThroughSequenceApplied,
+} from "./RuntimeWriteThroughSequence";
 
 let persistPromise: Promise<RuntimeWriteThroughResult> | null = null;
 
@@ -69,6 +73,8 @@ export interface RuntimeWriteThroughDeps {
 export interface RuntimeWriteThroughOptions {
   readonly deps: RuntimeWriteThroughDeps;
   readonly athleteIds?: readonly string[];
+  /** Monotonic mutation sequence guard (Sprint 36.5) — see `RuntimeWriteThroughSequence`. */
+  readonly mutationSequence?: number;
 }
 
 /**
@@ -82,6 +88,22 @@ export class RuntimeWriteThroughPipeline {
     const current = getRuntimeWriteThroughStateHolder();
     validateRuntimeWriteThroughCanStart(current);
     validateBootstrapReadyForWriteThrough();
+
+    // Persistence Consistency Guard (Sprint 36.5): reject a call whose
+    // captured mutation is already older than one a completed persist has
+    // reflected — before any state transition, before observing runtime
+    // services, before touching a single repository. Leaves the existing
+    // (fresher) write-through state/result and every repository row
+    // completely untouched.
+    if (
+      options.mutationSequence !== undefined &&
+      isStaleWriteThroughSequence(options.mutationSequence)
+    ) {
+      throw new RuntimeWriteThroughError(
+        "Write-through call no longer reflects the latest runtime mutation",
+        "stale_mutation_sequence",
+      );
+    }
 
     const clock = options.deps.clock ?? (() => new Date().toISOString());
     const startedAt = clock();
@@ -163,6 +185,10 @@ export class RuntimeWriteThroughPipeline {
       });
       validateRuntimeWriteThroughState(nextState);
       setRuntimeWriteThroughStateHolder(nextState);
+
+      if (options.mutationSequence !== undefined) {
+        markWriteThroughSequenceApplied(options.mutationSequence);
+      }
 
       return result;
     } catch (error) {

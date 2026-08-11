@@ -1,3 +1,4 @@
+import { getLogger } from "../../infrastructure/logging";
 import type { PersistenceRecord } from "../../core/persistence/contracts/PersistenceRecord";
 import type { IdentityRepository } from "../../core/persistence/repositories/IdentityRepository";
 import type { NutritionRepository } from "../../core/persistence/repositories/NutritionRepository";
@@ -16,7 +17,50 @@ import type { NutritionRuntimePersistenceService } from "../domain-persistence/s
 import type { RecoveryRuntimePersistenceService } from "../domain-persistence/services/RecoveryRuntimePersistenceService";
 import type { WorkoutRuntimePersistenceService } from "../domain-persistence/services/WorkoutRuntimePersistenceService";
 import { createPayloadRecord } from "../persistence/DomainRecord";
+import {
+  isOwnedByAthlete,
+  type AthleteOwnedPayload,
+} from "../persistence/AthleteRecordOwnership";
 import { RuntimeWriteThroughError } from "./RuntimeWriteThroughError";
+
+/**
+ * Persistence Consistency Guard (Sprint 36.5): the authenticated athlete id
+ * being persisted for (`expectedAthleteId`, always the loop variable over
+ * `athleteIds` — never read back from the payload) must match the
+ * payload's own `athleteId` field before it is ever written to a
+ * persistence record. A mismatch is skipped and logged rather than
+ * persisted under the wrong key.
+ */
+function logOwnershipMismatch(
+  domain: string,
+  expectedAthleteId: string,
+  actualAthleteId: string,
+): void {
+  getLogger().warn(
+    "Skipped write-through persistence for a record owned by a mismatched athlete",
+    {
+      scope: "Application",
+      reason: `${domain} payload athleteId "${actualAthleteId}" does not match authenticated athlete "${expectedAthleteId}"`,
+    },
+  );
+}
+
+function verifiedOwnedPayload<T extends AthleteOwnedPayload>(
+  domain: string,
+  payload: T | null,
+  expectedAthleteId: string,
+): T | null {
+  if (!payload) {
+    return null;
+  }
+
+  if (!isOwnedByAthlete(payload, expectedAthleteId)) {
+    logOwnershipMismatch(domain, expectedAthleteId, payload.athleteId);
+    return null;
+  }
+
+  return payload;
+}
 
 /**
  * Structural observation from runtime composition services into persistence records.
@@ -29,9 +73,13 @@ export function observeIdentityRecords(
   const records: PersistenceRecord[] = [];
 
   for (const athleteId of athleteIds) {
-    const identity = service.getAthleteIdentity(athleteId);
+    const identity = verifiedOwnedPayload(
+      "identity",
+      service.getAthleteIdentity(athleteId),
+      athleteId,
+    );
     if (identity) {
-      records.push(createPayloadRecord(identity.athleteId, identity));
+      records.push(createPayloadRecord(athleteId, identity));
     }
   }
 
@@ -56,9 +104,13 @@ export function observeWorkspaceRecords(
   const records: PersistenceRecord[] = [];
 
   for (const athleteId of athleteIds) {
-    const workspace = service.getWorkspace(athleteId);
+    const workspace = verifiedOwnedPayload(
+      "workspace",
+      service.getWorkspace(athleteId),
+      athleteId,
+    );
     if (workspace) {
-      records.push(createPayloadRecord(workspace.athleteId, workspace));
+      records.push(createPayloadRecord(athleteId, workspace));
     }
   }
 
@@ -72,7 +124,11 @@ export function observeSnapshotRecords(
   const records: PersistenceRecord[] = [];
 
   for (const athleteId of athleteIds) {
-    const snapshot = service.getCurrentSnapshot(athleteId);
+    const snapshot = verifiedOwnedPayload(
+      "snapshot",
+      service.getCurrentSnapshot(athleteId),
+      athleteId,
+    );
     if (snapshot) {
       records.push(createPayloadRecord(snapshot.id, snapshot));
     }
@@ -88,9 +144,13 @@ export function observeTimelineRecords(
   const records: PersistenceRecord[] = [];
 
   for (const athleteId of athleteIds) {
-    const timeline = service.getTimeline(athleteId);
+    const timeline = verifiedOwnedPayload(
+      "timeline",
+      service.getTimeline(athleteId),
+      athleteId,
+    );
     if (timeline) {
-      records.push(createPayloadRecord(timeline.athleteId, timeline));
+      records.push(createPayloadRecord(athleteId, timeline));
     }
   }
 
@@ -104,7 +164,11 @@ export function observeWorkoutRuntimeRecords(
   const records: PersistenceRecord[] = [];
 
   for (const athleteId of athleteIds) {
-    const state = service.getState(athleteId);
+    const state = verifiedOwnedPayload(
+      "workout",
+      service.getState(athleteId),
+      athleteId,
+    );
     if (state) {
       records.push(createPayloadRecord(athleteId, state));
     }
@@ -120,7 +184,11 @@ export function observeNutritionRuntimeRecords(
   const records: PersistenceRecord[] = [];
 
   for (const athleteId of athleteIds) {
-    const state = service.getState(athleteId);
+    const state = verifiedOwnedPayload(
+      "nutrition",
+      service.getState(athleteId),
+      athleteId,
+    );
     if (state) {
       records.push(createPayloadRecord(athleteId, state));
     }
@@ -136,7 +204,11 @@ export function observeRecoveryRuntimeRecords(
   const records: PersistenceRecord[] = [];
 
   for (const athleteId of athleteIds) {
-    const state = service.getState(athleteId);
+    const state = verifiedOwnedPayload(
+      "recovery",
+      service.getState(athleteId),
+      athleteId,
+    );
     if (state) {
       records.push(createPayloadRecord(athleteId, state));
     }

@@ -10,6 +10,14 @@ import { RUNTIME_WRITE_THROUGH_STATUS } from "../RuntimeWriteThroughStatus";
 
 export interface PersistRuntimeOptions {
   readonly athleteIds?: readonly string[];
+  /**
+   * Monotonic mutation sequence guard (Sprint 36.5). When supplied,
+   * `RuntimeWriteThroughPipeline.persist()` rejects this call outright if
+   * its sequence is older than one already successfully applied, instead
+   * of observing/writing anything — direct callers that omit this option
+   * are unaffected (guard bypassed, matching pre-36.5 behavior).
+   */
+  readonly mutationSequence?: number;
 }
 
 /**
@@ -39,6 +47,7 @@ export function persistRuntime(
 
     return RuntimeWriteThroughPipeline.persist({
       athleteIds: options.athleteIds,
+      mutationSequence: options.mutationSequence,
       deps: {
         identityRepository: adapters.identity,
         runtimeRepository: adapters.runtime,

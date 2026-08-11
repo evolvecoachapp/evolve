@@ -1,3 +1,4 @@
+import { getLogger } from "../../infrastructure/logging";
 import type { PersistenceRecord } from "../../core/persistence/contracts/PersistenceRecord";
 import type { AthleteIdentity } from "../../features/athlete-identity/models/AthleteIdentity";
 import type { AthleteIdentityService } from "../../features/athlete-identity/services/AthleteIdentityService";
@@ -17,6 +18,52 @@ import type { NutritionRuntimePersistenceService } from "../domain-persistence/s
 import type { RecoveryRuntimePersistenceService } from "../domain-persistence/services/RecoveryRuntimePersistenceService";
 import type { WorkoutRuntimePersistenceService } from "../domain-persistence/services/WorkoutRuntimePersistenceService";
 import { readRecordPayload } from "../persistence/DomainRecord";
+import {
+  isRecordOwnedByAthlete,
+  type AthleteOwnedPayload,
+} from "../persistence/AthleteRecordOwnership";
+
+/**
+ * Persistence Consistency Guard (Sprint 36.5): the Authenticated Athlete
+ * Persistence Boundary (Sprint 36.1) already restricted `records` to keys
+ * (`record.id`) belonging to the current session's athlete id(s). This is
+ * the second, independent check — verifying the payload's own `athleteId`
+ * field actually matches its record key — before that payload is ever
+ * restored into a composition service. Without it, a record whose payload
+ * internally disagreed with its own key would silently restore a
+ * *different* athlete's data under the current session's identity. A
+ * mismatch is skipped and logged rather than restored.
+ */
+function logHydrationOwnershipMismatch(
+  domain: string,
+  recordId: string,
+  actualAthleteId: string,
+): void {
+  getLogger().warn(
+    "Skipped hydration restore for a record owned by a mismatched athlete",
+    {
+      scope: "Application",
+      reason: `${domain} record "${recordId}" carries payload athleteId "${actualAthleteId}" — refusing to restore under a different key`,
+    },
+  );
+}
+
+function verifiedOwnedRecordPayload<T extends AthleteOwnedPayload>(
+  domain: string,
+  record: PersistenceRecord,
+  payload: T | null,
+): T | null {
+  if (!payload) {
+    return null;
+  }
+
+  if (!isRecordOwnedByAthlete(record, payload)) {
+    logHydrationOwnershipMismatch(domain, record.id, payload.athleteId);
+    return null;
+  }
+
+  return payload;
+}
 
 /**
  * Structural restoration from repository contract records into composition services.
@@ -28,7 +75,11 @@ export function restoreIdentityRecords(
   generatedAt: string,
 ): void {
   for (const record of records) {
-    const identity = readRecordPayload<AthleteIdentity>(record);
+    const identity = verifiedOwnedRecordPayload(
+      "identity",
+      record,
+      readRecordPayload<AthleteIdentity>(record),
+    );
     if (!identity) {
       continue;
     }
@@ -80,7 +131,11 @@ export function restoreWorkspaceRecords(
   records: readonly PersistenceRecord[],
 ): void {
   for (const record of records) {
-    const workspace = readRecordPayload<Workspace>(record);
+    const workspace = verifiedOwnedRecordPayload(
+      "workspace",
+      record,
+      readRecordPayload<Workspace>(record),
+    );
     if (workspace) {
       service.restorePersisted(workspace);
     }
@@ -92,7 +147,11 @@ export function restoreWorkoutRuntimeRecords(
   records: readonly PersistenceRecord[],
 ): void {
   for (const record of records) {
-    const state = readRecordPayload<WorkoutRuntimePersistenceState>(record);
+    const state = verifiedOwnedRecordPayload(
+      "workout",
+      record,
+      readRecordPayload<WorkoutRuntimePersistenceState>(record),
+    );
     if (state) {
       service.restorePersisted(state);
     }
@@ -104,7 +163,11 @@ export function restoreNutritionRuntimeRecords(
   records: readonly PersistenceRecord[],
 ): void {
   for (const record of records) {
-    const state = readRecordPayload<NutritionRuntimePersistenceState>(record);
+    const state = verifiedOwnedRecordPayload(
+      "nutrition",
+      record,
+      readRecordPayload<NutritionRuntimePersistenceState>(record),
+    );
     if (state) {
       service.restorePersisted(state);
     }
@@ -116,7 +179,11 @@ export function restoreRecoveryRuntimeRecords(
   records: readonly PersistenceRecord[],
 ): void {
   for (const record of records) {
-    const state = readRecordPayload<RecoveryRuntimePersistenceState>(record);
+    const state = verifiedOwnedRecordPayload(
+      "recovery",
+      record,
+      readRecordPayload<RecoveryRuntimePersistenceState>(record),
+    );
     if (state) {
       service.restorePersisted(state);
     }
@@ -127,6 +194,12 @@ export function restoreSnapshotRecords(
   service: AthleteSnapshotService,
   records: readonly PersistenceRecord[],
 ): void {
+  // Snapshot records are keyed by the snapshot's own composite `id`
+  // (`athlete-snapshot:${athleteId}:${createdAt}`, see `buildIdentity.ts`),
+  // not by `athleteId` directly (unlike every other athlete-scoped record
+  // — see `observeSnapshotRecords`). The `record.id === payload.athleteId`
+  // ownership check used elsewhere in this module does not apply to this
+  // keying convention and is intentionally not used here.
   for (const record of records) {
     const snapshot = readRecordPayload<AthleteSnapshot>(record);
     if (snapshot) {
@@ -140,7 +213,11 @@ export function restoreTimelineRecords(
   records: readonly PersistenceRecord[],
 ): void {
   for (const record of records) {
-    const timeline = readRecordPayload<CoachTimeline>(record);
+    const timeline = verifiedOwnedRecordPayload(
+      "timeline",
+      record,
+      readRecordPayload<CoachTimeline>(record),
+    );
     if (timeline) {
       service.restorePersisted(timeline);
     }
@@ -152,7 +229,11 @@ export function restoreCoachRuntimeOverlayFromWorkspace(
   workspaceRecords: readonly PersistenceRecord[],
 ): void {
   for (const record of workspaceRecords) {
-    const workspace = readRecordPayload<Workspace>(record);
+    const workspace = verifiedOwnedRecordPayload(
+      "workspace",
+      record,
+      readRecordPayload<Workspace>(record),
+    );
     const overlay = workspace?.coachRuntimeOverlay;
     if (!overlay || overlay.memoryEntries.length === 0) {
       continue;

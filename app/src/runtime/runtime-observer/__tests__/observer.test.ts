@@ -105,7 +105,10 @@ describe("RuntimeObserver lifecycle", () => {
     });
 
     expect(persist).toHaveBeenCalledTimes(1);
-    expect(persist).toHaveBeenCalledWith({ athleteIds: [ATHLETE_ID] });
+    expect(persist).toHaveBeenCalledWith({
+      athleteIds: [ATHLETE_ID],
+      mutationSequence: expect.any(Number),
+    });
 
     services.runtimeEnvironmentService.build({
       requestId: "observer:runtime:1",

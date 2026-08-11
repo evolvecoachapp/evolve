@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-08-11  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-147). Append only — never renumber.
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-149). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -4981,3 +4981,71 @@ ready  (recovery — latest mutation wins)
 **Consequences:**
 - Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
 - Repository/write-through failures are now fully deterministic end-to-end: no unhandled promise rejection, no rolled-back runtime state, no observer/session disruption, and guaranteed recovery (with the latest complete runtime state winning) on the very next successful mutation. `RuntimeObserverDeps`/`RuntimeWriteThroughDeps` public shapes are unchanged; the change is confined to `triggerWriteThrough()`'s error handling inside `RuntimeObserver.ts`.
+
+## ADR-149: Runtime Persistence Verification & Consistency Guard (Sprint 36.5)
+
+**Status:** Accepted
+**Date:** 2026-08-11
+**Context:** Sprints 35.4/35.5 established full domain persistence (Workout, Nutrition, Recovery, Goal Progress, Coach, Notification), Sprint 36.1 established the Authenticated Athlete Persistence Boundary for hydration, and Sprint 36.4 established deterministic persistence-failure recovery. This sprint's mandate was a **final verification + guard pass** over the complete lifecycle (Runtime Session → Observer → Domain Mutation → Write-Through → Repository Contracts → SQLite → Hydration → Restore) — not a rewrite. The instruction was explicit: inspect the existing architecture, identify only *concrete* consistency gaps, and add the smallest possible mechanism to close them, preferring pure validation functions and existing result/status structures over any new subsystem (no event sourcing, versioned event logs, background workers, queues, retry systems, network synchronization, or new repositories).
+
+**Decision:**
+
+Inspection found two concrete, narrow gaps — both closed with pure, stateless guards composed into existing call sites, with no change to any public pipeline API shape beyond one new optional field each.
+
+```
+Gap 1 — payload-internal athlete mismatch (write-through + hydration)
+
+filterRecordsForAthleteScope() (ADR-145) checks record.id only
+  ↓
+A record legitimately keyed under the CURRENT athlete, whose payload
+was itself built for a DIFFERENT athleteId, would pass that check
+  ↓
+AthleteRecordOwnership.ts (new, pure):
+  isOwnedByAthlete(payload, expectedAthleteId)
+  isRecordOwnedByAthlete(record, payload)
+  ↓
+Wired into every observe*Records() (write-through) and every
+restore*Records() (hydration, except AthleteSnapshot — different
+composite-id keying convention, documented, out of scope)
+  ↓
+Mismatch → skip + getLogger().warn() — never persisted, never restored
+
+Gap 2 — out-of-order write-through completion (latest-mutation-wins)
+
+triggerWriteThrough() resets Write-Through state before EVERY persist
+call, even while a PRIOR persist call may still be in flight
+  ↓
+If the prior (slower) call's repository writes complete AFTER a later
+(faster) call's, the prior call could silently downgrade persisted
+state back to older data — despite every persist reading live state
+  ↓
+RuntimeWriteThroughSequence.ts (new, pure counter):
+  nextRuntimeMutationSequence() — called once per successful mutation
+    inside RuntimeObserver.onSuccessfulChange()
+  isStaleWriteThroughSequence(candidate) / markWriteThroughSequenceApplied()
+  ↓
+RuntimeWriteThroughPipeline.persist({ mutationSequence }) rejects
+  (stale_mutation_sequence) BEFORE observing services or touching any
+  repository if candidate < already-applied sequence
+  ↓
+A stale/late persist call can never downgrade a fresher persisted state
+```
+
+1. `AthleteRecordOwnership.ts` (`runtime/persistence/`) exposes two pure, dependency-free comparison functions — no state, no I/O. `RuntimeWriteThroughPersistence.ts`'s seven `observe*Records()` functions and `HydrationRestoration.ts`'s seven `restore*Records()` functions each gained a `verifiedOwnedPayload()`/`verifiedOwnedRecordPayload()` call that returns `null` (skip) on a mismatch instead of proceeding; a mismatch is logged via the existing `infrastructure/logging` abstraction (`getLogger().warn()`, scope `"Application"`) — never `console.*`. `restoreSnapshotRecords()` is deliberately excluded and documented in-line: `AthleteSnapshot` records use a composite id (`athlete-snapshot:${athleteId}:${createdAt}`), so `record.id === payload.athleteId` does not apply to that domain's keying — a pre-existing structural note, not a new gap requiring a new mechanism (Athlete Snapshot is not in this sprint's explicit domain list).
+2. `RuntimeWriteThroughSequence.ts` (`runtime/write-through/`) is a module-level monotonic counter pair (`mutationSequence`, `appliedSequence`) with four pure accessor functions. `RuntimeObserver`'s `onSuccessfulChange()` calls `nextRuntimeMutationSequence()` once per successful `build()` and threads the number through `triggerWriteThrough()` → `persistRuntime({ mutationSequence })` → `RuntimeWriteThroughPipeline.persist({ mutationSequence })`. The staleness check runs as the very first statement inside `persist()`, before `validateRuntimeWriteThroughCanStart`'s state transition or any `observe*Records()` call, so a rejected stale call touches nothing — not the state holder, not a single repository. `markWriteThroughSequenceApplied()` only advances on a call that reaches success. `mutationSequence` is optional on both `PersistRuntimeOptions` and `RuntimeWriteThroughOptions` — every existing caller that omits it is completely unaffected. `resetRuntimeMutationSequence()` is called from `RuntimeObserver.stop()`, becoming one more step in the existing reset cascade (no new reset API introduced).
+3. A new `RuntimeWriteThroughErrorCode` value, `stale_mutation_sequence`, was added to the existing `RuntimeWriteThroughError` union — reusing the existing error/result structure exactly as instructed, not introducing a new error channel.
+4. Verification of mutation sequencing (A → persist → B → persist → C → repository failure → D → persist — SQLite/hydration reflect only D), failure sequencing (no rollback, observer stays `"ready"`, next mutation recovers), and persistence-failure consistency reused Sprint 36.4's existing proof and tests without modification — inspection found these already correct, so no guard was added for them, per the sprint's explicit instruction not to rewrite working code.
+5. Athlete isolation (A → logout → B → logout → A) was already covered for identity/workspace (ADR-145); this sprint's new integration test extends the same round trip across every cross-domain overlay (Workout/Nutrition/Recovery/Goal/Coach/Notification) in one place, confirming no domain-specific isolation gap exists — no code change was needed, since all six domains already route through the same Sprint 36.1 hydration scoping.
+6. New integration tests (no code change) also verify: a single session mutating all eight domains persists and restores together after a full restart (cross-domain consistency); `restoreDashboard()` after hydration reflects real hydrated workspace data and never the empty/mock fallback shape (dashboard consistency); and a comprehensive full-reset test asserts every pipeline's status **and** result object, `RuntimeObserverStateHolder().athleteIds`, and both new mutation-sequence counters all return to a clean idle/zero state together (reset consistency) — closing a testing gap (no single test previously asserted all of these together), not a production-code gap.
+7. No change to `RuntimeSessionOrchestrator`, `RuntimeSessionProvider`, `RepositoryHydrationPipeline`'s existing scoping, SQLite infrastructure, Admin, or AI/Coach architecture.
+
+**Alternatives considered:**
+- **Add a versioned event log or outbox pattern for write-through** — rejected; the sprint explicitly forbids event sourcing/versioned event logs, and a simple monotonic counter compared before every persist call already delivers "latest mutation wins" without persisting or replaying events.
+- **Re-check ownership at the SQLite repository/mapper layer instead of the write-through/hydration observe/restore functions** — rejected; the sprint forbids SQLite infrastructure changes, and the observe/restore functions are the correct, existing chokepoint already responsible for shaping what gets persisted/restored.
+- **Extend `filterRecordsForAthleteScope()` itself to also compare payload `athleteId`** — rejected; that function is deliberately generic over `record.id` only and is reused by every domain including `AthleteSnapshot`, whose composite-id keying makes a payload-vs-key equality check invalid for that one domain. A separate, explicitly-scoped guard module composed only where the equality holds is safer than special-casing one domain inside a shared filter.
+- **Add a queue/retry to guarantee ordering instead of a staleness check** — rejected; the sprint explicitly forbids queues/retry systems, and rejecting a stale call outright (rather than reordering or retrying it) is sufficient since every persist call already reads live current state.
+- **Add athlete-record-ownership guards for `AthleteSnapshot` hydration by inventing a synthetic key comparison** — rejected; would introduce an artificial equality with no semantic meaning for that domain's composite-id design, documented as an explicit non-goal instead.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- The persistence lifecycle now has two additional narrow, pure defensive guards — a payload-ownership check (write-through + hydration) and a monotonic mutation-sequence staleness check (write-through) — neither of which changes any existing public behavior for callers that don't opt into the new optional fields. New unit tests (`athleteRecordOwnership.test.ts`, write-through/hydration `ownershipGuard.test.ts`, `mutationSequenceGuard.test.ts`) and one new integration suite (`consistencyGuard.integration.test.ts`, covering cross-domain restart, dashboard consistency, extended athlete isolation, and full-reset state inventory) raise total coverage without touching any previously-passing test. Full suite (802 suites / 3326 tests) and typecheck remain green.

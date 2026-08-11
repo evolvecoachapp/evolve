@@ -11,6 +11,10 @@ import {
   resetRuntimeWriteThrough,
 } from "../write-through/RuntimeWriteThroughPipeline";
 import { persistRuntime } from "../write-through/application/persistRuntime";
+import {
+  nextRuntimeMutationSequence,
+  resetRuntimeMutationSequence,
+} from "../write-through/RuntimeWriteThroughSequence";
 import { RUNTIME_OBSERVER_PHASES } from "./RuntimeObserverInitialization";
 import {
   createRuntimeObserverResult,
@@ -115,16 +119,26 @@ function wrapBuildMethod<TService extends object, TResult extends BuildResultWit
  * surfacing as an unhandled promise rejection; it does not swallow or hide
  * the failure, which remains fully observable through the existing
  * write-through status/result mechanism.
+ *
+ * `mutationSequence` (Sprint 36.5) is the monotonic sequence number assigned
+ * to the mutation that triggered this call (see `nextRuntimeMutationSequence`
+ * in `onSuccessfulChange`). It travels through to
+ * `RuntimeWriteThroughPipeline.persist()`, which rejects — before observing
+ * or writing anything — a call whose sequence is older than one already
+ * successfully applied, so an overlapping, slower persist call triggered by
+ * an earlier mutation can never overwrite a newer mutation's already-applied
+ * complete state.
  */
 function triggerWriteThrough(
   deps: RuntimeObserverDeps,
   athleteIds: readonly string[],
+  mutationSequence: number,
 ): void {
   const reset = deps.resetWriteThrough ?? resetRuntimeWriteThrough;
   const persist = deps.persist ?? persistRuntime;
 
   reset();
-  void persist({ athleteIds }).catch((error: unknown) => {
+  void persist({ athleteIds, mutationSequence }).catch((error: unknown) => {
     logWriteThroughFailure(error);
   });
 }
@@ -190,7 +204,11 @@ export class RuntimeObserver {
           return;
         }
 
-        triggerWriteThrough(options.deps, athleteIds);
+        triggerWriteThrough(
+          options.deps,
+          athleteIds,
+          nextRuntimeMutationSequence(),
+        );
       };
 
       const unwraps: BuildUnwrapper[] = [];
@@ -281,6 +299,11 @@ export class RuntimeObserver {
   static stop(): void {
     unwrapActiveObservation();
     resetRuntimeObserverStateHolder();
+    // Part of the full pipeline reset cascade only (logout/retry) — never
+    // called from the per-mutation `triggerWriteThrough()` reset path, so
+    // the "latest applied sequence" guard survives across every mutation
+    // within a session and only clears on a genuine session boundary.
+    resetRuntimeMutationSequence();
   }
 
   static reset(): void {
