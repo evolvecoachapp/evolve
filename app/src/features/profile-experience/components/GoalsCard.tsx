@@ -28,7 +28,11 @@ export function GoalsCard({ goals, onPress }: GoalsCardProps) {
   }));
 
   return (
-    <AppCard variant="floating" onPress={onPress}>
+    <AppCard
+      variant="floating"
+      onPress={onPress}
+      accessibilityLabel={onPress ? "Goals. Open the Goals tab." : undefined}
+    >
       <View style={styles.body}>
         <View style={styles.header}>
           <Text style={styles.title}>Goals</Text>

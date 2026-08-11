@@ -20,6 +20,7 @@ export function TimeRangeSelector({ value, options, onChange, disabled = false }
           label={option.label}
           size="sm"
           variant={option.value === value ? "primary" : "secondary"}
+          selected={option.value === value}
           disabled={disabled}
           onPress={() => onChange(option.value)}
         />

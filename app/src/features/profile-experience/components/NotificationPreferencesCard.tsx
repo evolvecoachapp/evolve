@@ -25,7 +25,13 @@ export function NotificationPreferencesCard({ onPress }: NotificationPreferences
   }));
 
   return (
-    <AppCard variant="floating" onPress={onPress}>
+    <AppCard
+      variant="floating"
+      onPress={onPress}
+      accessibilityLabel={
+        onPress ? "Notifications. Manage reminders and alerts in the Notifications tab." : undefined
+      }
+    >
       <View style={styles.row}>
         <View style={styles.text}>
           <Text style={styles.title}>Notifications</Text>

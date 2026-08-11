@@ -53,7 +53,7 @@ export function NotificationCard({ notification, onDismiss, onPress }: Notificat
       onPress={onPress}
       accessibilityLabel={
         onPress
-          ? `${notification.title}. ${isUnread ? "Unread. Double tap to mark as read." : "Read."}`
+          ? `${notification.title}.${isHighPriority ? ` ${notification.priority} priority.` : ""} ${isUnread ? "Unread. Double tap to mark as read." : "Read."}`
           : undefined
       }
       accessibilityState={onPress ? { selected: !isUnread } : undefined}

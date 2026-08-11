@@ -20,6 +20,8 @@ interface AppButtonProps {
   /** Spring press for floating CTAs. */
   interaction?: ButtonInteraction;
   haptic?: HapticFeedback;
+  /** Marks this button as the active choice in a toggle/segmented group — exposed via `accessibilityState.selected` without changing visuals. */
+  selected?: boolean;
 }
 
 const SIZE_STYLES: Record<ButtonSize, ViewStyle> = {
@@ -50,6 +52,7 @@ export function AppButton({
   style,
   interaction = "default",
   haptic,
+  selected,
 }: AppButtonProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(({ colors, typography }) => ({
@@ -113,7 +116,7 @@ export function AppButton({
     <AnimatedPressable
       accessibilityRole="button"
       accessibilityLabel={loading ? `${label}, loading` : label}
-      accessibilityState={{ disabled: isDisabled, busy: loading }}
+      accessibilityState={{ disabled: isDisabled, busy: loading, selected }}
       onPress={onPress}
       disabled={isDisabled}
       variant={interaction === "floating" ? "floating" : "default"}
