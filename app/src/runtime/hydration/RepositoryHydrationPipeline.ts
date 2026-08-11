@@ -10,6 +10,7 @@ import type { PersistenceRecord } from "../../core/persistence/contracts/Persist
 import type { AthleteIdentityService } from "../../features/athlete-identity/services/AthleteIdentityService";
 import type { AthleteSnapshotService } from "../../features/athlete-snapshot/services/AthleteSnapshotService";
 import type { CoachTimelineService } from "../../features/coach-timeline/services/CoachTimelineService";
+import type { CoachConversationService } from "../../features/coach-conversation/services/CoachConversationService";
 import type { RuntimeEnvironmentService } from "../../features/runtime-environment/services/RuntimeEnvironmentService";
 import type { UnifiedWorkspaceService } from "../../features/unified-workspace/services/UnifiedWorkspaceService";
 import type { NutritionRuntimePersistenceService } from "../domain-persistence/services/NutritionRuntimePersistenceService";
@@ -33,6 +34,7 @@ import {
   restoreTimelineRecords,
   restoreWorkoutRuntimeRecords,
   restoreWorkspaceRecords,
+  restoreCoachRuntimeOverlayFromWorkspace,
 } from "./HydrationRestoration";
 import {
   validateBootstrapReadyForHydration,
@@ -57,6 +59,7 @@ export interface RepositoryHydrationDeps {
   readonly unifiedWorkspaceService: UnifiedWorkspaceService;
   readonly athleteSnapshotService: AthleteSnapshotService;
   readonly coachTimelineService: CoachTimelineService;
+  readonly coachConversationService: CoachConversationService;
   readonly workoutRuntimePersistenceService: WorkoutRuntimePersistenceService;
   readonly nutritionRuntimePersistenceService: NutritionRuntimePersistenceService;
   readonly recoveryRuntimePersistenceService: RecoveryRuntimePersistenceService;
@@ -136,6 +139,10 @@ export class RepositoryHydrationPipeline {
       );
       restoreWorkspaceRecords(
         options.deps.unifiedWorkspaceService,
+        workspaceRecords,
+      );
+      restoreCoachRuntimeOverlayFromWorkspace(
+        options.deps.coachConversationService,
         workspaceRecords,
       );
       restoreSnapshotRecords(

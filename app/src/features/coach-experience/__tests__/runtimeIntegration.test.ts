@@ -1,5 +1,6 @@
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import {
+  createCompositionRoot,
   getCompositionRoot,
   resetCompositionRoot,
 } from "../../../core/composition/createCompositionRoot";
@@ -34,6 +35,11 @@ import { resetDashboardRestore } from "../../../runtime/dashboard-restore/Dashbo
 import { resetRuntimeWriteThrough } from "../../../runtime/write-through/RuntimeWriteThroughPipeline";
 import { resetRuntimeSession } from "../../../runtime/session/RuntimeSessionOrchestrator";
 import { resetRuntimeObserver } from "../../../runtime/runtime-observer/RuntimeObserver";
+import { observeRuntime } from "../../../runtime/runtime-observer/application/observeRuntime";
+import { hydrateRuntime } from "../../../runtime/hydration/application/hydrateRuntime";
+import { startRuntimeSession } from "../../../runtime/session/application/startRuntimeSession";
+import { getRuntimeWriteThroughPromise } from "../../../runtime/write-through/RuntimeWriteThroughPipeline";
+import { readPersistedCoachRuntimeOverlay } from "../../../runtime/domain-persistence/application/persistCoachRuntimeMutation";
 import { RUNTIME_SESSION_STATUS } from "../../../runtime/session/RuntimeSessionStatus";
 import { useRuntimeSession } from "../../../runtime/session/RuntimeSessionContext";
 import { mockCoachExperienceService } from "../providers/MockCoachExperienceService";
@@ -415,5 +421,61 @@ describe("Coach runtime restart hydration", () => {
     const restored = await loadHydratedCoachExperience({ athleteId: ATHLETE_ID });
     expect(restored?.conversation.messages.length).toBeGreaterThan(0);
     expect(restored?.recommendations.length).toBeGreaterThan(0);
+  });
+
+  it("persists conversation turns and memory across SQLite restart", async () => {
+    createCompositionRoot();
+    await startRuntimeSession({ athleteIds: [ATHLETE_ID], clock: () => FIXED_DASHBOARD_PROJECTED_AT });
+    await hydrateRuntime();
+    observeRuntime({
+      athleteIds: [ATHLETE_ID],
+      clock: () => FIXED_DASHBOARD_PROJECTED_AT,
+    });
+    await seedPopulatedHydratedCoach();
+
+    const root = getCompositionRoot();
+    const coachConversation = root.resolve("CoachConversationService");
+    await generateAndAttachPlan(coachConversation);
+
+    const viewModel = new CoachExperienceViewModel({
+      athleteId: ATHLETE_ID,
+      now: () => new Date(FIXED_DASHBOARD_PROJECTED_AT),
+    });
+    viewModel.applyHydratedCoachExperience(
+      (await loadHydratedCoachExperience({ athleteId: ATHLETE_ID }))!,
+    );
+
+    const beforeCount = viewModel.messages.length;
+    await viewModel.sendMessage("Explain today's workout");
+    expect(viewModel.messages.length).toBe(beforeCount + 2);
+
+    const inFlight = getRuntimeWriteThroughPromise();
+    if (inFlight) {
+      await inFlight.catch(() => undefined);
+    }
+
+    const overlayBeforeRestart = readPersistedCoachRuntimeOverlay(ATHLETE_ID);
+    expect(overlayBeforeRestart?.sessionMessages.length).toBeGreaterThanOrEqual(2);
+
+    resetRuntimePipelinesPreservingCompositionRoot();
+    resetRuntimeBootstrap();
+    resetCompositionRoot();
+    createCompositionRoot();
+    await startRuntimeSession({ athleteIds: [ATHLETE_ID], clock: () => FIXED_DASHBOARD_PROJECTED_AT });
+    await hydrateRuntime();
+    observeRuntime({
+      athleteIds: [ATHLETE_ID],
+      clock: () => FIXED_DASHBOARD_PROJECTED_AT,
+    });
+
+    const restored = await loadHydratedCoachExperience({ athleteId: ATHLETE_ID });
+    expect(restored?.conversation.messages.length).toBeGreaterThanOrEqual(2);
+    expect(
+      getCompositionRoot()
+        .resolve("CoachConversationService")
+        .getMemory()
+        .buildMemorySnapshot()
+        .snapshot?.entries.length,
+    ).toBeGreaterThan(0);
   });
 });

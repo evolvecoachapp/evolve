@@ -38,14 +38,19 @@ function isWorkspaceShape(value: unknown): value is Workspace {
   );
 }
 
-function withGoalRuntimeOverlay(value: Workspace): Workspace {
-  if (value.goalRuntimeOverlay !== undefined) {
-    return value;
+function withRuntimeOverlays(value: Workspace): Workspace {
+  const withGoal =
+    value.goalRuntimeOverlay !== undefined
+      ? value
+      : Object.freeze({ ...value, goalRuntimeOverlay: null });
+  const withCoach =
+    withGoal.coachRuntimeOverlay !== undefined
+      ? withGoal
+      : Object.freeze({ ...withGoal, coachRuntimeOverlay: null });
+  if (withCoach.notificationRuntimeOverlay !== undefined) {
+    return withCoach;
   }
-  return Object.freeze({
-    ...value,
-    goalRuntimeOverlay: null,
-  });
+  return Object.freeze({ ...withCoach, notificationRuntimeOverlay: null });
 }
 
 const baseSerializer = createDomainSerializer<Workspace>({
@@ -56,14 +61,14 @@ const baseSerializer = createDomainSerializer<Workspace>({
 export const WorkspaceSerializer = Object.freeze({
   domain: baseSerializer.domain,
   serialize(value: Workspace): string {
-    return baseSerializer.serialize(withGoalRuntimeOverlay(value));
+    return baseSerializer.serialize(withRuntimeOverlays(value));
   },
   deserialize(payload: string): Workspace | null {
     const parsed = baseSerializer.deserialize(payload);
     if (!parsed) {
       return null;
     }
-    return freezeDeep(withGoalRuntimeOverlay(parsed));
+    return freezeDeep(withRuntimeOverlays(parsed));
   },
 });
 
@@ -71,5 +76,5 @@ export function normalizeLegacyWorkspacePayload(value: unknown): Workspace | nul
   if (!isWorkspaceShape(value)) {
     return null;
   }
-  return freezeDeep(withGoalRuntimeOverlay(value as Workspace));
+  return freezeDeep(withRuntimeOverlays(value as Workspace));
 }

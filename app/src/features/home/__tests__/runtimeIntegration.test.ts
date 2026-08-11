@@ -157,6 +157,7 @@ async function bootstrapPopulatedRuntimeRestore(): Promise<void> {
       unifiedWorkspaceService,
       athleteSnapshotService: services.athleteSnapshotService,
       coachTimelineService: services.coachTimelineService,
+      coachConversationService: services.coachConversationService,
       workoutRuntimePersistenceService: services.workoutRuntimePersistenceService,
       nutritionRuntimePersistenceService: services.nutritionRuntimePersistenceService,
       recoveryRuntimePersistenceService: services.recoveryRuntimePersistenceService,

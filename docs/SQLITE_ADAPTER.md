@@ -133,7 +133,7 @@ Serializers:
 
 - `AthleteIdentitySerializer`
 - `RuntimeEnvironmentSerializer`
-- `WorkspaceSerializer` (includes optional `goalRuntimeOverlay` since Sprint 35.4)
+- `WorkspaceSerializer` (includes optional `goalRuntimeOverlay` since Sprint 35.4; `coachRuntimeOverlay` and `notificationRuntimeOverlay` since Sprint 35.5)
 - `WorkspaceSnapshotSerializer` (`AthleteSnapshot`)
 - `CoachTimelineSerializer`
 - `WorkoutRuntimePersistenceSerializer` (Sprint 35.4)

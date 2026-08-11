@@ -2,6 +2,8 @@ import { createAthleteIdentityService } from "../../features/athlete-identity/se
 import { createMinimalIdentityInput } from "../../features/athlete-identity/testSupport/fixtures";
 import { createAthleteSnapshotService } from "../../features/athlete-snapshot/services/AthleteSnapshotService";
 import { createCoachTimelineService } from "../../features/coach-timeline/services/CoachTimelineService";
+import { createTestCoachConversationService } from "../../features/coach-conversation/testSupport/fixtures";
+import type { CoachConversationService } from "../../features/coach-conversation/services/CoachConversationService";
 import { createTimelineEntryRequest } from "../../features/coach-timeline/testSupport/fixtures";
 import { createRuntimeEnvironmentService } from "../../features/runtime-environment/services/RuntimeEnvironmentService";
 import { createMinimalRuntimeInput } from "../../features/runtime-environment/testSupport/fixtures";
@@ -35,6 +37,11 @@ export function createTestRuntimeServices(clock = FIXED_CLOCK) {
   const athleteIdentityService = createAthleteIdentityService({ clock });
   const runtimeEnvironmentService = createRuntimeEnvironmentService({ clock });
   const coachTimelineService = createCoachTimelineService({ clock });
+  const coachConversationService: CoachConversationService =
+    createTestCoachConversationService({
+      clock,
+      coachTimeline: coachTimelineService,
+    });
   const athleteSnapshotService = createAthleteSnapshotService({
     clock,
     coachTimeline: coachTimelineService,
@@ -54,6 +61,7 @@ export function createTestRuntimeServices(clock = FIXED_CLOCK) {
     unifiedWorkspaceService,
     athleteSnapshotService,
     coachTimelineService,
+    coachConversationService,
     workoutRuntimePersistenceService,
     nutritionRuntimePersistenceService,
     recoveryRuntimePersistenceService,

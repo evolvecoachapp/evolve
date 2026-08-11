@@ -1,4 +1,8 @@
 import { getCompositionRoot } from "../../../core/composition/createCompositionRoot";
+import {
+  readPersistedCoachRuntimeOverlay,
+  restoreCoachConversationMemoryFromOverlay,
+} from "../../../runtime/domain-persistence/application/persistCoachRuntimeMutation";
 import { mapCoachExperience } from "../mappers";
 import { mapWorkspaceCoachToExperienceDto } from "../mappers/mapWorkspaceCoachToExperienceDto";
 import type { CoachMessageDto } from "../types/coachExperienceDto";
@@ -29,6 +33,13 @@ export async function loadHydratedCoachExperience({
     return null;
   }
 
+  restoreCoachConversationMemoryFromOverlay(athleteId);
+  const persisted = readPersistedCoachRuntimeOverlay(athleteId);
+  const resolvedSessionMessages =
+    sessionMessages ?? persisted?.sessionMessages ?? Object.freeze([]);
+  const resolvedSessionId =
+    sessionId ?? persisted?.sessionId ?? workspace.coach.sessionId;
+
   const memorySnapshot = root
     .resolve("CoachConversationService")
     .getMemory()
@@ -36,8 +47,8 @@ export async function loadHydratedCoachExperience({
 
   const dto = mapWorkspaceCoachToExperienceDto({
     workspace,
-    sessionMessages,
-    sessionId: sessionId ?? workspace.coach.sessionId,
+    sessionMessages: resolvedSessionMessages,
+    sessionId: resolvedSessionId,
     memoryEntries: memorySnapshot.snapshot?.entries ?? Object.freeze([]),
     pinnedInsightId,
     dismissedInsightIds,

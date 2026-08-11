@@ -1,5 +1,6 @@
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import {
+  createCompositionRoot,
   getCompositionRoot,
   resetCompositionRoot,
 } from "../../../core/composition/createCompositionRoot";
@@ -28,8 +29,15 @@ import { resetRuntimeBootstrap } from "../../../runtime/bootstrap/RuntimeBootstr
 import { resetRepositoryHydration } from "../../../runtime/hydration/RepositoryHydrationPipeline";
 import { resetDashboardRestore } from "../../../runtime/dashboard-restore/DashboardRestorePipeline";
 import { resetRuntimeWriteThrough } from "../../../runtime/write-through/RuntimeWriteThroughPipeline";
+import { getRuntimeWriteThroughPromise } from "../../../runtime/write-through/RuntimeWriteThroughPipeline";
+import { getWriteThroughStatus } from "../../../runtime/write-through/application/getWriteThroughStatus";
+import { RUNTIME_WRITE_THROUGH_STATUS } from "../../../runtime/write-through/RuntimeWriteThroughStatus";
 import { resetRuntimeSession } from "../../../runtime/session/RuntimeSessionOrchestrator";
 import { resetRuntimeObserver } from "../../../runtime/runtime-observer/RuntimeObserver";
+import { observeRuntime } from "../../../runtime/runtime-observer/application/observeRuntime";
+import { hydrateRuntime } from "../../../runtime/hydration/application/hydrateRuntime";
+import { startRuntimeSession } from "../../../runtime/session/application/startRuntimeSession";
+import { readPersistedNotificationSessionOverlay, persistNotificationRuntimeMutation } from "../../../runtime/domain-persistence/application/persistNotificationRuntimeMutation";
 import { RUNTIME_SESSION_STATUS } from "../../../runtime/session/RuntimeSessionStatus";
 import { useRuntimeSession } from "../../../runtime/session/RuntimeSessionContext";
 import {
@@ -47,6 +55,20 @@ jest.mock("../../../runtime/session/RuntimeSessionContext", () => ({
 const mockedUseRuntimeSession = useRuntimeSession as jest.Mock;
 
 const ATHLETE_ID = FIXED_DASHBOARD_ATHLETE_ID;
+
+async function waitForWriteThrough(): Promise<void> {
+  for (let index = 0; index < 50; index += 1) {
+    const inFlight = getRuntimeWriteThroughPromise();
+    if (inFlight) {
+      await inFlight.catch(() => undefined);
+    }
+    if (getWriteThroughStatus() === RUNTIME_WRITE_THROUGH_STATUS.ready) {
+      return;
+    }
+    await Promise.resolve();
+  }
+  throw new Error("Write-through did not reach ready state");
+}
 
 function resetRuntimePipelinesPreservingCompositionRoot(): void {
   resetRuntimeObserver();
@@ -389,5 +411,75 @@ describe("Notification runtime integration", () => {
     const viewModel = new NotificationCenterViewModel({ athleteId: ATHLETE_ID });
     await viewModel.dismiss("missing-id");
     expect(viewModel.error?.code).toBe("notification_runtime_unavailable");
+  });
+
+  it("persists read state, settings, and reminder edits across SQLite restart", async () => {
+    createCompositionRoot();
+    await startRuntimeSession({ athleteIds: [ATHLETE_ID], clock: () => FIXED_DASHBOARD_PROJECTED_AT });
+    await hydrateRuntime();
+    observeRuntime({
+      athleteIds: [ATHLETE_ID],
+      clock: () => FIXED_DASHBOARD_PROJECTED_AT,
+    });
+    await seedPopulatedHydratedNotifications();
+
+    const reminder = Object.freeze({
+      id: "rem-persist-1",
+      type: "hydration" as const,
+      title: "Hydration check",
+      message: "Drink water",
+      schedule: Object.freeze({
+        dayOfWeek: Object.freeze([1, 2, 3, 4, 5]),
+        timeOfDay: "10:00",
+        deliveryPolicy: "daily" as const,
+        enabled: true,
+      }),
+      deliveryPolicy: "daily" as const,
+      enabled: true,
+      createdAt: FIXED_DASHBOARD_PROJECTED_AT,
+      updatedAt: FIXED_DASHBOARD_PROJECTED_AT,
+    });
+
+    persistNotificationRuntimeMutation({
+      athleteId: ATHLETE_ID,
+      requestId: "notification:restart:1",
+      overlay: Object.freeze({
+        readNotificationIds: Object.freeze(["insight:notification:1"]),
+        dismissedNotificationIds: Object.freeze([]),
+        reminders: Object.freeze([reminder]),
+        deletedReminderIds: Object.freeze([]),
+        settings: Object.freeze({
+          workoutReminders: true,
+          nutritionReminders: false,
+          hydrationReminders: true,
+          recoveryReminders: false,
+          sleepReminders: false,
+          coachMessages: true,
+          progressUpdates: false,
+          globalDeliveryPolicy: "manual" as const,
+          quietHoursEnabled: false,
+          quietHoursStart: "22:00",
+          quietHoursEnd: "07:00",
+        }),
+      }),
+    });
+    await waitForWriteThrough();
+
+    resetRuntimePipelinesPreservingCompositionRoot();
+    resetRuntimeBootstrap();
+    resetCompositionRoot();
+    createCompositionRoot();
+    await startRuntimeSession({ athleteIds: [ATHLETE_ID], clock: () => FIXED_DASHBOARD_PROJECTED_AT });
+    await hydrateRuntime();
+
+    const restored = await loadHydratedNotificationExperience({ athleteId: ATHLETE_ID });
+    expect(restored?.settings.workoutReminders).toBe(true);
+    expect(
+      restored?.coachNotifications.find((item) => item.id === "insight:notification:1")
+        ?.readAt,
+    ).not.toBeNull();
+    expect(restored?.reminders.find((item) => item.id === reminder.id)?.title).toBe(
+      "Hydration check",
+    );
   });
 });

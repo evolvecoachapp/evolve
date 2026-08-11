@@ -35,6 +35,8 @@ import {
 import { rebuildCoachExperience } from "../mappers";
 import type { CoachMessageDto } from "../types/coachExperienceDto";
 import { CoachRuntimeError } from "../application/sendRuntimeCoachMessage";
+import { persistCoachRuntimeMutation } from "../../../runtime/domain-persistence/application/persistCoachRuntimeMutation";
+import { readPersistedCoachRuntimeOverlay } from "../../../runtime/domain-persistence/application/persistCoachRuntimeMutation";
 import {
   CoachExperienceError,
   type CoachExperienceService,
@@ -187,6 +189,11 @@ export class CoachExperienceViewModel {
         }),
       ),
     );
+    if (this.isRuntimeDriven && this.athleteId) {
+      this._sessionId =
+        readPersistedCoachRuntimeOverlay(this.athleteId)?.sessionId ??
+        this._sessionId;
+    }
     this._loading = createCoachLoadingState(CoachLoadingStatuses.IDLE);
     this._error = null;
     this.notify();
@@ -294,6 +301,7 @@ export class CoachExperienceViewModel {
           throw new CoachRuntimeError("Coach runtime unavailable.");
         }
         this._experience = hydrated;
+        this.persistIfRuntimeDriven("sendMessage");
       } else {
         throw new CoachRuntimeError("Coach runtime unavailable.");
       }
@@ -348,6 +356,7 @@ export class CoachExperienceViewModel {
           throw new CoachRuntimeError("Coach runtime unavailable.");
         }
         this._experience = hydrated;
+        this.persistIfRuntimeDriven("regenerate");
       } else {
         throw new CoachRuntimeError("Coach runtime unavailable.");
       }
@@ -567,5 +576,18 @@ export class CoachExperienceViewModel {
     for (const listener of this.listeners) {
       listener();
     }
+  }
+
+  private persistIfRuntimeDriven(kind: string): void {
+    if (!this.isRuntimeDriven || !this.athleteId) {
+      return;
+    }
+
+    persistCoachRuntimeMutation({
+      athleteId: this.athleteId,
+      requestId: `coach:runtime:${kind}:${this.athleteId}:${this.now().getTime()}`,
+      sessionMessages: this._sessionMessages,
+      sessionId: this._sessionId,
+    });
   }
 }

@@ -28,6 +28,8 @@ import { resetRuntimeObserver } from "../../runtime-observer/RuntimeObserver";
 import { observeRuntime } from "../../runtime-observer/application/observeRuntime";
 import {
   persistGoalProgressRuntimeMutation,
+  persistCoachRuntimeMutation,
+  readPersistedCoachRuntimeOverlay,
   persistNutritionRuntimeMutation,
   persistRecoveryRuntimeMutation,
   persistWorkoutRuntimeMutation,
@@ -36,10 +38,17 @@ import {
   readPersistedRecoveryDayState,
   readPersistedWorkoutRuntime,
 } from "../application";
+import {
+  persistNotificationRuntimeMutation,
+  readPersistedNotificationSessionOverlay,
+} from "../application/persistNotificationRuntimeMutation";
+import { loadHydratedCoachExperience } from "../../../features/coach-experience/application/loadHydratedCoachExperience";
+import { loadHydratedNotificationExperience } from "../../../features/notification-center/application/loadHydratedNotificationExperience";
 import { loadHydratedWorkoutRuntime } from "../../../features/workout-runtime/application/loadHydratedWorkoutRuntime";
 import { createNutritionDay } from "../../../features/nutrition-experience/models";
 import { loadHydratedNutritionExperience } from "../../../features/nutrition-experience/application/loadHydratedNutritionExperience";
 import { loadHydratedRecoveryExperience } from "../../../features/recovery-experience/application/loadHydratedRecoveryExperience";
+import { createRecoveryDay } from "../../../features/recovery-experience/models";
 import { loadHydratedGoalProgressExperience } from "../../../features/goal-progress-experience/application/loadHydratedGoalProgressExperience";
 import { WorkoutRuntimePersistenceSerializer } from "../../../infrastructure/repositories/serialization/WorkoutRuntimePersistenceSerialization";
 import { NutritionRuntimePersistenceSerializer } from "../../../infrastructure/repositories/serialization/NutritionRuntimePersistenceSerialization";
@@ -52,6 +61,15 @@ const ATHLETE_ID = FIXED_DASHBOARD_ATHLETE_ID;
 const ISO_DATE = "2026-08-10";
 const FIXED_CLOCK = () => "2026-08-10T10:00:00.000Z";
 const TEST_DAY = createNutritionDay({
+  id: "today",
+  isoDate: ISO_DATE,
+  label: "Today",
+  shortLabel: "Today",
+  relativeLabel: "Today",
+  isToday: true,
+});
+
+const TEST_RECOVERY_DAY = createRecoveryDay({
   id: "today",
   isoDate: ISO_DATE,
   label: "Today",
@@ -271,7 +289,10 @@ describe("domain runtime persistence (Sprint 35.4)", () => {
       expect(day?.sleepHours).toBe(8);
       expect(day?.readinessScore).toBe(78);
 
-      const dashboard = await loadHydratedRecoveryExperience({ athleteId: ATHLETE_ID });
+      const dashboard = await loadHydratedRecoveryExperience({
+        athleteId: ATHLETE_ID,
+        day: TEST_RECOVERY_DAY,
+      });
       expect(dashboard?.sleep.hours).toBe(8);
       expect(dashboard?.readiness.score).toBe(78);
     });
@@ -316,6 +337,83 @@ describe("domain runtime persistence (Sprint 35.4)", () => {
       const result = await hydrateRuntime();
       expect(readPersistedWorkoutRuntime(ATHLETE_ID)).toBeNull();
       expect(result.workspaceRecordCount).toBe(0);
+    });
+
+    it("persists and restores coach conversation overlay through workspace", async () => {
+      const sessionMessages = Object.freeze([
+        Object.freeze({
+          id: "user:1",
+          role: "user" as const,
+          content: "Explain today's workout",
+          createdAt: FIXED_CLOCK(),
+        }),
+        Object.freeze({
+          id: "coach:1",
+          role: "coach" as const,
+          content: "Focus on controlled reps.",
+          createdAt: FIXED_CLOCK(),
+          citations: Object.freeze(["workout"]),
+        }),
+      ]);
+
+      persistCoachRuntimeMutation({
+        athleteId: ATHLETE_ID,
+        requestId: "coach:persist:1",
+        sessionMessages,
+        sessionId: "session:coach:1",
+      });
+      await waitForWriteThrough();
+
+      resetRuntimePipelines();
+      resetRuntimeBootstrap();
+      await startRuntimeSession({ athleteIds: [ATHLETE_ID], clock: FIXED_CLOCK });
+      await hydrateRuntime();
+
+      const overlay = readPersistedCoachRuntimeOverlay(ATHLETE_ID);
+      expect(overlay?.sessionMessages).toEqual(sessionMessages);
+      expect(overlay?.sessionId).toBe("session:coach:1");
+
+      const experience = await loadHydratedCoachExperience({ athleteId: ATHLETE_ID });
+      expect(experience?.conversation.messages.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("persists and restores notification runtime overlay through workspace", async () => {
+      persistNotificationRuntimeMutation({
+        athleteId: ATHLETE_ID,
+        requestId: "notification:persist:1",
+        overlay: Object.freeze({
+          readNotificationIds: Object.freeze(["notif:1"]),
+          dismissedNotificationIds: Object.freeze([]),
+          reminders: Object.freeze([]),
+          deletedReminderIds: Object.freeze([]),
+          settings: Object.freeze({
+            workoutReminders: true,
+            nutritionReminders: false,
+            hydrationReminders: false,
+            recoveryReminders: false,
+            sleepReminders: false,
+            coachMessages: true,
+            progressUpdates: false,
+            globalDeliveryPolicy: "manual" as const,
+            quietHoursEnabled: false,
+            quietHoursStart: "22:00",
+            quietHoursEnd: "07:00",
+          }),
+        }),
+      });
+      await waitForWriteThrough();
+
+      resetRuntimePipelines();
+      resetRuntimeBootstrap();
+      await startRuntimeSession({ athleteIds: [ATHLETE_ID], clock: FIXED_CLOCK });
+      await hydrateRuntime();
+
+      const overlay = readPersistedNotificationSessionOverlay(ATHLETE_ID);
+      expect(overlay?.readNotificationIds).toEqual(["notif:1"]);
+      expect(overlay?.settings?.workoutReminders).toBe(true);
+
+      const data = await loadHydratedNotificationExperience({ athleteId: ATHLETE_ID });
+      expect(data?.settings.workoutReminders).toBe(true);
     });
   });
 

@@ -10,6 +10,8 @@ import type { DailyBrief } from "../../daily-brief/models/DailyBrief";
 import type { DailyBriefService } from "../../daily-brief/services/DailyBriefService";
 import type { GoalProgress } from "../../goal-progress/models/GoalProgress";
 import type { GoalRuntimePersistenceState } from "../../../runtime/domain-persistence/models/GoalRuntimePersistenceState";
+import type { CoachRuntimePersistenceState } from "../../../runtime/domain-persistence/models/CoachRuntimePersistenceState";
+import type { NotificationRuntimePersistenceState } from "../../../runtime/domain-persistence/models/NotificationRuntimePersistenceState";
 import type { HomeExperience } from "../../home-experience/models/HomeExperience";
 import type { HomeExperienceService } from "../../home-experience/services/HomeExperienceService";
 import type { CoachInsight } from "../../proactive-insights/models/CoachInsight";
@@ -72,6 +74,8 @@ type WorkspaceBuildInput = Omit<
   readonly coachingSession?: import("../../coaching-session/composition/models/CoachingSession").CoachingSession | null;
   readonly snapshot?: AthleteSnapshot | null;
   readonly goalRuntimeOverlay?: GoalRuntimePersistenceState | null;
+  readonly coachRuntimeOverlay?: CoachRuntimePersistenceState | null;
+  readonly notificationRuntimeOverlay?: NotificationRuntimePersistenceState | null;
 };
 
 /**
@@ -108,6 +112,7 @@ export class UnifiedWorkspaceService {
 
   build(input: WorkspaceBuildInput): WorkspaceResult {
     const generatedAt = input.generatedAt ?? this.clock();
+    const current = this.latestByAthlete.get(input.athleteId) ?? null;
     const timeline =
       input.timeline ??
       this.coachTimeline?.getTimeline(input.athleteId) ??
@@ -155,7 +160,14 @@ export class UnifiedWorkspaceService {
         this.athleteSnapshot?.getCurrentSnapshot(input.athleteId) ??
         null,
       goalProgress: input.goalProgress ?? null,
-      goalRuntimeOverlay: input.goalRuntimeOverlay ?? null,
+      goalRuntimeOverlay:
+        input.goalRuntimeOverlay ?? current?.goalRuntimeOverlay ?? null,
+      coachRuntimeOverlay:
+        input.coachRuntimeOverlay ?? current?.coachRuntimeOverlay ?? null,
+      notificationRuntimeOverlay:
+        input.notificationRuntimeOverlay ??
+        current?.notificationRuntimeOverlay ??
+        null,
     });
 
     if (result.success && result.workspace) {

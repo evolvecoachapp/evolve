@@ -28,6 +28,10 @@ export class ConversationMemoryService {
     return this.memory;
   }
 
+  restorePersistedEntries(entries: readonly MemoryEntry[]): void {
+    this.memory.restorePersistedEntries(entries);
+  }
+
   saveMemory(entry: MemoryEntry): MemoryResult {
     return this.memory.save(entry);
   }

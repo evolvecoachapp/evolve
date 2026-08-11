@@ -16,6 +16,8 @@ import {
   updateRuntimeReminder,
 } from "../application";
 import { NotificationRuntimeError } from "../application/NotificationRuntimeError";
+import { persistNotificationRuntimeMutation } from "../../../runtime/domain-persistence/application/persistNotificationRuntimeMutation";
+import { readPersistedNotificationSessionOverlay } from "../../../runtime/domain-persistence/application/persistNotificationRuntimeMutation";
 import type { NotificationCenterData } from "../mappers";
 import {
   createNotificationErrorState,
@@ -131,6 +133,12 @@ export class NotificationCenterViewModel {
   /** Applies Notification Center projected from hydrated Unified Workspace output. */
   applyHydratedNotifications(data: NotificationCenterData): void {
     this.applyData(data);
+    if (this.isRuntimeDriven && this.athleteId) {
+      const persisted = readPersistedNotificationSessionOverlay(this.athleteId);
+      if (persisted) {
+        this._overlay = persisted;
+      }
+    }
     this._loading = createNotificationLoadingState(NotificationLoadingStatuses.IDLE);
     this._error = null;
     this.notify();
@@ -359,12 +367,14 @@ export class NotificationCenterViewModel {
 
   private async saveRuntime(
     action: () => Promise<NotificationCenterData>,
+    persistKind?: string,
   ): Promise<void> {
     this._saving = createNotificationSavingState(NotificationSavingStatuses.SAVING);
     this._error = null;
     this.notify();
     try {
       this.applyData(await action());
+      this.persistIfRuntimeDriven(persistKind ?? "mutation");
     } catch (caught) {
       this._error = this.toErrorState(caught);
     }
@@ -389,5 +399,17 @@ export class NotificationCenterViewModel {
     for (const listener of this.listeners) {
       listener();
     }
+  }
+
+  private persistIfRuntimeDriven(kind: string): void {
+    if (!this.isRuntimeDriven || !this.athleteId) {
+      return;
+    }
+
+    persistNotificationRuntimeMutation({
+      athleteId: this.athleteId,
+      requestId: `notification:runtime:${kind}:${this.athleteId}:${this.now().getTime()}`,
+      overlay: this._overlay,
+    });
   }
 }

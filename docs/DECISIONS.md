@@ -4693,6 +4693,30 @@ Restart → Hydration → loadHydrated*()
 
 ---
 
+## ADR-144: Coach & Notification Persistence Completion (Sprint 35.5)
+
+**Status:** Accepted  
+**Date:** 2026-08-11  
+**Context:** Sprint 35.1 activated Coach runtime and Sprint 35.2 activated Notification runtime, but conversation turns, Conversation Memory entries, notification read/settings overlays, and reminder edits remained session-local (ADR-140/141). Sprint 35.4 established domain runtime persistence through existing repository contracts and Workspace overlays for Goal Progress. Phase 35.5 must complete Coach and Notification persistence without a second architecture or new repositories.
+
+**Decision:**
+
+1. Persist Coach conversation state through `Workspace.coachRuntimeOverlay` (`CoachRuntimePersistenceState`: session messages, Conversation Memory entries, session id) via `persistCoachRuntimeMutation()` → `UnifiedWorkspaceService.build()` → existing WorkspaceRepository write-through.
+2. Persist Notification runtime overlay through `Workspace.notificationRuntimeOverlay` (`NotificationRuntimePersistenceState`: read/unread ids, dismissed ids, reminders, deleted reminder ids, settings) via `persistNotificationRuntimeMutation()` → same Workspace write-through path.
+3. Restore Conversation Memory entries during hydration from workspace overlay (`restoreCoachRuntimeOverlayFromWorkspace`); `loadHydratedCoachExperience()` and `loadHydratedNotificationExperience()` read persisted overlays on cold start.
+4. Retain Coach Timeline journal for dismiss/reminder-create lifecycle events; do not add push/FCM/APNs/background scheduling.
+5. Leave transient Coach UI state (pinned/dismissed insight ids) session-local. Do not introduce Coach or Notification repositories. Do not modify Runtime Session or Runtime Observer architecture beyond existing Workspace `build()` observation.
+
+**Alternatives considered:**
+- **Dedicated Coach/Notification repositories** — rejected; Workspace overlay boundary matches Goal Progress pattern and sprint constraint against automatic new repositories.
+- **Second Conversation Memory persistence system** — rejected; restore into existing `ConversationMemoryService` only.
+- **Persist notification list content** — rejected; notifications remain projected from Unified Workspace insights on each load.
+
+**Consequences:**
+- Coach conversation and supported notification state survive application restart. Push delivery, profile notification preferences, and Coach insight pin/dismiss UI remain session-local or deferred.
+
+---
+
 ## ADR-138: Recovery Runtime Activation (Sprint 34.9)
 
 **Status:** Accepted  

@@ -18,3 +18,7 @@ export {
 } from "./RecoveryRuntimePersistenceState";
 export type { GoalRuntimePersistenceState } from "./GoalRuntimePersistenceState";
 export { createGoalRuntimePersistenceState } from "./GoalRuntimePersistenceState";
+export type { CoachRuntimePersistenceState } from "./CoachRuntimePersistenceState";
+export { createCoachRuntimePersistenceState } from "./CoachRuntimePersistenceState";
+export type { NotificationRuntimePersistenceState } from "./NotificationRuntimePersistenceState";
+export { createNotificationRuntimePersistenceState } from "./NotificationRuntimePersistenceState";

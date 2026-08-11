@@ -40,6 +40,7 @@ export function hydrateRuntime(): Promise<HydrationResult> {
         unifiedWorkspaceService: root.resolve("UnifiedWorkspaceService"),
         athleteSnapshotService: root.resolve("AthleteSnapshotService"),
         coachTimelineService: root.resolve("CoachTimelineService"),
+        coachConversationService: root.resolve("CoachConversationService"),
         workoutRepository: adapters.workout,
         nutritionRepository: adapters.nutrition,
         recoveryRepository: adapters.recovery,

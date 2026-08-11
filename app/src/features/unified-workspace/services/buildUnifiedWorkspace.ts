@@ -5,7 +5,9 @@ import type { CoachTimelineEntry } from "../../coach-timeline/models/CoachTimeli
 import type { CoachingSession } from "../../coaching-session/composition/models/CoachingSession";
 import type { DailyBrief } from "../../daily-brief/models/DailyBrief";
 import type { GoalProgress } from "../../goal-progress/models/GoalProgress";
+import type { CoachRuntimePersistenceState } from "../../../runtime/domain-persistence/models/CoachRuntimePersistenceState";
 import type { GoalRuntimePersistenceState } from "../../../runtime/domain-persistence/models/GoalRuntimePersistenceState";
+import type { NotificationRuntimePersistenceState } from "../../../runtime/domain-persistence/models/NotificationRuntimePersistenceState";
 import type { HomeExperience } from "../../home-experience/models/HomeExperience";
 import type { CoachInsight } from "../../proactive-insights/models/CoachInsight";
 import type { WeeklyCoachReport } from "../../weekly-report/models/WeeklyCoachReport";
@@ -44,6 +46,8 @@ export interface BuildUnifiedWorkspaceInput {
   readonly coachingSession?: CoachingSession | null;
   readonly goalProgress?: GoalProgress | null;
   readonly goalRuntimeOverlay?: GoalRuntimePersistenceState | null;
+  readonly coachRuntimeOverlay?: CoachRuntimePersistenceState | null;
+  readonly notificationRuntimeOverlay?: NotificationRuntimePersistenceState | null;
   readonly snapshot?: AthleteSnapshot | null;
   readonly recoveryStatus?: string | null;
   readonly currentPhase?: string | null;
@@ -142,6 +146,8 @@ export function buildUnifiedWorkspace(
     snapshot,
     metadata,
     goalRuntimeOverlay: input.goalRuntimeOverlay ?? null,
+    coachRuntimeOverlay: input.coachRuntimeOverlay ?? null,
+    notificationRuntimeOverlay: input.notificationRuntimeOverlay ?? null,
   });
 
   const validation = validateWorkspace(workspace);

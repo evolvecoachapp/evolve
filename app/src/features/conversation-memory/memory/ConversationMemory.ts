@@ -102,6 +102,10 @@ export class ConversationMemory {
     return Object.freeze([...this.entries]);
   }
 
+  restorePersistedEntries(entries: readonly MemoryEntry[]): void {
+    this.entries = [...entries];
+  }
+
   save(entry: MemoryEntry): MemoryResult {
     const startedAt = this.clock();
     const entryValidation = validateMemoryEntry(entry);

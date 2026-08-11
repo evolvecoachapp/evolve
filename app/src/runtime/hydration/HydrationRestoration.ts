@@ -9,6 +9,7 @@ import type { RuntimeEnvironment } from "../../features/runtime-environment/mode
 import type { RuntimeEnvironmentService } from "../../features/runtime-environment/services/RuntimeEnvironmentService";
 import type { Workspace } from "../../features/unified-workspace/models/Workspace";
 import type { UnifiedWorkspaceService } from "../../features/unified-workspace/services/UnifiedWorkspaceService";
+import type { CoachConversationService } from "../../features/coach-conversation/services/CoachConversationService";
 import type { NutritionRuntimePersistenceState } from "../domain-persistence/models/NutritionRuntimePersistenceState";
 import type { RecoveryRuntimePersistenceState } from "../domain-persistence/models/RecoveryRuntimePersistenceState";
 import type { WorkoutRuntimePersistenceState } from "../domain-persistence/models/WorkoutRuntimePersistenceState";
@@ -143,5 +144,22 @@ export function restoreTimelineRecords(
     if (timeline) {
       service.restorePersisted(timeline);
     }
+  }
+}
+
+export function restoreCoachRuntimeOverlayFromWorkspace(
+  coachConversationService: CoachConversationService,
+  workspaceRecords: readonly PersistenceRecord[],
+): void {
+  for (const record of workspaceRecords) {
+    const workspace = readRecordPayload<Workspace>(record);
+    const overlay = workspace?.coachRuntimeOverlay;
+    if (!overlay || overlay.memoryEntries.length === 0) {
+      continue;
+    }
+
+    coachConversationService
+      .getMemory()
+      .restorePersistedEntries(overlay.memoryEntries);
   }
 }

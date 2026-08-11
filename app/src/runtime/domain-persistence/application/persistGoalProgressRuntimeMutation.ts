@@ -33,6 +33,8 @@ export function persistGoalProgressRuntimeMutation(
       reachedMilestoneIds: input.reachedMilestoneIds,
       isCompleted: input.isCompleted,
     }),
+    coachRuntimeOverlay: current.coachRuntimeOverlay,
+    notificationRuntimeOverlay: current.notificationRuntimeOverlay,
     timeline: current.timeline.timeline,
     latestEvents: current.timeline.latestEvents,
     latestDecisions: current.timeline.latestDecisions,
