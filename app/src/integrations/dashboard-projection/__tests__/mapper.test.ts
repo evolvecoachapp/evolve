@@ -3,6 +3,7 @@ import {
   mapWorkspaceNutritionToCard,
   mapWorkspaceRecoveryToCard,
   mapWorkspaceToDashboardProjection,
+  mapWorkspaceToQuickActions,
   mapWorkspaceWorkoutToCard,
 } from "../mappers";
 import {
@@ -41,5 +42,24 @@ describe("dashboard-projection mappers", () => {
     expect(projection.athleteId).toBe(workspace.athleteId);
     expect(projection.quickActions.length).toBeGreaterThan(0);
     expect(Object.isFrozen(projection.quickActions)).toBe(true);
+  });
+
+  it("routes the Recovery quick action to the Recovery screen, not Progress", () => {
+    const workspace = createTestWorkspace();
+    const quickActions = mapWorkspaceToQuickActions(workspace);
+
+    const recovery = quickActions.find((action) => action.id === "qa:view_recovery");
+
+    expect(recovery?.destination).toBe("/(app)/recovery");
+  });
+
+  it("includes a Goals quick action routed to the Goals screen, enabled only when goals are present", () => {
+    const workspaceWithGoals = createTestWorkspace();
+    const goalsAction = mapWorkspaceToQuickActions(workspaceWithGoals).find(
+      (action) => action.id === "qa:view_goals",
+    );
+
+    expect(goalsAction?.destination).toBe("/(app)/goals");
+    expect(goalsAction?.enabled).toBe(workspaceWithGoals.goals.present);
   });
 });

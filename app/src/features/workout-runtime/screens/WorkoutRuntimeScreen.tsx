@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../../auth/useAuth";
 import { GradientBackground } from "../../../components/GradientBackground";
 import { TabScreenContainer } from "../../../components/TabScreenContainer";
+import { isReachableRoute } from "../../../navigation/isReachableRoute";
 import { useTheme } from "../../../theme/ThemeContext";
 import { floatingFooterMetrics, spacing } from "../../../theme/theme";
 import { useThemedStyles } from "../../../theme/useThemedStyles";
@@ -77,11 +78,14 @@ export function WorkoutRuntimeScreen({
   }));
 
   const navigatePlaceholder = (destination: string | null) => {
-    if (!destination) {
+    if (!destination || !isReachableRoute(destination)) {
       return;
     }
     router.push(destination as never);
   };
+
+  const reachableHandler = (destination: string | null) =>
+    isReachableRoute(destination) ? () => navigatePlaceholder(destination) : undefined;
 
   const canCompleteSet =
     !!workout.currentSet &&
@@ -154,11 +158,9 @@ export function WorkoutRuntimeScreen({
               {workout.currentExercise ? (
                 <ExerciseCard
                   exercise={workout.currentExercise}
-                  onDetailsPress={() =>
-                    navigatePlaceholder(
-                      navigation.currentExerciseDetailDestination,
-                    )
-                  }
+                  onDetailsPress={reachableHandler(
+                    navigation.currentExerciseDetailDestination,
+                  )}
                 />
               ) : null}
 

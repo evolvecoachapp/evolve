@@ -108,7 +108,7 @@ function buildRecommendations(
           workspace.recovery.summary?.trim() ||
           "Check recovery signals before training.",
         actionLabel: "View recovery",
-        destination: "/(app)/(tabs)/progress",
+        destination: "/(app)/recovery",
         priority: 3,
       }),
     );

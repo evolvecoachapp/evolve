@@ -47,6 +47,15 @@ export function mapQuickActions(dto: HomeDashboardDto): readonly QuickAction[] {
       reason: "Recovery summary is available.",
     }),
     Object.freeze({
+      id: "qa:view_goals",
+      kind: QuickActionKinds.VIEW_GOALS,
+      label: "Goals",
+      icon: "flag-outline",
+      destination: "/(app)/goals",
+      enabled: true,
+      reason: "Open goal progress.",
+    }),
+    Object.freeze({
       id: "qa:ask_coach",
       kind: QuickActionKinds.ASK_COACH,
       label: "Ask Coach",

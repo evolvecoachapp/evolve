@@ -11,8 +11,10 @@ import { HomeServiceError } from "../types/homeService";
 import { mockHomeDashboardData } from "../mocks/dashboardData";
 import { HomeDashboardScreen } from "../screens";
 
+const mockRouterPush = jest.fn();
+
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
+  useRouter: () => ({ push: mockRouterPush, back: jest.fn(), replace: jest.fn() }),
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
 }));
 
@@ -104,6 +106,22 @@ describe("HomeDashboardScreen composition", () => {
     expect(getByText("Recovery score")).toBeTruthy();
     expect(getByText("Quick Actions")).toBeTruthy();
     expect(queryByText("Couldn't load Home")).toBeNull();
+  });
+
+  it("renders a Notifications entry point that navigates to the Notification Center", async () => {
+    mockRouterPush.mockClear();
+    const { getByText, getByLabelText } = renderScreen(createService());
+
+    await waitFor(() => {
+      expect(getByText("Alex")).toBeTruthy();
+    });
+
+    const notificationsButton = getByLabelText("Notifications");
+    await act(async () => {
+      fireEvent.press(notificationsButton);
+    });
+
+    expect(mockRouterPush).toHaveBeenCalledWith("/(app)/notifications");
   });
 
   it("renders error state with retry", async () => {

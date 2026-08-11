@@ -77,7 +77,7 @@ export const mockCoachExperienceData: CoachExperienceDto = {
       title: "Recovery recommendation",
       body: "Schedule a short mobility block tonight and aim for 8 hours of sleep.",
       actionLabel: "View recovery",
-      destination: "/(app)/(tabs)/progress",
+      destination: "/(app)/recovery",
       priority: 3,
       confidence: 0.84,
     },

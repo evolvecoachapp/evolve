@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../../auth/useAuth";
 import { GradientBackground } from "../../../components/GradientBackground";
 import { TabScreenContainer } from "../../../components/TabScreenContainer";
+import { isReachableRoute } from "../../../navigation/isReachableRoute";
 import { useTheme } from "../../../theme/ThemeContext";
 import { floatingFooterMetrics, spacing } from "../../../theme/theme";
 import { useThemedStyles } from "../../../theme/useThemedStyles";
@@ -72,11 +73,14 @@ export function CoachExperienceScreen({
   }));
 
   const navigatePlaceholder = (destination: string | null | undefined) => {
-    if (!destination) {
+    if (!destination || !isReachableRoute(destination)) {
       return;
     }
     router.push(destination as never);
   };
+
+  const reachableHandler = (destination: string | null | undefined) =>
+    isReachableRoute(destination) ? () => navigatePlaceholder(destination) : undefined;
 
   const handleQuickAction = (action: CoachQuickAction) => {
     if (!action.enabled) {
@@ -130,16 +134,12 @@ export function CoachExperienceScreen({
             <>
               <CoachHeader
                 title={conversation.conversation?.title ?? "Coach"}
-                onHistoryPress={() =>
-                  navigatePlaceholder(
-                    conversation.conversation?.historyDestination,
-                  )
-                }
-                onSettingsPress={() =>
-                  navigatePlaceholder(
-                    conversation.conversation?.settingsDestination,
-                  )
-                }
+                onHistoryPress={reachableHandler(
+                  conversation.conversation?.historyDestination,
+                )}
+                onSettingsPress={reachableHandler(
+                  conversation.conversation?.settingsDestination,
+                )}
               />
 
               <CoachStatus
@@ -151,9 +151,9 @@ export function CoachExperienceScreen({
                 <InsightCard
                   title="Daily Insight"
                   insight={insights.dailyInsight}
-                  onPress={() =>
-                    navigatePlaceholder(insights.dailyInsight?.detailsDestination)
-                  }
+                  onPress={reachableHandler(
+                    insights.dailyInsight.detailsDestination,
+                  )}
                   onPin={() =>
                     void insights.pinInsight(insights.dailyInsight!.id)
                   }
@@ -167,11 +167,9 @@ export function CoachExperienceScreen({
                 <InsightCard
                   title="Pinned Insight"
                   insight={insights.pinnedInsight}
-                  onPress={() =>
-                    navigatePlaceholder(
-                      insights.pinnedInsight?.detailsDestination,
-                    )
-                  }
+                  onPress={reachableHandler(
+                    insights.pinnedInsight.detailsDestination,
+                  )}
                   onDismiss={() =>
                     void insights.dismissInsight(insights.pinnedInsight!.id)
                   }

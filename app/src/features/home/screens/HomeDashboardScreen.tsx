@@ -109,7 +109,10 @@ export function HomeDashboardScreen({
 
         {!loading.isLoading && !error && dashboard && athlete && !isEmpty ? (
           <>
-            <HomeDashboardHeader athlete={athlete} />
+            <HomeDashboardHeader
+              athlete={athlete}
+              onNotificationsPress={() => navigate("/(app)/notifications")}
+            />
 
             {workout ? (
               <WorkoutCard

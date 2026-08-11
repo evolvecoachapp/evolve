@@ -54,11 +54,22 @@ export function mapWorkspaceToQuickActions(
       kind: DashboardProjectionQuickActionKinds.VIEW_RECOVERY,
       label: "Recovery",
       icon: "heart-outline",
-      destination: "/(app)/(tabs)/progress",
+      destination: "/(app)/recovery",
       enabled: workspace.recovery.present,
       reason: workspace.recovery.present
         ? "Recovery summary is available."
         : "No recovery summary.",
+    }),
+    createDashboardProjectionQuickAction({
+      id: "qa:view_goals",
+      kind: DashboardProjectionQuickActionKinds.VIEW_GOALS,
+      label: "Goals",
+      icon: "flag-outline",
+      destination: "/(app)/goals",
+      enabled: workspace.goals.present,
+      reason: workspace.goals.present
+        ? "Goal progress is available."
+        : "No active goals yet.",
     }),
     createDashboardProjectionQuickAction({
       id: "qa:ask_coach",

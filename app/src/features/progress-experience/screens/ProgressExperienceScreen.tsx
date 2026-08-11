@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../../auth/useAuth";
 import { GradientBackground } from "../../../components/GradientBackground";
 import { TabScreenContainer } from "../../../components/TabScreenContainer";
+import { isReachableRoute } from "../../../navigation/isReachableRoute";
 import { useTheme } from "../../../theme/ThemeContext";
 import { spacing } from "../../../theme/theme";
 import {
@@ -38,9 +39,12 @@ export function ProgressExperienceScreen({ service }: ProgressExperienceScreenPr
   const insights = useCoachInsights({ viewModel: dashboard.viewModel });
 
   const navigatePlaceholder = (destination: string | null | undefined) => {
-    if (!destination) return;
+    if (!destination || !isReachableRoute(destination)) return;
     router.push(destination as never);
   };
+
+  const reachableHandler = (destination: string | null | undefined) =>
+    isReachableRoute(destination) ? () => navigatePlaceholder(destination) : undefined;
 
   const showContent = !dashboard.loading.isLoading && !dashboard.error && dashboard.dashboard && !dashboard.isEmpty;
 
@@ -61,15 +65,15 @@ export function ProgressExperienceScreen({ service }: ProgressExperienceScreenPr
               <ProgressHeader dashboard={dashboard.dashboard!} />
               <TimeRangeSelector value={timeRange.timeRange} options={timeRange.options} onChange={(next) => void timeRange.changeRange(next)} />
               <AnalyticsGrid>
-                <StrengthChartCard progress={dashboard.dashboard!.strength} onPress={() => navigatePlaceholder(dashboard.dashboard!.strength.destination)} />
-                <VolumeChartCard progress={dashboard.dashboard!.volume} onPress={() => navigatePlaceholder(dashboard.dashboard!.volume.destination)} />
-                <RecoveryChartCard progress={dashboard.dashboard!.recovery} onPress={() => navigatePlaceholder(dashboard.dashboard!.recovery.destination)} />
-                <NutritionChartCard progress={dashboard.dashboard!.nutrition} onPress={() => navigatePlaceholder(dashboard.dashboard!.nutrition.destination)} />
-                <BodyMetricsCard bodyMetrics={dashboard.dashboard!.bodyMetrics} onPress={() => navigatePlaceholder(dashboard.dashboard!.bodyMetrics.destination)} />
-                <GoalProgressCard goal={dashboard.dashboard!.goalProgress} onPress={() => navigatePlaceholder(dashboard.dashboard!.goalProgress.destination)} />
-                <TrainingStreakCard streak={dashboard.dashboard!.trainingStreak} onPress={() => navigatePlaceholder(dashboard.dashboard!.trainingStreak.destination)} />
+                <StrengthChartCard progress={dashboard.dashboard!.strength} onPress={reachableHandler(dashboard.dashboard!.strength.destination)} />
+                <VolumeChartCard progress={dashboard.dashboard!.volume} onPress={reachableHandler(dashboard.dashboard!.volume.destination)} />
+                <RecoveryChartCard progress={dashboard.dashboard!.recovery} onPress={reachableHandler(dashboard.dashboard!.recovery.destination)} />
+                <NutritionChartCard progress={dashboard.dashboard!.nutrition} onPress={reachableHandler(dashboard.dashboard!.nutrition.destination)} />
+                <BodyMetricsCard bodyMetrics={dashboard.dashboard!.bodyMetrics} onPress={reachableHandler(dashboard.dashboard!.bodyMetrics.destination)} />
+                <GoalProgressCard goal={dashboard.dashboard!.goalProgress} onPress={reachableHandler(dashboard.dashboard!.goalProgress.destination)} />
+                <TrainingStreakCard streak={dashboard.dashboard!.trainingStreak} onPress={reachableHandler(dashboard.dashboard!.trainingStreak.destination)} />
                 <PersonalRecordsCard records={dashboard.dashboard!.personalRecords} />
-                <CoachInsightsCard insights={insights.insights} onPress={navigatePlaceholder} />
+                <CoachInsightsCard insights={insights.insights} />
               </AnalyticsGrid>
             </>
           ) : null}

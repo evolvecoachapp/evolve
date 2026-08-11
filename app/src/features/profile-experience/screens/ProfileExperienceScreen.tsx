@@ -1,4 +1,5 @@
 import { RefreshControl, Text, View } from "react-native";
+import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../../auth/useAuth";
 import { GradientBackground } from "../../../components/GradientBackground";
@@ -34,6 +35,7 @@ export interface ProfileExperienceScreenProps {
  */
 export function ProfileExperienceScreen({ service }: ProfileExperienceScreenProps = {}) {
   const { user } = useAuth();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const dashboard = useProfile({
@@ -77,7 +79,10 @@ export function ProfileExperienceScreen({ service }: ProfileExperienceScreenProp
               <NutritionPreferencesCard prefs={dashboard.profile!.nutritionPreferences} />
               <CoachPreferencesCard prefs={dashboard.profile!.coachPreferences} />
               <NotificationPreferencesCard prefs={dashboard.profile!.notificationPreferences} />
-              <AppearanceCard prefs={dashboard.profile!.appearancePreferences} />
+              <AppearanceCard
+                prefs={dashboard.profile!.appearancePreferences}
+                onPress={() => router.push("/(app)/settings/appearance")}
+              />
               <MeasurementUnitsCard units={dashboard.profile!.measurementUnits} />
               <ConnectedServicesCard connectedServices={dashboard.profile!.connectedServices} />
               <View style={{ gap: spacing.xs, paddingVertical: spacing.md }}>

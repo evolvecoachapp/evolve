@@ -6,9 +6,10 @@ import type { AppearancePreferences } from "../models";
 
 export interface AppearanceCardProps {
   readonly prefs: AppearancePreferences;
+  readonly onPress?: () => void;
 }
 
-export function AppearanceCard({ prefs }: AppearanceCardProps) {
+export function AppearanceCard({ prefs, onPress }: AppearanceCardProps) {
   const styles = useThemedStyles(({ colors, typography }) => ({
     body: { gap: spacing.sm },
     title: { ...typography.title3 },
@@ -17,7 +18,7 @@ export function AppearanceCard({ prefs }: AppearanceCardProps) {
   }));
 
   return (
-    <AppCard variant="floating">
+    <AppCard variant="floating" onPress={onPress}>
       <View style={styles.body}>
         <Text style={styles.title}>Appearance</Text>
         <View>

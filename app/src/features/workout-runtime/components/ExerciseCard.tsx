@@ -59,14 +59,16 @@ export function ExerciseCard({ exercise, onDetailsPress }: ExerciseCardProps) {
               {exercise.muscleGroup} · {exercise.equipment}
             </Text>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Exercise details"
-            onPress={onDetailsPress}
-            style={styles.details}
-          >
-            <Text style={styles.detailsLabel}>Details</Text>
-          </Pressable>
+          {onDetailsPress ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Exercise details"
+              onPress={onDetailsPress}
+              style={styles.details}
+            >
+              <Text style={styles.detailsLabel}>Details</Text>
+            </Pressable>
+          ) : null}
         </View>
         <View style={styles.chips}>
           <Chip

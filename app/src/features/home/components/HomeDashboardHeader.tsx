@@ -1,8 +1,10 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Avatar } from "../../../components/Avatar";
 import { FloatingStatChip } from "../../../components/FloatingStatChip";
 import { HeroAmbientLayer } from "../../../components/HeroAmbientLayer";
 import { HeroEntrance } from "../../../animation/HeroEntrance";
+import { useTheme } from "../../../theme/ThemeContext";
 import { heroLayout, spacing } from "../../../theme/theme";
 import { useThemedStyles } from "../../../theme/useThemedStyles";
 import { formatWorkoutsProgress } from "../../dashboard/utils/presentationFormatters";
@@ -10,10 +12,15 @@ import type { AthleteSnapshotCard as AthleteSnapshotCardModel } from "../models/
 
 interface HomeDashboardHeaderProps {
   readonly athlete: AthleteSnapshotCardModel;
+  readonly onNotificationsPress?: () => void;
 }
 
 /** Home greeting + avatar + snapshot chips — presentation only. */
-export function HomeDashboardHeader({ athlete }: HomeDashboardHeaderProps) {
+export function HomeDashboardHeader({
+  athlete,
+  onNotificationsPress,
+}: HomeDashboardHeaderProps) {
+  const { colors } = useTheme();
   const styles = useThemedStyles(({ colors, typography }) =>
     StyleSheet.create({
       hero: {
@@ -29,6 +36,14 @@ export function HomeDashboardHeader({ athlete }: HomeDashboardHeaderProps) {
         flex: 1,
         gap: heroLayout.headlineGap,
         maxWidth: heroLayout.headlineMaxWidth.dashboard,
+      },
+      notificationsButton: {
+        width: spacing["2xl"],
+        height: spacing["2xl"],
+        borderRadius: spacing.md,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: colors.overlayStrong,
       },
       date: {
         ...typography.eyebrow,
@@ -79,6 +94,23 @@ export function HomeDashboardHeader({ athlete }: HomeDashboardHeaderProps) {
             <Text style={styles.name}>{athlete.displayName}</Text>
             <Text style={styles.subtitle}>{athlete.subtitle}</Text>
           </View>
+          {onNotificationsPress ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Notifications"
+              onPress={onNotificationsPress}
+              style={({ pressed }) => [
+                styles.notificationsButton,
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <Ionicons
+                name="notifications-outline"
+                size={spacing.icon.md}
+                color={colors.ink}
+              />
+            </Pressable>
+          ) : null}
         </View>
       </HeroEntrance>
 

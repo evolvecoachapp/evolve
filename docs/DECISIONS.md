@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-08-11  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-149). Append only — never renumber.
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-151). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -5163,3 +5163,109 @@ unchanged — only what hydration does changed
 **Consequences:**
 - Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
 - Write-through gains a second, purely additive staleness dimension (session epoch) alongside the existing mutation sequence, closing the one class of cross-session data-integrity gap the sequence counter could not close by itself. The workout timer no longer performs a full cross-domain SQLite write-through every second during an active workout — persistence now only happens on meaningful mutations, exactly as every other domain already behaved. An athlete's identity `id`/`createdAt`/`metadata` now survive a restart verbatim instead of being silently regenerated, matching the round-trip guarantee every other domain already had. New/updated tests (`mutationSequenceGuard.test.ts` — concurrent-completion and logout-mid-flight-epoch cases; `viewmodel.test.ts` — tick-does-not-persist / real-mutation-still-persists; `observer.test.ts` — reported `watchedServices` matches actual wraps; `hydration.test.ts` — fresh-service identity round trip; `athleteIdentity.integration.test.ts` — `restorePersisted()` unit tests) raise coverage without touching any previously-passing test. Full suite (802 suites / 3333 tests) and typecheck remain green.
+
+## ADR-151: Production UI & Navigation Completion Audit (Sprint 37.1)
+
+**Status:** Accepted
+**Date:** 2026-08-11
+**Context:** First Phase B (Product Completion) sprint after Phase A (Production Hardening, Sprints 36.1–36.6) concluded. The instruction was to audit whether every already-activated production experience (Home, Profile, Workout, Nutrition, Recovery, Goals, Coach, Notifications, Progress) is actually **reachable** through the production Expo Router tree and uses its correct runtime path — fixing only concrete, provable navigation defects (obsolete/missing/mock-only routes), never redesigning navigation, never introducing new runtime subsystems, backend/networking, or a visual redesign.
+
+**Decision:**
+
+Five concrete navigation defects were found and fixed with the smallest possible correction; every screen's runtime wiring, the mock-usage boundary, and the authentication/restart lifecycle were verified already correct with no code change.
+
+```
+Gap 1 — Notification Center fully built, completely unreachable
+
+features/notification-center (NotificationCenterScreen, useNotifications
+→ hydrated Unified Workspace + Coach Timeline, Sprint 35.2) exists and is
+production-wired end to end
+  ↓
+No app/(app)/** route file ever imports/mounts it; no button, icon, or
+link anywhere in the authenticated UI points at it
+  ↓
+Fix: new app/(app)/notifications/index.tsx route; new bell-icon button
+in HomeDashboardHeader (rendered only when a handler is supplied) wired
+to router.push("/(app)/notifications")
+
+Gap 2 — Goals activated (Sprint 35.0) but no Home entry point
+
+Home quick actions cover Workout / Nutrition / Recovery / Coach /
+Progress / Profile — Goals has a working route (app/(app)/goals) and a
+Coach quick action, but Home never surfaces it
+  ↓
+Fix: new VIEW_GOALS quick action kind (destination "/(app)/goals",
+enabled: workspace.goals.present) added to the production
+mapWorkspaceToQuickActions.ts and mirrored in the test/preview
+mapQuickActions.ts
+
+Gap 3 — Recovery misrouted to Progress in two places
+
+mapWorkspaceToQuickActions.ts's qa:view_recovery action AND
+mapWorkspaceCoachToExperienceDto.ts's "Recovery recommendation" both
+had destination: "/(app)/(tabs)/progress"
+  ↓
+Tapping "Recovery" from Home's quick actions or Coach's recommendation
+card navigated to the Progress tab instead of app/(app)/recovery
+  ↓
+Fix: both corrected to "/(app)/recovery" (+ mirrored in the
+coachExperienceData.ts test/preview mock for consistency)
+
+Gap 4 — always-visible buttons navigating to routes that don't exist
+
+Coach header's History/Settings buttons, Coach insight-card detail
+taps, Workout ExerciseCard's "Details" button, and every Progress
+analytics card's onPress all call router.push(destination) where
+destination is a documented "navigation placeholder" string (e.g.
+/(app)/coach/history, /(app)/progress/strength,
+/(app)/workout/exercise/[id]) that has no matching app/(app)/** route
+file
+  ↓
+Unlike a DTO field nobody reads, these are real, persistently-enabled
+UI controls a user can actually tap on the primary screen of each
+feature — genuinely broken navigation, not an inert placeholder
+  ↓
+Fix: new navigation/isReachableRoute.ts — a pure static allowlist
+mirroring the real app/(app)/** route tree. CoachExperienceScreen /
+WorkoutRuntimeScreen / ProgressExperienceScreen compute each navigation
+callback through a local reachableHandler that returns undefined for
+an unreachable destination; the existing conditional-render pattern
+(CoachHeader / ExerciseCard already skip rendering a button when its
+onPress/onDetailsPress prop is undefined) then safely disables the
+control instead of navigating to a not-found screen.
+CoachInsightsCard's onPress prop removed outright — its destinations
+are always unreachable
+
+Gap 5 — Profile Appearance settings orphaned by the Sprint 31.6 rebuild
+
+app/(app)/settings → settings/appearance → settings/appearance/theme
+(working Light/Dark/System switching) has no link from
+ProfileExperienceScreen, which replaced the legacy ProfileScreen (the
+only screen that used to link to it) without carrying the link forward
+  ↓
+Fix: AppearanceCard gained an optional onPress passed through to
+AppCard; ProfileExperienceScreen wires it to
+router.push("/(app)/settings/appearance") — the one Profile placeholder
+destination that corresponds to an already-built, already-working
+screen (every other Profile destination remains a documented
+placeholder, left untouched)
+```
+
+1. `navigation/isReachableRoute.ts` is a pure, dependency-free module — a `ReadonlySet<string>` allowlist plus one exported predicate function. It has no knowledge of any feature; features import it and decide what to do with a `false` result (skip rendering a button, or pass `undefined` instead of a handler). It intentionally does **not** dynamically introspect the Expo Router file tree at runtime — a static list mirroring `app/(app)/**` was chosen for zero runtime cost and explicit auditability, at the cost of needing a manual update whenever a new route is added (documented in-line in the file).
+2. `CoachExperienceScreen`, `WorkoutRuntimeScreen`, `ProgressExperienceScreen` each gained a small local `reachableHandler(destination)` helper built on `isReachableRoute` + the screen's existing `navigatePlaceholder`; no new state, no new component.
+3. `mapWorkspaceToQuickActions.ts` (production, `integrations/dashboard-projection`) and `mapWorkspaceCoachToExperienceDto.ts` (production, `features/coach-experience`) both had their Recovery destination corrected in place — no new function, no new model field.
+4. `DashboardProjectionQuickActionKinds` and `home/models/QuickAction.ts` each gained one new enum member (`VIEW_GOALS`); `mapWorkspaceToQuickActions.ts` and `home/mappers/mapQuickActions.ts` each gained one new quick-action entry using the existing `createDashboardProjectionQuickAction`/action-object pattern.
+5. `app/(app)/notifications/index.tsx` is a two-line route file identical in shape to every other route file in the tree — it imports and renders `NotificationCenterScreen` from `features/notification-center`, nothing else.
+6. Verified with no code change: every listed production screen's screen → hook → runtime path (Home → Dashboard Restore, Profile → hydrated Athlete Identity, Workout/Nutrition/Recovery/Goals/Coach → hydrated Unified Workspace + persisted overlay, Notifications → hydrated workspace + Coach Timeline overlay, Progress → Progress Analytics read model) matches its Sprint 34.x/35.x activation exactly; no authenticated route or production hook defaults to a `Mock*Service`; `MockProgressAnalyticsService` remains the sole working `ProgressAnalyticsService` per this sprint's explicit carve-out (Sprint 36.6/ADR-150); loading/empty/error states for every audited screen already use the existing design system, never mock/demo data, and never crash; authentication boundaries, logout reset cascade, and restart/rehydration behavior are all unchanged and correct.
+7. Six legacy screens (`ProgressScreen.tsx`, `WorkoutScreen.tsx`, `DashboardScreen.tsx`, `NutritionScreen.tsx`, `CoachScreen.tsx`, `ProfileScreen.tsx`) confirmed unreachable — zero production references, only their own test files import them — documented as safe-to-remove candidates for a future cleanup sprint rather than deleted in this one, consistent with the sprint's explicit "don't delete because it looks unused" instruction and the two legacy items already documented the same way in Sprint 36.6/ADR-150.
+
+**Alternatives considered:**
+- **Build the missing destination screens (Coach History/Settings, Exercise Detail, Progress analytics detail pages) instead of disabling navigation to them** — rejected; this sprint is explicitly scoped to navigation completion, not new feature screens, and several of these placeholders have been intentionally deferred across multiple prior sprints' ADRs; disabling the dead tap is the smallest correction that removes the broken-navigation defect without expanding scope.
+- **Wire Coach's "History" button to the existing `CoachTimelineScreen` (Sprint 31.9 Framework Foundation) instead of disabling it** — rejected; `CoachTimelineScreen` defaults to `mockCoachTimelineService` when no service is injected, and no production route exists to inject a hydrated one — wiring it as-is would introduce a new mock-dependent production path, directly against this sprint's mock-production mandate; left as a candidate for a future sprint that also activates Coach Timeline's production data source.
+- **Dynamically validate `destination` against the live Expo Router route table at runtime instead of a static allowlist** — rejected; adds a runtime dependency on Router internals for a problem that has a fixed, small, auditable answer at build time; the static list is simpler, has zero runtime cost, and is easy to review in a PR diff.
+- **Remove the six confirmed-dead legacy screens now that they're identified** — rejected for this sprint; the task explicitly instructs not to delete something merely because it looks unused, only when removal is proven necessary for consistency — documenting them is sufficient and defers the (low-risk but unrelated) deletion to a dedicated cleanup pass.
+- **Redesign Home/Profile/Coach/Progress navigation into a unified "detail route" pattern** — rejected; explicitly out of scope ("do not redesign navigation"); every fix reuses the existing screen/route/quick-action patterns already established by prior sprints.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Every one of the nine activated production experiences (Home, Profile, Workout, Nutrition, Recovery, Goals, Coach, Notifications, Progress) is now actually reachable from the authenticated navigation tree, not just implemented. No enabled, always-visible navigation control in Coach, Workout, or Progress can land a user on Expo Router's not-found screen anymore. Two real routing bugs (Recovery → Progress) are fixed. `navigation/isReachableRoute.ts` becomes the one place to extend the next time a placeholder destination gets a real screen — updating one allowlist entry, rather than hunting down every conditional, re-enables that navigation everywhere it's already wired through `reachableHandler`. New/updated tests (`isReachableRoute.test.ts`; `coach-experience/__tests__/mapper.test.ts`; extended `dashboard-projection/__tests__/mapper.test.ts` and `home/__tests__/screen.test.tsx`) raise coverage without touching any previously-passing test. Full suite (804 suites / 3342 tests) and typecheck remain green.
