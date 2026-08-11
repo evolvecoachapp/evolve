@@ -1,6 +1,7 @@
 import { Text, View } from "react-native";
 import { AppButton } from "../../../components/AppButton";
 import { AppCard } from "../../../components/AppCard";
+import { ProgressBar } from "../../../components/ProgressBar";
 import { spacing } from "../../../theme/theme";
 import { useThemedStyles } from "../../../theme/useThemedStyles";
 import type { WorkoutTimer } from "../models/experience/WorkoutTimer";
@@ -44,6 +45,9 @@ export function RestTimerCard({
       ...typography.callout,
       color: colors.inkMuted,
     },
+    progress: {
+      width: "100%" as const,
+    },
   }));
 
   if (
@@ -54,6 +58,10 @@ export function RestTimerCard({
   }
 
   const isPaused = timer.status === WorkoutTimerStatuses.PAUSED;
+  const elapsedPercent =
+    timer.targetSeconds > 0
+      ? Math.min(100, (timer.elapsedSeconds / timer.targetSeconds) * 100)
+      : 100;
 
   return (
     <AppCard variant="floating" glow>
@@ -69,6 +77,9 @@ export function RestTimerCard({
               ? "Overtime"
               : "Rest in progress"}
         </Text>
+        {timer.targetSeconds > 0 ? (
+          <ProgressBar progress={elapsedPercent} style={styles.progress} />
+        ) : null}
         <AppButton
           label={isPaused ? "Resume" : "Pause"}
           onPress={isPaused ? onResume : onPause}

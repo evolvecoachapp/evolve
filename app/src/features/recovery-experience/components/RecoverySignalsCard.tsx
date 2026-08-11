@@ -1,5 +1,8 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Text, View } from "react-native";
+import { AppButton } from "../../../components/AppButton";
 import { AppCard } from "../../../components/AppCard";
+import { useTheme } from "../../../theme/ThemeContext";
 import { spacing } from "../../../theme/theme";
 import { useThemedStyles } from "../../../theme/useThemedStyles";
 import type { RecoverySignal } from "../models";
@@ -15,30 +18,41 @@ export function RecoverySignalsCard({
   assessmentAvailable,
   onAssess,
 }: RecoverySignalsCardProps) {
-  const styles = useThemedStyles(({ colors, typography }) =>
-    StyleSheet.create({
-      title: { ...typography.title3, color: colors.text, marginBottom: spacing.sm },
-      signal: { ...typography.body, color: colors.inkSecondary, marginBottom: spacing.xs },
-      action: { ...typography.caption, color: colors.pulse, marginTop: spacing.sm },
-    }),
-  );
+  const { colors } = useTheme();
+  const styles = useThemedStyles(({ colors, typography }) => ({
+    title: { ...typography.title3, marginBottom: spacing.md },
+    signalRow: {
+      flexDirection: "row" as const,
+      alignItems: "flex-start" as const,
+      gap: spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    signal: { ...typography.bodyRelaxed, color: colors.inkSecondary, flex: 1 },
+    empty: { ...typography.callout, color: colors.inkMuted },
+    action: { marginTop: spacing.sm, alignSelf: "flex-start" as const },
+  }));
 
   return (
-    <AppCard>
+    <AppCard variant="elevated">
       <Text style={styles.title}>Recovery signals</Text>
       {signals.length === 0 ? (
-        <Text style={styles.signal}>No recovery signals yet.</Text>
+        <Text style={styles.empty}>No recovery signals yet.</Text>
       ) : (
         signals.map((signal) => (
-          <Text key={signal.id} style={styles.signal}>
-            {signal.summary}
-          </Text>
+          <View key={signal.id} style={styles.signalRow}>
+            <Ionicons name="ellipse" size={6} color={colors.pulse} style={{ marginTop: 8 }} />
+            <Text style={styles.signal}>{signal.summary}</Text>
+          </View>
         ))
       )}
       {assessmentAvailable && onAssess ? (
-        <Pressable onPress={onAssess}>
-          <Text style={styles.action}>Run recovery assessment</Text>
-        </Pressable>
+        <AppButton
+          label="Run recovery assessment"
+          onPress={onAssess}
+          variant="ghost"
+          size="sm"
+          style={styles.action}
+        />
       ) : null}
     </AppCard>
   );

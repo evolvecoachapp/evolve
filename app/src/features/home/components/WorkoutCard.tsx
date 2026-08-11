@@ -12,10 +12,11 @@ interface WorkoutCardProps {
   readonly workout: WorkoutSummaryCard;
   readonly onPress?: () => void;
   readonly onView?: () => void;
+  readonly index?: number;
 }
 
 /** Today's workout card — presentation only. */
-export function WorkoutCard({ workout, onPress, onView }: WorkoutCardProps) {
+export function WorkoutCard({ workout, onPress, onView, index }: WorkoutCardProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(({ colors, typography, radius }) =>
     StyleSheet.create({
@@ -57,7 +58,7 @@ export function WorkoutCard({ workout, onPress, onView }: WorkoutCardProps) {
   }
 
   return (
-    <DashboardSection title="Today's Workout" actionLabel="View" onAction={onView}>
+    <DashboardSection title="Today's Workout" actionLabel="View" onAction={onView} index={index}>
       <AppCard variant="floating" glow onPress={onPress}>
         <View style={styles.workoutHeader}>
           <View style={styles.workoutIcon}>

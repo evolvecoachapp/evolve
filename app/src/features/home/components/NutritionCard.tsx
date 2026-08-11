@@ -9,6 +9,7 @@ import { DashboardSection } from "./DashboardSection";
 interface NutritionCardProps {
   readonly nutrition: NutritionSummaryCard;
   readonly onSeeAll?: () => void;
+  readonly index?: number;
 }
 
 function formatMacroValue(
@@ -23,7 +24,7 @@ function formatMacroUnit(target: number, unitLabel: string): string {
 }
 
 /** Nutrition macros card — presentation only. */
-export function NutritionCard({ nutrition, onSeeAll }: NutritionCardProps) {
+export function NutritionCard({ nutrition, onSeeAll, index }: NutritionCardProps) {
   const styles = useThemedStyles(() =>
     StyleSheet.create({
       macroGrid: {
@@ -42,6 +43,7 @@ export function NutritionCard({ nutrition, onSeeAll }: NutritionCardProps) {
       title="Nutrition"
       actionLabel="See all"
       onAction={onSeeAll}
+      index={index}
     >
       <AppCard variant="elevated">
         <View style={styles.macroGrid}>

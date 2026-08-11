@@ -1,7 +1,8 @@
-import { RefreshControl, Text, View } from "react-native";
+import { RefreshControl, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../../auth/useAuth";
 import { GradientBackground } from "../../../components/GradientBackground";
+import { SectionTitle } from "../../../components/SectionTitle";
 import { TabScreenContainer } from "../../../components/TabScreenContainer";
 import { useTheme } from "../../../theme/ThemeContext";
 import { spacing } from "../../../theme/theme";
@@ -96,9 +97,7 @@ export function NutritionExperienceScreen({ service }: NutritionExperienceScreen
                 onToggleMeal={(mealId) => void dashboard.toggleMealCompletion(mealId)}
               />
               <View style={{ gap: spacing.md }}>
-                <Text style={{ color: colors.text, fontSize: 20, fontWeight: "700" }}>
-                  Coach Suggestions
-                </Text>
+                <SectionTitle title="Coach Suggestions" />
                 {suggestions.suggestions.map((suggestion) => (
                   <CoachSuggestionCard key={suggestion.id} suggestion={suggestion} />
                 ))}

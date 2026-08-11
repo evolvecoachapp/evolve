@@ -13,31 +13,41 @@ export function NutritionDaySelector({ value, options, onChange }: NutritionDayS
   const styles = useThemedStyles(({ colors, typography }) => ({
     row: { flexDirection: "row" as const, gap: spacing.sm },
     chip: {
+      minHeight: spacing["3xl"],
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       borderRadius: 999,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.surfaceElevated,
+      alignItems: "center" as const,
+      justifyContent: "center" as const,
     },
     active: {
       borderColor: colors.pulse,
       backgroundColor: colors.pulseMuted,
     },
     text: { ...typography.callout },
+    textActive: { color: colors.pulse, fontWeight: "700" as const },
   }));
 
   return (
     <View style={styles.row}>
-      {options.map((option) => (
-        <Pressable
-          key={option.id}
-          onPress={() => onChange(option)}
-          style={[styles.chip, option.isoDate === value.isoDate && styles.active]}
-        >
-          <Text style={styles.text}>{option.shortLabel}</Text>
-        </Pressable>
-      ))}
+      {options.map((option) => {
+        const isActive = option.isoDate === value.isoDate;
+        return (
+          <Pressable
+            key={option.id}
+            onPress={() => onChange(option)}
+            style={[styles.chip, isActive && styles.active]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: isActive }}
+            accessibilityLabel={option.shortLabel}
+          >
+            <Text style={[styles.text, isActive && styles.textActive]}>{option.shortLabel}</Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }

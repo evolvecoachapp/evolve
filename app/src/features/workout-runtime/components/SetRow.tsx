@@ -1,4 +1,6 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Text, View } from "react-native";
+import { useTheme } from "../../../theme/ThemeContext";
 import { spacing } from "../../../theme/theme";
 import { useThemedStyles } from "../../../theme/useThemedStyles";
 import type { WorkoutSet } from "../models/experience/WorkoutSet";
@@ -10,6 +12,7 @@ interface SetRowProps {
 
 /** Single set row — presentation only. */
 export function SetRow({ set }: SetRowProps) {
+  const { colors } = useTheme();
   const styles = useThemedStyles(({ colors, typography, radius }) => ({
     row: {
       minHeight: spacing["3xl"] + spacing.sm,
@@ -74,6 +77,9 @@ export function SetRow({ set }: SetRowProps) {
     >
       <View style={styles.left}>
         <Text style={styles.index}>{set.index + 1}</Text>
+        {set.status === WorkoutSetStatuses.COMPLETED ? (
+          <Ionicons name="checkmark-circle" size={spacing.icon.sm} color={colors.success} />
+        ) : null}
         <Text style={styles.meta}>
           {set.status === WorkoutSetStatuses.COMPLETED
             ? "Done"

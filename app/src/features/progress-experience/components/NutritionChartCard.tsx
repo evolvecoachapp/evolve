@@ -15,7 +15,7 @@ export function NutritionChartCard({ progress, onPress }: NutritionChartCardProp
         <View>
           <Text style={styles.label}>Nutrition Adherence</Text>
           <Text style={styles.value}>{progress.proteinAdherencePercent}%</Text>
-          <Text style={styles.supporting}>Calories {progress.caloriesAdherencePercent}% ? Protein {progress.averageProteinGrams}g avg</Text>
+          <Text style={styles.supporting}>Calories {progress.caloriesAdherencePercent}% · Protein {progress.averageProteinGrams}g avg</Text>
         </View>
         <ChartPlaceholder icon="nutrition-outline" label="Reusable nutrition visualization prepared" />
       </View>

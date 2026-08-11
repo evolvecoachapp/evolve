@@ -15,7 +15,7 @@ export function VolumeChartCard({ progress, onPress }: VolumeChartCardProps) {
         <View>
           <Text style={styles.label}>Training Volume</Text>
           <Text style={styles.value}>{progress.totalVolumeKg} kg</Text>
-          <Text style={styles.supporting}>{progress.weeklyProgressLabel} ? {progress.monthlyProgressLabel}</Text>
+          <Text style={styles.supporting}>{progress.weeklyProgressLabel} · {progress.monthlyProgressLabel}</Text>
         </View>
         <ChartPlaceholder icon="bar-chart-outline" label="Reusable volume visualization prepared" />
       </View>

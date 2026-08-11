@@ -575,6 +575,28 @@ Decision record: ADR-148 in [DECISIONS.md](./DECISIONS.md).
 
 Decision record: ADR-149 in [DECISIONS.md](./DECISIONS.md).
 
+### Premium Visual Experience (`features/home`, `features/workout-runtime`, `features/recovery-experience`, `features/coach-experience`, `features/progress-experience`, `features/goal-progress-experience`, `features/profile-experience`, `features/notification-center`) — Sprint 37.2 (Phase B — Product Completion)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | First visual/product polish sprint after Sprint 37.1 confirmed every production experience reachable. Applied bounded visual/accessibility improvements to the ten screens named in the sprint brief, reusing existing design-system primitives exclusively — no new visual language, no runtime/persistence/navigation change |
+| **Design-system audit** | Confirmed `AppCard`, `StatCard`, `SectionTitle`, `AppHeader`, `AppButton`, `AppInput`, `EmptyState`, `ProgressBar`, `FloatingSurface`, `GradientBackground`, `GlowOrb`, `Avatar`, `ChartPlaceholder`, `ScreenContainer`, theme/typography/spacing/radius/shadow/motion tokens already cover every need surfaced by this sprint — no primitive extended, none created |
+| **Home** | `DashboardSection` gained an optional `index` stagger position; `WorkoutCard`/`NutritionCard`/`RecoveryCard`/`CoachCard`/`AthleteSnapshotCard`/`QuickActionsGrid` forward a sequential index from `HomeDashboardScreen` so sections entrance-animate via the existing `heroEntering()` helper in a staggered sequence instead of all at once |
+| **Workout** | `WorkoutBottomBar` rebuilt on `FloatingFooterAnchor`/`FloatingSurface` (same primitive as `RestTimerCard`), replacing a plain fixed bar; `SetRow` shows a checkmark icon on a completed set; `ExerciseCard` gained a "Current exercise" eyebrow label; `RestTimerCard` gained an elapsed-vs-target `ProgressBar` |
+| **Recovery** | `ReadinessCard`/`SleepCard`/`RecoverySignalsCard` redesigned with an icon ring, metric-weight typography, and `AppButton` actions in place of plain-text values/links; `RecoveryDaySelector`/`NutritionDaySelector` gained bolder active-state typography + `accessibilityState` so the selected day is not color-only |
+| **Coach** | `ConversationInput`'s "Send" text control replaced with an `Ionicons` arrow-up icon button, matching Coach's existing compact icon-button pattern |
+| **Progress** | Six chart/summary cards (`StrengthChartCard`/`VolumeChartCard`/`RecoveryChartCard`/`NutritionChartCard`/`BodyMetricsCard`/`GoalProgressCard`) had a mojibake `?` standing in for a middot separator, corrected to `·`; `CoachInsightsCard` insight titles gained their intended typography style |
+| **Goals** | `GoalMilestonesCard`/`GoalProgressSummaryCard` action links gained `accessibilityRole="button"`, `accessibilityLabel`, and `hitSlop` — no visual change, closing an accessibility gap on already-functional controls |
+| **Profile** | `AppearanceCard` redesigned with a theme-aware icon and a trailing chevron when `onPress` is supplied, so the card visually communicates it is tappable; `ProfileExperienceScreen`'s inline footer text extracted to named `useThemedStyles` entries |
+| **Notifications / Nutrition** | `NotificationCard` redesigned with an icon ring, unread dot + bold title weight (not color-only), a `Chip` for high-priority notifications, and a proper accessible `Pressable` for Dismiss; `NotificationCenterScreen`'s "Reminders" and `NutritionExperienceScreen`'s "Coach Suggestions" labels promoted to `SectionTitle` |
+| **Settings** | Audited and left unchanged — `SettingsScreen`/`AppearanceScreen`/`ThemeScreen` already minimal, consistent, and utility-oriented per the brief's explicit "do not over-design settings" instruction |
+| **Runtime/data-source verification** | No screen's data source changed — Home continues reading from Dashboard Restore, Profile from hydrated Athlete Identity, Workout/Nutrition/Recovery/Goals/Coach from hydrated/persisted Unified Workspace runtime, Notifications from the hydrated workspace + Coach Timeline overlay, Progress from the Progress Analytics read model; every touched file is a presentation component receiving unchanged props from its existing hook/ViewModel |
+| **Performance** | Animation limited to entrance (staggered `heroEntering`) and a static progress-bar fill; no continuous/looping animation, no new timer, no per-second re-render; the Sprint 36.6 fix removing the 1-second rest-timer write-through was not touched |
+| **Tests** | Full existing suite (804 suites / 3342 tests) and typecheck remain green; no new test suites — accessibility/visual changes verified against existing coverage |
+| **Design** | **Visual/accessibility polish only.** No runtime architecture change, no new runtime subsystem, no networking, no backend, no SQLite change, no Admin change, no live LLM provider, no new design-system primitive |
+
+Decision record: ADR-152 in [DECISIONS.md](./DECISIONS.md).
+
 ### Production UI & Navigation Completion Audit (`navigation/isReachableRoute`, `app/(app)/notifications`) — Sprint 37.1 (Phase B — Product Completion)
 
 | Aspect | Implementation |

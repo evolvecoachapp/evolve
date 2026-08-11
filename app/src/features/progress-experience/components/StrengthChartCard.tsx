@@ -15,7 +15,7 @@ export function StrengthChartCard({ progress, onPress }: StrengthChartCardProps)
         <View>
           <Text style={styles.label}>Estimated 1RM</Text>
           <Text style={styles.value}>{progress.estimatedOneRepMaxKg} kg</Text>
-          <Text style={styles.supporting}>{progress.strongestLift} ? {progress.changePercent}% change</Text>
+          <Text style={styles.supporting}>{progress.strongestLift} · {progress.changePercent}% change</Text>
         </View>
         <ChartPlaceholder icon="trending-up-outline" label="Reusable strength visualization prepared" />
       </View>

@@ -5269,3 +5269,108 @@ placeholder, left untouched)
 **Consequences:**
 - Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
 - Every one of the nine activated production experiences (Home, Profile, Workout, Nutrition, Recovery, Goals, Coach, Notifications, Progress) is now actually reachable from the authenticated navigation tree, not just implemented. No enabled, always-visible navigation control in Coach, Workout, or Progress can land a user on Expo Router's not-found screen anymore. Two real routing bugs (Recovery → Progress) are fixed. `navigation/isReachableRoute.ts` becomes the one place to extend the next time a placeholder destination gets a real screen — updating one allowlist entry, rather than hunting down every conditional, re-enables that navigation everywhere it's already wired through `reachableHandler`. New/updated tests (`isReachableRoute.test.ts`; `coach-experience/__tests__/mapper.test.ts`; extended `dashboard-projection/__tests__/mapper.test.ts` and `home/__tests__/screen.test.tsx`) raise coverage without touching any previously-passing test. Full suite (804 suites / 3342 tests) and typecheck remain green.
+
+---
+
+## ADR-152: Premium Visual Experience (Sprint 37.2)
+
+**Status:** Accepted
+**Date:** 2026-08-11
+**Context:** First visual/product polish sprint since Sprint 37.1 confirmed every production experience reachable. The instruction was to transform the existing production UI into a coherent, premium EVOLVE experience by reusing existing design-system primitives — never introducing a new visual language, never redesigning runtime architecture/navigation/persistence, never introducing networking, backend, Admin, or a live LLM provider, and never touching a production data source.
+
+**Decision:**
+
+Applied targeted, bounded visual/accessibility improvements across the ten screens named in the sprint brief (Home, Workout, Nutrition, Recovery, Goals, Coach, Progress, Profile, Notifications, Settings), composing exclusively from existing primitives (`AppCard`, `AppButton`, `ProgressBar`, `SectionTitle`, `FloatingSurface`/`FloatingFooterAnchor`, `Chip`, `Ionicons`) and the existing animation/motion tokens (`heroEntering`, `motion.enter.staggerDelay`).
+
+```
+Home — strongest visual screen (per brief)
+
+DashboardSection gained an optional `index` stagger position; every
+Home card (WorkoutCard, NutritionCard, RecoveryCard, CoachCard,
+AthleteSnapshotCard, QuickActionsGrid) forwards a sequential index from
+HomeDashboardScreen, so sections entrance-animate in a staggered
+sequence via the existing heroEntering() + reduce-motion-aware helper
+instead of appearing all at once — no new animation primitive, no
+continuous/expensive animation.
+
+Workout — premium training experience
+
+WorkoutBottomBar rebuilt on FloatingFooterAnchor + FloatingSurface
+(the same floating-glass primitive already used by RestTimerCard),
+replacing a plain fixed bar; SetRow shows a checkmark icon on a
+completed set instead of relying on text/color alone; ExerciseCard
+gained a "Current exercise" eyebrow label above the exercise name for
+hierarchy; RestTimerCard gained a ProgressBar visualizing elapsed vs.
+target rest time.
+
+Recovery — actionable and polished (per brief)
+
+ReadinessCard, SleepCard, and RecoverySignalsCard redesigned with an
+icon ring + metric-weight value typography + AppButton actions,
+replacing plain-text values/links, consistent with the existing
+StatCard/AppCard visual grammar used elsewhere; RecoveryDaySelector
+(and NutritionDaySelector for consistency) gained bolder active-state
+typography and accessibilityState so the selected day is not conveyed
+by color/border alone.
+
+Coach — premium AI surface (per brief)
+
+ConversationInput's "Send" text control replaced with an Ionicons
+arrow-up icon button, matching the compact icon-button pattern used
+elsewhere in Coach.
+
+Progress — analytical and professional (per brief)
+
+Six chart/summary cards (StrengthChartCard, VolumeChartCard,
+RecoveryChartCard, NutritionChartCard, BodyMetricsCard,
+GoalProgressCard) had a mojibake "?" standing in for a middot
+separator in their supporting-text line — corrected to "·" to match
+every other card's separator convention; CoachInsightsCard's insight
+title gained its intended typography style (was rendering with no
+style at all).
+
+Goals — motivating and measurable (per brief)
+
+GoalMilestonesCard and GoalProgressSummaryCard's action links
+(Mark reached / Update progress / Complete goal) gained
+accessibilityRole="button", accessibilityLabel, and hitSlop — no
+visual change, closing an accessibility gap on already-functional
+controls.
+
+Profile — polished (per brief)
+
+AppearanceCard redesigned with a theme-aware icon (sun/moon/phone) and
+a trailing chevron when onPress is supplied, so the card visually
+communicates it is tappable — it previously looked identical whether
+or not Sprint 37.1's Settings link was wired. ProfileExperienceScreen's
+inline footer text (version/account status) extracted to named
+useThemedStyles entries for consistency with the rest of the screen.
+
+Notifications / Settings — consistent (per brief)
+
+NotificationCard redesigned with an icon ring, an unread dot +
+bold title weight (not color-only), a Chip for high-priority
+notifications, and a proper accessible Pressable for Dismiss (was
+a bare Text with no role/label); NotificationCenterScreen's
+"Reminders" label promoted to SectionTitle. NutritionExperienceScreen's
+"Coach Suggestions" label likewise promoted to SectionTitle. Settings /
+Appearance / Theme screens were audited and left unchanged — already
+minimal, consistent, and utility-oriented per the brief's explicit
+"do not over-design settings" instruction.
+```
+
+1. No new design-system primitive was created; every change composes `AppCard`, `AppButton`, `ProgressBar`, `SectionTitle`, `FloatingSurface`/`FloatingFooterAnchor`, `Chip`, and `Ionicons`, all of which already existed before this sprint.
+2. No screen's data source changed: Home continues reading exclusively from Dashboard Restore, Profile from hydrated Athlete Identity, Workout/Nutrition/Recovery/Goals/Coach from hydrated/persisted Unified Workspace runtime, Notifications from the hydrated workspace + Coach Timeline overlay, and Progress from the Progress Analytics read model — every touched file is a presentation component receiving props from its existing hook/ViewModel unchanged.
+3. Animation is limited to entrance (staggered `heroEntering` on Home sections) and a static progress-bar fill (rest timer) — no continuous/looping animation, no new timer, no per-second re-render; the Sprint 36.6 fix removing the 1-second rest-timer write-through was not touched.
+4. Accessibility gaps closed are additive (`accessibilityRole`, `accessibilityLabel`, `accessibilityState`, `hitSlop`) with zero behavior change to the underlying `onPress` handlers.
+5. The six-file mojibake correction (`?` → `·`) is a pure text-content fix with no logic change, caught during the design-system audit pass.
+
+**Alternatives considered:**
+- **Introduce a new gradient-heavy visual treatment across every card** — rejected; the brief explicitly warns against turning every card into "a giant gradient" and against visual noise; changes stay within the existing `AppCard` variant system (`elevated`/`floating`/`accent`).
+- **Rebuild Recovery/Notifications cards as entirely new components** — rejected; existing components were edited in place, preserving their existing prop contracts exactly, so no screen/test wiring needed to change beyond the component internals.
+- **Add continuous ambient animation (glow pulses, looping shimmer) to more surfaces for a "cinematic" feel** — rejected; the brief explicitly asks to avoid continuous animations and animations that could interfere with accessibility or performance; the existing `useGlowPulse`/`GlowOrb` primitives were left as already-used, not expanded.
+- **Restructure Progress's `AnalyticsGrid` layout into a denser multi-column grid** — deferred; a layout-level change carries more integration risk than the sprint's "meaningful but bounded" scope justifies without a dedicated follow-up pass; the six-card mojibake/typography fixes were prioritized instead as concrete, provable defects.
+
+**Consequences:**
+- Documentation: [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- EVOLVE's ten production screens now share one more consistent visual language (icon rings, metric typography, `AppButton`/`Chip` actions, `SectionTitle` section headers) without introducing a competing design system. No runtime, persistence, navigation, or production-data-source regression — every touched file remains a presentation-only component or screen composition. Full suite (804 suites / 3342 tests) and typecheck remain green.

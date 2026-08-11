@@ -1,5 +1,6 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, TextInput, View } from "react-native";
 import { useTheme } from "../../../theme/ThemeContext";
 import { spacing } from "../../../theme/theme";
 import { useThemedStyles } from "../../../theme/useThemedStyles";
@@ -41,19 +42,13 @@ export function ConversationInput({
         color: colors.ink,
       },
       send: {
-        minHeight: spacing["3xl"] + spacing.sm,
-        minWidth: spacing["3xl"] + spacing.sm,
-        borderRadius: radius.lg,
+        width: spacing["3xl"] + spacing.sm,
+        height: spacing["3xl"] + spacing.sm,
+        borderRadius: radius.full,
         backgroundColor: colors.pulse,
         alignItems: "center",
         justifyContent: "center",
-        paddingHorizontal: spacing.md,
         opacity: disabled ? 0.45 : 1,
-      },
-      sendLabel: {
-        ...typography.callout,
-        color: colors.textOnInk,
-        fontWeight: "700",
       },
     }),
   );
@@ -85,8 +80,9 @@ export function ConversationInput({
         style={styles.send}
         accessibilityRole="button"
         accessibilityLabel="Send message"
+        hitSlop={4}
       >
-        <Text style={styles.sendLabel}>Send</Text>
+        <Ionicons name="arrow-up" size={spacing.icon.md} color={colors.textOnInk} />
       </Pressable>
     </View>
   );

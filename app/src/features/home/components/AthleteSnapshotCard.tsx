@@ -9,12 +9,14 @@ import { DashboardSection } from "./DashboardSection";
 interface AthleteSnapshotCardProps {
   readonly athlete: AthleteSnapshotCardModel;
   readonly onDetails?: () => void;
+  readonly index?: number;
 }
 
 /** Weekly progress snapshot card — presentation only. */
 export function AthleteSnapshotCard({
   athlete,
   onDetails,
+  index,
 }: AthleteSnapshotCardProps) {
   const styles = useThemedStyles(({ colors, typography }) =>
     StyleSheet.create({
@@ -55,6 +57,7 @@ export function AthleteSnapshotCard({
       title="Weekly Progress"
       actionLabel="Details"
       onAction={onDetails}
+      index={index}
     >
       <AppCard variant="elevated">
         <ChartPlaceholder

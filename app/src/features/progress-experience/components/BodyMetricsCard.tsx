@@ -15,7 +15,7 @@ export function BodyMetricsCard({ bodyMetrics, onPress }: BodyMetricsCardProps) 
         <View>
           <Text style={styles.label}>Body Weight Trend</Text>
           <Text style={styles.value}>{bodyMetrics.bodyWeightKg} kg</Text>
-          <Text style={styles.supporting}>Change {bodyMetrics.bodyWeightChangeKg} kg ? Body fat {bodyMetrics.bodyFatPercent ?? "--"}%</Text>
+          <Text style={styles.supporting}>Change {bodyMetrics.bodyWeightChangeKg} kg · Body fat {bodyMetrics.bodyFatPercent ?? "--"}%</Text>
         </View>
         <ChartPlaceholder icon="fitness-outline" label="Body weight and body fat views are prepared" />
       </View>

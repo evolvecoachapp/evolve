@@ -15,7 +15,7 @@ export function RecoveryChartCard({ progress, onPress }: RecoveryChartCardProps)
         <View>
           <Text style={styles.label}>Recovery Trend</Text>
           <Text style={styles.value}>{progress.averageScore}/100</Text>
-          <Text style={styles.supporting}>{progress.readinessLabel} ? Sleep {progress.sleepAverageHours}h</Text>
+          <Text style={styles.supporting}>{progress.readinessLabel} · Sleep {progress.sleepAverageHours}h</Text>
         </View>
         <ChartPlaceholder icon="moon-outline" label="Reusable recovery visualization prepared" />
       </View>

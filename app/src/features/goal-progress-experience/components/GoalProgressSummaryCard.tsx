@@ -36,12 +36,22 @@ export function GoalProgressSummaryCard({
         </Text>
         <View style={styles.actions}>
           {dashboard.updateAvailable && onUpdateProgress ? (
-            <Pressable onPress={onUpdateProgress}>
+            <Pressable
+              onPress={onUpdateProgress}
+              accessibilityRole="button"
+              accessibilityLabel="Update progress"
+              hitSlop={8}
+            >
               <Text style={styles.action}>Update progress</Text>
             </Pressable>
           ) : null}
           {dashboard.completeAvailable && onCompleteGoal ? (
-            <Pressable onPress={onCompleteGoal}>
+            <Pressable
+              onPress={onCompleteGoal}
+              accessibilityRole="button"
+              accessibilityLabel="Complete goal"
+              hitSlop={8}
+            >
               <Text style={styles.action}>Complete goal</Text>
             </Pressable>
           ) : null}

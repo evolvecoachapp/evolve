@@ -1,6 +1,6 @@
 import { View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppButton } from "../../../components/AppButton";
+import { FloatingFooterAnchor, FloatingSurface } from "../../../components/FloatingSurface";
 import { spacing } from "../../../theme/theme";
 import { useThemedStyles } from "../../../theme/useThemedStyles";
 
@@ -26,19 +26,8 @@ export function WorkoutBottomBar({
   canFinish,
   completeLabel = "Complete set",
 }: WorkoutBottomBarProps) {
-  const insets = useSafeAreaInsets();
-  const styles = useThemedStyles(({ colors }) => ({
-    container: {
-      position: "absolute" as const,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      paddingHorizontal: spacing.screenPadding,
-      paddingTop: spacing.md,
-      paddingBottom: Math.max(insets.bottom, spacing.md),
-      backgroundColor: colors.canvas,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
+  const styles = useThemedStyles(() => ({
+    surface: {
       gap: spacing.sm,
     },
     row: {
@@ -51,51 +40,54 @@ export function WorkoutBottomBar({
   }));
 
   return (
-    <View style={styles.container}>
-      <AppButton
-        label={completeLabel}
-        onPress={onCompleteSet}
-        size="lg"
-        interaction="floating"
-        disabled={!canCompleteSet}
-      />
-      <View style={styles.row}>
-        <View style={styles.flex}>
-          <AppButton
-            label="Previous"
-            onPress={onPrevious}
-            variant="secondary"
-            size="md"
-          />
+    <FloatingFooterAnchor>
+      <FloatingSurface variant="footer" style={styles.surface}>
+        <AppButton
+          label={completeLabel}
+          onPress={onCompleteSet}
+          size="lg"
+          interaction="floating"
+          disabled={!canCompleteSet}
+          haptic="medium"
+        />
+        <View style={styles.row}>
+          <View style={styles.flex}>
+            <AppButton
+              label="Previous"
+              onPress={onPrevious}
+              variant="secondary"
+              size="md"
+            />
+          </View>
+          <View style={styles.flex}>
+            <AppButton
+              label="Next"
+              onPress={onNext}
+              variant="secondary"
+              size="md"
+            />
+          </View>
         </View>
-        <View style={styles.flex}>
-          <AppButton
-            label="Next"
-            onPress={onNext}
-            variant="secondary"
-            size="md"
-          />
+        <View style={styles.row}>
+          <View style={styles.flex}>
+            <AppButton
+              label="Skip exercise"
+              onPress={onSkipExercise}
+              variant="ghost"
+              size="md"
+            />
+          </View>
+          <View style={styles.flex}>
+            <AppButton
+              label="Finish"
+              onPress={onFinish}
+              variant="destructive"
+              size="md"
+              disabled={!canFinish}
+            />
+          </View>
         </View>
-      </View>
-      <View style={styles.row}>
-        <View style={styles.flex}>
-          <AppButton
-            label="Skip exercise"
-            onPress={onSkipExercise}
-            variant="ghost"
-            size="md"
-          />
-        </View>
-        <View style={styles.flex}>
-          <AppButton
-            label="Finish"
-            onPress={onFinish}
-            variant="destructive"
-            size="md"
-            disabled={!canFinish}
-          />
-        </View>
-      </View>
-    </View>
+      </FloatingSurface>
+    </FloatingFooterAnchor>
   );
 }

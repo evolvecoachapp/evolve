@@ -119,6 +119,7 @@ export function HomeDashboardScreen({
                 workout={workout}
                 onPress={() => navigate(workout.destination)}
                 onView={() => navigate(workout.destination)}
+                index={1}
               />
             ) : null}
 
@@ -126,29 +127,33 @@ export function HomeDashboardScreen({
               <NutritionCard
                 nutrition={nutrition}
                 onSeeAll={() => navigate(nutrition.destination)}
+                index={2}
               />
             ) : null}
 
-            {recovery ? <RecoveryCard recovery={recovery} /> : null}
+            {recovery ? <RecoveryCard recovery={recovery} index={3} /> : null}
 
             <AthleteSnapshotCard
               athlete={athlete}
               onDetails={() => navigate("/(app)/(tabs)/progress")}
+              index={4}
             />
 
             {coach ? (
               <CoachCard
                 coach={coach}
                 onPress={() => navigate(coach.destination)}
+                index={5}
               />
             ) : null}
 
             <QuickActionsGrid
               actions={quickActions}
               onActionPress={handleQuickAction}
+              index={6}
             />
 
-            <DashboardSection title="Today's Intelligence">
+            <DashboardSection title="Today's Intelligence" index={7}>
               <RecommendationWidget />
             </DashboardSection>
           </>

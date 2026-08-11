@@ -15,7 +15,7 @@ export function GoalProgressCard({ goal, onPress }: GoalProgressCardProps) {
         <Text style={styles.title}>{goal.title}</Text>
         <Text style={styles.value}>{goal.completionPercent}%</Text>
         <ProgressBar progress={goal.completionPercent} />
-        <Text style={styles.supporting}>{goal.currentValue} / {goal.targetValue} {goal.unit} ? {goal.status}</Text>
+        <Text style={styles.supporting}>{goal.currentValue} / {goal.targetValue} {goal.unit} · {goal.status}</Text>
       </View>
     </AppCard>
   );

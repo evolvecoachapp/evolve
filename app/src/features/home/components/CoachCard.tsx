@@ -10,10 +10,11 @@ import { DashboardSection } from "./DashboardSection";
 interface CoachCardProps {
   readonly coach: CoachSummaryCard;
   readonly onPress?: () => void;
+  readonly index?: number;
 }
 
 /** Coach insight card — presentation only. */
-export function CoachCard({ coach, onPress }: CoachCardProps) {
+export function CoachCard({ coach, onPress, index }: CoachCardProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(({ colors, typography, radius }) =>
     StyleSheet.create({
@@ -48,7 +49,7 @@ export function CoachCard({ coach, onPress }: CoachCardProps) {
   }
 
   return (
-    <DashboardSection title="Coach Suggestion">
+    <DashboardSection title="Coach Suggestion" index={index}>
       <AppCard variant="glass" onPress={onPress}>
         <View style={styles.coachQuote}>
           <View style={styles.coachIcon}>

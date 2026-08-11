@@ -8,10 +8,11 @@ import { DashboardSection } from "./DashboardSection";
 
 interface RecoveryCardProps {
   readonly recovery: RecoverySummaryCard;
+  readonly index?: number;
 }
 
 /** Recovery score card — presentation only. */
-export function RecoveryCard({ recovery }: RecoveryCardProps) {
+export function RecoveryCard({ recovery, index }: RecoveryCardProps) {
   const styles = useThemedStyles(({ colors, typography }) =>
     StyleSheet.create({
       recoveryHeader: {
@@ -41,7 +42,7 @@ export function RecoveryCard({ recovery }: RecoveryCardProps) {
   }
 
   return (
-    <DashboardSection title="Recovery">
+    <DashboardSection title="Recovery" index={index}>
       <AppCard variant="accent" glow>
         <View style={styles.recoveryHeader}>
           <View>

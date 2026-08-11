@@ -1,6 +1,10 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Text, View } from "react-native";
+import { AppButton } from "../../../components/AppButton";
 import { AppCard } from "../../../components/AppCard";
-import { spacing } from "../../../theme/theme";
+import { ProgressBar } from "../../../components/ProgressBar";
+import { useTheme } from "../../../theme/ThemeContext";
+import { radius, spacing } from "../../../theme/theme";
 import { useThemedStyles } from "../../../theme/useThemedStyles";
 import type { ReadinessProgress } from "../models";
 
@@ -10,32 +14,57 @@ export interface ReadinessCardProps {
 }
 
 export function ReadinessCard({ readiness, onUpdateReadiness }: ReadinessCardProps) {
-  const styles = useThemedStyles(({ colors, typography }) =>
-    StyleSheet.create({
-      row: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: spacing.sm,
-      },
-      label: { ...typography.caption, color: colors.inkMuted },
-      value: { ...typography.title3, color: colors.text },
-      action: { ...typography.caption, color: colors.pulse, marginTop: spacing.sm },
-    }),
-  );
+  const { colors } = useTheme();
+  const styles = useThemedStyles(({ colors, typography }) => ({
+    header: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      gap: spacing.sm,
+    },
+    iconRing: {
+      width: spacing.avatar.sm,
+      height: spacing.avatar.sm,
+      borderRadius: radius.full,
+      backgroundColor: colors.pulseMuted,
+      alignItems: "center" as const,
+      justifyContent: "center" as const,
+    },
+    label: { ...typography.caption, color: colors.inkMuted, flex: 1 },
+    valueRow: {
+      flexDirection: "row" as const,
+      alignItems: "baseline" as const,
+      gap: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    value: { ...typography.metricCompact },
+    status: { ...typography.callout, color: colors.inkSecondary },
+    progress: { marginTop: spacing.md },
+    action: { marginTop: spacing.md, alignSelf: "flex-start" as const },
+  }));
+
+  const hasScore = readiness.score > 0;
 
   return (
-    <AppCard>
-      <View style={styles.row}>
+    <AppCard variant="elevated">
+      <View style={styles.header}>
+        <View style={styles.iconRing}>
+          <Ionicons name="pulse-outline" size={spacing.icon.sm} color={colors.pulse} />
+        </View>
         <Text style={styles.label}>Readiness</Text>
-        <Text style={styles.value}>
-          {readiness.score > 0 ? `${readiness.score}% · ${readiness.label}` : "Not updated"}
-        </Text>
       </View>
+      <View style={styles.valueRow}>
+        <Text style={styles.value}>{hasScore ? `${readiness.score}%` : "—"}</Text>
+        <Text style={styles.status}>{hasScore ? readiness.label : "Not updated"}</Text>
+      </View>
+      <ProgressBar progress={hasScore ? readiness.score : 0} style={styles.progress} />
       {onUpdateReadiness ? (
-        <Pressable onPress={() => onUpdateReadiness(78)}>
-          <Text style={styles.action}>Update readiness to 78%</Text>
-        </Pressable>
+        <AppButton
+          label="Update readiness"
+          onPress={() => onUpdateReadiness(78)}
+          variant="ghost"
+          size="sm"
+          style={styles.action}
+        />
       ) : null}
     </AppCard>
   );

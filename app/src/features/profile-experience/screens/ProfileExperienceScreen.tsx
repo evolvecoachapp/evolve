@@ -6,6 +6,7 @@ import { GradientBackground } from "../../../components/GradientBackground";
 import { TabScreenContainer } from "../../../components/TabScreenContainer";
 import { useTheme } from "../../../theme/ThemeContext";
 import { spacing } from "../../../theme/theme";
+import { useThemedStyles } from "../../../theme/useThemedStyles";
 import {
   AppearanceCard,
   AthleteCard,
@@ -42,6 +43,12 @@ export function ProfileExperienceScreen({ service }: ProfileExperienceScreenProp
     service,
     athleteId: user?.id,
   });
+
+  const styles = useThemedStyles(({ colors, typography }) => ({
+    footer: { gap: spacing.xs, paddingVertical: spacing.md },
+    footerText: { ...typography.caption, color: colors.inkMuted, textAlign: "center" as const },
+    footerMeta: { ...typography.micro, color: colors.inkMuted, textAlign: "center" as const },
+  }));
 
   const showContent =
     !dashboard.loading.isLoading &&
@@ -85,11 +92,11 @@ export function ProfileExperienceScreen({ service }: ProfileExperienceScreenProp
               />
               <MeasurementUnitsCard units={dashboard.profile!.measurementUnits} />
               <ConnectedServicesCard connectedServices={dashboard.profile!.connectedServices} />
-              <View style={{ gap: spacing.xs, paddingVertical: spacing.md }}>
-                <Text style={{ color: colors.inkMuted, fontSize: 13, textAlign: "center" }}>
+              <View style={styles.footer}>
+                <Text style={styles.footerText}>
                   EVOLVE v{dashboard.profile!.appVersion}
                 </Text>
-                <Text style={{ color: colors.inkMuted, fontSize: 12, textAlign: "center" }}>
+                <Text style={styles.footerMeta}>
                   Account: {dashboard.profile!.accountStatus}
                 </Text>
               </View>

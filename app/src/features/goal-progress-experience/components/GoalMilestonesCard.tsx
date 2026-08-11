@@ -37,7 +37,12 @@ export function GoalMilestonesCard({
               {milestone.category} · {milestone.reached ? "Reached" : "Pending"}
             </Text>
             {!milestone.reached && onCompleteMilestone ? (
-              <Pressable onPress={() => onCompleteMilestone(milestone.id)}>
+              <Pressable
+                onPress={() => onCompleteMilestone(milestone.id)}
+                accessibilityRole="button"
+                accessibilityLabel={`Mark ${milestone.label} reached`}
+                hitSlop={8}
+              >
                 <Text style={styles.action}>Mark reached</Text>
               </Pressable>
             ) : null}

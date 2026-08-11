@@ -26,6 +26,13 @@ export function ExerciseCard({ exercise, onDetailsPress }: ExerciseCardProps) {
       flex: 1,
       gap: spacing.xs,
     },
+    eyebrow: {
+      ...typography.caption,
+      color: colors.pulse,
+      fontWeight: "700" as const,
+      textTransform: "uppercase" as const,
+      letterSpacing: 0.6,
+    },
     title: {
       ...typography.title3,
       color: colors.ink,
@@ -54,6 +61,7 @@ export function ExerciseCard({ exercise, onDetailsPress }: ExerciseCardProps) {
       <View style={styles.body}>
         <View style={styles.header}>
           <View style={styles.titles}>
+            <Text style={styles.eyebrow}>Current exercise</Text>
             <Text style={styles.title}>{exercise.name}</Text>
             <Text style={styles.meta}>
               {exercise.muscleGroup} · {exercise.equipment}

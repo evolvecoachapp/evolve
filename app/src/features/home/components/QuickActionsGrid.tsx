@@ -10,12 +10,14 @@ import { DashboardSection } from "./DashboardSection";
 interface QuickActionsGridProps {
   readonly actions: readonly QuickAction[];
   readonly onActionPress?: (action: QuickAction) => void;
+  readonly index?: number;
 }
 
 /** Quick actions grid — presentation only; navigation wired by screen. */
 export function QuickActionsGrid({
   actions,
   onActionPress,
+  index,
 }: QuickActionsGridProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(({ colors, typography, radius }) =>
@@ -61,7 +63,7 @@ export function QuickActionsGrid({
   }
 
   return (
-    <DashboardSection title="Quick Actions">
+    <DashboardSection title="Quick Actions" index={index}>
       <View style={styles.grid}>
         {actions.map((action) => (
           <View key={action.id} style={styles.cell}>

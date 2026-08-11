@@ -1,7 +1,8 @@
-import { RefreshControl, Text, View } from "react-native";
+import { RefreshControl, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../../auth/useAuth";
 import { GradientBackground } from "../../../components/GradientBackground";
+import { SectionTitle } from "../../../components/SectionTitle";
 import { TabScreenContainer } from "../../../components/TabScreenContainer";
 import { useTheme } from "../../../theme/ThemeContext";
 import { spacing } from "../../../theme/theme";
@@ -74,12 +75,14 @@ export function NotificationCenterScreen({ service }: NotificationCenterScreenPr
                 />
               ))}
               {dashboard.reminders.length > 0 ? (
-                <>
-                  <Text style={{ color: colors.inkMuted, fontSize: 13, marginTop: spacing.sm }}>Reminders</Text>
-                  {dashboard.reminders.map((r) => (
-                    <ReminderCard key={r.id} reminder={r} />
-                  ))}
-                </>
+                <View>
+                  <SectionTitle title="Reminders" />
+                  <View style={{ gap: spacing.md }}>
+                    {dashboard.reminders.map((r) => (
+                      <ReminderCard key={r.id} reminder={r} />
+                    ))}
+                  </View>
+                </View>
               ) : null}
               {dashboard.settings ? <NotificationSettingsCard settings={dashboard.settings} /> : null}
               {dashboard.statistics ? <NotificationStatisticsCard statistics={dashboard.statistics} /> : null}
