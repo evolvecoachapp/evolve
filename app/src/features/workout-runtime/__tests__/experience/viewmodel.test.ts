@@ -7,6 +7,17 @@ import type { WorkoutRuntimeDto } from "../../types/workoutRuntimeDto";
 import type { WorkoutRuntimeExperienceService } from "../../types/workoutRuntimeService";
 import { WorkoutRuntimeExperienceError } from "../../types/workoutRuntimeService";
 import { mockWorkoutRuntimeService } from "../../providers/MockWorkoutRuntimeService";
+import { persistWorkoutRuntimeMutation } from "../../../../runtime/domain-persistence/application/persistWorkoutRuntimeMutation";
+
+jest.mock(
+  "../../../../runtime/domain-persistence/application/persistWorkoutRuntimeMutation",
+  () => ({
+    persistWorkoutRuntimeMutation: jest.fn(),
+  }),
+);
+
+const mockedPersistWorkoutRuntimeMutation =
+  persistWorkoutRuntimeMutation as jest.Mock;
 
 function createService(options?: {
   dto?: WorkoutRuntimeDto;
@@ -151,5 +162,39 @@ describe("WorkoutRuntimeViewModel", () => {
 
     expect(getRuntimeSpy).not.toHaveBeenCalled();
     expect(viewModel.isRuntimeDriven).toBe(true);
+  });
+
+  it("does not write-through on every timer tick, but still persists real mutations", async () => {
+    const loader = new WorkoutRuntimeViewModel({ service: createService() });
+    await loader.loadWorkout();
+    loader.completeSet(); // starts the rest timer so ticks are observable
+
+    mockedPersistWorkoutRuntimeMutation.mockClear();
+
+    const viewModel = new WorkoutRuntimeViewModel({ athleteId: "athlete:1" });
+    viewModel.applyHydratedWorkout(loader.runtime!);
+    mockedPersistWorkoutRuntimeMutation.mockClear();
+
+    viewModel.completeSet();
+    expect(mockedPersistWorkoutRuntimeMutation).toHaveBeenCalledTimes(1);
+    mockedPersistWorkoutRuntimeMutation.mockClear();
+
+    const listener = jest.fn();
+    const unsubscribe = viewModel.subscribe(listener);
+
+    for (let i = 0; i < 30; i += 1) {
+      viewModel.tickRestTimer();
+    }
+    for (let i = 0; i < 30; i += 1) {
+      viewModel.tickDuration();
+    }
+
+    expect(mockedPersistWorkoutRuntimeMutation).not.toHaveBeenCalled();
+    expect(listener).toHaveBeenCalled();
+
+    unsubscribe();
+
+    viewModel.updateNotes("still persists real mutations");
+    expect(mockedPersistWorkoutRuntimeMutation).toHaveBeenCalledTimes(1);
   });
 });

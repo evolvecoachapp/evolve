@@ -23,7 +23,10 @@ import {
   createMockWorkspaceRepository,
 } from "../../write-through/testSupport/mockRepositories";
 import { observeRuntime, getRuntimeObserverStatus } from "../application";
-import { RUNTIME_OBSERVER_PHASES } from "../RuntimeObserverInitialization";
+import {
+  RUNTIME_OBSERVER_PHASES,
+  RUNTIME_OBSERVER_WATCHED_SERVICES,
+} from "../RuntimeObserverInitialization";
 import { RUNTIME_OBSERVER_STATUS } from "../RuntimeObserverStatus";
 import { RuntimeObserver, resetRuntimeObserver } from "../RuntimeObserver";
 import { RuntimeObserverError } from "../RuntimeObserverError";
@@ -142,6 +145,43 @@ describe("RuntimeObserver lifecycle", () => {
     void identityRepository;
     void runtimeRepository;
     void workspaceRepository;
+  });
+
+  it("reports every domain-persistence service it actually wraps, not only the original three (Sprint 36.6)", () => {
+    RuntimeBootstrap.bootstrap({ clock: FIXED_CLOCK });
+
+    const services = createObservedServices();
+    const persist = jest.fn().mockResolvedValue({});
+    const result = RuntimeObserver.start({
+      athleteIds: [ATHLETE_ID],
+      deps: {
+        ...services,
+        persist,
+        clock: FIXED_CLOCK,
+      },
+    });
+
+    expect(result.watchedServices).toEqual(RUNTIME_OBSERVER_WATCHED_SERVICES);
+
+    // Prove each newly-reported service is genuinely wrapped, not just
+    // listed: a successful build on each one must trigger persistence.
+    services.workoutRuntimePersistenceService.build({
+      athleteId: ATHLETE_ID,
+      requestId: "observer:watched:workout",
+      runtime: null,
+    });
+    services.nutritionRuntimePersistenceService.build({
+      athleteId: ATHLETE_ID,
+      requestId: "observer:watched:nutrition",
+      state: { athleteId: ATHLETE_ID, days: {} },
+    });
+    services.recoveryRuntimePersistenceService.build({
+      athleteId: ATHLETE_ID,
+      requestId: "observer:watched:recovery",
+      state: { athleteId: ATHLETE_ID, days: {} },
+    });
+
+    expect(persist).toHaveBeenCalledTimes(3);
   });
 
   it("does not trigger persistRuntime when build fails", () => {

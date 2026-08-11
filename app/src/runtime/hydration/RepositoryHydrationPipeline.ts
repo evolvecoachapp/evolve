@@ -173,7 +173,6 @@ export class RepositoryHydrationPipeline {
       restoreIdentityRecords(
         options.deps.athleteIdentityService,
         scopedIdentityRecords,
-        restoredAt,
       );
       restoreRuntimeRecords(
         options.deps.runtimeEnvironmentService,

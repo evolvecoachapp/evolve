@@ -27,6 +27,7 @@
 
 let mutationSequence = 0;
 let appliedSequence = 0;
+let sessionEpoch = 0;
 
 /** Called once per successful domain mutation (Runtime Observer only). */
 export function nextRuntimeMutationSequence(): number {
@@ -59,6 +60,21 @@ export function markWriteThroughSequenceApplied(candidate: number): void {
 }
 
 /**
+ * The current session-teardown epoch (Sprint 36.6). Unlike `mutationSequence`
+ * / `appliedSequence` — which reset to 0 on a genuine session boundary and
+ * therefore cannot, by themselves, distinguish an orphaned call from a torn-
+ * down session from a legitimate early call in a freshly started one — this
+ * counter only ever increases and is never reset. A `persist()` call that
+ * captures the epoch effective when it started and finds a different epoch
+ * after its I/O settled knows a full `RuntimeObserver.stop()` happened while
+ * it was still in flight (e.g. logout mid-mutation) and that its result must
+ * not be applied, regardless of what the (now-reset) sequence numbers say.
+ */
+export function getWriteThroughEpoch(): number {
+  return sessionEpoch;
+}
+
+/**
  * Full reset — part of the existing full pipeline reset cascade
  * (`RuntimeObserver.stop()`/`reset()`), never called from the
  * per-mutation `triggerWriteThrough()` reset path.
@@ -66,4 +82,5 @@ export function markWriteThroughSequenceApplied(candidate: number): void {
 export function resetRuntimeMutationSequence(): void {
   mutationSequence = 0;
   appliedSequence = 0;
+  sessionEpoch += 1;
 }

@@ -72,7 +72,6 @@ function verifiedOwnedRecordPayload<T extends AthleteOwnedPayload>(
 export function restoreIdentityRecords(
   service: AthleteIdentityService,
   records: readonly PersistenceRecord[],
-  generatedAt: string,
 ): void {
   for (const record of records) {
     const identity = verifiedOwnedRecordPayload(
@@ -84,17 +83,13 @@ export function restoreIdentityRecords(
       continue;
     }
 
-    service.build({
-      athleteId: identity.athleteId,
-      requestId: `hydration:identity:${record.id}`,
-      generatedAt,
-      profile: identity.profile,
-      preferences: identity.preferences,
-      settings: identity.settings,
-      locale: identity.locale,
-      units: identity.units,
-      timeZone: identity.timeZone,
-    });
+    // Sprint 36.6: restore the persisted identity verbatim via
+    // `restorePersisted()` rather than `build()` — `build()` always
+    // regenerates `id`/`createdAt`/`metadata` from a fresh hydration
+    // `requestId`/clock reading, which previously discarded those fields
+    // on every restart even though `profile`/`preferences`/`settings`/
+    // `locale`/`units`/`timeZone` survived.
+    service.restorePersisted(identity);
   }
 }
 

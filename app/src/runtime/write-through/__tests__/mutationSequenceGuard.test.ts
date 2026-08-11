@@ -217,6 +217,192 @@ describe("RuntimeWriteThroughSequence — monotonic mutation sequence guard (Spr
       ).resolves.toBeDefined();
     });
 
+    it("rejects a mutation's own result when a later mutation completes first while both were concurrently in flight", async () => {
+      // Reproduces the real `RuntimeObserver.triggerWriteThrough()` pattern:
+      // every successful mutation resets write-through state and fires a
+      // new fire-and-forget `persist()` call without waiting for a prior
+      // call's repository I/O to finish, so two persist() calls can be
+      // genuinely concurrent. The entry-only guard (checked once, before
+      // either call has completed) cannot catch this — only a post-write
+      // re-check can (Sprint 36.6).
+      RuntimeBootstrap.bootstrap({ clock: FIXED_CLOCK });
+      const servicesA = createTestRuntimeServices(FIXED_CLOCK);
+      const servicesB = createTestRuntimeServices(FIXED_CLOCK);
+
+      // Both services need an identity record to observe/save so the
+      // gated repository write below is actually exercised.
+      for (const services of [servicesA, servicesB]) {
+        services.athleteIdentityService.build({
+          athleteId: ATHLETE_ID,
+          requestId: `write-through:identity:${ATHLETE_ID}`,
+          profile: {
+            displayName: "Alex Rivera",
+            givenName: "Alex",
+            familyName: "Rivera",
+            sex: "unspecified",
+            birthYear: 1990,
+            experienceLevel: "intermediate",
+          },
+          locale: { languageTag: "en-US" },
+          units: { system: "metric" },
+          timeZone: { iana: "Etc/UTC", displayName: "UTC" },
+        });
+      }
+
+      let releaseA: () => void = () => {};
+      const gateA = new Promise<void>((resolve) => {
+        releaseA = resolve;
+      });
+
+      const baseIdentityRepository = createMockIdentityRepository();
+      const gatedIdentityRepository = {
+        ...baseIdentityRepository,
+        save: async (record: Parameters<typeof baseIdentityRepository.save>[0]) => {
+          await gateA;
+          return baseIdentityRepository.save(record);
+        },
+      };
+
+      const depsA = {
+        ...createPersistDepsFromServices(servicesA),
+        identityRepository: gatedIdentityRepository,
+      };
+      const depsB = createPersistDepsFromServices(servicesB);
+
+      // Mutation A (sequence 1) starts first; its identity repository write
+      // is gated and will not resolve until `releaseA()` is called below.
+      const persistA = RuntimeWriteThroughPipeline.persist({
+        athleteIds: [ATHLETE_ID],
+        mutationSequence: 1,
+        deps: depsA,
+      });
+
+      // Mutation B (sequence 2) starts second — mirroring
+      // `triggerWriteThrough()`'s reset-before-every-persist call, which
+      // reopens the pipeline's "already started" guard for an overlapping
+      // call — and completes fully before A.
+      resetRuntimeWriteThrough();
+      await expect(
+        RuntimeWriteThroughPipeline.persist({
+          athleteIds: [ATHLETE_ID],
+          mutationSequence: 2,
+          deps: depsB,
+        }),
+      ).resolves.toBeDefined();
+
+      expect(getAppliedWriteThroughSequence()).toBe(2);
+      const readyStateAfterB = getWriteThroughStatus();
+      expect(readyStateAfterB).toBe(RUNTIME_WRITE_THROUGH_STATUS.ready);
+
+      // Now let A's write-through complete. Its captured mutation (1) is
+      // now older than the already-applied sequence (2), so it must be
+      // rejected instead of silently reporting stale data as successful.
+      releaseA();
+      await expect(persistA).rejects.toMatchObject({
+        code: "stale_mutation_sequence",
+      });
+
+      // The applied sequence never regresses, and B's already-applied
+      // "ready" result is never downgraded/overwritten by A's late,
+      // stale completion.
+      expect(getAppliedWriteThroughSequence()).toBe(2);
+      expect(getWriteThroughStatus()).toBe(RUNTIME_WRITE_THROUGH_STATUS.ready);
+    });
+
+    it("rejects a call orphaned by a full session teardown (logout) mid-flight, even though the reset sequence counters make it look fresh", async () => {
+      // The mutation-sequence guard alone cannot catch this: `RuntimeObserver
+      // .stop()` (logout) calls `resetRuntimeMutationSequence()`, zeroing
+      // both counters. An old in-flight call's captured sequence (e.g. 5)
+      // would then look "fresh" against the new session's own low counters
+      // (e.g. appliedSequence 0 or 1) even though it belongs to a torn-down
+      // session for a different athlete entirely. Only the never-reset
+      // session epoch (Sprint 36.6) can detect this.
+      RuntimeBootstrap.bootstrap({ clock: FIXED_CLOCK });
+      const athleteAServices = createTestRuntimeServices(FIXED_CLOCK);
+      athleteAServices.athleteIdentityService.build({
+        athleteId: ATHLETE_ID,
+        requestId: `write-through:identity:${ATHLETE_ID}`,
+        profile: {
+          displayName: "Alex Rivera",
+          givenName: "Alex",
+          familyName: "Rivera",
+          sex: "unspecified",
+          birthYear: 1990,
+          experienceLevel: "intermediate",
+        },
+        locale: { languageTag: "en-US" },
+        units: { system: "metric" },
+        timeZone: { iana: "Etc/UTC", displayName: "UTC" },
+      });
+
+      let releaseOrphan: () => void = () => {};
+      const gateOrphan = new Promise<void>((resolve) => {
+        releaseOrphan = resolve;
+      });
+
+      const baseIdentityRepository = createMockIdentityRepository();
+      const gatedIdentityRepository = {
+        ...baseIdentityRepository,
+        save: async (record: Parameters<typeof baseIdentityRepository.save>[0]) => {
+          await gateOrphan;
+          return baseIdentityRepository.save(record);
+        },
+      };
+
+      const orphanDeps = {
+        ...createPersistDepsFromServices(athleteAServices),
+        identityRepository: gatedIdentityRepository,
+      };
+
+      // Athlete A's mutation (sequence 5, e.g. after several prior mutations
+      // this session) starts persisting but is gated mid-flight.
+      const orphanSequence = nextRuntimeMutationSequence();
+      for (let i = 1; i < 5; i += 1) {
+        nextRuntimeMutationSequence();
+      }
+      const orphanedPersist = RuntimeWriteThroughPipeline.persist({
+        athleteIds: [ATHLETE_ID],
+        mutationSequence: orphanSequence,
+        deps: orphanDeps,
+      });
+
+      // Logout happens while the orphaned call is still in flight: the full
+      // pipeline reset cascade runs, including the observer's session-only
+      // sequence-counter reset.
+      resetRuntimeWriteThrough();
+      resetRuntimeMutationSequence();
+
+      // Athlete B's new session runs its own mutation (sequence 1 again,
+      // since the counters were just reset) and completes normally.
+      const bServices = createTestRuntimeServices(FIXED_CLOCK);
+      const bDeps = createPersistDepsFromServices(bServices);
+      await expect(
+        RuntimeWriteThroughPipeline.persist({
+          athleteIds: ["athlete:b"],
+          mutationSequence: nextRuntimeMutationSequence(),
+          deps: bDeps,
+        }),
+      ).resolves.toBeDefined();
+
+      expect(getAppliedWriteThroughSequence()).toBe(1);
+      const readyStateAfterB = getWriteThroughStatus();
+      expect(readyStateAfterB).toBe(RUNTIME_WRITE_THROUGH_STATUS.ready);
+
+      // Now let the orphaned athlete-A call finish its I/O. Its captured
+      // sequence (5) is numerically *greater* than B's freshly reset applied
+      // sequence (1), so the sequence guard alone would accept it — the
+      // epoch guard must reject it instead.
+      releaseOrphan();
+      await expect(orphanedPersist).rejects.toMatchObject({
+        code: "stale_write_through_epoch",
+      });
+
+      // Athlete B's session state is completely undisturbed by the orphaned
+      // athlete-A completion: no regression, no overwritten "ready" result.
+      expect(getAppliedWriteThroughSequence()).toBe(1);
+      expect(getWriteThroughStatus()).toBe(RUNTIME_WRITE_THROUGH_STATUS.ready);
+    });
+
     it("advances the applied sequence only after a persist call actually succeeds", async () => {
       RuntimeBootstrap.bootstrap({ clock: FIXED_CLOCK });
       const services = createTestRuntimeServices(FIXED_CLOCK);

@@ -255,4 +255,40 @@ describe("Athlete Identity integration (Sprint 29.1)", () => {
     expect(second.success).toBe(true);
     expect(service.getAthleteIdentity("athlete:1")?.id).toContain("req:b");
   });
+
+  it("restorePersisted installs a previously-built identity verbatim, preserving its own id/createdAt/metadata (Sprint 36.6)", () => {
+    const built = buildAthleteIdentity(createMinimalIdentityInput());
+    const identity = built.identity;
+    expect(identity).not.toBeNull();
+
+    // Simulate a fresh service instance after a restart — hydration must
+    // restore into a service that never built this identity itself.
+    const service = createTestAthleteIdentityService();
+    expect(service.getAthleteIdentity("athlete:1")).toBeNull();
+
+    service.restorePersisted(identity!);
+
+    const restored = service.getAthleteIdentity("athlete:1");
+    expect(restored).toEqual(identity);
+    expect(restored?.id).toBe(identity!.id);
+    expect(restored?.createdAt).toBe(identity!.createdAt);
+    expect(restored?.metadata).toEqual(identity!.metadata);
+  });
+
+  it("restorePersisted replaces a previously restored/built identity for the same athlete without a duplicate-id error on a later build", () => {
+    const service = createTestAthleteIdentityService();
+    const built = buildAthleteIdentity(createMinimalIdentityInput());
+    service.restorePersisted(built.identity!);
+
+    // A later real mutation for the same athlete must still succeed —
+    // restorePersisted must not leave the replaced id "known" forever.
+    const mutated = service.build(
+      createMinimalIdentityInput({ requestId: "req:after-restore" }),
+    );
+
+    expect(mutated.success).toBe(true);
+    expect(service.getAthleteIdentity("athlete:1")?.id).toContain(
+      "req:after-restore",
+    );
+  });
 });

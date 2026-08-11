@@ -44,6 +44,7 @@ import {
   validateRuntimeWriteThroughState,
 } from "./RuntimeWriteThroughValidation";
 import {
+  getWriteThroughEpoch,
   isStaleWriteThroughSequence,
   markWriteThroughSequenceApplied,
 } from "./RuntimeWriteThroughSequence";
@@ -105,6 +106,7 @@ export class RuntimeWriteThroughPipeline {
       );
     }
 
+    const capturedEpoch = getWriteThroughEpoch();
     const clock = options.deps.clock ?? (() => new Date().toISOString());
     const startedAt = clock();
 
@@ -168,6 +170,43 @@ export class RuntimeWriteThroughPipeline {
         recoveryRecords,
       });
 
+      // Persistence Consistency Guard (Sprint 36.6): `RuntimeObserver`'s
+      // `triggerWriteThrough()` resets write-through state and fires a new
+      // fire-and-forget `persist()` on every successful mutation, so two
+      // calls can legitimately be observing/writing concurrently (the entry
+      // guard above only rejects a call that starts *after* a fresher one
+      // has already completed — it cannot see a fresher call that is still
+      // in flight). If, while this call's repository writes were running, a
+      // later mutation's call already completed and advanced the applied
+      // sequence, this call's result is stale and must never be reported as
+      // the current write-through outcome — re-checking immediately after
+      // the I/O settles (instead of only before it started) closes that gap.
+      if (
+        options.mutationSequence !== undefined &&
+        isStaleWriteThroughSequence(options.mutationSequence)
+      ) {
+        throw new RuntimeWriteThroughError(
+          "Write-through call no longer reflects the latest runtime mutation",
+          "stale_mutation_sequence",
+        );
+      }
+
+      // Persistence Consistency Guard (Sprint 36.6): the sequence check
+      // above cannot catch a call orphaned by a *full* session teardown
+      // (`RuntimeObserver.stop()` — e.g. logout) that lands mid-flight,
+      // because that teardown resets the sequence counters themselves to 0,
+      // so an old call's now-tiny-looking captured sequence can appear
+      // "fresh" against a brand-new session's own low counters. The epoch
+      // only ever increases and is never reset, so it reliably distinguishes
+      // "still the same session that started me" from "torn down while I
+      // was in flight" regardless of what the reset sequence numbers say.
+      if (getWriteThroughEpoch() !== capturedEpoch) {
+        throw new RuntimeWriteThroughError(
+          "Write-through call no longer belongs to the current runtime session",
+          "stale_write_through_epoch",
+        );
+      }
+
       const persistedAt = clock();
       const result = createRuntimeWriteThroughResult({
         identityRecordCount: counts.identityRecordCount,
@@ -202,14 +241,28 @@ export class RuntimeWriteThroughPipeline {
               "repository_contract_failed",
             );
 
-      setRuntimeWriteThroughStateHolder(
-        createRuntimeWriteThroughState({
-          status: RUNTIME_WRITE_THROUGH_STATUS.failed,
-          error: persistError,
-          startedAt,
-          completedAt: clock(),
-        }),
-      );
+      // A stale-sequence or stale-epoch rejection (whether detected before
+      // touching a repository or after this call's own I/O settled — see
+      // the guards above) must never overwrite the state holder. At the
+      // entry guard, state is still whatever it was before this call (never
+      // transitioned to "persisting"); after the post-write guards, state
+      // may already hold a *fresher* mutation's successfully applied
+      // "ready" result (same session) or a brand-new session's own state
+      // (torn-down session), either of which must be left completely
+      // untouched rather than downgraded to "failed".
+      if (
+        persistError.code !== "stale_mutation_sequence" &&
+        persistError.code !== "stale_write_through_epoch"
+      ) {
+        setRuntimeWriteThroughStateHolder(
+          createRuntimeWriteThroughState({
+            status: RUNTIME_WRITE_THROUGH_STATUS.failed,
+            error: persistError,
+            startedAt,
+            completedAt: clock(),
+          }),
+        );
+      }
 
       throw persistError;
     }

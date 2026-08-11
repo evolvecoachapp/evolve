@@ -58,7 +58,7 @@ describe("HydrationRestoration — athlete ownership guard (Sprint 36.5)", () =>
       timeZone: mismatchedIdentity.timeZone,
     });
 
-    restoreIdentityRecords(service, [corruptedRecord], FIXED_CLOCK());
+    restoreIdentityRecords(service, [corruptedRecord]);
 
     expect(service.getAthleteIdentity(CURRENT_ATHLETE)).toBeNull();
     expect(service.getAthleteIdentity(PREVIOUS_ATHLETE)).toBeNull();

@@ -78,6 +78,23 @@ export class AthleteIdentityService {
     return this.latestByAthlete.get(athleteId) ?? null;
   }
 
+  /**
+   * Installs an already-built, previously-persisted identity verbatim
+   * (Sprint 36.6) — the hydration counterpart to `build()`. `build()`
+   * always regenerates `id`/`createdAt`/`metadata` from a fresh
+   * `requestId`/clock reading, which is correct for a real mutation but
+   * would silently discard those fields on every restart if used for
+   * restoring hydrated state. Used exclusively by hydration restoration.
+   */
+  restorePersisted(identity: AthleteIdentity): void {
+    const previous = this.latestByAthlete.get(identity.athleteId);
+    if (previous) {
+      this.identityIds.delete(previous.id);
+    }
+    this.latestByAthlete.set(identity.athleteId, identity);
+    this.identityIds.add(identity.id);
+  }
+
   getAthleteProfile(athleteId: string): AthleteProfile | null {
     return this.getAthleteIdentity(athleteId)?.profile ?? null;
   }

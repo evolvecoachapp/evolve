@@ -288,12 +288,27 @@ export class WorkoutRuntimeViewModel {
     this.notify();
   }
 
+  /**
+   * Ticks are driven by a 1-second interval (`useRestTimer`) for the entire
+   * duration of an active workout — unlike every other mutation here, which
+   * only fires on a discrete user/service action. Persisting on every tick
+   * (via `notify()`) would trigger a full cross-domain write-through/SQLite
+   * write every second a workout is running, which is unnecessary I/O for a
+   * value that is not itself durable checkpoint data (Sprint 36.6
+   * performance audit). Ticks still update local state and notify UI
+   * listeners immediately; persistence still happens on every other
+   * meaningful mutation (rest timer start/pause/resume, set completion,
+   * navigation, finish, etc.), so at most the last few seconds of duration/
+   * rest-timer progress since the previous meaningful mutation can be lost
+   * on an abnormal termination — an acceptable trade-off, and not a
+   * regression introduced by adding any debounce/batching/queue.
+   */
   tickRestTimer(): void {
     if (!this._runtime) {
       return;
     }
     this._runtime = tickRestTimer(this._runtime);
-    this.notify();
+    this.notifyListeners();
   }
 
   tickDuration(): void {
@@ -307,7 +322,7 @@ export class WorkoutRuntimeViewModel {
       durationSeconds: this._runtime.progress.durationSeconds + 1,
       startedAt: this._runtime.startedAt ?? this.now().toISOString(),
     });
-    this.notify();
+    this.notifyListeners();
   }
 
   openFinishDialog(): void {
@@ -358,6 +373,11 @@ export class WorkoutRuntimeViewModel {
 
   private notify(): void {
     this.persistIfRuntimeDriven("mutation");
+    this.notifyListeners();
+  }
+
+  /** Notifies subscribers without triggering write-through persistence. */
+  private notifyListeners(): void {
     for (const listener of this.listeners) {
       listener();
     }

@@ -5049,3 +5049,117 @@ A stale/late persist call can never downgrade a fresher persisted state
 **Consequences:**
 - Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
 - The persistence lifecycle now has two additional narrow, pure defensive guards — a payload-ownership check (write-through + hydration) and a monotonic mutation-sequence staleness check (write-through) — neither of which changes any existing public behavior for callers that don't opt into the new optional fields. New unit tests (`athleteRecordOwnership.test.ts`, write-through/hydration `ownershipGuard.test.ts`, `mutationSequenceGuard.test.ts`) and one new integration suite (`consistencyGuard.integration.test.ts`, covering cross-domain restart, dashboard consistency, extended athlete isolation, and full-reset state inventory) raise total coverage without touching any previously-passing test. Full suite (802 suites / 3326 tests) and typecheck remain green.
+
+## ADR-150: Runtime Production Readiness Audit (Sprint 36.6)
+
+**Status:** Accepted
+**Date:** 2026-08-11
+**Context:** This sprint was the final runtime-hardening audit before moving to product/UI completion — an explicit "verify, don't rewrite" mandate covering runtime state machines, Composition Root lifecycle, athlete scoping, observer wrappers, write-through sequencing, persistence/hydration round trips, empty/populated startup, logout/login isolation, failure UX, production mock usage, direct SQLite access, and performance hotspots. The instruction was to fix only concrete blocking defects found by inspection, and to explicitly document any area found already correct rather than changing code to "create work."
+
+**Decision:**
+
+Five concrete defects were found and fixed, each with the smallest possible correction; every other audited area was verified already correct with no code change.
+
+```
+Defect 1 — same-session concurrent persist completion (write-through)
+
+triggerWriteThrough() resets state + fires persist() on every mutation
+without awaiting a prior call's repository I/O
+  ↓
+Guard 2 (ADR-149) only checks staleness at persist()'s ENTRY — cannot
+see a fresher call that is still in flight when THIS call started
+  ↓
+An older mutation's slower persist() can finish AFTER a newer
+mutation's faster persist() and silently become the reported "ready"
+outcome, even though every persist() reads live current state
+  ↓
+Fix: a SECOND isStaleWriteThroughSequence() check immediately after
+persistRuntimeRecords() settles, before committing "ready" state or
+marking the sequence applied — rejects the late-finishing older call
+instead of reporting its stale result as current
+
+Defect 2 — orphaned persist survives a full session teardown (logout)
+
+RuntimeObserver.stop() (every logout) calls
+resetRuntimeMutationSequence(), zeroing BOTH counters
+  ↓
+An old in-flight persist() from the JUST-LOGGED-OUT athlete, captured
+at e.g. sequence 5, can finish AFTER the new athlete's session has
+already applied its own sequence 1 — 5 is not < 1, so Defect 1's fix
+(numeric comparison) alone would incorrectly accept it as "fresh"
+  ↓
+Fix: new sessionEpoch counter (RuntimeWriteThroughSequence.ts) — never
+reset to zero, only ever incremented, bumped exactly where
+resetRuntimeMutationSequence() already runs (a genuine session
+boundary, never the routine per-mutation reset). persist() captures
+the epoch at entry and re-checks it after I/O settles; a mismatch
+rejects with a new stale_write_through_epoch code, regardless of what
+the (now-reset) sequence numbers say
+
+Defect 3 — workout timer performance hotspot
+
+tickRestTimer() / tickDuration() — driven by a 1s setInterval for the
+entire duration of an active workout — called notify()
+  ↓
+notify() unconditionally calls persistIfRuntimeDriven()
+  ↓
+Every single tick → observer-wrapped build() → full cross-domain
+write-through → synchronous SQLite write, once per second
+  ↓
+Fix: new notifyListeners() (UI-only, no persistence); the two timer
+tick methods call it instead of notify(). Every other mutation (set
+completion, navigation, finish, dialogs) is unchanged
+
+Defect 4 — stale observer metadata
+
+RUNTIME_OBSERVER_WATCHED_SERVICES (default RuntimeObserverResult
+.watchedServices) still listed only the 3 services from Sprint 33.7
+  ↓
+RuntimeObserver.start() has wrapped 6 services (adding the 3
+domain-persistence services) since Sprint 35.4 — the reported result
+under-stated what it actually observes
+  ↓
+Fix: corrected the constant to list all 6 actually-wrapped services —
+metadata only, no behavior change
+
+Defect 5 — identity hydration round trip loses the identity's own
+bookkeeping fields (persistence/hydration round trip audit, item 6)
+
+restoreIdentityRecords() (runtime/hydration/HydrationRestoration.ts)
+restored a persisted identity by calling AthleteIdentityService.build()
+with the persisted profile/preferences/settings/locale/units/timeZone
+  ↓
+build() always DERIVES id/createdAt/metadata (generatedAt/identityId/
+version/schemaVersion) from its own requestId + clock reading — it has
+no way to accept a caller-supplied id/createdAt/metadata
+  ↓
+Every restart silently regenerated the identity's own id/createdAt/
+metadata, even though every other domain (Workspace/Workout/Nutrition/
+Recovery/Snapshot/Timeline) already restores via a dedicated
+restorePersisted() that installs the persisted value verbatim
+  ↓
+Fix: added AthleteIdentityService.restorePersisted(identity), mirroring
+the exact existing pattern used by the other six domain services;
+restoreIdentityRecords() now calls it instead of build(). build()'s own
+real-mutation contract (fresh id/createdAt/metadata every time) is
+unchanged — only what hydration does changed
+```
+
+1. `RuntimeWriteThroughPipeline.persist()` (`runtime/write-through/`) gained a second `isStaleWriteThroughSequence()` check placed after `await persistRuntimeRecords(...)` and before `setRuntimeWriteThroughStateHolder(ready)` / `markWriteThroughSequenceApplied()`. The existing `catch` block's failed-state transition was made conditional on the rejection code so a stale rejection (at either check point) never downgrades an already-`ready` state.
+2. `RuntimeWriteThroughSequence.ts` gained a `sessionEpoch` counter and `getWriteThroughEpoch()` accessor. `resetRuntimeMutationSequence()` (already exclusively called from `RuntimeObserver.stop()` — a genuine session boundary, never the per-mutation `triggerWriteThrough()` reset) now also increments the epoch. `persist()` captures the epoch at entry (purely internal — no new public option) and re-checks it post-I/O, rejecting with a new `RuntimeWriteThroughError` code `stale_write_through_epoch` on mismatch.
+3. `WorkoutRuntimeViewModel` (`features/workout-runtime/`) gained a private `notifyListeners()` method; `tickRestTimer()`/`tickDuration()` now call it instead of `notify()`. No other call site changed.
+4. `RUNTIME_OBSERVER_WATCHED_SERVICES` (`runtime/runtime-observer/RuntimeObserverInitialization.ts`) now lists all six services `RuntimeObserver.start()` actually wraps.
+5. `AthleteIdentityService` (`features/athlete-identity/services/`) gained `restorePersisted(identity)`; `restoreIdentityRecords()` (`runtime/hydration/HydrationRestoration.ts`) now calls it instead of `build()`, and its now-unused `generatedAt` parameter (and the one call site passing it, in `RepositoryHydrationPipeline.ts`) was removed.
+6. Verified with no code change: runtime state machine determinism, Composition Root singleton lifecycle and logout reset, athlete-id threading from `AuthContext.user.id` end-to-end with no cached id surviving logout, observer wrap/unwrap semantics, the rest of the persistence/hydration semantic round trips (Workspace/Workout/Nutrition/Recovery/Goal Progress/Coach/Notification), empty/populated first-start behavior for all eight feature areas (including Coach's already-tested graceful handling of a missing workspace), full A→logout→B→logout→A isolation with every pipeline returning to idle, the single `RuntimeFailureScreen` failure funnel with no raw exceptions and no second retry mechanism, no reachable authenticated screen defaulting to a `Mock*Service` (two legacy hooks/screens — `useHome`, `screens/NutritionScreen.tsx`, `screens/ProgressScreen.tsx` — are unreachable dead code, not mounted in the route tree, and left untouched since removing dead code was not requested and carries its own risk), `MockProgressAnalyticsService` being the only working `ProgressAnalyticsService` implementation is a pre-existing, documented architectural gap (not an accidental fallback), and no feature/application/runtime code importing SQLite directly outside `infrastructure/sqlite`/`core/composition`.
+
+**Alternatives considered:**
+- **Cancel/abort the in-flight `persist()` call itself (e.g. via an `AbortController`) instead of a post-hoc epoch/sequence check** — rejected; would require plumbing cancellation through every repository adapter call, a much larger and riskier change for a "smallest correction" mandate, when rejecting the call's *result* after the fact achieves the same "never overwrite fresher/torn-down state" guarantee.
+- **Stop resetting the mutation-sequence counters to zero on `RuntimeObserver.stop()`, so numbers never collide across sessions** — rejected; changes existing, already-relied-upon reset behavior (Sprint 36.5) and is exactly the kind of "replace the existing sequence mechanism" the sprint explicitly forbade; the additive, never-reset epoch counter achieves the same goal without touching it.
+- **Apply the same epoch-style guard to Bootstrap/Hydration/DashboardRestore/Session for their own theoretical abandoned-in-flight-promise-after-reset pattern** — deferred; unlike write-through, none of those pipelines are fire-and-forget or run repeatedly per mutation (each runs once per session, sequentially awaited by the orchestrator), and no production code reactively re-reads their state holders after initial mount, so the practical exposure is materially lower. Flagged as a candidate for a future narrowly-scoped hardening pass rather than bundled into this one to keep the diff minimal and reviewable.
+- **Debounce/throttle/batch the workout timer's persistence instead of splitting notify into two methods** — rejected; the sprint explicitly forbids introducing debounce/batching/background workers in this pass; a plain UI-only notification path is the smallest correction that stops the hotspot without adding new timing machinery.
+- **Remove the unreachable legacy `useHome`/`NutritionScreen`/`ProgressScreen` files** — deferred; confirmed dead (unreferenced from the route tree and every other production file), but deleting them was not requested and is unrelated to the runtime-persistence scope of this audit; noted for a future cleanup pass.
+- **Extend `build()` itself to accept an optional caller-supplied `id`/`createdAt`/`metadata` instead of adding a separate `restorePersisted()`** — rejected; would weaken `build()`'s real-mutation contract (fresh identity bookkeeping derived from `requestId` + clock on every call, relied on by its uniqueness validation) and diverge from the `restorePersisted()` pattern every other domain service already uses for exactly this hydration scenario.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Write-through gains a second, purely additive staleness dimension (session epoch) alongside the existing mutation sequence, closing the one class of cross-session data-integrity gap the sequence counter could not close by itself. The workout timer no longer performs a full cross-domain SQLite write-through every second during an active workout — persistence now only happens on meaningful mutations, exactly as every other domain already behaved. An athlete's identity `id`/`createdAt`/`metadata` now survive a restart verbatim instead of being silently regenerated, matching the round-trip guarantee every other domain already had. New/updated tests (`mutationSequenceGuard.test.ts` — concurrent-completion and logout-mid-flight-epoch cases; `viewmodel.test.ts` — tick-does-not-persist / real-mutation-still-persists; `observer.test.ts` — reported `watchedServices` matches actual wraps; `hydration.test.ts` — fresh-service identity round trip; `athleteIdentity.integration.test.ts` — `restorePersisted()` unit tests) raise coverage without touching any previously-passing test. Full suite (802 suites / 3333 tests) and typecheck remain green.
