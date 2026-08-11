@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-08-11  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-146). Append only — never renumber.
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-147). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -4879,3 +4879,51 @@ status === "failed"?
 **Consequences:**
 - Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
 - Authenticated users can no longer reach the authenticated tabs while Runtime Session is `failed` — they see a clear, safe, retry-capable global screen instead. An unexpected render exception in any authenticated feature now degrades to a safe fallback with recovery instead of crashing the whole app. `RuntimeSessionContext`'s public API and `RuntimeSessionOrchestrator`'s internal orchestration are unchanged; the change is additive UI/wiring plus log-only instrumentation.
+
+---
+
+## ADR-147: Deterministic Retry Reset for Runtime Session (Sprint 36.3)
+
+**Status:** Accepted  
+**Date:** 2026-08-11  
+**Context:** Sprint 36.2 (ADR-146) wired `retrySession()` to a global `RuntimeFailureScreen`, but the retry path itself had a latent gap: `RuntimeSessionProvider.runSession()` only performed its full pipeline reset (`resetRuntimeObserver` → `resetRuntimeSession` → `resetRepositoryHydration` → `resetDashboardRestore` → `resetRuntimeBootstrap`) when `getRuntimeSessionStatus()` — the `RuntimeSessionOrchestrator`'s own internal state holder — reported `"failed"`. That internal state is set only inside `RuntimeSessionOrchestrator.start()`'s try/catch, which covers bootstrap/hydration/dashboard-restore but **not** the Runtime Observer, which starts *after* `startRuntimeSession()` resolves, in the provider's own code. When the observer failed to start after a session pipeline had already succeeded, the orchestrator's internal state stayed `"ready"` even though the provider correctly exposed `status === "failed"` to the UI. On the next retry, the conditional reset was skipped, silently reusing stale pipeline/observer state instead of restarting deterministically. Separately, the reset cascade never included Runtime Write-Through (`resetRuntimeWriteThrough`), and `RuntimeObserver.start()` could leak permanently-wrapped `build()` methods if a service failed to wrap partway through the wrap sequence (the `unwraps` array was only captured *after* all wraps succeeded, so a mid-sequence throw discarded the unwrap functions for services already wrapped). Phase A (Production Hardening) requires closing these gaps without redesigning the runtime, adding a new subsystem, or touching networking/SQLite/Admin/AI.
+
+**Decision:**
+
+```
+Failure (any stage — bootstrap, hydration, dashboard restore, or observer)
+  ↓
+RuntimeFailureScreen → Retry
+  ↓
+retrySession() — ALWAYS resets unconditionally (no status-based gate)
+  ↓
+1. resetRuntimeObserver()        (stop watching, unwrap build(), clear state)
+2. resetRuntimeWriteThrough()    (clear in-flight/completed persist state)
+3. resetDashboardRestore()
+4. resetRepositoryHydration()
+5. resetRuntimeBootstrap()       (Composition Root + service registry)
+6. resetRuntimeSession()         (orchestrator's own aggregate state, last)
+  ↓
+startRuntimeSession({ athleteIds })   ← athleteIds always from current AuthContext.user.id
+  ↓
+observeRuntime({ athleteIds })
+  ↓
+ready | failed
+```
+
+1. `RuntimeSessionProvider.runSession()` (the function exposed as `retrySession()`) now performs the full reset cascade **unconditionally** on every invocation, instead of gating it on `getRuntimeSessionStatus() === "failed"`. `retrySession()` is only ever reachable from the failure screen, so there is never a call site where an unconditional reset-before-restart is unsafe; removing the conditional removes the internal/exposed status ambiguity entirely, including the observer-failure case described above.
+2. The shared reset cascade (`resetRuntimeSessionState()`, used by both `retrySession()` and the existing logout effect) gains a `resetRuntimeWriteThrough()` call and is reordered to: Observer → Write-Through → Dashboard Restore → Hydration → Bootstrap → Session. This mirrors a teardown from outermost consumer to innermost foundation, with the session orchestrator's own aggregate state reset last so nothing can observe a stale `ready`/`failed` session status after the cascade returns. Every step reuses an **existing** reset function (`resetRuntimeObserver`, `resetRuntimeWriteThrough`, `resetDashboardRestore`, `resetRepositoryHydration`, `resetRuntimeBootstrap`, `resetRuntimeSession`) — no new reset API is introduced.
+3. `RuntimeObserver.start()` now populates its internal `activeObservation.unwraps` array **incrementally** — the array is assigned to `activeObservation` before wrapping begins, and each `wrapBuildMethod(...)` unwrap function is pushed as soon as it succeeds — instead of being assigned once as a finished array literal after all six services wrap. If a later service fails to wrap, the catch block's existing `unwrapActiveObservation()` can now fully undo every wrap that already succeeded, instead of leaking permanently-wrapped `build()` methods that would otherwise double-wrap (and double-persist) on the next successful `RuntimeObserver.start()`.
+4. Athlete scoping is unchanged and reaffirmed: `retrySession()` closes over the same `athleteIds = useMemo(() => user?.id ? [user.id] : undefined, [user?.id])` as the initial auto-start effect (ADR-125/145). Retry never reads an athlete id from hydration cache, persisted runtime state, or stale provider/session state — only from the current `AuthContext.user.id`.
+5. `ErrorBoundary` (ADR-146) is untouched and remains fully independent — it has no knowledge of `RuntimeSessionContext`, and `retrySession()`/the reset cascade have no knowledge of `ErrorBoundary`. Runtime Session failures are recovered via `retrySession()`; unexpected React render errors are recovered via `ErrorBoundary`'s own `hasError` state — the two mechanisms remain deliberately uncoupled.
+6. No changes to `RuntimeSessionOrchestrator`'s bootstrap → hydration → dashboard-restore sequencing, `RuntimeSessionResult`/`RuntimeSessionState` models, Composition Root, Repository Contracts, SQLite, networking, Admin, or AI/Coach architecture.
+
+**Alternatives considered:**
+- **Keep the `getRuntimeSessionStatus() === "failed"` gate and instead make the observer failure also flip the orchestrator's internal session state to `"failed"`** — rejected; it would couple the Runtime Observer (a separate pipeline, started outside the orchestrator) into `RuntimeSessionOrchestrator`'s own state machine, expanding its responsibility beyond bootstrap/hydration/restore for no benefit over simply always resetting on retry.
+- **Add a new `resetRuntimeSessionForRetry()` API distinct from the existing logout cascade** — rejected; the sprint requires reusing existing reset functions, and the existing cascade (reordered once) already serves both call sites correctly.
+- **Fix only the observer's partial-wrap leak without changing `retrySession()`'s reset gating** — rejected; it would not close the primary gap (retry silently skipping a full reset when the orchestrator's internal state and the provider's exposed status disagree), which is the higher-impact defect.
+- **Couple `ErrorBoundary`'s reset to `retrySession()`** — rejected; the sprint explicitly requires the two recovery mechanisms to remain independent, since they recover from different failure classes (a Runtime Session pipeline failure vs. an unexpected React render exception).
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- `retrySession()` now always starts from a fully clean runtime pipeline state, regardless of which stage previously failed (bootstrap, hydration, dashboard restore, or observer) — no stale `ready`/`failed`/in-flight-promise state can block or short-circuit a retry. `RuntimeObserver` can no longer leak duplicate `build()` wrappers across a failed-then-retried session. `RuntimeSessionContext`'s public API (`{ isStarting, status, retrySession }`) is unchanged; the change is confined to the provider's internal reset sequencing and the observer's internal wrap bookkeeping.

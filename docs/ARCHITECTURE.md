@@ -521,6 +521,23 @@ Full detail: [RUNTIME_SESSION.md](./RUNTIME_SESSION.md).
 | **Composition Root** | None — presentation/provider wiring only; no new services, tokens, or factories |
 | **Design** | **UX/wiring only.** No runtime architecture changes, no new runtime subsystem, no persistence/SQLite changes, no networking, no admin, no AI/Coach changes |
 
+### Runtime Session Retry Hardening (`runtime/session/RuntimeSessionContext`) — Sprint 36.3
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Guarantee `retrySession()` always restarts the Runtime Session from a fully clean, deterministic pipeline state — no stale `ready`/`failed`/in-flight state from the failed attempt can leak into or block the retry |
+| **Flow — Retry** | `RuntimeFailureScreen` → Retry → `retrySession()` → **unconditional** full reset cascade → `startRuntimeSession({ athleteIds })` → `observeRuntime({ athleteIds })` → `status = "ready"` \| `"failed"` |
+| **Reset cascade order** | `resetRuntimeObserver()` → `resetRuntimeWriteThrough()` → `resetDashboardRestore()` → `resetRepositoryHydration()` → `resetRuntimeBootstrap()` → `resetRuntimeSession()`. Outermost consumer (Observer) torn down first, the orchestrator's own aggregate session state reset last. Every step reuses an existing reset function — no new reset API |
+| **Why unconditional** | Prior to 36.3, the reset only ran when `getRuntimeSessionStatus()` (the orchestrator's *internal* state) reported `"failed"`. Because the Runtime Observer starts *after* `startRuntimeSession()` resolves — outside the orchestrator's own try/catch — an observer-only failure left the orchestrator's internal state at `"ready"` while the provider correctly exposed `status === "failed"` to the UI, so the conditional reset was skipped. Retry now always resets, since `retrySession()` is only ever reachable from the failure screen |
+| **No stale blocking state** | Because every sub-pipeline (bootstrap, hydration, dashboard restore, observer) is reset to `idle` before `startRuntimeSession()`/`observeRuntime()` run again, none of their own `validate*CanStart()` guards (`*_already_started`) can reject the retry — a failure in any one stage never blocks re-running any other stage |
+| **Observer no-duplicate-wrap guarantee** | `RuntimeObserver.start()` now pushes each service's unwrap function into `activeObservation.unwraps` incrementally, as soon as that one service wraps successfully, instead of assigning the whole array only after all services wrap. A mid-sequence wrap failure can now be fully unwound by the existing `unwrapActiveObservation()` catch path, so a subsequent successful start never double-wraps (and never double-persists) a service's `build()` |
+| **Athlete ID source of truth (unchanged)** | Retry closes over the same `athleteIds = useMemo(() => user?.id ? [user.id] : undefined, [user?.id])` as initial startup (ADR-125/145) — never a cached/hydrated/persisted athlete id. A user must log out and a different user log in (fresh `user.id`) for `athleteIds` to change; retry itself never changes which athlete is scoped |
+| **ErrorBoundary independence (unchanged)** | `ErrorBoundary` (Sprint 36.2) remains fully decoupled — it has no reference to `RuntimeSessionContext`, and the reset cascade has no reference to `ErrorBoundary`. Runtime Session failures recover via `retrySession()`; unexpected React render exceptions recover via `ErrorBoundary`'s own local `hasError` state |
+| **Composition Root** | None — internal reset-sequencing and observer-bookkeeping change only; no new services, tokens, or factories |
+| **Design** | **Hardening only.** No new runtime subsystem, no runtime architecture redesign, no persistence/SQLite changes, no networking, no admin, no AI/Coach changes, no visual redesign |
+
+Decision record: ADR-147 in [DECISIONS.md](./DECISIONS.md).
+
 ### Runtime Change Observer (`runtime/runtime-observer`) — Sprint 33.7 / 33.8 / 33.9
 
 | Aspect | Implementation |

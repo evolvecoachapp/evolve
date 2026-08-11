@@ -32,7 +32,15 @@ import {
 type BuildUnwrapper = () => void;
 
 interface ActiveObservation {
-  readonly unwraps: readonly BuildUnwrapper[];
+  /**
+   * Mutable and populated incrementally as each service is wrapped (see
+   * `RuntimeObserver.start`) rather than assigned once as a finished array.
+   * If wrapping a later service throws, the unwrap functions already
+   * pushed here are still reachable, so the catch block's
+   * `unwrapActiveObservation()` can fully undo the partial wrap instead of
+   * leaking permanently-wrapped `build()` methods (Sprint 36.3).
+   */
+  readonly unwraps: BuildUnwrapper[];
 }
 
 let activeObservation: ActiveObservation | null = null;
@@ -139,34 +147,45 @@ export class RuntimeObserver {
         triggerWriteThrough(options.deps, athleteIds);
       };
 
-      const unwraps = [
+      const unwraps: BuildUnwrapper[] = [];
+      activeObservation = { unwraps };
+
+      unwraps.push(
         wrapBuildMethod(
           options.deps.athleteIdentityService,
           onSuccessfulChange,
         ),
+      );
+      unwraps.push(
         wrapBuildMethod(
           options.deps.runtimeEnvironmentService,
           onSuccessfulChange,
         ),
+      );
+      unwraps.push(
         wrapBuildMethod(
           options.deps.unifiedWorkspaceService,
           onSuccessfulChange,
         ),
+      );
+      unwraps.push(
         wrapBuildMethod(
           options.deps.workoutRuntimePersistenceService,
           onSuccessfulChange,
         ),
+      );
+      unwraps.push(
         wrapBuildMethod(
           options.deps.nutritionRuntimePersistenceService,
           onSuccessfulChange,
         ),
+      );
+      unwraps.push(
         wrapBuildMethod(
           options.deps.recoveryRuntimePersistenceService,
           onSuccessfulChange,
         ),
-      ] as const;
-
-      activeObservation = { unwraps };
+      );
 
       const completedAt = clock();
       const result = createRuntimeObserverResult({

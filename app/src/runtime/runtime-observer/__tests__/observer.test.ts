@@ -385,6 +385,58 @@ describe("RuntimeObserver lifecycle", () => {
     expect(persist).toHaveBeenCalledTimes(1);
     expect(getRuntimeObserverStatus()).toBe(RUNTIME_OBSERVER_STATUS.idle);
   });
+
+  it("does not leak build() wrappers when a service wraps mid-start and a later one fails (Sprint 36.3)", () => {
+    RuntimeBootstrap.bootstrap({ clock: FIXED_CLOCK });
+    const services = createObservedServices();
+    const persist = jest.fn().mockResolvedValue({});
+
+    // athleteIdentityService / runtimeEnvironmentService / unifiedWorkspaceService
+    // wrap successfully before workoutRuntimePersistenceService (missing a
+    // `build` method) throws mid-start.
+    expect(() =>
+      RuntimeObserver.start({
+        deps: {
+          ...services,
+          workoutRuntimePersistenceService:
+            {} as typeof services.workoutRuntimePersistenceService,
+          persist,
+          clock: FIXED_CLOCK,
+        },
+      }),
+    ).toThrow();
+    expect(getRuntimeObserverStatus()).toBe(RUNTIME_OBSERVER_STATUS.failed);
+
+    // Retry with valid deps — if the first attempt's partial wraps were not
+    // cleanly unwrapped, athleteIdentityService.build would now be wrapped
+    // twice and a single successful build() would trigger persist twice.
+    RuntimeObserver.start({
+      deps: {
+        ...services,
+        persist,
+        clock: FIXED_CLOCK,
+      },
+    });
+
+    services.athleteIdentityService.build({
+      athleteId: ATHLETE_ID,
+      requestId: `observer:noDuplicateWrap:${ATHLETE_ID}`,
+      profile: {
+        displayName: "Alex Rivera",
+        givenName: "Alex",
+        familyName: "Rivera",
+        sex: "unspecified",
+        birthYear: 1990,
+        experienceLevel: "intermediate",
+      },
+      locale: { languageTag: "en-US" },
+      units: { system: "metric" },
+      timeZone: { iana: "Etc/UTC", displayName: "UTC" },
+    });
+
+    expect(persist).toHaveBeenCalledTimes(1);
+    expect(getRuntimeObserverStatus()).toBe(RUNTIME_OBSERVER_STATUS.ready);
+  });
 });
 
 function unifiedWorkspaceServiceBuild(
