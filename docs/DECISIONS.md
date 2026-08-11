@@ -4927,3 +4927,57 @@ ready | failed
 **Consequences:**
 - Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
 - `retrySession()` now always starts from a fully clean runtime pipeline state, regardless of which stage previously failed (bootstrap, hydration, dashboard restore, or observer) — no stale `ready`/`failed`/in-flight-promise state can block or short-circuit a retry. `RuntimeObserver` can no longer leak duplicate `build()` wrappers across a failed-then-retried session. `RuntimeSessionContext`'s public API (`{ isStarting, status, retrySession }`) is unchanged; the change is confined to the provider's internal reset sequencing and the observer's internal wrap bookkeeping.
+
+## ADR-148: Runtime Persistence Failure Recovery (Sprint 36.4)
+
+**Status:** Accepted  
+**Date:** 2026-08-11  
+**Context:** The Runtime Observer (ADR-127) automatically triggers Runtime Write-Through (ADR-124 / Sprint 33.4) persistence after every successful runtime mutation via `triggerWriteThrough()`: `resetRuntimeWriteThrough()` followed by `void persistRuntime({ athleteIds })`. `RuntimeWriteThroughPipeline.persist()` already records a repository/write-through failure deterministically — it sets `RuntimeWriteThroughState.status = "failed"` with the causing error and rethrows, without ever touching any runtime composition service, so the in-memory domain mutation that triggered it is never rolled back. However, because the observer's trigger called `persist(...)` without a `.catch()`, that rethrow became an **unhandled promise rejection** on every repository failure — non-deterministic in test/CI environments and a latent crash risk, even though the Runtime Session and the Runtime Observer's own status were otherwise correctly unaffected. Phase A (Production Hardening) requires deterministic persistence-failure semantics without introducing a new runtime subsystem, retry queue, background worker, debounce/batching, event bus, new repository/provider, or touching SQLite, networking, Admin, or AI/Coach architecture.
+
+**Decision:**
+
+```
+Runtime mutation succeeds
+  ↓
+RuntimeObserver detects build() success
+  ↓
+triggerWriteThrough(): resetRuntimeWriteThrough() → persistRuntime({ athleteIds })
+  ↓
+RuntimeWriteThroughPipeline.persist() → repository save() throws
+  ↓
+RuntimeWriteThroughState.status = "failed" (existing mechanism, unchanged)
+  ↓
+.catch() in triggerWriteThrough() logs via getLogger().error() — no unhandled
+  rejection, no rethrow into the build() call site, no Observer/Session change
+  ↓
+Runtime Observer status: still "ready"      (unaffected)
+Runtime Session status:  still "ready"      (unaffected — separate concern)
+Runtime mutation:        still valid in memory (never rolled back)
+  ↓
+Next successful mutation → triggerWriteThrough() runs again
+  ↓
+resetRuntimeWriteThrough() (existing reset API — clears the stale "failed"
+  state and the stale in-flight/rejected promise reference)
+  ↓
+persistRuntime() re-observes and persists the CURRENT complete runtime state
+  ↓
+ready  (recovery — latest mutation wins)
+```
+
+1. `RuntimeObserver`'s `triggerWriteThrough()` now attaches `.catch((error) => logWriteThroughFailure(error))` to the fire-and-forget `persist(...)` call. This is the only production code change. `logWriteThroughFailure()` logs the failure reason through the existing `infrastructure/logging` abstraction (`getLogger().error(...)`, scope `"Application"`, Sprint 30.6) — no `console.*`, no new logging surface. The failure remains fully observable through the existing `RuntimeWriteThroughService` / `getWriteThroughStatus()` status+error mechanism; the `.catch()` only prevents the rethrow from escaping as an unhandled rejection, it does not swallow or hide the failure.
+2. Recovery-on-next-mutation was **already structurally correct** and required no new code: `triggerWriteThrough()` has called `resetRuntimeWriteThrough()` immediately before every `persistRuntime()` call since the observer's introduction (Sprint 33.7), not only after a detected failure. This is confirmed to be load-bearing, not incidental — `persistRuntime()` treats a `"ready"` state as idempotent (returns the cached result) and, absent an explicit reset, a `"failed"` state's stale rejected promise (only cleared by `resetRuntimeWriteThrough()`, never by `RuntimeWriteThroughPipeline.persist()` itself) would be returned indefinitely on every later call. Resetting unconditionally before every persist call is therefore the mechanism that makes "reset existing Write-Through state, then persist the latest complete runtime state" (the required recovery behavior) hold on every mutation, whether the previous write-through succeeded, failed, or never ran.
+3. No change to `RuntimeObserver.start()`/`stop()`/`reset()` wrap/unwrap bookkeeping (ADR-147) — one `build()` wrapper per watched service, installed once per `observeRuntime()` call, reused across any number of failure/recovery cycles. No observer restart is ever required to recover persistence.
+4. No change to `RuntimeWriteThroughPipeline.persist()`/`reset()`, `RuntimeWriteThroughValidation`, or `RuntimeWriteThroughState` — the pipeline's existing failure semantics (status/error set, no runtime-service mutation, rethrow) were already exactly correct for this requirement.
+5. No change to the existing logout reset cascade (ADR-147: Observer → Write-Through → Dashboard Restore → Hydration → Bootstrap → Session) — it already unconditionally clears write-through status/error/in-flight-promise on every logout regardless of the last write-through outcome, so a persistence failure never blocks or alters logout, and no stale persistence state survives into the next login.
+6. Domain coverage requires no domain-specific handling: Workout/Nutrition/Recovery (own `*RuntimePersistenceService.build()` + own repository) and Goal Progress/Coach/Notification (`UnifiedWorkspaceService.build()` + `WorkspaceRepository` overlays, ADR-143/144) all route through the same `RuntimeObserver` → `triggerWriteThrough()` → `persistRuntime()` path, so the fix and the recovery guarantee apply uniformly.
+7. Athlete isolation is unaffected — recovery reuses the same `athleteIds` already threaded through `RuntimeObserver`/`persistRuntime()` (ADR-125/145/147); no new athlete-id source is introduced.
+
+**Alternatives considered:**
+- **Add a retry queue/backoff that automatically re-attempts a failed persist** — rejected; the sprint explicitly forbids new retry subsystems, background workers, debounce, or batching. The existing reset-before-every-persist behavior already delivers deterministic recovery without one.
+- **Flip Runtime Observer or Runtime Session status to `"failed"` on a persistence failure** — rejected; it would couple persistence availability to runtime execution availability, contradicting the requirement that a valid in-memory runtime mutation must remain usable even if it could not (yet) be persisted.
+- **Roll back the domain mutation that triggered a failed persist** — rejected; write-through failures are a downstream infrastructure concern and must never invalidate an already-valid domain state transition.
+- **Swallow the write-through failure entirely (empty `.catch()`)** — rejected; the failure must remain observable through the existing status/error mechanism for any future consumer (e.g. a persistence-health indicator), so the `.catch()` only logs and prevents the unhandled rejection, it does not discard the error.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Repository/write-through failures are now fully deterministic end-to-end: no unhandled promise rejection, no rolled-back runtime state, no observer/session disruption, and guaranteed recovery (with the latest complete runtime state winning) on the very next successful mutation. `RuntimeObserverDeps`/`RuntimeWriteThroughDeps` public shapes are unchanged; the change is confined to `triggerWriteThrough()`'s error handling inside `RuntimeObserver.ts`.

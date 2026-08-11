@@ -1,3 +1,4 @@
+import { getLogger } from "../../infrastructure/logging";
 import type { AthleteIdentityService } from "../../features/athlete-identity/services/AthleteIdentityService";
 import type { RuntimeEnvironmentService } from "../../features/runtime-environment/services/RuntimeEnvironmentService";
 import type { UnifiedWorkspaceService } from "../../features/unified-workspace/services/UnifiedWorkspaceService";
@@ -90,6 +91,31 @@ function wrapBuildMethod<TService extends object, TResult extends BuildResultWit
   };
 }
 
+/**
+ * Triggers write-through persistence for the latest in-memory runtime state.
+ *
+ * Resetting before every persist call (rather than only after a prior
+ * failure) is what makes recovery deterministic: `persistRuntime()` treats
+ * an already-"ready" or in-flight write-through state as idempotent and
+ * simply returns the existing promise/result instead of re-persisting, and a
+ * "failed" state's stale rejected promise would otherwise be returned
+ * forever without an explicit reset. Resetting unconditionally guarantees
+ * every successful runtime mutation — whether the previous write-through
+ * succeeded, failed, or never ran — always re-observes and persists the
+ * complete current runtime state (Sprint 36.4).
+ *
+ * The persist call is intentionally fire-and-forget from the observer's
+ * perspective: a repository/write-through failure must never propagate back
+ * into the `build()` call that triggered it (that would incorrectly couple
+ * a persistence failure to the in-memory domain mutation that already
+ * succeeded). `RuntimeWriteThroughPipeline.persist()` already records the
+ * failure deterministically via its own status/error state
+ * (`getWriteThroughStatus()` / `RuntimeWriteThroughService`) before
+ * rethrowing — the `.catch()` below only prevents that rethrow from
+ * surfacing as an unhandled promise rejection; it does not swallow or hide
+ * the failure, which remains fully observable through the existing
+ * write-through status/result mechanism.
+ */
 function triggerWriteThrough(
   deps: RuntimeObserverDeps,
   athleteIds: readonly string[],
@@ -98,7 +124,27 @@ function triggerWriteThrough(
   const persist = deps.persist ?? persistRuntime;
 
   reset();
-  void persist({ athleteIds });
+  void persist({ athleteIds }).catch((error: unknown) => {
+    logWriteThroughFailure(error);
+  });
+}
+
+/**
+ * Logs a persistence failure triggered by an automatic write-through
+ * through the existing logging abstraction only. Runtime Observer status
+ * and Runtime Session status are never affected by this failure — only the
+ * Runtime Write-Through pipeline's own status transitions to "failed"
+ * (already handled by `RuntimeWriteThroughPipeline.persist()`).
+ */
+function logWriteThroughFailure(error: unknown): void {
+  const reason =
+    error instanceof Error
+      ? error.message
+      : "Unknown runtime write-through persistence failure";
+  getLogger().error("Runtime write-through persistence failed", {
+    scope: "Application",
+    reason,
+  });
 }
 
 function unwrapActiveObservation(): void {
