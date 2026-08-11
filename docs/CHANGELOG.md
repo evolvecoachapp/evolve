@@ -26,6 +26,9 @@ Each release section groups changes under: `Added`, `Changed`, `Deprecated`, `Re
 
 ## [Unreleased]
 
+### Security
+- Sprint 36.1 (hardening) — Closed SQLite session data-isolation gap: `RepositoryHydrationPipeline` now accepts `athleteIds` and filters identity/workspace/snapshot/timeline/workout/nutrition/recovery records through a new `filterRecordsForAthleteScope()` Authenticated Athlete Persistence Boundary (`runtime/hydration/AthleteHydrationScope.ts`) before restoring them into runtime memory; `RuntimeSessionOrchestrator` threads the authenticated session's `athleteIds` into `hydrateRuntime()`; a previous athlete's SQLite rows are retained on disk (not deleted on logout) but can no longer be rehydrated into a different athlete's session; Repository Contracts, SQLite infrastructure, Composition Root, and Runtime Session/Observer/Bootstrap public APIs are unchanged; see ADR-145
+
 ### Changed
 - Sprint 35.5 (product) — Coach conversation turns and Conversation Memory entries persist through `Workspace.coachRuntimeOverlay` + existing WorkspaceRepository write-through; Notification read/settings/reminder overlays persist through `Workspace.notificationRuntimeOverlay`; restart hydration restores coach and notification state via `loadHydratedCoachExperience()` / `loadHydratedNotificationExperience()`; no new persistence architecture; no direct SQLite from feature layers
 - Sprint 35.4 (product) — Domain runtime mutations for Workout, Nutrition, Recovery, and Goal Progress persist through existing repository contracts and Runtime Observer write-through; restart hydration restores in-session state via `loadHydrated*()` and domain persistence services; no new persistence architecture; no direct SQLite from feature layers

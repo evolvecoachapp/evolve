@@ -31,6 +31,7 @@ function createTimelineForAthlete(athleteId: string) {
   const timeline = createTestCoachTimelineService();
   appendSeedEntry(timeline, {
     id: `decision:${athleteId}`,
+    athleteId,
     category: CoachTimelineEventCategories.COACH_DECISION,
     summary: "Hold intensity",
     affectedDomain: "decision",

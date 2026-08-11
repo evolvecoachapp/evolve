@@ -72,6 +72,7 @@ export function createStubAthleteSnapshot(
   const timelineService = createTestCoachTimelineService();
   appendSeedEntry(timelineService, {
     id: `decision:${athleteId}`,
+    athleteId,
     category: CoachTimelineEventCategories.COACH_DECISION,
     summary: "Hold intensity",
     affectedDomain: "decision",

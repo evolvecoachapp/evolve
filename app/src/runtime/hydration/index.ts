@@ -1,4 +1,6 @@
 export { hydrateRuntime, getHydrationStatus } from "./application";
+export type { HydrateRuntimeOptions } from "./application";
+export { filterRecordsForAthleteScope } from "./AthleteHydrationScope";
 export type { HydrationResult } from "./HydrationResult";
 export { createHydrationResult } from "./HydrationResult";
 export type { HydrationState } from "./HydrationState";

@@ -16,6 +16,7 @@ import type { UnifiedWorkspaceService } from "../../features/unified-workspace/s
 import type { NutritionRuntimePersistenceService } from "../domain-persistence/services/NutritionRuntimePersistenceService";
 import type { RecoveryRuntimePersistenceService } from "../domain-persistence/services/RecoveryRuntimePersistenceService";
 import type { WorkoutRuntimePersistenceService } from "../domain-persistence/services/WorkoutRuntimePersistenceService";
+import { filterRecordsForAthleteScope } from "./AthleteHydrationScope";
 import { createHydrationResult, type HydrationResult } from "./HydrationResult";
 import { createHydrationState } from "./HydrationState";
 import {
@@ -68,6 +69,14 @@ export interface RepositoryHydrationDeps {
 
 export interface RepositoryHydrationOptions {
   readonly deps: RepositoryHydrationDeps;
+  /**
+   * Authenticated Athlete Persistence Boundary (Sprint 36.1). When provided,
+   * athlete-scoped repository records (identity / workspace / snapshot /
+   * timeline / workout / nutrition / recovery) are restricted to these ids
+   * before restoration — a previous athlete's persisted records can never be
+   * restored into the current authenticated session's runtime memory.
+   */
+  readonly athleteIds?: readonly string[];
 }
 
 async function resolveRepositoryList(
@@ -126,10 +135,44 @@ export class RepositoryHydrationPipeline {
         options.deps.recoveryRepository.list(),
       );
 
+      // Authenticated Athlete Persistence Boundary (Sprint 36.1): scope every
+      // athlete-owned record list to the current session's athlete id(s)
+      // before any restoration touches runtime memory. `runtimeRecords`
+      // (device/application environment) is not athlete-scoped and is left
+      // untouched.
+      const scopedIdentityRecords = filterRecordsForAthleteScope(
+        identityRecords,
+        options.athleteIds,
+      );
+      const scopedWorkspaceRecords = filterRecordsForAthleteScope(
+        workspaceRecords,
+        options.athleteIds,
+      );
+      const scopedSnapshotRecords = filterRecordsForAthleteScope(
+        snapshotRecords,
+        options.athleteIds,
+      );
+      const scopedTimelineRecords = filterRecordsForAthleteScope(
+        timelineRecords,
+        options.athleteIds,
+      );
+      const scopedWorkoutRecords = filterRecordsForAthleteScope(
+        workoutRecords,
+        options.athleteIds,
+      );
+      const scopedNutritionRecords = filterRecordsForAthleteScope(
+        nutritionRecords,
+        options.athleteIds,
+      );
+      const scopedRecoveryRecords = filterRecordsForAthleteScope(
+        recoveryRecords,
+        options.athleteIds,
+      );
+
       const restoredAt = clock();
       restoreIdentityRecords(
         options.deps.athleteIdentityService,
-        identityRecords,
+        scopedIdentityRecords,
         restoredAt,
       );
       restoreRuntimeRecords(
@@ -139,37 +182,37 @@ export class RepositoryHydrationPipeline {
       );
       restoreWorkspaceRecords(
         options.deps.unifiedWorkspaceService,
-        workspaceRecords,
+        scopedWorkspaceRecords,
       );
       restoreCoachRuntimeOverlayFromWorkspace(
         options.deps.coachConversationService,
-        workspaceRecords,
+        scopedWorkspaceRecords,
       );
       restoreSnapshotRecords(
         options.deps.athleteSnapshotService,
-        snapshotRecords,
+        scopedSnapshotRecords,
       );
       restoreTimelineRecords(
         options.deps.coachTimelineService,
-        timelineRecords,
+        scopedTimelineRecords,
       );
       restoreWorkoutRuntimeRecords(
         options.deps.workoutRuntimePersistenceService,
-        workoutRecords,
+        scopedWorkoutRecords,
       );
       restoreNutritionRuntimeRecords(
         options.deps.nutritionRuntimePersistenceService,
-        nutritionRecords,
+        scopedNutritionRecords,
       );
       restoreRecoveryRuntimeRecords(
         options.deps.recoveryRuntimePersistenceService,
-        recoveryRecords,
+        scopedRecoveryRecords,
       );
 
       const result = createHydrationResult({
-        identityRecordCount: identityRecords.length,
+        identityRecordCount: scopedIdentityRecords.length,
         runtimeRecordCount: runtimeRecords.length,
-        workspaceRecordCount: workspaceRecords.length,
+        workspaceRecordCount: scopedWorkspaceRecords.length,
         restoredAt,
         phases: HYDRATION_PHASES,
       });

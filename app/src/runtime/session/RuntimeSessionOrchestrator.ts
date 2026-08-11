@@ -58,7 +58,13 @@ export class RuntimeSessionOrchestrator {
         clock,
       });
 
-      const hydration = await hydrateRuntime();
+      // Authenticated Athlete Persistence Boundary (Sprint 36.1): thread the
+      // current session's athlete id(s) into hydration so a previous
+      // athlete's SQLite-persisted records can never be restored into this
+      // session's runtime memory.
+      const hydration = await hydrateRuntime({
+        athleteIds: options.athleteIds,
+      });
 
       const dashboardRestore = await restoreDashboard({
         athleteIds: options.athleteIds,

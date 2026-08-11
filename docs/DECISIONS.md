@@ -4792,3 +4792,49 @@ Expo SQLite
 **Consequences:**
 - Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md), [SQLITE_ADAPTER.md](./SQLITE_ADAPTER.md).
 - Complete runtime domain state round-trips through restart. Legacy `{ id }`-only rows deserialize to id-only records and are skipped during restoration.
+
+---
+
+## ADR-145: SQLite Session Data Isolation / Logout Hardening (Sprint 36.1)
+
+**Status:** Accepted  
+**Date:** 2026-08-11  
+**Context:** The v1.0 readiness audit identified a production data-isolation gap: SQLite is a single shared file (Sprint 34.2) keyed only by feature (`identity`, `workspace`, `snapshot`, `timeline`, `workout`, `nutrition`, `recovery` tables), with each row's `PersistenceRecord.id` equal to the owning athlete's id. Logout resets the Composition Root (`resetRuntimeBootstrap()` → `resetCompositionRoot()`, Sprint 33.8), which clears in-memory service state, but the SQLite file itself is intentionally retained (no destructive wipe). `RepositoryHydrationPipeline.hydrate()` (Sprint 33.2) called `repository.list()` on every athlete-scoped repository with **no athlete filter**, so any subsequent authenticated session — including a different athlete — hydrated **every** persisted athlete's rows back into runtime memory. `RuntimeWriteThroughPipeline` (Sprint 33.4) and `RuntimeObserver` (Sprint 33.7) already scoped writes to `athleteIds`; only the read/hydration path was unscoped. Phase A (Production Hardening) requires closing this without redesigning Runtime Session/Observer/Bootstrap architecture, without cloud sync, networking, or admin, and without a multi-tenant persistence system.
+
+**Decision:**
+
+```
+Authenticated Session (AuthContext.user.id)
+  ↓
+RuntimeSessionProvider (athleteIds = [user.id])
+  ↓
+startRuntimeSession({ athleteIds })
+  ↓
+RuntimeSessionOrchestrator
+  ↓
+hydrateRuntime({ athleteIds })          ← Authenticated Athlete Persistence Boundary
+  ↓
+RepositoryHydrationPipeline.hydrate({ athleteIds, deps })
+  ↓
+filterRecordsForAthleteScope(records, athleteIds)   (runtime/hydration/AthleteHydrationScope.ts)
+  ↓
+Only current athlete's records restored into runtime memory
+```
+
+1. Introduce an explicit **Authenticated Athlete Persistence Boundary**: a small pure function `filterRecordsForAthleteScope()` (`runtime/hydration/AthleteHydrationScope.ts`) that restricts athlete-scoped `PersistenceRecord[]` lists to a supplied `athleteIds` allowlist before any record touches runtime memory.
+2. Thread `athleteIds` from `RuntimeSessionOptions` → `hydrateRuntime(options)` → `RepositoryHydrationPipeline.hydrate({ athleteIds, deps })`, mirroring the pattern write-through/observer already used. `RuntimeSessionOrchestrator.start()` now passes its own `athleteIds` into hydration (previously it called `hydrateRuntime()` with no arguments).
+3. Apply the filter to identity, workspace, snapshot, timeline, workout, nutrition, and recovery record lists (all keyed by athlete id). The single device/application-level `runtime` record (Runtime Environment, not athlete-owned) is intentionally left unfiltered.
+4. Semantics are fail-safe: an explicit empty `athleteIds` array restores nothing; an explicit non-empty array restores only matching ids. Omitting `athleteIds` entirely (not supplying the option at all) preserves legacy unrestricted behavior for direct/low-level pipeline callers only — every real application entry point (`RuntimeSessionProvider` → `startRuntimeSession`) always supplies the authenticated user's id, so the boundary is always enforced in the live app lifecycle.
+5. **Retention, not deletion**: logout does not delete or truncate the SQLite database. A previous athlete's rows remain on disk (so the same athlete can log back in later and recover their data) but are never hydrated into a different athlete's session. This satisfies "smallest architecture-compatible solution" — no per-athlete database files, no row deletion, no new repository methods, no schema changes.
+6. Stale athlete id reuse is structurally prevented without new state: `RuntimeSessionProvider` derives `athleteIds` fresh from `AuthContext`'s current `user.id` on every render (`useMemo` keyed on `user?.id`); logout drives `isAuthenticated` to `false`, which resets Runtime Observer → Runtime Session → Repository Hydration → Dashboard Restore → Composition Root (`resetRuntimeSessionState()`, unchanged from Sprint 33.8). There is no separate cached "current athlete id" anywhere in the runtime layer to go stale.
+7. No changes to Repository Contract interfaces, `SQLiteConnection`/`SQLiteEngine`/`SQLiteRepositoryBase`, Composition Root wiring, Runtime Session/Observer/Bootstrap public APIs, `AuthContext`, or `secureStorage`. The fix lives entirely in the Application-layer hydration pipeline.
+
+**Alternatives considered:**
+- **Delete/wipe the SQLite database file on every logout** — rejected per sprint's explicit "Preferred direction": destroys unrelated persistent metadata and prevents a returning athlete from recovering their own data; also unnecessary once hydration is scoped.
+- **Per-athlete SQLite database files** — rejected: large multi-tenant persistence redesign explicitly out of scope; current single-file + athlete-scoped row ids + scoped hydration achieves the same isolation guarantee with a minimal diff.
+- **Filter inside `SQLiteRepositoryBase.list()` / repository adapters** — rejected: would require every repository contract to accept an athlete filter parameter, widening the Repository Contract boundary (Sprint 29.3) that this sprint is explicitly told to preserve; filtering in the hydration pipeline (Application layer) keeps SQLite/Infrastructure and Repository Contracts completely unchanged.
+- **Require `athleteIds` on every hydration call (no legacy-unfiltered default)** — rejected: would force changes to every existing low-level `RepositoryHydrationPipeline.hydrate()` unit test unrelated to session isolation; the chosen default only weakens isolation for direct pipeline-level test callers that bypass the real session lifecycle entirely, never for the authenticated app.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- User A's persisted data can never be hydrated into User B's authenticated session, even on the same device with the same shared SQLite file. User A recovers their own data on a later login (retention policy). Logout remains deterministic (observer stop → session/hydration/dashboard-restore reset → Composition Root reset) and unchanged in shape. No new runtime subsystem, no networking, no cloud sync, no admin, no AI changes, no UI redesign, no Repository Contract changes, no SQLite schema changes.

@@ -456,17 +456,18 @@ Full detail: [COMPOSITION_ROOT.md](./COMPOSITION_ROOT.md). Consolidation: [ARCHI
 
 Full detail: [RUNTIME_BOOTSTRAP.md](./RUNTIME_BOOTSTRAP.md).
 
-### Repository Hydration Pipeline (`runtime/hydration`) — Sprint 33.2
+### Repository Hydration Pipeline (`runtime/hydration`) — Sprint 33.2 / 36.1
 
 | Aspect | Implementation |
 |--------|----------------|
-| **Purpose** | Restore in-memory runtime state from persistence contract repositories after bootstrap |
-| **Flow** | Runtime Bootstrap (`ready`) → `RepositoryHydrationPipeline` → Repository Adapters → Identity / Runtime / Workspace services → frozen `HydrationResult` |
-| **Application API** | `hydrateRuntime()`, `getHydrationStatus()` |
+| **Purpose** | Restore in-memory runtime state from persistence contract repositories after bootstrap, scoped to the current authenticated athlete |
+| **Flow** | Runtime Bootstrap (`ready`) → `RepositoryHydrationPipeline({ athleteIds })` → Repository Adapters → `filterRecordsForAthleteScope()` (Sprint 36.1 Authenticated Athlete Persistence Boundary) → Identity / Runtime / Workspace services → frozen `HydrationResult` |
+| **Application API** | `hydrateRuntime({ athleteIds? })`, `getHydrationStatus()` |
 | **Composition Root** | Registers `RepositoryHydrationService` via `RepositoryHydrationFactory` (token #59) |
+| **Session isolation (Sprint 36.1)** | `RuntimeSessionOrchestrator` passes the authenticated session's `athleteIds` through to hydration; identity/workspace/snapshot/timeline/workout/nutrition/recovery record lists are filtered to those ids via `AthleteHydrationScope.filterRecordsForAthleteScope()` before restoring into runtime memory — a previous athlete's SQLite rows can never be hydrated into another athlete's session. Device-level `runtime` records are not athlete-scoped and are left unfiltered. Omitting `athleteIds` preserves prior unrestricted behavior for direct pipeline-level callers only. |
 | **Design** | **Pipeline only.** No direct SQLite, no persistence implementation, no Dashboard/Home/Timeline logic, no domain business logic |
 
-Full detail: [RUNTIME_HYDRATION.md](./RUNTIME_HYDRATION.md).
+Full detail: [RUNTIME_HYDRATION.md](./RUNTIME_HYDRATION.md). Isolation policy: ADR-145 in [DECISIONS.md](./DECISIONS.md).
 
 ### Dashboard Restore Pipeline (`runtime/dashboard-restore`) — Sprint 33.3
 
@@ -726,6 +727,21 @@ ADR-142: [DECISIONS.md](./DECISIONS.md).
 | **Validation** | `domainPersistence.integration.test.ts` covers mutation, serialization, repository save, SQLite restart, hydration, state equality, empty state, malformed payload handling, and immutability |
 
 ADR-143: [DECISIONS.md](./DECISIONS.md).
+
+### SQLite Session Data Isolation / Logout Hardening — Sprint 36.1 (Phase A — Production Hardening)
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Close the production data-isolation gap where SQLite data persisted by one authenticated athlete survived logout and could be rehydrated into a different athlete's subsequent session |
+| **Flow** | `AuthContext.user.id` → `RuntimeSessionProvider` (`athleteIds = [user.id]`) → `startRuntimeSession({ athleteIds })` → `RuntimeSessionOrchestrator` → `hydrateRuntime({ athleteIds })` → `RepositoryHydrationPipeline.hydrate({ athleteIds, deps })` → `filterRecordsForAthleteScope()` → only current athlete's records enter runtime memory |
+| **Boundary** | New pure module `runtime/hydration/AthleteHydrationScope.ts` — the single, explicit chokepoint enforcing that hydration only restores athlete-owned `PersistenceRecord`s (identity/workspace/snapshot/timeline/workout/nutrition/recovery) matching the current session's athlete id(s) |
+| **Retention policy** | SQLite database is **not** deleted or wiped on logout — a previous athlete's rows remain on disk so that athlete can recover their data on a later login, but those rows are never hydrated into a different athlete's session |
+| **Stale id prevention** | `RuntimeSessionProvider` derives `athleteIds` fresh from `AuthContext`'s current `user.id` every render; no cached "current athlete id" exists elsewhere in the runtime layer to go stale |
+| **Logout lifecycle (unchanged shape)** | Logout → stop Runtime Observer → reset Runtime Session → reset Repository Hydration → reset Dashboard Restore → reset Runtime Bootstrap → reset Composition Root → unauthenticated state (`resetRuntimeSessionState()`, Sprint 33.8) |
+| **Design** | **Application-layer hydration fix only.** No changes to Repository Contract interfaces, `SQLiteConnection`/`SQLiteEngine`/`SQLiteRepositoryBase`, Composition Root wiring, Runtime Session/Observer/Bootstrap public APIs, `AuthContext`, or `secureStorage`. No per-athlete database files. No new runtime subsystem, networking, cloud sync, or admin. |
+| **Validation** | `athleteScope.test.ts` (filter unit tests), `hydrationIsolation.test.ts` (pipeline-level cross-athlete isolation), `athleteIsolation.integration.test.ts` (end-to-end login → persist → logout → different-user login → isolation → re-login → retention) |
+
+ADR-145: [DECISIONS.md](./DECISIONS.md).
 
 ### Decision Intelligence (`core/decision-intelligence`) — Sprint 17.10
 
