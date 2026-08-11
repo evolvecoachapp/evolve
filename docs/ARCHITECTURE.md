@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-08-10  
+**Last Updated:** 2026-08-11  
 **Purpose:** Concise system architecture — layers, patterns, dependency flow.  
 **Source of Truth:** Partial — summary only; deep reference is [EVOLVE_ARCHITECTURE.md](../.cursor/rules/EVOLVE_ARCHITECTURE.md). Architecture consolidation: [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md) (Sprint 30.7 / ADR-105).
 
@@ -506,6 +506,20 @@ Full detail: [RUNTIME_WRITE_THROUGH.md](./RUNTIME_WRITE_THROUGH.md).
 | **Validation (Sprint 33.9)** | End-to-end integration tests validate bootstrap → hydration → dashboard restore → observer → write-through lifecycle; User Story 01 complete |
 
 Full detail: [RUNTIME_SESSION.md](./RUNTIME_SESSION.md).
+
+### Global Runtime Failure UX & Error Boundary (`components/RuntimeFailureScreen`, `components/ErrorBoundary`) — Sprint 36.2
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Give authenticated startup failures (bootstrap, hydration, dashboard restore, or observer) a dedicated global recovery screen instead of leaving authenticated navigation reachable with no recovery surface; add a reusable `ErrorBoundary` for unexpected React render exceptions |
+| **Flow — Runtime Session failure** | `AuthProvider` → `RuntimeSessionProvider` → `startRuntimeSession()` fails → `status = "failed"` → `app/(app)/_layout.tsx` renders `RuntimeFailureScreen` (blocks the authenticated `Stack`) → user taps Retry → existing `retrySession()` → `startRuntimeSession()` → `status = "ready"` → authenticated app renders |
+| **Retry semantics** | `RuntimeFailureScreen` calls the **existing** `RuntimeSessionContext.retrySession()` only — no parallel/duplicate retry mechanism. `RuntimeSessionProvider`'s catch blocks now log the failure reason via `getLogger().error()` (`infrastructure/logging`, Sprint 30.6) before setting `status = "failed"`; the raw error/message is never passed to the UI — the screen only ever receives the boolean `failed` status |
+| **Route gate** | `app/(app)/_layout.tsx` (unchanged responsibility, extended condition): unauthenticated → onboarding redirect; auth/runtime starting → `LoadingSpinner`; `status === "failed"` → `RuntimeFailureScreen`; otherwise → authenticated `Stack` wrapped in `ErrorBoundary`. Authenticated tabs are unreachable while `status === "failed"` |
+| **ErrorBoundary placement** | Wraps only the authenticated `Stack` inside `app/(app)/_layout.tsx` — the smallest boundary covering the whole authenticated app shell. Auth (`app/(auth)`) and onboarding (`app/(onboarding)`) route groups render outside this boundary and are unaffected; a single boundary avoids stacking redundant boundaries per screen/tab |
+| **ErrorBoundary behavior** | Class component (`getDerivedStateFromError` / `componentDidCatch`) catches render/lifecycle exceptions in its subtree, logs via `getLogger().error()`, and renders the same safe fallback pattern with a "Try again" action that resets boundary state and re-renders children — no `console.*` production logging path, no stack traces or raw messages shown |
+| **Shared presentation** | Both surfaces render through `components/AppErrorFallback` (existing `GradientBackground` + `EmptyState` + `AppButton` — no new design-system primitives, no visual redesign) |
+| **Composition Root** | None — presentation/provider wiring only; no new services, tokens, or factories |
+| **Design** | **UX/wiring only.** No runtime architecture changes, no new runtime subsystem, no persistence/SQLite changes, no networking, no admin, no AI/Coach changes |
 
 ### Runtime Change Observer (`runtime/runtime-observer`) — Sprint 33.7 / 33.8 / 33.9
 

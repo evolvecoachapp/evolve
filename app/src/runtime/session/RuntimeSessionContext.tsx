@@ -7,6 +7,7 @@ import React, {
   useState,
 } from "react";
 import { useAuth } from "../../auth/useAuth";
+import { getLogger } from "../../infrastructure/logging";
 import { resetRuntimeBootstrap } from "../bootstrap/RuntimeBootstrap";
 import { resetDashboardRestore } from "../dashboard-restore/DashboardRestorePipeline";
 import { resetRepositoryHydration } from "../hydration/RepositoryHydrationPipeline";
@@ -59,7 +60,8 @@ export function RuntimeSessionProvider({
       await startRuntimeSession({ athleteIds });
       startRuntimeObserver(athleteIds);
       setStatus(RUNTIME_SESSION_STATUS.ready);
-    } catch {
+    } catch (error) {
+      logRuntimeSessionFailure(error);
       setStatus(RUNTIME_SESSION_STATUS.failed);
     }
   }, [athleteIds]);
@@ -86,12 +88,14 @@ export function RuntimeSessionProvider({
         try {
           startRuntimeObserver(athleteIds);
           setStatus(RUNTIME_SESSION_STATUS.ready);
-        } catch {
+        } catch (error) {
+          logRuntimeSessionFailure(error);
           setStatus(RUNTIME_SESSION_STATUS.failed);
         }
       })
-      .catch(() => {
+      .catch((error) => {
         if (isMounted) {
+          logRuntimeSessionFailure(error);
           setStatus(RUNTIME_SESSION_STATUS.failed);
         }
       });
@@ -137,6 +141,19 @@ function startRuntimeObserver(
   athleteIds: readonly string[] | undefined,
 ): void {
   observeRuntime({ athleteIds });
+}
+
+/**
+ * Logs the internal failure reason through the existing logging abstraction
+ * only — never surfaced to the UI. Consumers (e.g. the global runtime
+ * failure screen) only ever see `status === "failed"`, not this message.
+ */
+function logRuntimeSessionFailure(error: unknown): void {
+  const reason = error instanceof Error ? error.message : "Unknown runtime session failure";
+  getLogger().error("Runtime session failed to start", {
+    scope: "Application",
+    reason,
+  });
 }
 
 function resetRuntimeSessionState(): void {

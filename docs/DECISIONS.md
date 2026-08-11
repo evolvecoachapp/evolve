@@ -3,8 +3,8 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
-**Last Updated:** 2026-07-29  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-116). Append only — never renumber.
+**Last Updated:** 2026-08-11  
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-146). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -4838,3 +4838,44 @@ Only current athlete's records restored into runtime memory
 **Consequences:**
 - Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
 - User A's persisted data can never be hydrated into User B's authenticated session, even on the same device with the same shared SQLite file. User A recovers their own data on a later login (retention policy). Logout remains deterministic (observer stop → session/hydration/dashboard-restore reset → Composition Root reset) and unchanged in shape. No new runtime subsystem, no networking, no cloud sync, no admin, no AI changes, no UI redesign, no Repository Contract changes, no SQLite schema changes.
+
+---
+
+## ADR-146: Global Runtime Failure UX & Error Boundary (Sprint 36.2)
+
+**Status:** Accepted  
+**Date:** 2026-08-11  
+**Context:** `RuntimeSessionProvider` (Sprint 33.5/33.6) already exposed `status` (`idle` | `starting` | `ready` | `failed`) and `retrySession()`, but neither authenticated route gate (`app/index.tsx`, `app/(app)/_layout.tsx`) checked for `status === "failed"` — both only gated on `isStarting` (`idle` | `starting`). When Runtime Session failed, `isStarting` became `false`, so `app/(app)/_layout.tsx` fell through to rendering the authenticated `Stack` with no data, no dedicated failure UI, and no way to recover other than an app restart. Separately, the app had no React `ErrorBoundary` anywhere, so an unexpected render exception in any authenticated feature would unmount the entire app with React's default red-screen/blank-screen behavior instead of a safe, recoverable fallback. Phase A (Production Hardening) requires closing both gaps as minimal UX/wiring — no runtime architecture redesign, no new runtime subsystem, no persistence/SQLite/networking/admin/AI changes, no visual redesign.
+
+**Decision:**
+
+```
+Authenticated Startup
+  ↓
+RuntimeSessionProvider (status: starting → ready | failed)
+  ↓
+app/(app)/_layout.tsx                         ← route gate (extended)
+  ↓
+status === "failed"?
+  ├─ yes → RuntimeFailureScreen (blocks Stack) → Retry → retrySession() → startRuntimeSession()
+  └─ no  → ErrorBoundary → Stack (authenticated tabs)
+```
+
+1. Extend the existing `app/(app)/_layout.tsx` route gate (no new provider, no new gating mechanism) with one additional branch: when `status === RUNTIME_SESSION_STATUS.failed`, render a new `RuntimeFailureScreen` instead of the authenticated `Stack`. The unauthenticated redirect and the `isStarting` loading branch are unchanged; unauthenticated users continue to bypass Runtime Session entirely.
+2. `RuntimeFailureScreen` (`components/RuntimeFailureScreen.tsx`) takes a single `onRetry` prop and is wired to the **existing** `RuntimeSessionContext.retrySession()` — no new/parallel retry mechanism, no duplicated `startRuntimeSession()` call site. It owns only local `isRetrying` UI state (button loading, re-entrancy guard) and never receives or renders the underlying error — the context only ever exposes the boolean `failed` status, never the exception.
+3. `RuntimeSessionProvider`'s three failure catch sites now call a small `logRuntimeSessionFailure()` helper that logs the failure reason via `getLogger().error()` (existing `infrastructure/logging` abstraction, Sprint 30.6) before setting `status = "failed"`. This is strictly additive (log-only); the public context shape (`{ isStarting, status, retrySession }`) is unchanged.
+4. Introduce a reusable `ErrorBoundary` class component (`components/ErrorBoundary.tsx`, `getDerivedStateFromError` / `componentDidCatch`) for unexpected React render/lifecycle exceptions. It logs via `getLogger().error()` and renders a safe fallback with a "Try again" action that resets boundary state and re-renders children — no stack traces, no raw error message, no `console.*` production logging path.
+5. Placement: `ErrorBoundary` wraps only the authenticated `<Stack />` inside `app/(app)/_layout.tsx` — the smallest boundary that covers the entire authenticated app shell. Auth (`app/(auth)`) and onboarding (`app/(onboarding)`) route groups, and the `RuntimeFailureScreen`/`LoadingSpinner` gate branches themselves, render outside this boundary; there is exactly one `ErrorBoundary` in the tree (no redundant per-screen/per-tab boundaries).
+6. Both global surfaces share one presentational component, `components/AppErrorFallback.tsx`, built entirely from existing design-system pieces (`GradientBackground`, `EmptyState`, `AppButton`) — no new visual primitives, no redesign, no new colors/typography.
+7. No changes to `RuntimeSessionOrchestrator`, `RuntimeSessionResult`/`RuntimeSessionState` models, Composition Root, Repository Contracts, SQLite, networking, admin, or AI/Coach architecture.
+
+**Alternatives considered:**
+- **Add a second/independent retry function on the failure screen** — rejected; the sprint explicitly requires preserving `retrySession()` semantics with no parallel retry mechanism.
+- **Introduce a new `RuntimeSessionFailureProvider` or context** — rejected; `status` and `retrySession()` already fully describe the failure state — a new provider would duplicate existing state ownership and add an unnecessary runtime subsystem.
+- **Wrap the entire root layout (`app/_layout.tsx`) in `ErrorBoundary`** — rejected; would also swallow auth/onboarding render errors behind an authenticated-app-flavored fallback and make the boundary less targeted; the sprint asks for the smallest safe boundary around the authenticated shell specifically.
+- **Use `console.error` for ErrorBoundary/failure logging** — rejected; `infrastructure/logging` (Sprint 30.6) is the existing logging abstraction and must be used instead of introducing/relying on a `console.*` production path.
+- **Render the caught error's message or `error.stack` in the fallback UI (common React error-boundary tutorials)** — rejected; violates the sprint's explicit "never expose raw exceptions/stack traces" requirement; the fallback copy is static and safe by construction.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Authenticated users can no longer reach the authenticated tabs while Runtime Session is `failed` — they see a clear, safe, retry-capable global screen instead. An unexpected render exception in any authenticated feature now degrades to a safe fallback with recovery instead of crashing the whole app. `RuntimeSessionContext`'s public API and `RuntimeSessionOrchestrator`'s internal orchestration are unchanged; the change is additive UI/wiring plus log-only instrumentation.
