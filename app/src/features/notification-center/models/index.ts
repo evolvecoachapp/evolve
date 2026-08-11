@@ -11,5 +11,6 @@ export * from "./NotificationSettings";
 export * from "./NotificationState";
 export * from "./NotificationStatistics";
 export * from "./Reminder";
+export * from "./ReminderPresets";
 export * from "./ReminderSchedule";
 export * from "./ReminderType";

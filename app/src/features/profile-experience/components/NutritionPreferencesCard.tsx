@@ -30,11 +30,11 @@ export function NutritionPreferencesCard({ prefs }: NutritionPreferencesCardProp
           </View>
           <View>
             <Text style={styles.label}>Calories</Text>
-            <Text style={styles.value}>{prefs.calorieTarget} kcal</Text>
+            <Text style={styles.value}>{prefs.calorieTarget > 0 ? `${prefs.calorieTarget} kcal` : "—"}</Text>
           </View>
           <View>
             <Text style={styles.label}>Meals/day</Text>
-            <Text style={styles.value}>{prefs.mealsPerDay}</Text>
+            <Text style={styles.value}>{prefs.mealsPerDay > 0 ? prefs.mealsPerDay : "—"}</Text>
           </View>
         </View>
         {prefs.allergies.length > 0 ? (

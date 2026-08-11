@@ -15,3 +15,4 @@ export { FinishWorkoutDialog } from "./FinishWorkoutDialog";
 export { SkeletonWorkout } from "./SkeletonWorkout";
 export { EmptyWorkout } from "./EmptyWorkout";
 export { ErrorWorkout } from "./ErrorWorkout";
+export { WorkoutCompleteCard } from "./WorkoutCompleteCard";

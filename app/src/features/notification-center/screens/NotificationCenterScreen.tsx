@@ -7,6 +7,7 @@ import { TabScreenContainer } from "../../../components/TabScreenContainer";
 import { useTheme } from "../../../theme/ThemeContext";
 import { spacing } from "../../../theme/theme";
 import {
+  AddReminderRow,
   CoachNotificationCard,
   NotificationCard,
   NotificationCenterHeader,
@@ -18,6 +19,7 @@ import {
   ReminderCard,
 } from "../components";
 import { useNotifications } from "../hooks";
+import { buildPresetReminder } from "../models";
 import type { NotificationCenterService } from "../services";
 
 export interface NotificationCenterScreenProps {
@@ -35,10 +37,9 @@ export function NotificationCenterScreen({ service }: NotificationCenterScreenPr
   const { user } = useAuth();
   const dashboard = useNotifications({ service, athleteId: user?.id });
 
-  const showContent =
-    !dashboard.loading.isLoading &&
-    !dashboard.error &&
-    !dashboard.isEmpty;
+  const loaded = !dashboard.loading.isLoading && !dashboard.error;
+  const hasInbox = dashboard.notifications.length > 0 || dashboard.coachNotifications.length > 0;
+  const existingReminderTypes = new Set(dashboard.reminders.map((r) => r.type));
 
   return (
     <GradientBackground variant="canvas">
@@ -60,31 +61,58 @@ export function NotificationCenterScreen({ service }: NotificationCenterScreenPr
           {dashboard.error && !dashboard.loading.isLoading ? (
             <NotificationError error={dashboard.error} onRetry={() => void dashboard.refresh()} />
           ) : null}
-          {!dashboard.loading.isLoading && !dashboard.error && dashboard.isEmpty ? <NotificationEmpty /> : null}
-          {showContent ? (
+          {loaded ? (
             <>
               {dashboard.statistics ? <NotificationCenterHeader statistics={dashboard.statistics} /> : null}
-              {dashboard.coachNotifications.map((cn) => (
-                <CoachNotificationCard key={cn.id} notification={cn} />
-              ))}
-              {dashboard.notifications.map((n) => (
-                <NotificationCard
-                  key={n.id}
-                  notification={n}
-                  onDismiss={() => void dashboard.dismiss(n.id)}
-                />
-              ))}
-              {dashboard.reminders.length > 0 ? (
-                <View>
-                  <SectionTitle title="Reminders" />
-                  <View style={{ gap: spacing.md }}>
-                    {dashboard.reminders.map((r) => (
-                      <ReminderCard key={r.id} reminder={r} />
-                    ))}
-                  </View>
+              {hasInbox ? (
+                <>
+                  {dashboard.coachNotifications.map((cn) => (
+                    <CoachNotificationCard key={cn.id} notification={cn} />
+                  ))}
+                  {dashboard.notifications.map((n) => (
+                    <NotificationCard
+                      key={n.id}
+                      notification={n}
+                      onPress={n.readAt ? undefined : () => void dashboard.markRead(n.id)}
+                      onDismiss={() => void dashboard.dismiss(n.id)}
+                    />
+                  ))}
+                </>
+              ) : (
+                <NotificationEmpty />
+              )}
+              <View style={{ gap: spacing.md }}>
+                <SectionTitle title="Reminders" />
+                <View style={{ gap: spacing.md }}>
+                  {dashboard.reminders.map((r) => (
+                    <ReminderCard
+                      key={r.id}
+                      reminder={r}
+                      disabled={dashboard.saving.isSaving}
+                      onToggleEnabled={() =>
+                        void dashboard.editReminder({ ...r, enabled: !r.enabled })
+                      }
+                      onRemove={() => void dashboard.removeReminder(r.id)}
+                    />
+                  ))}
                 </View>
+                <AddReminderRow
+                  existingTypes={existingReminderTypes}
+                  disabled={dashboard.saving.isSaving}
+                  onAdd={(type) =>
+                    void dashboard.addReminder(buildPresetReminder(type, new Date().toISOString()))
+                  }
+                />
+              </View>
+              {dashboard.settings ? (
+                <NotificationSettingsCard
+                  settings={dashboard.settings}
+                  saving={dashboard.saving.isSaving}
+                  onToggle={(key, value) =>
+                    void dashboard.updateSettings({ ...dashboard.settings!, [key]: value })
+                  }
+                />
               ) : null}
-              {dashboard.settings ? <NotificationSettingsCard settings={dashboard.settings} /> : null}
               {dashboard.statistics ? <NotificationStatisticsCard statistics={dashboard.statistics} /> : null}
             </>
           ) : null}

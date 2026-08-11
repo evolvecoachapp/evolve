@@ -46,7 +46,11 @@ export function ProgressExperienceScreen({ service }: ProgressExperienceScreenPr
   const reachableHandler = (destination: string | null | undefined) =>
     isReachableRoute(destination) ? () => navigatePlaceholder(destination) : undefined;
 
-  const showContent = !dashboard.loading.isLoading && !dashboard.error && dashboard.dashboard && !dashboard.isEmpty;
+  const hasDashboard = !!dashboard.dashboard;
+  const showSkeleton = dashboard.loading.isLoading && !hasDashboard;
+  // Keep showing the current dashboard while a time-range switch reloads in the
+  // background, instead of flashing a skeleton/blank screen over live content.
+  const showContent = !dashboard.error && hasDashboard && !dashboard.isEmpty;
 
   return (
     <GradientBackground variant="canvas">
@@ -57,13 +61,18 @@ export function ProgressExperienceScreen({ service }: ProgressExperienceScreenPr
         refreshControl={<RefreshControl refreshing={dashboard.loading.isRefreshing} onRefresh={() => void dashboard.refresh()} tintColor={colors.pulse} colors={[colors.pulse]} />}
       >
         <View style={{ gap: spacing.lg }}>
-          {dashboard.loading.isLoading && !dashboard.dashboard ? <ProgressSkeleton /> : null}
-          {dashboard.error && !dashboard.loading.isLoading ? <ProgressError error={dashboard.error} onRetry={() => void dashboard.refresh()} /> : null}
+          {showSkeleton ? <ProgressSkeleton /> : null}
+          {dashboard.error && !hasDashboard ? <ProgressError error={dashboard.error} onRetry={() => void dashboard.refresh()} /> : null}
           {!dashboard.loading.isLoading && !dashboard.error && dashboard.isEmpty ? <ProgressEmpty /> : null}
           {showContent ? (
             <>
               <ProgressHeader dashboard={dashboard.dashboard!} />
-              <TimeRangeSelector value={timeRange.timeRange} options={timeRange.options} onChange={(next) => void timeRange.changeRange(next)} />
+              <TimeRangeSelector
+                value={timeRange.timeRange}
+                options={timeRange.options}
+                disabled={dashboard.loading.isLoading}
+                onChange={(next) => void timeRange.changeRange(next)}
+              />
               <AnalyticsGrid>
                 <StrengthChartCard progress={dashboard.dashboard!.strength} onPress={reachableHandler(dashboard.dashboard!.strength.destination)} />
                 <VolumeChartCard progress={dashboard.dashboard!.volume} onPress={reachableHandler(dashboard.dashboard!.volume.destination)} />

@@ -330,14 +330,13 @@ export class RecoveryExperienceViewModel {
       return;
     }
 
+    // Each day's own sleep/readiness/assessment overlay is looked up by isoDate
+    // inside loadHydratedRecoveryExperience — the previous day's in-memory
+    // values must not be forwarded here, or every day would silently inherit
+    // whichever day was viewed last instead of its own persisted state.
     const dashboard = await loadHydratedRecoveryExperience({
       athleteId: this.athleteId,
       day: this._day,
-      sleepHours: this._sleepHours,
-      sleepQuality: this._sleepQuality,
-      sleepLogged: this._sleepLogged,
-      readinessScore: this._readinessScore,
-      assessedScore: this._assessedScore,
     });
     this.refreshFromHydratedRecovery(dashboard);
   }

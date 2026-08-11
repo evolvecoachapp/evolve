@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-08-11  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-151). Append only — never renumber.
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-153). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -5374,3 +5374,157 @@ minimal, consistent, and utility-oriented per the brief's explicit
 **Consequences:**
 - Documentation: [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
 - EVOLVE's ten production screens now share one more consistent visual language (icon rings, metric typography, `AppButton`/`Chip` actions, `SectionTitle` section headers) without introducing a competing design system. No runtime, persistence, navigation, or production-data-source regression — every touched file remains a presentation-only component or screen composition. Full suite (804 suites / 3342 tests) and typecheck remain green.
+
+---
+
+## ADR-153: Production UX Completion & Feature Surface Polish (Sprint 37.3)
+
+**Status:** Accepted
+**Date:** 2026-08-11
+**Context:** Sprints 37.1 (navigation reachability) and 37.2 (visual polish) left ten production screens reachable and visually consistent, but a functional-completeness audit of primary/secondary actions, empty/loading/error states, save/update feedback, disabled states, and accessibility across the same ten areas (Home, Workout, Nutrition, Recovery, Goals, Coach, Progress, Profile, Notifications, Settings) surfaced concrete UX gaps: dead-end mutations with no UI, screens that go blank mid-refresh, hardcoded display values indistinguishable from real user data, and — most seriously — two Profile update paths that reported success without persisting anything. The brief's explicit mandate was to close these gaps using only existing runtime/persistence primitives, never inventing functionality the domain doesn't already support, and to make any genuinely unsupported field fail clearly instead of silently pretending to save.
+
+**Decision:**
+
+Closed a bounded set of concrete, provable UX defects, each traced to an existing but unwired or partially-wired capability:
+
+```
+Workout — completion has no final state
+
+WorkoutRuntimeScreen showed the same set editors after a workout
+finished, with no visual confirmation. New presentation-only
+WorkoutCompleteCard (checkmark, duration, sets-completed summary)
+replaces the editors once runtime.state.isCompleted is true;
+WorkoutRuntimeHeader gained a "Completed" Chip. No workout domain
+behavior changed — purely a render-branch on existing state.
+
+Nutrition — hydration logging had no control
+
+NutritionExperienceViewModel.logHydration() existed and persisted
+correctly but no UI called it. HydrationCard gained an "onLogHydration"
+prop and Log button (250 mL increment, disabled once the goal is
+reached), wired to the existing ViewModel method in
+NutritionExperienceScreen.
+
+Recovery — day navigation was silently broken
+
+Two bugs compounded: mapWorkspaceRecoveryToExperienceDto's
+buildAvailableDays() cloned the *same* isoDate onto "Yesterday" and
+"Tomorrow" options instead of shifting by ±1 day, so day-selector taps
+picked the wrong persisted-state key; and
+RecoveryExperienceViewModel.changeDay() re-passed the *current* day's
+in-memory sleep/readiness values as overrides into
+loadHydratedRecoveryExperience(), which then stomped on the target
+day's own persisted state with the wrong day's numbers. Fixed both:
+a new shiftIsoDate() helper computes real adjacent-day ISO dates, and
+changeDay() now passes only {athleteId, day}, letting per-day
+persistence (already correct, Sprint 35.4) resolve on its own.
+
+Coach — send/regenerate errors hid the whole conversation; copy implied live streaming
+
+CoachExperienceScreen rendered the full-page CoachError (replacing the
+entire conversation) for *any* error, including a transient
+send/regenerate failure that should never cost the athlete their
+message history. New CoachInlineError renders a compact, retryable
+banner alongside the conversation for mutation errors, while
+CoachError is now reserved for genuine load failures (no experience
+loaded at all). Separately, CoachStatus's "Streaming response…" label
+implied token-by-token live LLM streaming that Coach (deterministic,
+Sprint 35.1) does not perform — corrected to "Coach is responding…",
+consistent with the existing "Coach is typing…" copy elsewhere.
+
+Notifications — mark-read, reminder create/toggle/remove, and settings toggles were all read-only
+
+NotificationCenterViewModel already exposed markRead/addReminder/
+editReminder/removeReminder/updateSettings (Sprint 35.2) but
+NotificationCenterScreen never called any of them. NotificationCard's
+onPress now marks an unread notification read; ReminderCard gained
+onToggleEnabled/onRemove wired to editReminder/removeReminder;
+NotificationSettingsCard's boolean rows became interactive Chips wired
+to updateSettings, disabled while a save is in flight. Since no
+existing UI could ever *create* a reminder, a new REMINDER_PRESETS
+model + AddReminderRow component offer quick-add presets (Workout/
+Hydration/Sleep/Nutrition/Recovery) for reminder types the athlete
+hasn't already configured, calling the existing addReminder() — no new
+persistence, just a previously-missing entry point to it. The screen
+was also restructured so an empty notification inbox no longer hides
+the Reminders/Settings sections behind one all-or-nothing NotificationEmpty
+gate.
+
+Progress — time-range switches flashed a blank screen
+
+ProgressExperienceScreen's showContent gated on
+!loading.isLoading, so the loading window opened by every
+changeTimeRange() call (which does not clear the existing dashboard)
+hid the still-valid, still-rendered dashboard behind neither the
+skeleton (dashboard existed) nor the content branch (loading was
+true) — a blank gap between taps. showContent now gates only on
+having a dashboard and no error, so the previous range's data stays
+visible until the new range's data replaces it; TimeRangeSelector
+gained a disabled prop to prevent overlapping range switches
+mid-flight.
+
+Profile — two update paths silently discarded the athlete's input
+
+updateGoals() and updateNotificationPreferences()'s runtime-path
+branches called readRuntimeProfile()/no-op and returned the
+*unmodified* profile without ever attempting to apply the caller's
+input — because goals and notification preferences are owned by
+goal-progress-experience and notification-center respectively, not by
+Athlete Identity, so there was no identity field to write into. The
+ViewModel's save() then reported this as a successful save (no thrown
+error), so any future UI wired to these methods would show a "Saved"
+state while nothing changed — the exact silently-pretend-persistence
+failure mode the sprint brief calls out by name. Both now throw a
+descriptive ProfileExperienceError instead. Since GoalsCard and
+NotificationPreferencesCard were also display-only re-renderings of
+data that already has an editable, accurate home elsewhere, both were
+changed to link out to the owning tab (Goals / Notifications) rather
+than show static, possibly-stale duplicate state — NotificationPreferencesCard
+in particular no longer shows on/off dots that never reflected the
+real NotificationSettings at all (its DTO fields were hardcoded false
+in the identity mapper). AppearanceCard was found to display Athlete
+Identity's stored `settings.appearance`, a field the *actual* theme
+switch (Settings → Appearance → Theme, backed by ThemeContext +
+AsyncStorage) never writes to — so Profile could show "System theme"
+forever regardless of what the athlete actually selected. Fixed by
+having ProfileExperienceScreen pass the live useTheme().preference
+through to AppearanceCard instead of the disconnected identity field,
+without touching either persistence path. TrainingPreferencesCard and
+NutritionPreferencesCard also displayed hardcoded 0 values (sessions/
+week, duration, calories, meals/day — fields the identity model has no
+backing for) as if they were real configured numbers; both now show
+"—" and hide empty tag rows, matching the "—"-for-unset convention
+already used by AthleteCard/SleepCard/ReadinessCard elsewhere.
+
+Cross-cutting accessibility
+
+AppButton's accessibilityLabel now falls back to its label prop
+explicitly (previously relied on the Text child's implicit
+accessible-name, which disappears when `loading` swaps in a bare
+ActivityIndicator with no text at all) and reports
+accessibilityState={{ busy: loading }}. Chip gained a `disabled` prop
+that keeps a disabled toggle visible-but-inert (accessibilityState.
+disabled + real RN `disabled`) instead of stripping its `onPress`
+entirely, which was silently deleting its accessibilityLabel too.
+RecoveryCard (Home), SleepCard, ReadinessCard, and RecoverySignalsCard
+— all pure-information cards with several independent Text nodes —
+gained a single accessible + accessibilityRole="summary" wrapper with
+a composed label, so a screen reader announces one coherent summary
+instead of fragmenting across child nodes.
+```
+
+1. No runtime, persistence, or SQLite architecture change: every fix wires an *existing* ViewModel method, application function, or persisted-state read path to a UI control that was missing it, or corrects a presentation-layer bug (wrong ISO date, hidden branch, hardcoded display value) in front of data that was already being read/written correctly.
+2. The two Profile "unsupported field" fixes (`updateGoals`, `updateNotificationPreferences`) change only their runtime-path failure behavior (throw vs. silently return unchanged data) — the `service`-based test/preview path, `AthleteIdentity`, and every other update method (`updateUnits`/`updateTheme`/`updateTrainingPreferences`/`updateNutritionPreferences`/`updateCoachPreferences`, all already reading and writing real identity fields) are untouched.
+3. No new persistence layer for Goals or Notifications was created, consistent with the brief's explicit prohibition — the fix is to fail honestly, and to point the athlete at the tab that already owns and correctly persists that data, not to duplicate it inside Profile.
+4. AddReminderRow/REMINDER_PRESETS call the existing `addReminder()` runtime mutation with realistic, clearly-labeled defaults (e.g. "Workout Reminder" at 07:00 weekdays) that the athlete can immediately toggle or remove with the (also newly-wired) existing controls — no new reminder-scheduling engine, no push notifications.
+5. Every new/changed component composes existing primitives (`AppCard`, `AppButton`, `Chip`, `ProgressBar`, `Ionicons`) with no new visual language, consistent with Sprint 37.2's constraint carried forward.
+
+**Alternatives considered:**
+- **Build full editable forms for Goals/Notification preferences directly inside Profile** — rejected; goals and notification settings already have a correct, working, persisted editing surface in their own tabs, and duplicating that state inside Profile would either require a second persistence path (explicitly out of scope) or reintroduce the exact silent-desync bug this sprint closes; linking out is the more honest, lower-risk fix.
+- **Delete `readRuntimeProfile()`/leave the no-op behavior and just avoid calling it from any UI** — rejected; the brief explicitly calls for unsupported fields to *fail* clearly, not merely for the UI to never exercise the bug; a future screen wiring `updateGoals()` without re-discovering this investigation would otherwise silently ship the same defect again.
+- **Add a full custom reminder-schedule editor (type/day/time/policy pickers)** — deferred; `ReminderEditor.tsx` exists only as a minimal stub and a full editor is a materially larger UI surface than a quick-add-presets affordance; presets close the "reminder create" gap named in the brief without that scope.
+- **Rebuild Progress's loading/error branching around a new state machine** — rejected; the blank-screen bug was a single incorrect boolean condition (`showContent` requiring `!isLoading`) against state (`dashboard`) that the ViewModel already keeps populated during a background reload; fixing the condition was sufficient.
+
+**Consequences:**
+- Documentation: [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Every audited feature now has a coherent primary-action → feedback loop reachable from its actual screen (workout completion, hydration logging, recovery day navigation, coach error recovery, notification read/reminder/settings mutation, progress range switching), and the two previously-dishonest Profile update paths now fail loudly instead of silently. No new screens, routes, backend, networking, Admin surface, or live LLM provider. Full suite (812 suites / 3369 tests) and typecheck remain green.

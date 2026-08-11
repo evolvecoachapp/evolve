@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
+import { Chip } from "../../../components/Chip";
 import { useTheme } from "../../../theme/ThemeContext";
 import { spacing } from "../../../theme/theme";
 import { useThemedStyles } from "../../../theme/useThemedStyles";
@@ -82,7 +83,16 @@ export function WorkoutRuntimeHeader({
     <View style={styles.container}>
       <View style={styles.topRow}>
         <View style={styles.titles}>
-          <Text style={styles.eyebrow}>{runtime.subtitle}</Text>
+          {runtime.state.isCompleted ? (
+            <Chip
+              label="Completed"
+              variant="accent"
+              size="sm"
+              icon="checkmark-circle"
+            />
+          ) : (
+            <Text style={styles.eyebrow}>{runtime.subtitle}</Text>
+          )}
           <Text style={styles.title}>{runtime.title}</Text>
           <Text style={styles.subtitle}>{runtime.muscleGroups}</Text>
         </View>

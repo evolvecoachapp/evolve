@@ -43,20 +43,25 @@ export function ReadinessCard({ readiness, onUpdateReadiness }: ReadinessCardPro
   }));
 
   const hasScore = readiness.score > 0;
+  const summaryLabel = hasScore
+    ? `Readiness: ${readiness.score}%, ${readiness.label}`
+    : "Readiness: not updated for this day";
 
   return (
     <AppCard variant="elevated">
-      <View style={styles.header}>
-        <View style={styles.iconRing}>
-          <Ionicons name="pulse-outline" size={spacing.icon.sm} color={colors.pulse} />
+      <View accessible accessibilityRole="summary" accessibilityLabel={summaryLabel}>
+        <View style={styles.header}>
+          <View style={styles.iconRing}>
+            <Ionicons name="pulse-outline" size={spacing.icon.sm} color={colors.pulse} />
+          </View>
+          <Text style={styles.label}>Readiness</Text>
         </View>
-        <Text style={styles.label}>Readiness</Text>
+        <View style={styles.valueRow}>
+          <Text style={styles.value}>{hasScore ? `${readiness.score}%` : "—"}</Text>
+          <Text style={styles.status}>{hasScore ? readiness.label : "Not updated"}</Text>
+        </View>
+        <ProgressBar progress={hasScore ? readiness.score : 0} style={styles.progress} />
       </View>
-      <View style={styles.valueRow}>
-        <Text style={styles.value}>{hasScore ? `${readiness.score}%` : "—"}</Text>
-        <Text style={styles.status}>{hasScore ? readiness.label : "Not updated"}</Text>
-      </View>
-      <ProgressBar progress={hasScore ? readiness.score : 0} style={styles.progress} />
       {onUpdateReadiness ? (
         <AppButton
           label="Update readiness"

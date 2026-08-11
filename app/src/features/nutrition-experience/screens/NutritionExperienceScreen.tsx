@@ -87,7 +87,10 @@ export function NutritionExperienceScreen({ service }: NutritionExperienceScreen
                   <CaloriesCard macros={dashboard.dashboard!.macros} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <HydrationCard hydration={hydration.hydration ?? dashboard.dashboard!.hydration} />
+                  <HydrationCard
+                    hydration={hydration.hydration ?? dashboard.dashboard!.hydration}
+                    onLogHydration={(amountMl) => void dashboard.logHydration(amountMl)}
+                  />
                 </View>
               </View>
               <MacroRingCard macros={dashboard.dashboard!.macros} />

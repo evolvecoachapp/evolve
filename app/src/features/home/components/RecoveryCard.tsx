@@ -44,14 +44,20 @@ export function RecoveryCard({ recovery, index }: RecoveryCardProps) {
   return (
     <DashboardSection title="Recovery" index={index}>
       <AppCard variant="accent" glow>
-        <View style={styles.recoveryHeader}>
-          <View>
-            <Text style={styles.recoveryLabel}>Recovery score</Text>
-            <Text style={styles.recoveryScore}>{recovery.score}%</Text>
+        <View
+          accessible
+          accessibilityRole="summary"
+          accessibilityLabel={`Recovery score ${recovery.score}%, ${recovery.status}. ${recovery.tip}`}
+        >
+          <View style={styles.recoveryHeader}>
+            <View>
+              <Text style={styles.recoveryLabel}>Recovery score</Text>
+              <Text style={styles.recoveryScore}>{recovery.score}%</Text>
+            </View>
+            <Chip label={recovery.status} variant="accent" size="md" />
           </View>
-          <Chip label={recovery.status} variant="accent" size="md" />
+          <Text style={styles.recoveryTip}>{recovery.tip}</Text>
         </View>
-        <Text style={styles.recoveryTip}>{recovery.tip}</Text>
       </AppCard>
     </DashboardSection>
   );

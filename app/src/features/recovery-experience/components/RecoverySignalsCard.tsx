@@ -32,19 +32,26 @@ export function RecoverySignalsCard({
     action: { marginTop: spacing.sm, alignSelf: "flex-start" as const },
   }));
 
+  const summaryLabel =
+    signals.length === 0
+      ? "Recovery signals: none yet"
+      : `Recovery signals: ${signals.map((signal) => signal.summary).join(". ")}`;
+
   return (
     <AppCard variant="elevated">
-      <Text style={styles.title}>Recovery signals</Text>
-      {signals.length === 0 ? (
-        <Text style={styles.empty}>No recovery signals yet.</Text>
-      ) : (
-        signals.map((signal) => (
-          <View key={signal.id} style={styles.signalRow}>
-            <Ionicons name="ellipse" size={6} color={colors.pulse} style={{ marginTop: 8 }} />
-            <Text style={styles.signal}>{signal.summary}</Text>
-          </View>
-        ))
-      )}
+      <View accessible accessibilityRole="summary" accessibilityLabel={summaryLabel}>
+        <Text style={styles.title}>Recovery signals</Text>
+        {signals.length === 0 ? (
+          <Text style={styles.empty}>No recovery signals yet.</Text>
+        ) : (
+          signals.map((signal) => (
+            <View key={signal.id} style={styles.signalRow}>
+              <Ionicons name="ellipse" size={6} color={colors.pulse} style={{ marginTop: 8 }} />
+              <Text style={styles.signal}>{signal.summary}</Text>
+            </View>
+          ))
+        )}
+      </View>
       {assessmentAvailable && onAssess ? (
         <AppButton
           label="Run recovery assessment"

@@ -23,6 +23,7 @@ import {
   SkeletonWorkout,
   WeightInput,
   WorkoutBottomBar,
+  WorkoutCompleteCard,
   WorkoutProgressBar,
   WorkoutRuntimeHeader,
   WorkoutStatisticsCard,
@@ -172,6 +173,10 @@ export function WorkoutRuntimeScreen({
 
               {workout.currentExercise ? (
                 <SetList sets={workout.currentExercise.sets} />
+              ) : null}
+
+              {workout.runtime.state.isCompleted ? (
+                <WorkoutCompleteCard runtime={workout.runtime} />
               ) : null}
 
               {workout.currentSet && !workout.runtime.state.isCompleted ? (

@@ -368,6 +368,39 @@ describe("Recovery runtime integration", () => {
     ).toBe(true);
   });
 
+  it("changeDay does not carry the previous day's sleep/readiness overlay onto a different day", async () => {
+    await seedPopulatedHydratedRecovery();
+
+    const viewModel = new RecoveryExperienceViewModel({
+      athleteId: ATHLETE_ID,
+      now: () => new Date(FIXED_DASHBOARD_PROJECTED_AT),
+    });
+    viewModel.applyHydratedRecovery(
+      (await loadHydratedRecoveryExperience({ athleteId: ATHLETE_ID }))!,
+    );
+
+    const todayIsoDate = viewModel.day.isoDate;
+    const baselineSleepHours = viewModel.dashboard?.sleep.hours ?? 0;
+
+    await viewModel.logSleep(9.5);
+    expect(viewModel.dashboard?.sleep.hours).toBe(9.5);
+
+    const [yesterday, , tomorrow] = viewModel.availableDays;
+    expect(yesterday.isoDate).not.toBe(todayIsoDate);
+    expect(tomorrow.isoDate).not.toBe(todayIsoDate);
+
+    await viewModel.changeDay(yesterday);
+    expect(viewModel.day.isoDate).toBe(yesterday.isoDate);
+    expect(viewModel.dashboard?.sleep.hours).not.toBe(9.5);
+    expect(viewModel.dashboard?.sleep.hours).toBe(baselineSleepHours);
+
+    const today = viewModel.availableDays.find(
+      (day) => day.isoDate === todayIsoDate,
+    )!;
+    await viewModel.changeDay(today);
+    expect(viewModel.dashboard?.sleep.hours).toBe(9.5);
+  });
+
   it("hydrated recovery path does not import SQLite or repository adapters directly", () => {
     const loadModule = require("../application/loadHydratedRecoveryExperience");
     const viewModelModule = require("../viewmodels/RecoveryExperienceViewModel");

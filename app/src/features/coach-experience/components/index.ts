@@ -12,3 +12,4 @@ export { CoachMemoryCard } from "./CoachMemoryCard";
 export { CoachLoading } from "./CoachLoading";
 export { CoachEmpty } from "./CoachEmpty";
 export { CoachError } from "./CoachError";
+export { CoachInlineError } from "./CoachInlineError";

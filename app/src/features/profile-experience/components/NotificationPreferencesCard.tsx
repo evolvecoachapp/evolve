@@ -1,53 +1,39 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Text, View } from "react-native";
 import { AppCard } from "../../../components/AppCard";
+import { useTheme } from "../../../theme/ThemeContext";
 import { spacing } from "../../../theme/theme";
 import { useThemedStyles } from "../../../theme/useThemedStyles";
-import type { NotificationPreferences } from "../models";
 
 export interface NotificationPreferencesCardProps {
-  readonly prefs: NotificationPreferences;
+  /** Navigates to the Notifications tab — the source of truth for reminder/alert settings. */
+  readonly onPress?: () => void;
 }
 
-function StatusDot({ enabled }: { readonly enabled: boolean }) {
-  return (
-    <View
-      style={{
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: enabled ? "#34C759" : "#8E8E93",
-        marginTop: 6,
-      }}
-    />
-  );
-}
-
-export function NotificationPreferencesCard({ prefs }: NotificationPreferencesCardProps) {
+/**
+ * Profile doesn't own reminder/alert settings — those live in Notification
+ * Center. Rather than showing a second, possibly-stale copy of that state,
+ * this links out to the tab that actually reads and saves it.
+ */
+export function NotificationPreferencesCard({ onPress }: NotificationPreferencesCardProps) {
+  const { colors } = useTheme();
   const styles = useThemedStyles(({ colors, typography }) => ({
-    body: { gap: spacing.sm },
+    row: { flexDirection: "row" as const, alignItems: "center" as const, gap: spacing.md },
+    text: { flex: 1, gap: spacing.xs },
     title: { ...typography.title3 },
-    item: { flexDirection: "row" as const, gap: spacing.sm, alignItems: "flex-start" as const },
-    label: { ...typography.body },
+    value: { ...typography.callout, color: colors.inkMuted },
   }));
 
-  const items: { label: string; enabled: boolean }[] = [
-    { label: "Workout reminders", enabled: prefs.workoutReminders },
-    { label: "Meal reminders", enabled: prefs.mealReminders },
-    { label: "Hydration reminders", enabled: prefs.hydrationReminders },
-    { label: "Coach messages", enabled: prefs.coachMessages },
-    { label: "Progress updates", enabled: prefs.progressUpdates },
-  ];
-
   return (
-    <AppCard variant="floating">
-      <View style={styles.body}>
-        <Text style={styles.title}>Notifications</Text>
-        {items.map((it) => (
-          <View key={it.label} style={styles.item}>
-            <StatusDot enabled={it.enabled} />
-            <Text style={styles.label}>{it.label}</Text>
-          </View>
-        ))}
+    <AppCard variant="floating" onPress={onPress}>
+      <View style={styles.row}>
+        <View style={styles.text}>
+          <Text style={styles.title}>Notifications</Text>
+          <Text style={styles.value}>Manage reminders and alerts in the Notifications tab</Text>
+        </View>
+        {onPress ? (
+          <Ionicons name="chevron-forward" size={spacing.icon.md} color={colors.inkMuted} />
+        ) : null}
       </View>
     </AppCard>
   );

@@ -112,7 +112,8 @@ export function AppButton({
   return (
     <AnimatedPressable
       accessibilityRole="button"
-      accessibilityState={{ disabled: isDisabled }}
+      accessibilityLabel={loading ? `${label}, loading` : label}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       onPress={onPress}
       disabled={isDisabled}
       variant={interaction === "floating" ? "floating" : "default"}

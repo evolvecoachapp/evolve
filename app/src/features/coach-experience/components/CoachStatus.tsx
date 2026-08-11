@@ -25,11 +25,12 @@ export function CoachStatus({
     }),
   );
 
+  // Coach responses are composed deterministically, not streamed token-by-token
+  // from a live model — the status line intentionally avoids "streaming"
+  // language so it never implies a live-LLM capability the backend doesn't have.
   let label = "Ready";
-  if (typing.isStreaming) {
-    label = "Streaming response…";
-  } else if (typing.isTyping || (streamingPrepared && typing.visible)) {
-    label = "Coach is typing…";
+  if (typing.isStreaming || typing.isTyping || (streamingPrepared && typing.visible)) {
+    label = "Coach is responding…";
   }
 
   return (

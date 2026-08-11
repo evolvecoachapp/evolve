@@ -43,24 +43,30 @@ export function SleepCard({ sleep, onLogSleep }: SleepCardProps) {
     action: { marginTop: spacing.md, alignSelf: "flex-start" as const },
   }));
 
+  const summaryLabel = sleep.logged
+    ? `Sleep: ${sleep.hours} hours, ${sleep.label}, quality ${Math.round(sleep.quality)}%`
+    : "Sleep: not logged for this day";
+
   return (
     <AppCard variant="elevated">
-      <View style={styles.header}>
-        <View style={styles.iconRing}>
-          <Ionicons name="moon-outline" size={spacing.icon.sm} color={colors.pulse} />
+      <View accessible accessibilityRole="summary" accessibilityLabel={summaryLabel}>
+        <View style={styles.header}>
+          <View style={styles.iconRing}>
+            <Ionicons name="moon-outline" size={spacing.icon.sm} color={colors.pulse} />
+          </View>
+          <Text style={styles.label}>Sleep</Text>
         </View>
-        <Text style={styles.label}>Sleep</Text>
+        <View style={styles.valueRow}>
+          <Text style={styles.value}>{sleep.logged ? `${sleep.hours}h` : "—"}</Text>
+          <Text style={styles.status}>{sleep.logged ? sleep.label : "Not logged"}</Text>
+        </View>
+        {sleep.logged ? (
+          <>
+            <Text style={styles.qualityLabel}>Sleep quality</Text>
+            <ProgressBar progress={sleep.quality} style={styles.progress} />
+          </>
+        ) : null}
       </View>
-      <View style={styles.valueRow}>
-        <Text style={styles.value}>{sleep.logged ? `${sleep.hours}h` : "—"}</Text>
-        <Text style={styles.status}>{sleep.logged ? sleep.label : "Not logged"}</Text>
-      </View>
-      {sleep.logged ? (
-        <>
-          <Text style={styles.qualityLabel}>Sleep quality</Text>
-          <ProgressBar progress={sleep.quality} style={styles.progress} />
-        </>
-      ) : null}
       {onLogSleep ? (
         <AppButton
           label="Log 7.5h sleep"

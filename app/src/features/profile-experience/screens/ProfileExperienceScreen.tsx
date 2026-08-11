@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../../auth/useAuth";
 import { GradientBackground } from "../../../components/GradientBackground";
 import { TabScreenContainer } from "../../../components/TabScreenContainer";
+import { isReachableRoute } from "../../../navigation/isReachableRoute";
 import { useTheme } from "../../../theme/ThemeContext";
 import { spacing } from "../../../theme/theme";
 import { useThemedStyles } from "../../../theme/useThemedStyles";
@@ -38,7 +39,7 @@ export function ProfileExperienceScreen({ service }: ProfileExperienceScreenProp
   const { user } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const { colors, preference: livePreference } = useTheme();
   const dashboard = useProfile({
     service,
     athleteId: user?.id,
@@ -81,13 +82,25 @@ export function ProfileExperienceScreen({ service }: ProfileExperienceScreenProp
             <>
               <ProfileHeader profile={dashboard.profile!} />
               <AthleteCard profile={dashboard.profile!} />
-              <GoalsCard goals={dashboard.profile!.goals} />
+              <GoalsCard
+                goals={dashboard.profile!.goals}
+                onPress={isReachableRoute("/(app)/goals") ? () => router.push("/(app)/goals" as never) : undefined}
+              />
               <TrainingPreferencesCard prefs={dashboard.profile!.trainingPreferences} />
               <NutritionPreferencesCard prefs={dashboard.profile!.nutritionPreferences} />
               <CoachPreferencesCard prefs={dashboard.profile!.coachPreferences} />
-              <NotificationPreferencesCard prefs={dashboard.profile!.notificationPreferences} />
+              <NotificationPreferencesCard
+                onPress={
+                  isReachableRoute("/(app)/notifications")
+                    ? () => router.push("/(app)/notifications" as never)
+                    : undefined
+                }
+              />
               <AppearanceCard
-                prefs={dashboard.profile!.appearancePreferences}
+                // Athlete Identity's stored appearance setting isn't wired to the
+                // live theme switch in Settings, so show the actual active
+                // preference here instead of a possibly-stale identity field.
+                prefs={{ ...dashboard.profile!.appearancePreferences, theme: livePreference }}
                 onPress={() => router.push("/(app)/settings/appearance")}
               />
               <MeasurementUnitsCard units={dashboard.profile!.measurementUnits} />

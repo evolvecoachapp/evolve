@@ -2,11 +2,23 @@ import type { WorkspaceRecovery } from "../../unified-workspace/models/Workspace
 import type { RecoveryDashboardDto } from "../services";
 import type { RecoveryDay } from "../models";
 
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Shifts an `isoDate` (YYYY-MM-DD) by a whole number of days, in UTC. */
+function shiftIsoDate(isoDate: string, deltaDays: number): string {
+  const shifted = new Date(`${isoDate}T00:00:00.000Z`).getTime() + deltaDays * ONE_DAY_MS;
+  return new Date(shifted).toISOString().slice(0, 10);
+}
+
 function buildAvailableDays(base: RecoveryDay): readonly RecoveryDay[] {
+  const yesterdayIsoDate = shiftIsoDate(base.isoDate, -1);
+  const tomorrowIsoDate = shiftIsoDate(base.isoDate, 1);
+
   return Object.freeze([
     Object.freeze({
       ...base,
-      id: `${base.isoDate}-minus-1`,
+      id: `${yesterdayIsoDate}-minus-1`,
+      isoDate: yesterdayIsoDate,
       label: "Yesterday",
       shortLabel: "Yday",
       relativeLabel: "Yesterday",
@@ -15,7 +27,8 @@ function buildAvailableDays(base: RecoveryDay): readonly RecoveryDay[] {
     Object.freeze({ ...base }),
     Object.freeze({
       ...base,
-      id: `${base.isoDate}-plus-1`,
+      id: `${tomorrowIsoDate}-plus-1`,
+      isoDate: tomorrowIsoDate,
       label: "Tomorrow",
       shortLabel: "Tom",
       relativeLabel: "Tomorrow",

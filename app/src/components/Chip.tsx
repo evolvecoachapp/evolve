@@ -14,6 +14,10 @@ interface ChipProps {
   icon?: keyof typeof Ionicons.glyphMap;
   onPress?: () => void;
   style?: ViewStyle;
+  /** Overrides the accessibility label — defaults to `label` when omitted. */
+  accessibilityLabel?: string;
+  /** Only meaningful with `onPress` — keeps the chip visibly pressable but inert. */
+  disabled?: boolean;
 }
 
 const SIZE_STYLES: Record<ChipSize, ViewStyle> = {
@@ -41,6 +45,8 @@ export function Chip({
   icon,
   onPress,
   style,
+  accessibilityLabel,
+  disabled = false,
 }: ChipProps) {
   const { colors, typography } = useTheme();
   const styles = useThemedStyles(({ colors }) => ({
@@ -151,8 +157,15 @@ export function Chip({
     return (
       <Pressable
         accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel ?? label}
+        accessibilityState={{ selected: variant === "selected", disabled }}
+        disabled={disabled}
         onPress={onPress}
-        style={({ pressed }) => [...chipStyle, pressed && styles.pressed]}
+        style={({ pressed }) => [
+          ...chipStyle,
+          disabled && { opacity: spacing.interaction.disabledOpacity },
+          pressed && styles.pressed,
+        ]}
       >
         {content}
       </Pressable>

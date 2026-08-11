@@ -69,6 +69,36 @@ describe("ProgressExperienceViewModel", () => {
     expect(viewModel.dashboard?.headline).not.toBe(firstHeadline);
   });
 
+  it("keeps the previous dashboard visible while a time-range switch is in flight, avoiding a blank screen", async () => {
+    let resolveGetDashboard: (() => void) | undefined;
+    const service: ProgressExperienceService = {
+      ...mockProgressExperienceService,
+      async getDashboard(timeRange) {
+        if (resolveGetDashboard !== undefined) {
+          await new Promise<void>((resolve) => {
+            resolveGetDashboard = resolve;
+          });
+        }
+        return mockProgressExperienceService.getDashboard(timeRange);
+      },
+    };
+    const viewModel = new ProgressExperienceViewModel({ service });
+    await viewModel.loadDashboard();
+    const firstHeadline = viewModel.dashboard?.headline;
+
+    resolveGetDashboard = () => {};
+    const pending = viewModel.changeTimeRange(TimeRanges.LAST_7_DAYS);
+
+    expect(viewModel.loading.isLoading).toBe(true);
+    expect(viewModel.dashboard?.headline).toBe(firstHeadline);
+
+    resolveGetDashboard();
+    await pending;
+
+    expect(viewModel.loading.isLoading).toBe(false);
+    expect(viewModel.dashboard?.headline).not.toBe(firstHeadline);
+  });
+
   it("reloads section projections independently", async () => {
     const viewModel = new ProgressExperienceViewModel({ service: mockProgressExperienceService });
     await viewModel.loadDashboard();

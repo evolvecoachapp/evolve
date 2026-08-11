@@ -434,7 +434,7 @@ describe("Profile runtime update persistence (Sprint 34.6)", () => {
     expect(restored?.appearancePreferences.theme).toBe("dark");
   });
 
-  it("leaves unsupported profile fields unchanged in runtime path", async () => {
+  it("fails clearly (rather than silently pretending success) for unsupported profile fields in the runtime path", async () => {
     await startObservedRuntime();
 
     const viewModel = new ProfileExperienceViewModel({ athleteId: ATHLETE_ID });
@@ -452,7 +452,8 @@ describe("Profile runtime update persistence (Sprint 34.6)", () => {
       },
     ]);
 
-    expect(viewModel.error).toBeNull();
+    expect(viewModel.error).not.toBeNull();
+    expect(viewModel.error?.message).toMatch(/goals/i);
     expect(viewModel.profile?.goals).toHaveLength(0);
 
     await viewModel.updateNotifications({
@@ -463,6 +464,8 @@ describe("Profile runtime update persistence (Sprint 34.6)", () => {
       progressUpdates: true,
     });
 
+    expect(viewModel.error).not.toBeNull();
+    expect(viewModel.error?.message).toMatch(/notification/i);
     expect(viewModel.profile?.notificationPreferences.workoutReminders).toBe(false);
   });
 

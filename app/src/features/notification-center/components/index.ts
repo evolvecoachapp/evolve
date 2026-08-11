@@ -1,3 +1,4 @@
+export * from "./AddReminderRow";
 export * from "./CoachNotificationCard";
 export * from "./NotificationCard";
 export * from "./NotificationCenterHeader";

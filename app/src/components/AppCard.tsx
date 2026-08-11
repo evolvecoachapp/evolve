@@ -1,4 +1,4 @@
-import { View, type ViewStyle } from "react-native";
+import { View, type AccessibilityState, type ViewStyle } from "react-native";
 import { AnimatedPressable } from "../animation/AnimatedPressable";
 import { radius, spacing } from "../theme/theme";
 import { useThemedStyles } from "../theme/useThemedStyles";
@@ -14,6 +14,10 @@ interface AppCardProps {
   padding?: "default" | "none" | "compact";
   /** Subtle pulse glow behind card — for featured content. */
   glow?: boolean;
+  /** Only meaningful when `onPress` is set — forwarded to the underlying Pressable. */
+  accessibilityLabel?: string;
+  /** Only meaningful when `onPress` is set — forwarded to the underlying Pressable. */
+  accessibilityState?: AccessibilityState;
 }
 
 function resolveVariant(variant: AppCardVariant) {
@@ -30,6 +34,8 @@ export function AppCard({
   style,
   padding = "default",
   glow = false,
+  accessibilityLabel,
+  accessibilityState,
 }: AppCardProps) {
   const styles = useThemedStyles(({ colors, shadows }) => ({
     base: {
@@ -110,6 +116,8 @@ export function AppCard({
   const content = onPress ? (
     <AnimatedPressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={accessibilityState}
       onPress={onPress}
       variant="card"
       style={cardStyle}

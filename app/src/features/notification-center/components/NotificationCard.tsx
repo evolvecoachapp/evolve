@@ -48,7 +48,16 @@ export function NotificationCard({ notification, onDismiss, onPress }: Notificat
   }));
 
   return (
-    <AppCard variant={isUnread ? "accent" : "floating"} onPress={onPress}>
+    <AppCard
+      variant={isUnread ? "accent" : "floating"}
+      onPress={onPress}
+      accessibilityLabel={
+        onPress
+          ? `${notification.title}. ${isUnread ? "Unread. Double tap to mark as read." : "Read."}`
+          : undefined
+      }
+      accessibilityState={onPress ? { selected: !isUnread } : undefined}
+    >
       <View style={styles.body}>
         <View style={styles.header}>
           <View style={styles.iconRing}>

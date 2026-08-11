@@ -13,6 +13,7 @@ import {
   CoachEmpty,
   CoachError,
   CoachHeader,
+  CoachInlineError,
   CoachLoading,
   CoachMemoryCard,
   CoachStatus,
@@ -89,9 +90,18 @@ export function CoachExperienceScreen({
     void conversation.sendMessage(action.prompt);
   };
 
+  // A load/refresh failure with no prior experience is a full-page error —
+  // there is nothing else to show. A send/regenerate failure that occurs
+  // once a conversation already exists must not hide that conversation;
+  // it renders as an inline banner instead (see CoachInlineError below).
+  const showFullPageError =
+    !conversation.loading.isLoading &&
+    !!conversation.error &&
+    !conversation.experience;
+
   const showContent =
     !conversation.loading.isLoading &&
-    !conversation.error &&
+    !showFullPageError &&
     conversation.experience &&
     !conversation.isEmpty;
 
@@ -117,14 +127,15 @@ export function CoachExperienceScreen({
             <CoachLoading />
           ) : null}
 
-          {conversation.error && !conversation.loading.isLoading ? (
+          {showFullPageError ? (
             <CoachError
-              error={conversation.error}
+              error={conversation.error!}
               onRetry={() => void conversation.refresh()}
             />
           ) : null}
 
           {!conversation.loading.isLoading &&
+          !showFullPageError &&
           !conversation.error &&
           conversation.isEmpty ? (
             <CoachEmpty />
@@ -202,6 +213,13 @@ export function CoachExperienceScreen({
                   void conversation.regenerateResponse(messageId)
                 }
               />
+
+              {conversation.error ? (
+                <CoachInlineError
+                  error={conversation.error}
+                  onRetry={() => void conversation.refresh()}
+                />
+              ) : null}
 
               <ConversationInput
                 onSend={(message) => void conversation.sendMessage(message)}

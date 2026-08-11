@@ -30,33 +30,39 @@ export function TrainingPreferencesCard({ prefs }: TrainingPreferencesCardProps)
           </View>
           <View>
             <Text style={styles.label}>Sessions/week</Text>
-            <Text style={styles.value}>{prefs.sessionsPerWeek}</Text>
+            <Text style={styles.value}>{prefs.sessionsPerWeek > 0 ? prefs.sessionsPerWeek : "—"}</Text>
           </View>
           <View>
             <Text style={styles.label}>Duration</Text>
-            <Text style={styles.value}>{prefs.preferredDuration} min</Text>
+            <Text style={styles.value}>{prefs.preferredDuration > 0 ? `${prefs.preferredDuration} min` : "—"}</Text>
           </View>
         </View>
-        <View>
-          <Text style={styles.label}>Preferred time</Text>
-          <Text style={styles.value}>{prefs.preferredTime}</Text>
-        </View>
-        <View>
-          <Text style={styles.label}>Focus areas</Text>
-          <View style={styles.tags}>
-            {prefs.focusAreas.map((area) => (
-              <Text key={area} style={styles.tag}>{area}</Text>
-            ))}
+        {prefs.preferredTime ? (
+          <View>
+            <Text style={styles.label}>Preferred time</Text>
+            <Text style={styles.value}>{prefs.preferredTime}</Text>
           </View>
-        </View>
-        <View>
-          <Text style={styles.label}>Equipment</Text>
-          <View style={styles.tags}>
-            {prefs.equipmentAvailable.map((eq) => (
-              <Text key={eq} style={styles.tag}>{eq}</Text>
-            ))}
+        ) : null}
+        {prefs.focusAreas.length > 0 ? (
+          <View>
+            <Text style={styles.label}>Focus areas</Text>
+            <View style={styles.tags}>
+              {prefs.focusAreas.map((area) => (
+                <Text key={area} style={styles.tag}>{area}</Text>
+              ))}
+            </View>
           </View>
-        </View>
+        ) : null}
+        {prefs.equipmentAvailable.length > 0 ? (
+          <View>
+            <Text style={styles.label}>Equipment</Text>
+            <View style={styles.tags}>
+              {prefs.equipmentAvailable.map((eq) => (
+                <Text key={eq} style={styles.tag}>{eq}</Text>
+              ))}
+            </View>
+          </View>
+        ) : null}
       </View>
     </AppCard>
   );
