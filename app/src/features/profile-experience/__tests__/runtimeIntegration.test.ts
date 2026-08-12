@@ -410,7 +410,11 @@ describe("Profile runtime update persistence (Sprint 34.6)", () => {
     await startObservedRuntime();
 
     const adapters = getCompositionRoot().resolve("RepositoryAdapters");
-    expect(adapters.identity.list()).toHaveLength(0);
+    expect(adapters.identity.list().length).toBeGreaterThanOrEqual(1);
+    expect(
+      readRecordPayload<AthleteIdentity>(adapters.identity.list()[0])?.settings
+        .appearance,
+    ).not.toBe("light");
 
     const viewModel = new ProfileExperienceViewModel({ athleteId: ATHLETE_ID });
     viewModel.applyHydratedProfile(readHydratedProfile(ATHLETE_ID)!);
@@ -432,6 +436,8 @@ describe("Profile runtime update persistence (Sprint 34.6)", () => {
     await waitForWriteThrough();
 
     resetRuntimePipelinesPreservingCompositionRoot();
+    resetRuntimeBootstrap();
+    resetCompositionRoot();
 
     await startRuntimeSession({
       athleteIds: [ATHLETE_ID],

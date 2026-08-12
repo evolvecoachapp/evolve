@@ -358,8 +358,11 @@ describe("Sprint 36.5 — Runtime Persistence Verification & Consistency Guard (
       expect(readPersistedNotificationSessionOverlay(ATHLETE_B)).toBeNull();
       const rootB = getCompositionRoot();
       expect(
-        rootB.resolve("AthleteIdentityService").getAthleteIdentity(ATHLETE_B),
+        rootB.resolve("AthleteIdentityService").getAthleteIdentity(ATHLETE_A),
       ).toBeNull();
+      expect(
+        rootB.resolve("AthleteIdentityService").getAthleteIdentity(ATHLETE_B),
+      ).not.toBeNull();
 
       // B persists their own, unrelated state.
       seedIdentity(ATHLETE_B, "Bailey Chen");

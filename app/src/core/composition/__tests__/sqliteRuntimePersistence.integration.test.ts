@@ -232,7 +232,9 @@ describe("SQLite runtime persistence activation (Sprint 34.1 / 34.3)", () => {
 
       const root = getCompositionRoot();
       const adapters = root.resolve("RepositoryAdapters");
-      expect(adapters.identity.list()).toHaveLength(0);
+      expect(adapters.identity.list().length).toBeGreaterThanOrEqual(1);
+      expect(adapters.workspace.list().length).toBeGreaterThanOrEqual(1);
+      expect(adapters.runtime.list()).toHaveLength(0);
 
       await buildRuntimeStateForPersistence();
       await waitForWriteThrough();
@@ -336,6 +338,7 @@ describe("SQLite runtime persistence activation (Sprint 34.1 / 34.3)", () => {
       });
 
       await buildRuntimeStateForPersistence();
+      resetRuntimeWriteThrough();
       await persistRuntime({ athleteIds: [ATHLETE_ID] });
 
       const adapters = getCompositionRoot().resolve("RepositoryAdapters");
