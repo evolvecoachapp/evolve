@@ -316,3 +316,64 @@ export interface WorkoutLogPageDto {
   limit: number;
   offset: number;
 }
+
+/*
+ * ---------------------------------------------------------------------------
+ * Nutrition domain (backend/app/schemas/nutrition.py).
+ *
+ * Macro Decimal fields are serialized by FastAPI/Pydantic as JSON *strings*
+ * (e.g. `"520.00"`), never numbers — callers must coerce before arithmetic.
+ * ---------------------------------------------------------------------------
+ */
+
+/** Mirrors `app.models.meal.MealType`. */
+export type MealTypeDto =
+  | "breakfast"
+  | "lunch"
+  | "dinner"
+  | "snack"
+  | "pre_workout"
+  | "post_workout"
+  | "other";
+
+/** Mirrors `app.schemas.nutrition.MealLogRead`. */
+export interface MealLogReadDto {
+  id: string;
+  user_id: string;
+  meal_id: string | null;
+  name_snapshot: string;
+  meal_type: MealTypeDto;
+  calories: string | number;
+  protein_g: string | number;
+  carbs_g: string | number;
+  fat_g: string | number;
+  consumed_at: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Mirrors `app.schemas.nutrition.MealLogPage`. */
+export interface MealLogPageDto {
+  items: MealLogReadDto[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+/** Mirrors `app.schemas.nutrition.MacroBreakdown`. */
+export interface MacroBreakdownDto {
+  calories: string | number;
+  protein_g: string | number;
+  carbs_g: string | number;
+  fat_g: string | number;
+}
+
+/** Mirrors `app.schemas.nutrition.DailyNutritionRead`. */
+export interface DailyNutritionReadDto {
+  targets: MacroBreakdownDto;
+  actual: MacroBreakdownDto;
+  adherence: Record<string, string>;
+  summary_text: string;
+  for_date: string;
+}
