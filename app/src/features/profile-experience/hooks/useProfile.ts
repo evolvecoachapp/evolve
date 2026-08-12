@@ -91,6 +91,7 @@ export function useProfile({
     updateNutritionPreferences: useCallback((p: Parameters<ProfileExperienceViewModel["updateNutritionPreferences"]>[0]) => viewModel.updateNutritionPreferences(p), [viewModel]),
     updateGoals: useCallback((g: Parameters<ProfileExperienceViewModel["updateGoals"]>[0]) => viewModel.updateGoals(g), [viewModel]),
     updateCoachPreferences: useCallback((p: Parameters<ProfileExperienceViewModel["updateCoachPreferences"]>[0]) => viewModel.updateCoachPreferences(p), [viewModel]),
+    updateAthleteInfo: useCallback((i: Parameters<ProfileExperienceViewModel["updateAthleteInfo"]>[0]) => viewModel.updateAthleteInfo(i), [viewModel]),
     viewModel,
   };
 }

@@ -2,6 +2,7 @@ import {
   loadProfile,
   refreshProfile,
   updateAppearancePreferences,
+  updateAthleteInfo,
   updateCoachPreferences,
   updateGoals,
   updateMeasurementUnits,
@@ -27,6 +28,7 @@ function createFailingService(): ProfileExperienceService {
     async updateAppearancePreferences() { throw new ProfileExperienceError("appearance failed", "mock"); },
     async updateMeasurementUnits() { throw new ProfileExperienceError("units failed", "mock"); },
     async updateGoals() { throw new ProfileExperienceError("goals failed", "mock"); },
+    async updateAthleteInfo() { throw new ProfileExperienceError("athlete info failed", "mock"); },
   };
 }
 
@@ -124,6 +126,21 @@ describe("profile-experience application APIs", () => {
     });
     expect(profile.goals.length).toBe(1);
     expect(profile.goals[0].title).toBe("Splits");
+  });
+
+  it("updates athlete info (height/weight) through the injected service", async () => {
+    const profile = await updateAthleteInfo({
+      service: mockProfileExperienceService,
+      input: { heightCm: 183, weightKg: 80 },
+    });
+    expect(profile.heightCm).toBe(183);
+    expect(profile.weightKg).toBe(80);
+  });
+
+  it("rejects an athlete info update when neither a service nor an athleteId is provided", async () => {
+    await expect(updateAthleteInfo({ input: { heightCm: 183 } })).rejects.toThrow(
+      "athleteId is required for runtime profile updates",
+    );
   });
 
   it("supports empty profile state", async () => {

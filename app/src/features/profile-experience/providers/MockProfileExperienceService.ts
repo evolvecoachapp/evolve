@@ -1,6 +1,7 @@
 import type {
   AppearancePreferencesDto,
   AthleteGoalDto,
+  AthleteInfoUpdateDto,
   AthleteProfileDto,
   CoachPreferencesDto,
   MeasurementUnitsDto,
@@ -163,6 +164,15 @@ export const mockProfileExperienceService: ProfileExperienceService = {
 
   async updateGoals(goals: readonly AthleteGoalDto[]) {
     currentProfile = { ...currentProfile, goals };
+    return currentProfile;
+  },
+
+  async updateAthleteInfo(input: AthleteInfoUpdateDto) {
+    currentProfile = {
+      ...currentProfile,
+      heightCm: input.heightCm !== undefined ? input.heightCm : currentProfile.heightCm,
+      weightKg: input.weightKg !== undefined ? input.weightKg : currentProfile.weightKg,
+    };
     return currentProfile;
   },
 };

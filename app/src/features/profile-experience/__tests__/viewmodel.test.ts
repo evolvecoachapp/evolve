@@ -27,6 +27,7 @@ describe("ProfileExperienceViewModel", () => {
       async updateAppearancePreferences() { throw new ProfileExperienceError("fail", "mock"); },
       async updateMeasurementUnits() { throw new ProfileExperienceError("fail", "mock"); },
       async updateGoals() { throw new ProfileExperienceError("fail", "mock"); },
+      async updateAthleteInfo() { throw new ProfileExperienceError("fail", "mock"); },
     };
     const viewModel = new ProfileExperienceViewModel({ service: failing });
     await viewModel.loadProfile();
@@ -50,6 +51,7 @@ describe("ProfileExperienceViewModel", () => {
       updateAppearancePreferences: mockProfileExperienceService.updateAppearancePreferences,
       updateMeasurementUnits: mockProfileExperienceService.updateMeasurementUnits,
       updateGoals: mockProfileExperienceService.updateGoals,
+      updateAthleteInfo: mockProfileExperienceService.updateAthleteInfo,
     };
     const viewModel = new ProfileExperienceViewModel({ service });
     await viewModel.loadProfile();

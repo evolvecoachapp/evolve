@@ -1,7 +1,8 @@
 import type { UserPublic } from "../../../types/api";
 import type { Subscription, User, UserPreferences, UserProfile } from "../models";
 
-function buildDisplayName(dto: UserPublic): string {
+/** Exported so other User-DTO consumers (e.g. the Profile Experience backend provider) can reuse this without duplicating the name-composition rule. */
+export function buildDisplayName(dto: UserPublic): string {
   if (dto.first_name) {
     return `${dto.first_name}${dto.last_name ? ` ${dto.last_name}` : ""}`;
   }
@@ -19,7 +20,7 @@ function buildDisplayName(dto: UserPublic): string {
  * changed. Coerce once here, at the API boundary, so the rest of the app
  * can trust the declared `number | null` domain type.
  */
-function toNumberOrNull(value: number | string | null | undefined): number | null {
+export function toNumberOrNull(value: number | string | null | undefined): number | null {
   if (value == null) {
     return null;
   }

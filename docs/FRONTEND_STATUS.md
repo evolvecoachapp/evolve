@@ -130,6 +130,7 @@ Default provider for all domains is **mock**. Mock providers serve static fixtur
 | Domain | Backend endpoints wired | Provider file | Status |
 |--------|-------------------------|---------------|--------|
 | User profile | `GET /users/me`, `PATCH /users/me` | `BackendUserService` | **Live** (Sprint 6.0–6.1) |
+| Profile Experience (Digital Athlete Profile) | `GET /users/me`, `PATCH /users/me` (height/weight + read model only — other domains have no backend field) | `BackendProfileExperienceService` | **Live for backend-owned fields** (Phase A.1) |
 | Coach | `POST /coach/messages`, `GET /coach/conversations/{id}/messages` | `BackendCoachService` (stub) | Pending |
 | Workout | `GET /workout-resolution/today`, `GET /workouts/current`, `GET /workouts/{id}`, `POST /workouts/session`, `/workout-logs/*` | `BackendWorkoutService` | **Live** (Sprint 6.3) |
 | Nutrition | `/nutrition/meals`, `/nutrition/logs`, `/nutrition/targets` | `BackendNutritionService` (stub) | Pending |

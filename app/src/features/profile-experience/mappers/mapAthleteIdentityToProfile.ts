@@ -20,7 +20,8 @@ import type { CoachingStyle } from "../models/CoachPreferences";
 import type { ThemeMode } from "../models/AppearancePreferences";
 import type { HeightUnit, WeightUnit, DistanceUnit } from "../models/MeasurementUnits";
 
-const DEFAULT_CONNECTED_SERVICES = Object.freeze([
+/** Exported so other providers (e.g. the backend profile provider) can reuse the same defaults without duplicating this list. */
+export const DEFAULT_CONNECTED_SERVICES = Object.freeze([
   { kind: "apple_health" as const, label: "Apple Health" },
   { kind: "google_fit" as const, label: "Google Fit" },
   { kind: "garmin" as const, label: "Garmin" },
@@ -28,7 +29,7 @@ const DEFAULT_CONNECTED_SERVICES = Object.freeze([
   { kind: "oura" as const, label: "Oura" },
 ]);
 
-const DEFAULT_SECTIONS = Object.freeze([
+export const DEFAULT_SECTIONS = Object.freeze([
   { kind: "athlete" as const, title: "Athlete Profile", subtitle: "Personal information and identity", icon: "person-outline", destination: "/(app)/profile/edit" },
   { kind: "goals" as const, title: "Goals", subtitle: "Current training and body composition goals", icon: "flag-outline", destination: "/(app)/profile/goals" },
   { kind: "training" as const, title: "Training", subtitle: "Session frequency, duration, and focus", icon: "barbell-outline", destination: "/(app)/profile/training-preferences" },

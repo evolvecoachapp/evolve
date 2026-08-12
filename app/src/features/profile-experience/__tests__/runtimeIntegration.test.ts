@@ -25,12 +25,19 @@ import { ProfileLoadingStatuses, ProfileSavingStatuses } from "../models";
 import { updateMeasurementUnits } from "../application";
 import { ProfileExperienceError } from "../services";
 import { readHydratedProfile } from "../services/readHydratedProfile";
+import { ApiError } from "../../../api/client";
 
 jest.mock("../../../runtime/session/RuntimeSessionContext", () => ({
   useRuntimeSession: jest.fn(),
 }));
 
+jest.mock("../../../api/users", () => ({
+  updateCurrentUser: jest.fn(),
+}));
+
 const mockedUseRuntimeSession = useRuntimeSession as jest.Mock;
+const mockedUpdateCurrentUser = jest.requireMock("../../../api/users")
+  .updateCurrentUser as jest.MockedFunction<typeof import("../../../api/users").updateCurrentUser>;
 
 const ATHLETE_ID = FIXED_DASHBOARD_ATHLETE_ID;
 const FIXED_CLOCK = () => "2026-08-10T10:00:00.000Z";
@@ -319,6 +326,7 @@ describe("Profile runtime integration", () => {
 describe("Profile runtime update persistence (Sprint 34.6)", () => {
   beforeEach(() => {
     jest.restoreAllMocks();
+    mockedUpdateCurrentUser.mockReset();
     resetAllRuntimeState();
     mockRuntimeReady();
   });
@@ -467,6 +475,62 @@ describe("Profile runtime update persistence (Sprint 34.6)", () => {
     expect(viewModel.error).not.toBeNull();
     expect(viewModel.error?.message).toMatch(/notification/i);
     expect(viewModel.profile?.notificationPreferences.workoutReminders).toBe(false);
+  });
+
+  it("persists athlete info (height/weight) directly through the backend — there is no local identity field for it", async () => {
+    await startObservedRuntime();
+    mockedUpdateCurrentUser.mockResolvedValueOnce({
+      id: ATHLETE_ID,
+      email: "athlete@evolve.app",
+      username: "athlete",
+      first_name: "Alex",
+      last_name: "Rivera",
+      birth_date: "1990-01-01",
+      gender: null,
+      height_cm: 181,
+      current_weight_kg: 76,
+      target_weight_kg: null,
+      activity_level: null,
+      goal: null,
+      is_active: true,
+      is_verified: true,
+      created_at: "2026-01-15T00:00:00.000Z",
+      updated_at: "2026-08-10T00:00:00.000Z",
+    });
+
+    const viewModel = new ProfileExperienceViewModel({ athleteId: ATHLETE_ID });
+    viewModel.applyHydratedProfile(readHydratedProfile(ATHLETE_ID)!);
+
+    await viewModel.updateAthleteInfo({ heightCm: 181, weightKg: 76 });
+
+    expect(mockedUpdateCurrentUser).toHaveBeenCalledWith({
+      height_cm: 181,
+      current_weight_kg: 76,
+    });
+    expect(viewModel.error).toBeNull();
+    expect(viewModel.profile?.heightCm).toBe(181);
+    expect(viewModel.profile?.weightKg).toBe(76);
+
+    const identity = getCompositionRoot()
+      .resolve("AthleteIdentityService")
+      .getAthleteIdentity(ATHLETE_ID);
+    expect(identity?.profile.displayName).toBe("Alex Rivera");
+  });
+
+  it("does not report success and preserves the prior profile when the backend athlete-info update fails", async () => {
+    await startObservedRuntime();
+    mockedUpdateCurrentUser.mockRejectedValueOnce(new ApiError(422, null, "Height must be greater than 0."));
+
+    const viewModel = new ProfileExperienceViewModel({ athleteId: ATHLETE_ID });
+    const hydrated = readHydratedProfile(ATHLETE_ID)!;
+    viewModel.applyHydratedProfile(hydrated);
+
+    await viewModel.updateAthleteInfo({ heightCm: -5 });
+
+    expect(viewModel.error).not.toBeNull();
+    expect(viewModel.error?.message).toBe("Height must be greater than 0.");
+    expect(viewModel.error).not.toBeInstanceOf(Error);
+    expect(viewModel.profile?.heightCm).toBe(hydrated.heightCm);
   });
 
   it("useProfile runtime path persists supported updates without ProfileExperienceService", async () => {

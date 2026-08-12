@@ -2,6 +2,7 @@ export * from "./updateAthleteIdentityFromProfile";
 export * from "./LoadProfile";
 export * from "./RefreshProfile";
 export * from "./UpdateAppearancePreferences";
+export * from "./UpdateAthleteInfo";
 export * from "./UpdateCoachPreferences";
 export * from "./UpdateGoals";
 export * from "./UpdateMeasurementUnits";

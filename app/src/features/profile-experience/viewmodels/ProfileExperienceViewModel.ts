@@ -2,6 +2,7 @@ import {
   loadProfile,
   refreshProfile,
   updateAppearancePreferences,
+  updateAthleteInfo,
   updateCoachPreferences,
   updateGoals,
   updateMeasurementUnits,
@@ -24,6 +25,7 @@ import {
   ProfileExperienceError,
   type AppearancePreferencesDto,
   type AthleteGoalDto,
+  type AthleteInfoUpdateDto,
   type CoachPreferencesDto,
   type MeasurementUnitsDto,
   type NotificationPreferencesDto,
@@ -192,6 +194,13 @@ export class ProfileExperienceViewModel {
   async updateCoachPreferences(prefs: CoachPreferencesDto): Promise<void> {
     await this.save((athleteId) =>
       updateCoachPreferences({ service: this.service ?? undefined, athleteId, prefs }),
+    );
+  }
+
+  /** Persists height/weight — the only Athlete Card fields the backend owns (`PATCH /api/v1/users/me`). */
+  async updateAthleteInfo(input: AthleteInfoUpdateDto): Promise<void> {
+    await this.save((athleteId) =>
+      updateAthleteInfo({ service: this.service ?? undefined, athleteId, input }),
     );
   }
 

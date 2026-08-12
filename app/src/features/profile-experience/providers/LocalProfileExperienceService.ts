@@ -27,4 +27,7 @@ export const localProfileExperienceService: ProfileExperienceService = {
   async updateGoals() {
     throw new ProfileExperienceError("Local profile goals provider is not configured.", "local");
   },
+  async updateAthleteInfo() {
+    throw new ProfileExperienceError("Local profile athlete info provider is not configured.", "local");
+  },
 };

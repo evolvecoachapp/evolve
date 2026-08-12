@@ -67,6 +67,18 @@ export interface MeasurementUnitsDto {
   readonly height: MeasurementUnits["height"];
 }
 
+/**
+ * Partial update for the athlete-identity fields the backend actually owns
+ * (`height_cm` / `current_weight_kg` on `/api/v1/users/me` — see
+ * `backend/app/schemas/user.py`). `undefined` means "leave unchanged";
+ * unlike the other Profile domains, these have no local/runtime equivalent
+ * to fall back to, so the backend is the sole source of truth for them.
+ */
+export interface AthleteInfoUpdateDto {
+  readonly heightCm?: number | null;
+  readonly weightKg?: number | null;
+}
+
 export interface ConnectedServiceEntryDto {
   readonly kind: ConnectedServiceEntry["kind"];
   readonly label: string;
@@ -121,6 +133,8 @@ export interface ProfileExperienceService {
   updateAppearancePreferences(prefs: AppearancePreferencesDto): Promise<AthleteProfileDto>;
   updateMeasurementUnits(units: MeasurementUnitsDto): Promise<AthleteProfileDto>;
   updateGoals(goals: readonly AthleteGoalDto[]): Promise<AthleteProfileDto>;
+  /** Persists the backend-owned athlete info fields (height/weight) via `PATCH /api/v1/users/me`. */
+  updateAthleteInfo(input: AthleteInfoUpdateDto): Promise<AthleteProfileDto>;
 }
 
 export class ProfileExperienceError extends Error {

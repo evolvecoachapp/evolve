@@ -1,9 +1,9 @@
 # Profile Experience Architecture
 
 **Project:** EVOLVE  
-**Sprint:** 31.6 — Profile & Settings Experience  
+**Sprint:** 31.6 — Profile & Settings Experience (backend wiring: Phase A.1)
 **Status:** Accepted  
-**ADR:** [ADR-111](./DECISIONS.md)  
+**ADR:** [ADR-111](./DECISIONS.md), [ADR-155](./DECISIONS.md) (backend integration)
 **Module:** `app/src/features/profile-experience`
 
 ---
@@ -98,6 +98,7 @@ Provider DTOs remain under `services/` and are never rendered directly.
 | `updateAppearancePreferences` | Save appearance preferences through provider contract |
 | `updateMeasurementUnits` | Save measurement units through provider contract |
 | `updateGoals` | Save athlete goals through provider contract |
+| `updateAthleteInfo` | Save height/weight — the only Athlete Card fields the backend owns (`PATCH /api/v1/users/me`, Phase A.1). Runtime path calls the backend directly; there's no Athlete Identity field for it. |
 
 All accept an injectable `ProfileExperienceService`. Default resolves via `profileExperienceService` (`EXPO_PUBLIC_PROFILE_EXPERIENCE_PROVIDER`).
 
@@ -202,10 +203,12 @@ Synchronization is not implemented in this sprint.
 | Provider | Behavior |
 |----------|----------|
 | `mock` (default) | Seeded athlete profile with goals, preferences, connected services |
-| `backend` | Placeholder — throws until backend profile wiring exists |
+| `backend` | **Live for backend-owned fields (Phase A.1)** — `getProfile`/`updateAthleteInfo` call `GET`/`PATCH /api/v1/users/me` via the existing authenticated API client; the other seven domains (training/nutrition/coach/notifications/appearance/units/goals) explicitly throw "not supported by the backend user API yet" — the backend has no field for them |
 | `local` | Placeholder — future repository / persistence-backed profile bridge |
 
 Env: `EXPO_PUBLIC_PROFILE_EXPERIENCE_PROVIDER`.
+
+**Production runtime path (default, no injected `service`):** height/weight have no Athlete Identity field either, so `updateAthleteInfo`'s runtime branch calls `updateCurrentUser()` directly and merges the response into the in-memory hydrated profile — see [ADR-155](./DECISIONS.md). Every other runtime-path update method still writes through `AthleteIdentityService`/SQLite exactly as before this phase.
 
 Replacing Mock with persistence- or backend-backed profile data requires only a new provider implementation behind `ProfileExperienceService` — no UI, ViewModel, or Application contract changes.
 
