@@ -128,3 +128,50 @@ def test_set_user_account_status_audits_failure(service, user_service, audit_rep
 
     kwargs = audit_repository.create.call_args.kwargs
     assert kwargs["result"] == AdminAuditResult.FAILURE
+
+
+def test_run_audited_records_success_with_target_id(service, audit_repository):
+    class Result:
+        id = USER_ID
+
+    result = service.run_audited(
+        actor_id=ACTOR_ID,
+        action="admin.exercise.create",
+        target_type="exercise",
+        operation=lambda: Result(),
+    )
+
+    assert result.id == USER_ID
+    kwargs = audit_repository.create.call_args.kwargs
+    assert kwargs["action"] == "admin.exercise.create"
+    assert kwargs["result"] == AdminAuditResult.SUCCESS
+    assert kwargs["target_id"] == USER_ID
+
+
+def test_run_audited_records_failure_and_reraises(service, audit_repository):
+    with pytest.raises(ValueError, match="boom"):
+        service.run_audited(
+            actor_id=ACTOR_ID,
+            action="admin.exercise.update",
+            target_type="exercise",
+            operation=lambda: (_ for _ in ()).throw(ValueError("boom")),
+        )
+
+    kwargs = audit_repository.create.call_args.kwargs
+    assert kwargs["result"] == AdminAuditResult.FAILURE
+    assert kwargs["target_type"] == "exercise"
+
+
+def test_record_audited_delete_records_success(service, audit_repository):
+    service.record_audited_delete(
+        actor_id=ACTOR_ID,
+        action="admin.program.day.remove",
+        target_type="program_day",
+        target_id=USER_ID,
+        operation=lambda: None,
+    )
+
+    kwargs = audit_repository.create.call_args.kwargs
+    assert kwargs["action"] == "admin.program.day.remove"
+    assert kwargs["result"] == AdminAuditResult.SUCCESS
+    assert kwargs["target_id"] == USER_ID

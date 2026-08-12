@@ -161,6 +161,49 @@ class ProgressService:
         )
         return Page(items=items, total=total, limit=safe_limit, offset=safe_offset)
 
+    def get_any_progress_entry(self, entry_id: uuid.UUID) -> Progress:
+        """Return a progress entry by id without an ownership check (admin control plane).
+
+        Raises:
+            ProgressEntryNotFoundError: If ``entry_id`` does not resolve to a
+                non-deleted entry.
+        """
+        entry = self.progress_repository.get_by_id(entry_id)
+        if entry is None or entry.deleted_at is not None:
+            raise ProgressEntryNotFoundError("Progress entry not found.")
+        return entry
+
+    def list_all_progress(
+        self,
+        *,
+        user_id: uuid.UUID | None = None,
+        metric_type: ProgressMetricType | None = None,
+        goal_id: uuid.UUID | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> Page[Progress]:
+        """Return a filtered, paginated page of progress entries across users."""
+        safe_limit, safe_offset = clamp_pagination(limit, offset)
+        items = self.progress_repository.list_all(
+            user_id=user_id,
+            metric_type=metric_type,
+            goal_id=goal_id,
+            date_from=date_from,
+            date_to=date_to,
+            limit=safe_limit,
+            offset=safe_offset,
+        )
+        total = self.progress_repository.count_filtered(
+            user_id=user_id,
+            metric_type=metric_type,
+            goal_id=goal_id,
+            date_from=date_from,
+            date_to=date_to,
+        )
+        return Page(items=items, total=total, limit=safe_limit, offset=safe_offset)
+
     def delete_progress_entry(self, user_id: uuid.UUID, entry_id: uuid.UUID) -> None:
         """Soft-delete a progress entry owned by ``user_id``.
 

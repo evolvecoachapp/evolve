@@ -444,14 +444,30 @@ class WorkoutService:
         self,
         *,
         search: str | None = None,
+        include_inactive: bool = False,
         limit: int = 20,
         offset: int = 0,
     ) -> Page[Workout]:
-        """Return a filtered, paginated page of active workouts."""
+        """Return a filtered, paginated page of workouts.
+
+        Public callers leave ``include_inactive`` false. Admin listing
+        passes ``True`` so inactive templates remain visible.
+        """
         safe_limit, safe_offset = clamp_pagination(limit, offset)
-        items = self.workout_repository.list_workouts(search=search, limit=safe_limit, offset=safe_offset)
-        total = self.workout_repository.count(search=search)
+        items = self.workout_repository.list_workouts(
+            search=search, include_inactive=include_inactive, limit=safe_limit, offset=safe_offset
+        )
+        total = self.workout_repository.count(search=search, include_inactive=include_inactive)
         return Page(items=items, total=total, limit=safe_limit, offset=safe_offset)
+
+    def list_assignments_for_program(self, program_id: uuid.UUID) -> list[ProgramAssignment]:
+        """Return every assignment of a program, most recent first.
+
+        Raises:
+            ProgramNotFoundError: If ``program_id`` does not resolve.
+        """
+        self._get_program_or_raise(program_id, include_unpublished=True)
+        return self.program_repository.list_assignments_for_program(program_id)
 
     # -- Program assignment flow ------------------------------------------------
 

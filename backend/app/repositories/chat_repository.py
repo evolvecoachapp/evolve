@@ -138,3 +138,27 @@ class ChatRepository:
         return self.db.execute(
             select(func.count()).select_from(Conversation)
         ).scalar_one()
+
+    def list_conversations(
+        self,
+        *,
+        user_id: uuid.UUID | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> list[Conversation]:
+        """Return a paginated page of conversations, most recently active first."""
+        query = select(Conversation)
+        if user_id is not None:
+            query = query.where(Conversation.user_id == user_id)
+        query = query.order_by(
+            Conversation.last_message_at.desc().nulls_last(),
+            Conversation.created_at.desc(),
+        ).limit(limit).offset(offset)
+        return list(self.db.execute(query).scalars())
+
+    def count_conversations_filtered(self, *, user_id: uuid.UUID | None = None) -> int:
+        """Return the total count of conversations matching :meth:`list_conversations`."""
+        query = select(func.count()).select_from(Conversation)
+        if user_id is not None:
+            query = query.where(Conversation.user_id == user_id)
+        return self.db.execute(query).scalar_one()

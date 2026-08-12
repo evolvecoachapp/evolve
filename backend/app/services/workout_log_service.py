@@ -591,6 +591,46 @@ class WorkoutLogService:
         total = self.workout_log_repository.count(user_id, **filters)
         return Page(items=items, total=total, limit=safe_limit, offset=safe_offset)
 
+    def get_any_workout_log(self, workout_log_id: uuid.UUID) -> WorkoutLog:
+        """Return a session by id without an ownership check (admin control plane).
+
+        Raises:
+            WorkoutLogNotFoundError: If ``workout_log_id`` does not resolve
+                to a non-deleted session.
+        """
+        workout_log = self.workout_log_repository.get_by_id(workout_log_id)
+        if workout_log is None or workout_log.deleted_at is not None:
+            raise WorkoutLogNotFoundError("Workout log not found.")
+        return workout_log
+
+    def list_all_logs(
+        self,
+        *,
+        user_id: uuid.UUID | None = None,
+        status: WorkoutLogStatus | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        program_assignment_id: uuid.UUID | None = None,
+        workout_id: uuid.UUID | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> Page[WorkoutLog]:
+        """Return a filtered, paginated page of sessions across users."""
+        safe_limit, safe_offset = clamp_pagination(limit, offset)
+        filters = {
+            "user_id": user_id,
+            "status": status,
+            "date_from": date_from,
+            "date_to": date_to,
+            "program_assignment_id": program_assignment_id,
+            "workout_id": workout_id,
+        }
+        items = self.workout_log_repository.list_all(
+            **filters, limit=safe_limit, offset=safe_offset
+        )
+        total = self.workout_log_repository.count_filtered(**filters)
+        return Page(items=items, total=total, limit=safe_limit, offset=safe_offset)
+
     # -- Internal helpers --------------------------------------------------------
 
     def _get_owned_log_or_raise(

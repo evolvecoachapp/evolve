@@ -111,6 +111,33 @@ class GoalService:
         total = self.goal_repository.count(user_id, status=status)
         return Page(items=items, total=total, limit=safe_limit, offset=safe_offset)
 
+    def get_any_goal(self, goal_id: uuid.UUID) -> Goal:
+        """Return a goal by id without an ownership check (admin control plane).
+
+        Raises:
+            GoalNotFoundError: If ``goal_id`` does not resolve to a non-deleted goal.
+        """
+        goal = self.goal_repository.get_by_id(goal_id)
+        if goal is None or goal.deleted_at is not None:
+            raise GoalNotFoundError("Goal not found.")
+        return goal
+
+    def list_all_goals(
+        self,
+        *,
+        user_id: uuid.UUID | None = None,
+        status: GoalStatus | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> Page[Goal]:
+        """Return a filtered, paginated page of goals across users."""
+        safe_limit, safe_offset = clamp_pagination(limit, offset)
+        items = self.goal_repository.list_all(
+            user_id=user_id, status=status, limit=safe_limit, offset=safe_offset
+        )
+        total = self.goal_repository.count_filtered(user_id=user_id, status=status)
+        return Page(items=items, total=total, limit=safe_limit, offset=safe_offset)
+
     def delete_goal(self, user_id: uuid.UUID, goal_id: uuid.UUID) -> None:
         """Soft-delete a goal owned by ``user_id``.
 

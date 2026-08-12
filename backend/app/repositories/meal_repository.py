@@ -178,6 +178,76 @@ class MealRepository:
             .where(MealLog.deleted_at.is_(None))
         ).scalar_one()
 
+    def list_all_meals(
+        self,
+        *,
+        created_by_id: uuid.UUID | None = None,
+        include_inactive: bool = True,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> list[Meal]:
+        """Return a paginated page of meal templates across users, most recent first."""
+        query = select(Meal).where(Meal.deleted_at.is_(None))
+        if created_by_id is not None:
+            query = query.where(Meal.created_by_id == created_by_id)
+        if not include_inactive:
+            query = query.where(Meal.is_active.is_(True))
+        query = query.order_by(Meal.created_at.desc()).limit(limit).offset(offset)
+        return list(self.db.execute(query).scalars())
+
+    def count_all_meals(
+        self,
+        *,
+        created_by_id: uuid.UUID | None = None,
+        include_inactive: bool = True,
+    ) -> int:
+        """Return the total count of meal templates matching :meth:`list_all_meals`."""
+        query = select(Meal).where(Meal.deleted_at.is_(None))
+        if created_by_id is not None:
+            query = query.where(Meal.created_by_id == created_by_id)
+        if not include_inactive:
+            query = query.where(Meal.is_active.is_(True))
+        count_query = select(func.count()).select_from(query.subquery())
+        return self.db.execute(count_query).scalar_one()
+
+    def list_all_logs(
+        self,
+        *,
+        user_id: uuid.UUID | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> list[MealLog]:
+        """Return a filtered, paginated page of meal logs across users, most recent first."""
+        query = select(MealLog).where(MealLog.deleted_at.is_(None))
+        if user_id is not None:
+            query = query.where(MealLog.user_id == user_id)
+        if date_from is not None:
+            query = query.where(func.date(MealLog.consumed_at) >= date_from)
+        if date_to is not None:
+            query = query.where(func.date(MealLog.consumed_at) <= date_to)
+        query = query.order_by(MealLog.consumed_at.desc()).limit(limit).offset(offset)
+        return list(self.db.execute(query).scalars())
+
+    def count_all_logs_filtered(
+        self,
+        *,
+        user_id: uuid.UUID | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ) -> int:
+        """Return the total count of meal logs matching :meth:`list_all_logs`."""
+        query = select(MealLog).where(MealLog.deleted_at.is_(None))
+        if user_id is not None:
+            query = query.where(MealLog.user_id == user_id)
+        if date_from is not None:
+            query = query.where(func.date(MealLog.consumed_at) >= date_from)
+        if date_to is not None:
+            query = query.where(func.date(MealLog.consumed_at) <= date_to)
+        count_query = select(func.count()).select_from(query.subquery())
+        return self.db.execute(count_query).scalar_one()
+
     def sum_totals_for_date(self, user_id: uuid.UUID, for_date: date) -> dict[str, object]:
         """Aggregate a user's logged macro totals for a single calendar date.
 

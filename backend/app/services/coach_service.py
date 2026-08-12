@@ -16,7 +16,7 @@ check and, for history reads, a direct repository query.
 import uuid
 
 from app.ai.orchestrator import AIOrchestrator, CoachResponse
-from app.models.chat import ChatMessage
+from app.models.chat import ChatMessage, Conversation
 from app.repositories.chat_repository import ChatRepository
 from app.utils.pagination import Page, clamp_pagination
 
@@ -83,6 +83,52 @@ class CoachService:
                 resolve to a conversation owned by ``user_id``.
         """
         self._check_owned(user_id, conversation_id)
+        safe_limit, safe_offset = clamp_pagination(limit, offset)
+        items = self.chat_repository.list_messages_page(
+            conversation_id, limit=safe_limit, offset=safe_offset
+        )
+        total = self.chat_repository.count_messages(conversation_id)
+        return Page(items=items, total=total, limit=safe_limit, offset=safe_offset)
+
+    def get_any_conversation(self, conversation_id: uuid.UUID) -> Conversation:
+        """Return a conversation by id without an ownership check (admin control plane).
+
+        Raises:
+            ConversationAccessDeniedError: If ``conversation_id`` does not resolve.
+        """
+        conversation = self.chat_repository.get_conversation(conversation_id)
+        if conversation is None:
+            raise ConversationAccessDeniedError("Conversation not found.")
+        return conversation
+
+    def list_all_conversations(
+        self,
+        *,
+        user_id: uuid.UUID | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> Page[Conversation]:
+        """Return a paginated page of conversations across users."""
+        safe_limit, safe_offset = clamp_pagination(limit, offset)
+        items = self.chat_repository.list_conversations(
+            user_id=user_id, limit=safe_limit, offset=safe_offset
+        )
+        total = self.chat_repository.count_conversations_filtered(user_id=user_id)
+        return Page(items=items, total=total, limit=safe_limit, offset=safe_offset)
+
+    def get_any_conversation_history(
+        self,
+        conversation_id: uuid.UUID,
+        *,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> Page[ChatMessage]:
+        """Return a conversation's messages without an ownership check (admin).
+
+        Raises:
+            ConversationAccessDeniedError: If ``conversation_id`` does not resolve.
+        """
+        self.get_any_conversation(conversation_id)
         safe_limit, safe_offset = clamp_pagination(limit, offset)
         items = self.chat_repository.list_messages_page(
             conversation_id, limit=safe_limit, offset=safe_offset

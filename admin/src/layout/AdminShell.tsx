@@ -5,6 +5,15 @@ import { useAuth } from "../auth/AuthContext";
 const NAV = [
   { to: "/", label: "Dashboard", end: true },
   { to: "/users", label: "Users", end: false },
+  { to: "/exercises", label: "Exercises", end: false },
+  { to: "/programs", label: "Programs", end: false },
+  { to: "/workouts", label: "Workouts", end: false },
+  { to: "/workout-logs", label: "Workout logs", end: false },
+  { to: "/nutrition", label: "Nutrition", end: false },
+  { to: "/recovery", label: "Recovery", end: false },
+  { to: "/goals", label: "Goals", end: false },
+  { to: "/progress", label: "Progress", end: false },
+  { to: "/coach", label: "Coach", end: false },
   { to: "/system", label: "System", end: true },
 ];
 

@@ -162,6 +162,41 @@ class RecoveryService:
         total = self.recovery_repository.count(user_id, date_from=date_from, date_to=date_to)
         return Page(items=items, total=total, limit=safe_limit, offset=safe_offset)
 
+    def get_any_check_in(self, check_in_id: uuid.UUID) -> RecoveryCheckIn:
+        """Return a check-in by id without an ownership check (admin control plane).
+
+        Raises:
+            CheckInNotFoundError: If ``check_in_id`` does not resolve to a
+                non-deleted check-in.
+        """
+        check_in = self.recovery_repository.get_by_id(check_in_id)
+        if check_in is None or check_in.deleted_at is not None:
+            raise CheckInNotFoundError("Check-in not found.")
+        return check_in
+
+    def list_all_check_ins(
+        self,
+        *,
+        user_id: uuid.UUID | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> Page[RecoveryCheckIn]:
+        """Return a filtered, paginated page of check-ins across users."""
+        safe_limit, safe_offset = clamp_pagination(limit, offset)
+        items = self.recovery_repository.list_all(
+            user_id=user_id,
+            date_from=date_from,
+            date_to=date_to,
+            limit=safe_limit,
+            offset=safe_offset,
+        )
+        total = self.recovery_repository.count_filtered(
+            user_id=user_id, date_from=date_from, date_to=date_to
+        )
+        return Page(items=items, total=total, limit=safe_limit, offset=safe_offset)
+
     def delete_check_in(self, user_id: uuid.UUID, check_in_id: uuid.UUID) -> None:
         """Soft-delete a check-in owned by ``user_id``.
 

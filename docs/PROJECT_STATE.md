@@ -186,16 +186,29 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 |------|-------|
 | Stack | Vite + React 19 + TypeScript + React Router (desktop-first SaaS UI under `admin/`) |
 | Auth | Existing `POST /api/v1/auth/login` + `POST /api/v1/admin/session`; `User.is_superuser` enforced server-side |
-| Pages | Login, Dashboard, Users, User detail (activate/deactivate), System health, logout |
-| Audit | `admin_audit_logs` for session start/end and user status mutations |
+| Pages | Login, Dashboard, Users, User detail, Exercises, Programs, Workouts, Workout logs, Nutrition, Recovery, Goals, Progress, Coach, System health |
+| Audit | `admin_audit_logs` for session start/end, user status, and catalog mutations (exercise/program/workout/catalog create-update-deactivate/archive/day changes) |
 | First superuser | Grant via SQL: `UPDATE users SET is_superuser = true WHERE email = '...';` — no public bootstrap endpoint |
-| Out of scope | Feature management pages, payments, push, live LLM, role hierarchy |
+| Mutations | Catalog: create/edit + deactivate/archive through existing `ExerciseService` / `WorkoutService` / `CatalogService`. User-owned nutrition/recovery/goals/progress/coach/workout-logs: **read-only** |
+| Unsupported | Hard delete of exercises/programs/workouts; muscle-group/equipment update/delete; admin mutations of user-owned nutrition/recovery/goals/progress/coach/workout-log records |
+| Out of scope | Payments, push, live LLM, role hierarchy, second domain layer |
 
 ---
 
 ## Last Completed Sprint
 
-**39.1 — Admin Foundation + Production Control Plane** (2026-08-13)
+**39.2 — Admin Feature Management** (2026-08-13)
+
+- Extended the Sprint 39.1 Admin foundation into operational feature control without rebuilding the Admin app or adding a second domain layer
+- New `/api/v1/admin` ops routes (`admin_ops.py`) reuse `ExerciseService`, `WorkoutService`, `CatalogService`, `WorkoutLogService`, `NutritionService`, `RecoveryService`, `GoalService`, `ProgressService`, `CoachService`
+- Catalog mutations (exercises, programs, workouts, muscle groups, equipment) go through existing services and `AdminService.run_audited` / `record_audited_delete`
+- User-owned domains are read-only: smallest `list_all` / `get_any_*` methods on existing services/repositories; no raw-SQL ownership bypass
+- Hard delete remains unsupported; admin exposes deactivate/archive only
+- Admin UI: sidebar modules, list/detail pages, search/filter/pagination, confirmation dialogs, loading/error/empty states
+- Tests: backend unit + integration for new admin endpoints; admin Jest routing/loading/error/empty/list/detail/mutation/confirmation; `admin` typecheck
+- No mobile/Runtime/SQLite/UI changes; no payments/push/live LLM; ADR-158
+
+Previous: **39.1 — Admin Foundation + Production Control Plane** (2026-08-13)
 
 - Inspected the existing backend: `User.is_superuser` already existed but was never enforced; no admin router, no audit log, no admin web app
 - Added `get_current_superuser` (authenticated + live `is_superuser`, else 403). No role hierarchy

@@ -106,6 +106,56 @@ class ProgressRepository:
             .where(Progress.deleted_at.is_(None))
         ).scalar_one()
 
+    def list_all(
+        self,
+        *,
+        user_id: uuid.UUID | None = None,
+        metric_type: ProgressMetricType | None = None,
+        goal_id: uuid.UUID | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> list[Progress]:
+        """Return a filtered, paginated page of progress entries across users."""
+        query = select(Progress).where(Progress.deleted_at.is_(None))
+        if user_id is not None:
+            query = query.where(Progress.user_id == user_id)
+        if metric_type is not None:
+            query = query.where(Progress.metric_type == metric_type)
+        if goal_id is not None:
+            query = query.where(Progress.goal_id == goal_id)
+        if date_from is not None:
+            query = query.where(Progress.recorded_date >= date_from)
+        if date_to is not None:
+            query = query.where(Progress.recorded_date <= date_to)
+        query = query.order_by(Progress.recorded_date.desc()).limit(limit).offset(offset)
+        return list(self.db.execute(query).scalars())
+
+    def count_filtered(
+        self,
+        *,
+        user_id: uuid.UUID | None = None,
+        metric_type: ProgressMetricType | None = None,
+        goal_id: uuid.UUID | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ) -> int:
+        """Return the total count of entries matching :meth:`list_all`."""
+        query = select(Progress).where(Progress.deleted_at.is_(None))
+        if user_id is not None:
+            query = query.where(Progress.user_id == user_id)
+        if metric_type is not None:
+            query = query.where(Progress.metric_type == metric_type)
+        if goal_id is not None:
+            query = query.where(Progress.goal_id == goal_id)
+        if date_from is not None:
+            query = query.where(Progress.recorded_date >= date_from)
+        if date_to is not None:
+            query = query.where(Progress.recorded_date <= date_to)
+        count_query = select(func.count()).select_from(query.subquery())
+        return self.db.execute(count_query).scalar_one()
+
     def list_for_trend(
         self,
         user_id: uuid.UUID,

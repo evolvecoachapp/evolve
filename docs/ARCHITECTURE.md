@@ -18,7 +18,8 @@ See [TECH_STACK.md](./TECH_STACK.md) for versions. Onboarding: [PROJECT_CONTEXT.
 │     MOBILE CLIENT (app/)     │  │     ADMIN WEB (admin/)       │
 │  Expo Router → Screens →     │  │  Vite + React (desktop-first)│
 │  Features → Runtime Session  │  │  Login → Admin Shell →       │
-│                              │  │  Dashboard / Users / System  │
+│                              │  │  Dashboard / Users / Catalog │
+│                              │  │  Activity / Coach / System   │
 └──────────────┬───────────────┘  └──────────────┬───────────────┘
                │ HTTPS + JWT                     │ HTTPS + JWT
                │                                 │ get_current_superuser
@@ -27,7 +28,7 @@ See [TECH_STACK.md](./TECH_STACK.md) for versions. Onboarding: [PROJECT_CONTEXT.
 ┌─────────────────────────────────────────────────────────────────┐
 │                      BACKEND API (backend/)                      │
 │         FastAPI Routes → Services → Repositories → Models         │
-│         /api/v1/admin → UserService + AdminService (ops)          │
+│         /api/v1/admin → existing domain services + AdminService audit │
 │                              │                                   │
 │                    CoachService → AIOrchestrator                   │
 │                              │                                   │
@@ -2197,18 +2198,20 @@ Full detail: [GOAL_PROGRESS_ENGINE.md](./GOAL_PROGRESS_ENGINE.md). Goal Evaluati
 | `security/` | JWT, Argon2 hashing, `get_current_user`, `get_current_superuser` |
 | `db/` | Engine, session factory, Alembic base |
 
-### Admin Control Plane (`admin/` + `/api/v1/admin`) — Sprint 39.1
+### Admin Control Plane (`admin/` + `/api/v1/admin`) — Sprint 39.1 + 39.2
 
 | Aspect | Implementation |
 |--------|----------------|
 | **Purpose** | Operational web Admin Panel for pre-beta production control. Not the mobile EVOLVE visual system |
-| **Flow** | Admin UI → Admin API (`/api/v1/admin`) → existing application services (`UserService`) → existing repositories → PostgreSQL |
+| **Flow** | Admin UI → Admin API (`/api/v1/admin`) → existing application services → existing repositories → PostgreSQL |
 | **AuthZ** | `get_current_superuser`: authenticated user required, then live `User.is_superuser` must be true, otherwise 403. No role hierarchy. JWT carries no admin claim |
-| **UI** | Separate Vite + React app under `admin/` (login, protected shell, dashboard, users, user detail, system health). Desktop-first SaaS layout |
+| **UI** | Separate Vite + React app under `admin/` (login, protected shell, dashboard, users, catalog, activity, coach, system health). Desktop-first SaaS layout |
 | **Audit** | `admin_audit_logs` — smallest append-only trail (actor, action, target, timestamp, result). Not event sourcing |
-| **Design** | **Foundation only.** No second database, no second domain layer, no mobile/Runtime/SQLite changes, no payments/push/live LLM |
+| **39.1 Foundation** | Session, me, dashboard, users list/detail/status, system health |
+| **39.2 Feature management** | Exercises, programs, workouts, workout logs, nutrition, recovery, goals/progress, coach. Catalog mutations reuse `ExerciseService` / `WorkoutService` / `CatalogService`. User-owned domains are **read-only** via smallest `list_all` / `get_any_*` methods on existing services. Hard delete is unsupported (deactivate/archive only). No second Admin domain layer |
+| **Design** | No second database, no second domain layer, no mobile/Runtime/SQLite changes, no payments/push/live LLM |
 
-Decision record: ADR-157 in [DECISIONS.md](./DECISIONS.md).
+Decision records: ADR-157 and ADR-158 in [DECISIONS.md](./DECISIONS.md).
 
 ---
 
@@ -2427,5 +2430,6 @@ AIOrchestrator.process_message (async)
 | 113 | Progress & Analytics Framework Foundation (Sprint 31.8) |
 | 114 | Coach Timeline Framework Foundation (Sprint 31.9) |
 | 157 | Admin Foundation + Production Control Plane (Sprint 39.1) |
+| 158 | Admin Feature Management (Sprint 39.2) |
 
 Full list: [DECISIONS.md](./DECISIONS.md). Audit: [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md).

@@ -288,6 +288,16 @@ class ProgramRepository:
             ).scalars()
         )
 
+    def list_assignments_for_program(self, program_id: uuid.UUID) -> list[ProgramAssignment]:
+        """Return every assignment of a program, most recent first."""
+        return list(
+            self.db.execute(
+                select(ProgramAssignment)
+                .where(ProgramAssignment.program_id == program_id)
+                .order_by(ProgramAssignment.started_at.desc())
+            ).scalars()
+        )
+
     def update_assignment(self, assignment: ProgramAssignment) -> ProgramAssignment:
         """Flush pending changes on an already-tracked :class:`ProgramAssignment` and return it."""
         self.db.flush()

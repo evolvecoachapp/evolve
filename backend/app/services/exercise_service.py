@@ -227,10 +227,15 @@ class ExerciseService:
         muscle_group_id: uuid.UUID | None = None,
         equipment_id: uuid.UUID | None = None,
         search: str | None = None,
+        include_inactive: bool = False,
         limit: int = 20,
         offset: int = 0,
     ) -> Page[Exercise]:
-        """Return a filtered, paginated page of active exercises."""
+        """Return a filtered, paginated page of exercises.
+
+        Public catalog callers leave ``include_inactive`` false. Admin
+        listing passes ``True`` so inactive catalog rows remain visible.
+        """
         safe_limit, safe_offset = clamp_pagination(limit, offset)
         filters = {
             "category": category,
@@ -238,6 +243,7 @@ class ExerciseService:
             "muscle_group_id": muscle_group_id,
             "equipment_id": equipment_id,
             "search": search,
+            "include_inactive": include_inactive,
         }
         items = self.exercise_repository.list_exercises(
             **filters, limit=safe_limit, offset=safe_offset

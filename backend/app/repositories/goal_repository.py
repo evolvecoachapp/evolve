@@ -84,3 +84,35 @@ class GoalRepository:
         return self.db.execute(
             select(func.count()).select_from(Goal).where(Goal.deleted_at.is_(None))
         ).scalar_one()
+
+    def list_all(
+        self,
+        *,
+        user_id: uuid.UUID | None = None,
+        status: GoalStatus | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> list[Goal]:
+        """Return a filtered, paginated page of goals across users, most recently created first."""
+        query = select(Goal).where(Goal.deleted_at.is_(None))
+        if user_id is not None:
+            query = query.where(Goal.user_id == user_id)
+        if status is not None:
+            query = query.where(Goal.status == status)
+        query = query.order_by(Goal.created_at.desc()).limit(limit).offset(offset)
+        return list(self.db.execute(query).scalars())
+
+    def count_filtered(
+        self,
+        *,
+        user_id: uuid.UUID | None = None,
+        status: GoalStatus | None = None,
+    ) -> int:
+        """Return the total count of goals matching :meth:`list_all`."""
+        query = select(Goal).where(Goal.deleted_at.is_(None))
+        if user_id is not None:
+            query = query.where(Goal.user_id == user_id)
+        if status is not None:
+            query = query.where(Goal.status == status)
+        count_query = select(func.count()).select_from(query.subquery())
+        return self.db.execute(count_query).scalar_one()

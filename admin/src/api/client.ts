@@ -19,6 +19,15 @@ function userMessageForStatus(status: number): string {
   if (status === 404) {
     return "The requested record was not found.";
   }
+  if (status === 409) {
+    return "This record already exists.";
+  }
+  if (status === 422) {
+    return "Please check the form and try again.";
+  }
+  if (status === 400) {
+    return "This action is not allowed.";
+  }
   return "Something went wrong. Please try again.";
 }
 

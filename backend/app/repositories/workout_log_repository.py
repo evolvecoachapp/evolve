@@ -85,7 +85,7 @@ class WorkoutLogRepository:
 
     def _filtered_query(
         self,
-        user_id: uuid.UUID,
+        user_id: uuid.UUID | None = None,
         *,
         status: WorkoutLogStatus | None,
         date_from: date | None,
@@ -93,11 +93,10 @@ class WorkoutLogRepository:
         program_assignment_id: uuid.UUID | None,
         workout_id: uuid.UUID | None,
     ) -> Select:
-        """Build the shared filter predicate for :meth:`list_for_user` and :meth:`count`."""
-        query = select(WorkoutLog).where(
-            WorkoutLog.user_id == user_id,
-            WorkoutLog.deleted_at.is_(None),
-        )
+        """Build the shared filter predicate for user and platform-wide list/count."""
+        query = select(WorkoutLog).where(WorkoutLog.deleted_at.is_(None))
+        if user_id is not None:
+            query = query.where(WorkoutLog.user_id == user_id)
         if status is not None:
             query = query.where(WorkoutLog.status == status)
         if date_from is not None:
@@ -165,6 +164,52 @@ class WorkoutLogRepository:
             .select_from(WorkoutLog)
             .where(WorkoutLog.deleted_at.is_(None))
         ).scalar_one()
+
+    def list_all(
+        self,
+        *,
+        user_id: uuid.UUID | None = None,
+        status: WorkoutLogStatus | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        program_assignment_id: uuid.UUID | None = None,
+        workout_id: uuid.UUID | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> list[WorkoutLog]:
+        """Return a filtered, paginated page of logs across users, most recent first."""
+        query = self._filtered_query(
+            user_id,
+            status=status,
+            date_from=date_from,
+            date_to=date_to,
+            program_assignment_id=program_assignment_id,
+            workout_id=workout_id,
+        )
+        query = query.order_by(WorkoutLog.created_at.desc()).limit(limit).offset(offset)
+        return list(self.db.execute(query).scalars())
+
+    def count_filtered(
+        self,
+        *,
+        user_id: uuid.UUID | None = None,
+        status: WorkoutLogStatus | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        program_assignment_id: uuid.UUID | None = None,
+        workout_id: uuid.UUID | None = None,
+    ) -> int:
+        """Return the total count of logs matching :meth:`list_all` filters."""
+        query = self._filtered_query(
+            user_id,
+            status=status,
+            date_from=date_from,
+            date_to=date_to,
+            program_assignment_id=program_assignment_id,
+            workout_id=workout_id,
+        )
+        count_query = select(func.count()).select_from(query.subquery())
+        return self.db.execute(count_query).scalar_one()
 
     # -- WorkoutLogExercise -----------------------------------------------
 

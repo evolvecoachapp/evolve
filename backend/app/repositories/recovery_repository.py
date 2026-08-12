@@ -133,3 +133,41 @@ class RecoveryCheckInRepository:
             .select_from(RecoveryCheckIn)
             .where(RecoveryCheckIn.deleted_at.is_(None))
         ).scalar_one()
+
+    def list_all(
+        self,
+        *,
+        user_id: uuid.UUID | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> list[RecoveryCheckIn]:
+        """Return a filtered, paginated page of check-ins across users, most recent first."""
+        query = select(RecoveryCheckIn).where(RecoveryCheckIn.deleted_at.is_(None))
+        if user_id is not None:
+            query = query.where(RecoveryCheckIn.user_id == user_id)
+        if date_from is not None:
+            query = query.where(RecoveryCheckIn.checkin_date >= date_from)
+        if date_to is not None:
+            query = query.where(RecoveryCheckIn.checkin_date <= date_to)
+        query = query.order_by(RecoveryCheckIn.checkin_date.desc()).limit(limit).offset(offset)
+        return list(self.db.execute(query).scalars())
+
+    def count_filtered(
+        self,
+        *,
+        user_id: uuid.UUID | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ) -> int:
+        """Return the total count of check-ins matching :meth:`list_all`."""
+        query = select(RecoveryCheckIn).where(RecoveryCheckIn.deleted_at.is_(None))
+        if user_id is not None:
+            query = query.where(RecoveryCheckIn.user_id == user_id)
+        if date_from is not None:
+            query = query.where(RecoveryCheckIn.checkin_date >= date_from)
+        if date_to is not None:
+            query = query.where(RecoveryCheckIn.checkin_date <= date_to)
+        count_query = select(func.count()).select_from(query.subquery())
+        return self.db.execute(count_query).scalar_one()

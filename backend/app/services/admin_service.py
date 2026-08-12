@@ -30,6 +30,20 @@ from app.services.user_service import UserService
 ADMIN_SESSION_START = "admin.session.start"
 ADMIN_SESSION_END = "admin.session.end"
 ADMIN_USER_SET_STATUS = "admin.user.set_status"
+ADMIN_EXERCISE_CREATE = "admin.exercise.create"
+ADMIN_EXERCISE_UPDATE = "admin.exercise.update"
+ADMIN_EXERCISE_DEACTIVATE = "admin.exercise.deactivate"
+ADMIN_PROGRAM_CREATE = "admin.program.create"
+ADMIN_PROGRAM_UPDATE = "admin.program.update"
+ADMIN_PROGRAM_PUBLISH = "admin.program.publish"
+ADMIN_PROGRAM_ARCHIVE = "admin.program.archive"
+ADMIN_PROGRAM_DAY_ADD = "admin.program.day.add"
+ADMIN_PROGRAM_DAY_REMOVE = "admin.program.day.remove"
+ADMIN_WORKOUT_CREATE = "admin.workout.create"
+ADMIN_WORKOUT_UPDATE = "admin.workout.update"
+ADMIN_WORKOUT_DEACTIVATE = "admin.workout.deactivate"
+ADMIN_CATALOG_MUSCLE_GROUP_CREATE = "admin.catalog.muscle_group.create"
+ADMIN_CATALOG_EQUIPMENT_CREATE = "admin.catalog.equipment.create"
 
 
 @dataclass(frozen=True)
@@ -150,6 +164,63 @@ class AdminService:
             target_id=user_id,
         )
         return updated
+
+    def run_audited(self, *, actor_id: uuid.UUID, action: str, target_type: str, operation):
+        """Run a domain mutation and record success or failure in the audit log.
+
+        ``operation`` is a zero-argument callable that performs the existing
+        domain-service work. On success, ``target_id`` is taken from
+        ``result.id`` when present. Failures are audited then re-raised.
+        """
+        try:
+            result = operation()
+        except Exception:
+            self._record_audit(
+                actor_id=actor_id,
+                action=action,
+                result=AdminAuditResult.FAILURE,
+                target_type=target_type,
+            )
+            raise
+
+        target_id = getattr(result, "id", None)
+        self._record_audit(
+            actor_id=actor_id,
+            action=action,
+            result=AdminAuditResult.SUCCESS,
+            target_type=target_type,
+            target_id=target_id if isinstance(target_id, uuid.UUID) else None,
+        )
+        return result
+
+    def record_audited_delete(
+        self,
+        *,
+        actor_id: uuid.UUID,
+        action: str,
+        target_type: str,
+        target_id: uuid.UUID,
+        operation,
+    ) -> None:
+        """Run a domain delete/remove and audit the outcome."""
+        try:
+            operation()
+        except Exception:
+            self._record_audit(
+                actor_id=actor_id,
+                action=action,
+                result=AdminAuditResult.FAILURE,
+                target_type=target_type,
+                target_id=target_id,
+            )
+            raise
+        self._record_audit(
+            actor_id=actor_id,
+            action=action,
+            result=AdminAuditResult.SUCCESS,
+            target_type=target_type,
+            target_id=target_id,
+        )
 
     def _record_audit(
         self,

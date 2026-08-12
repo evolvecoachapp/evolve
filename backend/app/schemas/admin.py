@@ -6,10 +6,11 @@ every consumer of these schemas is already authorized as a superuser.
 """
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.program import ProgramAssignmentRead, ProgramDayRead, ProgramPublic
 from app.schemas.user import UserRead
 
 
@@ -89,3 +90,78 @@ class AdminAuditLogRead(BaseModel):
     target_id: uuid.UUID | None
     result: str
     created_at: datetime
+
+
+class AdminWorkoutLogSummary(BaseModel):
+    """Admin list row for a workout log, including the owning user."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    user_id: uuid.UUID
+    program_assignment_id: uuid.UUID | None
+    workout_id: uuid.UUID | None
+    status: str
+    scheduled_date: date | None
+    started_at: datetime | None
+    completed_at: datetime | None
+    duration_actual_minutes: int | None
+    notes: str | None
+    exercise_count: int
+    created_at: datetime
+
+    @classmethod
+    def from_model(cls, workout_log) -> "AdminWorkoutLogSummary":
+        """Build this schema from a :class:`~app.models.workout_log.WorkoutLog`."""
+        return cls(
+            id=workout_log.id,
+            user_id=workout_log.user_id,
+            program_assignment_id=workout_log.program_assignment_id,
+            workout_id=workout_log.workout_id,
+            status=workout_log.status.value,
+            scheduled_date=workout_log.scheduled_date,
+            started_at=workout_log.started_at,
+            completed_at=workout_log.completed_at,
+            duration_actual_minutes=workout_log.duration_actual_minutes,
+            notes=workout_log.notes,
+            exercise_count=len(workout_log.log_exercises),
+            created_at=workout_log.created_at,
+        )
+
+
+class AdminWorkoutLogPage(BaseModel):
+    """A paginated page of admin workout-log summaries."""
+
+    items: list[AdminWorkoutLogSummary]
+    total: int
+    limit: int
+    offset: int
+
+
+class AdminConversationRead(BaseModel):
+    """Admin representation of a Coach conversation."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    user_id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+    last_message_at: datetime | None
+
+
+class AdminConversationPage(BaseModel):
+    """A paginated page of Coach conversations."""
+
+    items: list[AdminConversationRead]
+    total: int
+    limit: int
+    offset: int
+
+
+class AdminProgramDetail(BaseModel):
+    """Program template plus scheduled days and assignments."""
+
+    program: ProgramPublic
+    days: list[ProgramDayRead]
+    assignments: list[ProgramAssignmentRead]

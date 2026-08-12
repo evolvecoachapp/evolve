@@ -11,6 +11,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from app.api.v1.admin_ops import router as admin_ops_router
 from app.core.dependencies import get_admin_service, get_user_service
 from app.models.user import User
 from app.schemas.admin import (
@@ -28,6 +29,7 @@ from app.services.admin_service import AdminService
 from app.services.user_service import UserNotFoundError, UserService
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+router.include_router(admin_ops_router)
 
 
 def _not_found() -> HTTPException:

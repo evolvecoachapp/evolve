@@ -293,6 +293,73 @@ class NutritionService:
         total = self.meal_repository.count_logs(user_id, date_from=date_from, date_to=date_to)
         return Page(items=items, total=total, limit=safe_limit, offset=safe_offset)
 
+    def get_any_meal(self, meal_id: uuid.UUID) -> Meal:
+        """Return a meal template by id without a visibility check (admin control plane).
+
+        Raises:
+            MealNotFoundError: If ``meal_id`` does not resolve to a non-deleted meal.
+        """
+        meal = self.meal_repository.get_meal_by_id(meal_id)
+        if meal is None or meal.deleted_at is not None:
+            raise MealNotFoundError("Meal not found.")
+        return meal
+
+    def list_all_meals(
+        self,
+        *,
+        created_by_id: uuid.UUID | None = None,
+        include_inactive: bool = True,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> Page[Meal]:
+        """Return a paginated page of meal templates across users."""
+        safe_limit, safe_offset = clamp_pagination(limit, offset)
+        items = self.meal_repository.list_all_meals(
+            created_by_id=created_by_id,
+            include_inactive=include_inactive,
+            limit=safe_limit,
+            offset=safe_offset,
+        )
+        total = self.meal_repository.count_all_meals(
+            created_by_id=created_by_id, include_inactive=include_inactive
+        )
+        return Page(items=items, total=total, limit=safe_limit, offset=safe_offset)
+
+    def get_any_meal_log(self, meal_log_id: uuid.UUID) -> MealLog:
+        """Return a meal log by id without an ownership check (admin control plane).
+
+        Raises:
+            MealLogNotFoundError: If ``meal_log_id`` does not resolve to a
+                non-deleted log.
+        """
+        meal_log = self.meal_repository.get_log_by_id(meal_log_id)
+        if meal_log is None or meal_log.deleted_at is not None:
+            raise MealLogNotFoundError("Meal log not found.")
+        return meal_log
+
+    def list_all_meal_logs(
+        self,
+        *,
+        user_id: uuid.UUID | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> Page[MealLog]:
+        """Return a filtered, paginated page of meal logs across users."""
+        safe_limit, safe_offset = clamp_pagination(limit, offset)
+        items = self.meal_repository.list_all_logs(
+            user_id=user_id,
+            date_from=date_from,
+            date_to=date_to,
+            limit=safe_limit,
+            offset=safe_offset,
+        )
+        total = self.meal_repository.count_all_logs_filtered(
+            user_id=user_id, date_from=date_from, date_to=date_to
+        )
+        return Page(items=items, total=total, limit=safe_limit, offset=safe_offset)
+
     # -- Daily targets/adherence ---------------------------------------------
 
     def get_daily_nutrition(

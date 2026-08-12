@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-08-13  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-157). Append only — never renumber.
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-158). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -5652,4 +5652,30 @@ Auditing `UserPublic`/`UserUpdate` (`backend/app/schemas/user.py`) against the P
 - Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
 - Normal administration of users and system health no longer requires CLI/database work, once at least one superuser exists.
 - Mobile Runtime/SQLite/Observer architecture is unchanged. Payments, push notifications, and live LLM remain out of scope.
+
+## ADR-158: Admin Feature Management (Sprint 39.2)
+
+**Status:** Accepted
+**Date:** 2026-08-13
+**Context:** Sprint 39.1 shipped the Admin foundation (auth, superuser gate, dashboard, users, health, audit). Operators still could not inspect or manage catalog and athlete activity from the Admin Panel. Existing domain services remain the source of truth: catalog services already support create/update/deactivate/archive; user-owned Nutrition/Recovery/Goal/Progress/Coach/WorkoutLog services are ownership-scoped. Inventing a second Admin domain layer, raw-SQL global queries, or hard-delete paths would violate Clean Architecture and the sprint constraints.
+
+**Decision:**
+
+1. **Extend the existing Admin app and `/api/v1/admin` router.** Do not rebuild Admin. New ops live in `admin_ops.py` and are included by the existing admin router. Every endpoint uses `get_current_superuser`.
+2. **Reuse existing services.** Catalog mutations call `ExerciseService`, `WorkoutService`, and `CatalogService`. `AdminService` only wraps those calls with `run_audited` / `record_audited_delete`. Domain business rules stay in the original services.
+3. **User-owned data is read-only in Admin.** Nutrition, recovery, goals, progress, coach, and workout logs expose `list_all` / `get_any_*` on the existing services/repositories so Admin can inspect records without bypassing ownership via raw SQL. Admin does not start/finish/skip logs, send coach messages, or mutate meals/check-ins/goals/progress.
+4. **No invented deletes.** Exercises and workouts deactivate; programs archive. Muscle groups and equipment can be listed and created (`CatalogService` has no update/delete). Hard delete is unsupported.
+5. **Progress summary is the existing `ProgressService.get_progress_summary`**, gated as an admin read for a specific user — not a new analytics engine.
+6. **Coach remains the existing conversation system.** Admin lists conversations and messages. No second AI/coach stack.
+
+**Alternatives considered:**
+- **AdminService duplicating catalog/nutrition CRUD** — rejected; that would be a second business-logic layer.
+- **Raw SQL across user tables for global lists** — rejected; ownership and domain rules would be bypassed. Smallest explicit `list_all` methods on existing repositories are the allowed expansion.
+- **Hard delete from Admin** — rejected; existing services only deactivate/archive catalog records.
+- **Admin mutations of user-owned meals/recovery/goals/coach** — rejected; those services are user-scoped write APIs. Exposing them as platform-wide writes would invent admin override semantics the domain does not have.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Operators can manage the public catalog and inspect athlete activity without a second database or domain.
+- Mobile Runtime/SQLite/Observer architecture is unchanged. Payments, push, and live LLM remain out of scope.
 
