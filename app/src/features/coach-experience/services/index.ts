@@ -14,5 +14,8 @@ export {
   resetMockCoachExperienceSeed,
   getMockCoachExperienceSeed,
 } from "../providers/MockCoachExperienceService";
-export { backendCoachExperienceService } from "../providers/BackendCoachExperienceService";
+export {
+  backendCoachExperienceService,
+  resetBackendCoachExperienceState,
+} from "../providers/BackendCoachExperienceService";
 export { localCoachExperienceService } from "../providers/LocalCoachExperienceService";

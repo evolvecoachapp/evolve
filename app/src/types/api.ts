@@ -446,3 +446,151 @@ export interface ReadinessReadDto {
   protocols: string[];
   for_date: string;
 }
+
+/*
+ * ---------------------------------------------------------------------------
+ * Goals / Progress domain (backend/app/schemas/goal.py, progress.py).
+ *
+ * `target_value` / progress `value` Decimal fields are serialized by
+ * FastAPI/Pydantic as JSON *strings* (e.g. `"75.00"`), never numbers —
+ * callers must coerce before arithmetic.
+ * ---------------------------------------------------------------------------
+ */
+
+/** Mirrors `app.models.goal.GoalType`. */
+export type GoalTypeDto =
+  | "strength_target"
+  | "weight_target"
+  | "habit"
+  | "event_preparation";
+
+/** Mirrors `app.models.goal.GoalStatus`. */
+export type GoalStatusDto = "active" | "achieved" | "abandoned";
+
+/** Mirrors `app.models.goal.GoalPriority`. */
+export type GoalPriorityDto = "low" | "medium" | "high";
+
+/** Mirrors `app.models.progress.ProgressMetricType`. */
+export type ProgressMetricTypeDto =
+  | "body_weight"
+  | "body_fat_percentage"
+  | "lift_pr"
+  | "run_time"
+  | "circumference";
+
+/** Mirrors `app.models.progress.ProgressSource`. */
+export type ProgressSourceDto = "manual" | "wearable" | "calculated";
+
+/** Mirrors `app.schemas.goal.GoalUpdate`. */
+export interface GoalUpdateRequest {
+  description?: string | null;
+  target_metric_type?: ProgressMetricTypeDto | null;
+  target_value?: number | string | null;
+  target_unit?: string | null;
+  target_exercise_id?: string | null;
+  target_date?: string | null;
+  status?: GoalStatusDto | null;
+  priority?: GoalPriorityDto | null;
+}
+
+/** Mirrors `app.schemas.goal.GoalRead`. */
+export interface GoalReadDto {
+  id: string;
+  user_id: string;
+  goal_type: GoalTypeDto;
+  description: string;
+  target_metric_type: ProgressMetricTypeDto | null;
+  target_value: string | number | null;
+  target_unit: string | null;
+  target_exercise_id: string | null;
+  start_date: string;
+  target_date: string | null;
+  status: GoalStatusDto;
+  priority: GoalPriorityDto;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Mirrors `app.schemas.goal.GoalPage`. */
+export interface GoalPageDto {
+  items: GoalReadDto[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+/** Mirrors `app.schemas.progress.ProgressEntryRead`. */
+export interface ProgressEntryReadDto {
+  id: string;
+  user_id: string;
+  goal_id: string | null;
+  exercise_id: string | null;
+  metric_type: ProgressMetricTypeDto;
+  value: string | number;
+  unit: string;
+  recorded_date: string;
+  source: ProgressSourceDto;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Mirrors `app.schemas.progress.ProgressEntryPage`. */
+export interface ProgressEntryPageDto {
+  items: ProgressEntryReadDto[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * Coach domain (backend/app/schemas/coach.py).
+ *
+ * `CoachMessageRead` is the HTTP projection of the Orchestrator's reply
+ * (no message id / timestamps). `ChatMessageRead` is a persisted turn.
+ * ---------------------------------------------------------------------------
+ */
+
+/** Mirrors `app.ai.contracts.Intent`. */
+export type CoachIntentDto =
+  | "general"
+  | "workout"
+  | "nutrition"
+  | "recovery"
+  | "progress";
+
+/** Mirrors `app.models.chat.ChatRole`. */
+export type ChatRoleDto = "user" | "assistant" | "system";
+
+/** Mirrors `app.schemas.coach.CoachMessageCreate`. */
+export interface CoachMessageCreateRequest {
+  message: string;
+  conversation_id?: string | null;
+}
+
+/** Mirrors `app.schemas.coach.CoachMessageRead`. */
+export interface CoachMessageReadDto {
+  conversation_id: string;
+  message: string;
+  intent: CoachIntentDto;
+  engines_invoked: string[];
+  artifacts: Record<string, unknown> | null;
+}
+
+/** Mirrors `app.schemas.coach.ChatMessageRead`. */
+export interface ChatMessageReadDto {
+  id: string;
+  conversation_id: string;
+  role: ChatRoleDto;
+  content: string;
+  created_at: string;
+}
+
+/** Mirrors `app.schemas.coach.ChatMessagePage`. */
+export interface ChatMessagePageDto {
+  items: ChatMessageReadDto[];
+  total: number;
+  limit: number;
+  offset: number;
+}
