@@ -20,7 +20,8 @@ import { request } from "./client";
  * `/api/v1/workout-resolution`, and `/api/v1/workout-logs`.
  *
  * Mirrors `src/api/users.ts` — plain request-wrapping functions, no state.
- * Consumed exclusively by `features/workout/providers/BackendWorkoutService.ts`.
+ * Consumed by `features/workout/providers/BackendWorkoutService.ts` and
+ * `features/workout-runtime/providers/BackendWorkoutRuntimeService.ts`.
  */
 
 /** `GET /api/v1/workout-resolution/today` — "what should the user do right now?". */

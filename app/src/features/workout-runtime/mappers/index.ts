@@ -11,3 +11,11 @@ export {
   mapWorkoutRuntimeToSessionSummary,
   type MapWorkoutRuntimeToSessionSummaryOptions,
 } from "./mapWorkoutRuntimeToSessionSummary";
+export {
+  mapBackendWorkoutToExperienceDto,
+  mapEmptyWorkoutRuntimeDto,
+  mapWorkoutExerciseReadToRuntimeExerciseDto,
+  mapWorkoutLogDetailToRuntimeDto,
+  mapWorkoutLogExerciseToRuntimeExerciseDto,
+  mapWorkoutPublicToRuntimeDto,
+} from "./mapBackendWorkoutToExperienceDto";
