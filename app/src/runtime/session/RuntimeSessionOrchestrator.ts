@@ -5,6 +5,10 @@ import { restoreDashboard } from "../dashboard-restore/application/restoreDashbo
 import { DashboardRestoreError } from "../dashboard-restore/DashboardRestoreError";
 import { hydrateRuntime } from "../hydration/application/hydrateRuntime";
 import { HydrationError } from "../hydration/HydrationError";
+import {
+  initializeFirstRunRuntime,
+  type FirstRunIdentitySeed,
+} from "./initializeFirstRunRuntime";
 import { RUNTIME_SESSION_PHASES } from "./RuntimeSessionInitialization";
 import {
   createRuntimeSessionResult,
@@ -28,12 +32,14 @@ let sessionPromise: Promise<RuntimeSessionResult> | null = null;
 export interface RuntimeSessionOptions {
   readonly compositionRoot?: CompositionRootOptions;
   readonly athleteIds?: readonly string[];
+  readonly identitySeed?: FirstRunIdentitySeed;
   readonly clock?: () => string;
 }
 
 /**
- * Runtime Session Orchestrator — coordinates bootstrap, hydration, and
- * dashboard restore pipelines in deterministic order. No business logic.
+ * Runtime Session Orchestrator — coordinates bootstrap, hydration,
+ * first-run identity/workspace initialization, and dashboard restore
+ * pipelines in deterministic order. No business logic.
  */
 export class RuntimeSessionOrchestrator {
   static async start(
@@ -64,6 +70,12 @@ export class RuntimeSessionOrchestrator {
       // session's runtime memory.
       const hydration = await hydrateRuntime({
         athleteIds: options.athleteIds,
+      });
+
+      await initializeFirstRunRuntime({
+        athleteIds: options.athleteIds,
+        identitySeed: options.identitySeed,
+        clock,
       });
 
       const dashboardRestore = await restoreDashboard({

@@ -350,6 +350,8 @@ describe("Sprint 36.3 — Runtime Session retry hardening", () => {
         expect(getByTestId("authenticated-app")).toBeTruthy(),
       );
 
+      persistSpy.mockClear();
+
       const root = getCompositionRoot();
       await act(async () => {
         root.resolve("AthleteIdentityService").build({

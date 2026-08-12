@@ -136,6 +136,11 @@ describe("RuntimeSessionProvider startup integration", () => {
     await waitFor(() => expect(startSpy).toHaveBeenCalled());
     expect(startSpy).toHaveBeenCalledWith({
       athleteIds: [testUser.id],
+      identitySeed: {
+        displayName: "evolveuser",
+        givenName: null,
+        familyName: null,
+      },
     });
   });
 

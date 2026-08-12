@@ -2,6 +2,7 @@ export type RuntimeSessionErrorCode =
   | "session_already_started"
   | "bootstrap_failed"
   | "hydration_failed"
+  | "initialization_failed"
   | "restore_failed"
   | "invalid_session_state";
 

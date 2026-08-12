@@ -31,3 +31,5 @@ export {
   useRuntimeSession,
   resetRuntimeSessionForTests,
 } from "./RuntimeSessionContext";
+export { initializeFirstRunRuntime } from "./initializeFirstRunRuntime";
+export type { FirstRunIdentitySeed } from "./initializeFirstRunRuntime";

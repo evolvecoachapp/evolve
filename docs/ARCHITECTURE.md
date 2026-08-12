@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-08-12  
+**Last Updated:** 2026-08-13  
 **Purpose:** Concise system architecture — layers, patterns, dependency flow.  
 **Source of Truth:** Partial — summary only; deep reference is [EVOLVE_ARCHITECTURE.md](../.cursor/rules/EVOLVE_ARCHITECTURE.md). Architecture consolidation: [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md) (Sprint 30.7 / ADR-105).
 
@@ -493,12 +493,12 @@ Full detail: [DASHBOARD_RESTORE.md](./DASHBOARD_RESTORE.md).
 
 Full detail: [RUNTIME_WRITE_THROUGH.md](./RUNTIME_WRITE_THROUGH.md).
 
-### Runtime Session Orchestrator (`runtime/session`) — Sprint 33.5 / 33.6 / 33.8 / 33.9
+### Runtime Session Orchestrator (`runtime/session`) — Sprint 33.5 / 33.6 / 33.8 / 33.9 / 38.3
 
 | Aspect | Implementation |
 |--------|----------------|
 | **Purpose** | Single orchestration entry point for the complete runtime startup lifecycle |
-| **Flow** | Authenticated App Launch → Auth → `RuntimeSessionProvider` → `startRuntimeSession()` → `RuntimeSessionOrchestrator` → Bootstrap → Hydration → Dashboard Restore → `observeRuntime()` → `RuntimeSessionResult` → Home |
+| **Flow** | Authenticated App Launch → Auth → `RuntimeSessionProvider` → `startRuntimeSession({ athleteIds, identitySeed })` → `RuntimeSessionOrchestrator` → Bootstrap → Hydration → First-run identity/workspace init (Sprint 38.3, only when missing) → Dashboard Restore → `observeRuntime()` → `RuntimeSessionResult` → Home |
 | **Application API** | `startRuntimeSession()`, `getRuntimeSessionStatus()` |
 | **Provider** | `RuntimeSessionProvider` gates authenticated routes (mirrors Auth `isBootstrapping`); auto-starts observer after session READY; stops observer on logout |
 | **Composition Root** | Registers `RuntimeSessionService` via `RuntimeSessionFactory` (token #62) |
@@ -507,11 +507,26 @@ Full detail: [RUNTIME_WRITE_THROUGH.md](./RUNTIME_WRITE_THROUGH.md).
 
 Full detail: [RUNTIME_SESSION.md](./RUNTIME_SESSION.md).
 
+### First-Run Runtime Bootstrap (`runtime/session/initializeFirstRunRuntime`) — Sprint 38.3
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Close the production first-run gap where a newly registered athlete could authenticate and reach Runtime Session `ready`, but Athlete Identity and Unified Workspace were never composed — Dashboard Restore fell back to `createEmptyHomeDashboard()`, and Profile/feature screens later failed with "Athlete identity unavailable" |
+| **Verified defect** | Hydration of a brand-new athlete correctly finds 0 records and succeeds; the session did **not** crash. The missing step was post-hydration initialization through the existing compose application APIs before Dashboard Restore |
+| **Flow** | `AuthContext.user.id` → `RuntimeSessionProvider` (`athleteIds = [user.id]`, `identitySeed` from `buildDisplayName(user)` + `first_name`/`last_name`) → `startRuntimeSession` → Bootstrap → Hydration → `initializeFirstRunRuntime()` → if identity missing, `composeAthleteIdentity`; if workspace missing, compose required snapshot/timeline/coaching-session/intelligence-workspace deps then `composeUnifiedWorkspace` → `persistRuntime({ athleteIds })` when anything was created → Dashboard Restore → Observer → `ready` |
+| **No second system** | Runs inside `RuntimeSessionOrchestrator` after `hydrateRuntime` and before `restoreDashboard`. Reuses existing `compose*` application APIs, builder defaults (locale `en-US`, units `metric`, timezone `Etc/UTC`, displayName fallback `"Athlete"`), and `persistRuntime()`. Skips entirely when bootstrap is not actually `ready` (mocked pipeline tests) or when the records already exist |
+| **Workout resolution** | Runtime bootstrap does **not** require a current workout; no networking and no new backend endpoints were added |
+| **Athlete isolation** | Athlete id still originates only from `AuthContext.user.id`. First-run records are created and persisted under that id; logout still resets the Composition Root; B's session hydrates only B's rows |
+| **Failure** | Composition/persist failures throw `RuntimeSessionError(..., "initialization_failed")`; the orchestrator enters the existing `failed` state; `RuntimeFailureScreen` remains the UX; Retry uses the existing `retrySession()` full pipeline reset |
+| **Design** | **Narrow orchestrator step only.** No Runtime/SQLite/Observer/Write-Through/repository redesign, no new persistence path, no invented domain defaults, no Admin/AI/UI redesign |
+
+Decision record: ADR-156 in [DECISIONS.md](./DECISIONS.md).
+
 ### Global Runtime Failure UX & Error Boundary (`components/RuntimeFailureScreen`, `components/ErrorBoundary`) — Sprint 36.2
 
 | Aspect | Implementation |
 |--------|----------------|
-| **Purpose** | Give authenticated startup failures (bootstrap, hydration, dashboard restore, or observer) a dedicated global recovery screen instead of leaving authenticated navigation reachable with no recovery surface; add a reusable `ErrorBoundary` for unexpected React render exceptions |
+| **Purpose** | Give authenticated startup failures (bootstrap, hydration, first-run initialization, dashboard restore, or observer) a dedicated global recovery screen instead of leaving authenticated navigation reachable with no recovery surface; add a reusable `ErrorBoundary` for unexpected React render exceptions |
 | **Flow — Runtime Session failure** | `AuthProvider` → `RuntimeSessionProvider` → `startRuntimeSession()` fails → `status = "failed"` → `app/(app)/_layout.tsx` renders `RuntimeFailureScreen` (blocks the authenticated `Stack`) → user taps Retry → existing `retrySession()` → `startRuntimeSession()` → `status = "ready"` → authenticated app renders |
 | **Retry semantics** | `RuntimeFailureScreen` calls the **existing** `RuntimeSessionContext.retrySession()` only — no parallel/duplicate retry mechanism. `RuntimeSessionProvider`'s catch blocks now log the failure reason via `getLogger().error()` (`infrastructure/logging`, Sprint 30.6) before setting `status = "failed"`; the raw error/message is never passed to the UI — the screen only ever receives the boolean `failed` status |
 | **Route gate** | `app/(app)/_layout.tsx` (unchanged responsibility, extended condition): unauthenticated → onboarding redirect; auth/runtime starting → `LoadingSpinner`; `status === "failed"` → `RuntimeFailureScreen`; otherwise → authenticated `Stack` wrapped in `ErrorBoundary`. Authenticated tabs are unreachable while `status === "failed"` |
@@ -906,7 +921,7 @@ ADR-143: [DECISIONS.md](./DECISIONS.md).
 | Aspect | Implementation |
 |--------|----------------|
 | **Purpose** | Close the production data-isolation gap where SQLite data persisted by one authenticated athlete survived logout and could be rehydrated into a different athlete's subsequent session |
-| **Flow** | `AuthContext.user.id` → `RuntimeSessionProvider` (`athleteIds = [user.id]`) → `startRuntimeSession({ athleteIds })` → `RuntimeSessionOrchestrator` → `hydrateRuntime({ athleteIds })` → `RepositoryHydrationPipeline.hydrate({ athleteIds, deps })` → `filterRecordsForAthleteScope()` → only current athlete's records enter runtime memory |
+| **Flow** | `AuthContext.user.id` → `RuntimeSessionProvider` (`athleteIds = [user.id]`) → `startRuntimeSession({ athleteIds })` → `RuntimeSessionOrchestrator` → `hydrateRuntime({ athleteIds })` → `RepositoryHydrationPipeline.hydrate({ athleteIds, deps })` → `filterRecordsForAthleteScope()` → only current athlete's records enter runtime memory → first-run init (Sprint 38.3) composes identity/workspace for that same id only when hydration found none |
 | **Boundary** | New pure module `runtime/hydration/AthleteHydrationScope.ts` — the single, explicit chokepoint enforcing that hydration only restores athlete-owned `PersistenceRecord`s (identity/workspace/snapshot/timeline/workout/nutrition/recovery) matching the current session's athlete id(s) |
 | **Retention policy** | SQLite database is **not** deleted or wiped on logout — a previous athlete's rows remain on disk so that athlete can recover their data on a later login, but those rows are never hydrated into a different athlete's session |
 | **Stale id prevention** | `RuntimeSessionProvider` derives `athleteIds` fresh from `AuthContext`'s current `user.id` every render; no cached "current athlete id" exists elsewhere in the runtime layer to go stale |

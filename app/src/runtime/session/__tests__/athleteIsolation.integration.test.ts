@@ -152,7 +152,7 @@ describe("Cross-athlete SQLite persistence isolation (Sprint 36.1)", () => {
     ).toBeNull();
     expect(
       rootB.resolve("AthleteIdentityService").getAthleteIdentity(ATHLETE_B),
-    ).toBeNull();
+    ).not.toBeNull();
     expect(
       rootB.resolve("UnifiedWorkspaceService").getWorkspace(ATHLETE_A),
     ).toBeNull();
@@ -233,9 +233,15 @@ describe("Cross-athlete SQLite persistence isolation (Sprint 36.1)", () => {
     const root = getCompositionRoot();
     expect(
       root.resolve("AthleteIdentityService").getAthleteIdentity(brandNewAthleteId),
-    ).toBeNull();
+    ).not.toBeNull();
     expect(
       root.resolve("AthleteIdentityService").getAthleteIdentity(ATHLETE_A),
+    ).toBeNull();
+    expect(
+      root.resolve("UnifiedWorkspaceService").getWorkspace(brandNewAthleteId),
+    ).not.toBeNull();
+    expect(
+      root.resolve("UnifiedWorkspaceService").getWorkspace(ATHLETE_A),
     ).toBeNull();
   });
 
@@ -256,6 +262,9 @@ describe("Cross-athlete SQLite persistence isolation (Sprint 36.1)", () => {
     const rootB = getCompositionRoot();
     expect(
       rootB.resolve("UnifiedWorkspaceService").getWorkspace(ATHLETE_B),
+    ).not.toBeNull();
+    expect(
+      rootB.resolve("UnifiedWorkspaceService").getWorkspace(ATHLETE_A),
     ).toBeNull();
   });
 });

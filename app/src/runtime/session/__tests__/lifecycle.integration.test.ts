@@ -194,7 +194,16 @@ describe("Runtime lifecycle end-to-end integration", () => {
       expect(result.hydration.identityRecordCount).toBe(0);
       expect(result.hydration.runtimeRecordCount).toBe(0);
       expect(result.hydration.workspaceRecordCount).toBe(0);
-      expect(result.dashboardRestore.emptyCount).toBeGreaterThanOrEqual(1);
+      expect(result.dashboardRestore.projectedCount).toBe(1);
+      expect(result.dashboardRestore.emptyCount).toBe(0);
+
+      const root = getCompositionRoot();
+      expect(
+        root.resolve("AthleteIdentityService").getAthleteIdentity(ATHLETE_ID),
+      ).not.toBeNull();
+      expect(
+        root.resolve("UnifiedWorkspaceService").getWorkspace(ATHLETE_ID),
+      ).not.toBeNull();
     });
   });
 
@@ -325,7 +334,9 @@ describe("Runtime lifecycle end-to-end integration", () => {
       observeRuntime({ athleteIds: [ATHLETE_ID], clock: FIXED_CLOCK });
 
       const adapters = getCompositionRoot().resolve("RepositoryAdapters");
-      expect(adapters.identity.list()).toHaveLength(0);
+      expect(adapters.identity.list().length).toBeGreaterThanOrEqual(1);
+      expect(adapters.workspace.list().length).toBeGreaterThanOrEqual(1);
+      expect(adapters.runtime.list()).toHaveLength(0);
 
       await buildRuntimeStateThroughObserver();
       await waitForWriteThrough();

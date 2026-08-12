@@ -7,7 +7,9 @@ import React, {
   useState,
 } from "react";
 import { useAuth } from "../../auth/useAuth";
+import { buildDisplayName } from "../../features/shared/utils/userAdapters";
 import { getLogger } from "../../infrastructure/logging";
+import type { FirstRunIdentitySeed } from "./initializeFirstRunRuntime";
 import { resetRuntimeBootstrap } from "../bootstrap/RuntimeBootstrap";
 import { resetDashboardRestore } from "../dashboard-restore/DashboardRestorePipeline";
 import { resetRepositoryHydration } from "../hydration/RepositoryHydrationPipeline";
@@ -51,6 +53,18 @@ export function RuntimeSessionProvider({
     [user?.id],
   );
 
+  const identitySeed = useMemo<FirstRunIdentitySeed | undefined>(
+    () =>
+      user
+        ? Object.freeze({
+            displayName: buildDisplayName(user),
+            givenName: user.first_name,
+            familyName: user.last_name,
+          })
+        : undefined,
+    [user],
+  );
+
   /**
    * Retry — always starts from a full deterministic pipeline reset (Sprint
    * 36.3). A prior attempt may have failed anywhere in the pipeline
@@ -71,14 +85,14 @@ export function RuntimeSessionProvider({
 
     setStatus(RUNTIME_SESSION_STATUS.starting);
     try {
-      await startRuntimeSession({ athleteIds });
+      await startRuntimeSession({ athleteIds, identitySeed });
       startRuntimeObserver(athleteIds);
       setStatus(RUNTIME_SESSION_STATUS.ready);
     } catch (error) {
       logRuntimeSessionFailure(error);
       setStatus(RUNTIME_SESSION_STATUS.failed);
     }
-  }, [athleteIds]);
+  }, [athleteIds, identitySeed]);
 
   useEffect(() => {
     if (isAuthBootstrapping) {
@@ -93,7 +107,7 @@ export function RuntimeSessionProvider({
 
     let isMounted = true;
 
-    void startRuntimeSession({ athleteIds })
+    void startRuntimeSession({ athleteIds, identitySeed })
       .then(() => {
         if (!isMounted) {
           return;
@@ -117,7 +131,7 @@ export function RuntimeSessionProvider({
     return () => {
       isMounted = false;
     };
-  }, [isAuthBootstrapping, isAuthenticated, athleteIds]);
+  }, [isAuthBootstrapping, isAuthenticated, athleteIds, identitySeed]);
 
   const isStarting =
     isAuthenticated &&

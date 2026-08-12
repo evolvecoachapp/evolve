@@ -3,8 +3,8 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
-**Last Updated:** 2026-08-12  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-155). Append only — never renumber.
+**Last Updated:** 2026-08-13  
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-156). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -5593,3 +5593,32 @@ Auditing `UserPublic`/`UserUpdate` (`backend/app/schemas/user.py`) against the P
 - Profile's `backend` provider is no longer a throwing placeholder — `EXPO_PUBLIC_PROFILE_EXPERIENCE_PROVIDER=backend` (or any explicit `service` injection) now round-trips real `GET`/`PATCH /api/v1/users/me` data for the fields the backend owns.
 - The production runtime path gains its first field (`heightCm`/`weightKg`) with the backend as sole source of truth, with no SQLite/Runtime Observer/Athlete Identity model change — establishing the pattern later Backend-infrastructure phases can extend to the remaining backend-owned identity fields (name, birth date, activity level, goal) without further architecture changes.
 - New/updated tests: `providers/__tests__/BackendProfileExperienceService.test.ts` (new), `__tests__/application.test.ts`, `__tests__/viewmodel.test.ts`, `__tests__/runtimeIntegration.test.ts` (updated for the new contract method and runtime-path backend write/failure behavior). Full suite (811 suites / 3374 tests) and typecheck remain green.
+
+---
+
+## ADR-156: First-Run Runtime Bootstrap (Sprint 38.3)
+
+**Status:** Accepted
+**Date:** 2026-08-13
+**Context:** A repository audit flagged that a newly registered athlete can register/login, but the first authenticated runtime session may fail because Athlete Identity and Unified Workspace are not initialized. Tracing the live path (Register → Login → AuthContext → RuntimeSessionProvider → RuntimeSessionOrchestrator → RuntimeBootstrap → Hydration → Dashboard Restore) showed the audit was only partly right: the session does **not** crash. Hydration of 0 records succeeds; Dashboard Restore falls back to `createEmptyHomeDashboard()` (`isEmpty: true`); the session reaches `ready`; Home renders `EmptyDashboard`. Profile and other feature screens then fail later ("Athlete identity unavailable") because identity/workspace were never composed. Runtime bootstrap does not require a current workout, so no workout-resolution/networking step was added.
+
+**Decision:**
+
+1. Add one orchestrator step, `initializeFirstRunRuntime()`, inside `RuntimeSessionOrchestrator.start()` after `hydrateRuntime` and before `restoreDashboard`. This is not a second initialization system and does not bypass the orchestrator.
+2. If Athlete Identity is missing for the current `athleteIds`, call the existing `composeAthleteIdentity` application API. Profile seed (`displayName` / `givenName` / `familyName`) comes from the current Auth user via `RuntimeSessionProvider` (`buildDisplayName(user)` + `first_name`/`last_name`). Builder defaults already define locale `en-US`, units `metric`, timezone `Etc/UTC`, and preferences/settings; displayName falls back to `"Athlete"` when Auth has no name.
+3. If Unified Workspace is missing, compose the dependencies `validateWorkspace` already requires (empty timeline via existing `CoachTimelineService.restorePersisted`, `composeCoachingSession` with `GENERAL_COACHING` and empty `userRequest`, `composeAthleteWorkspace`, `composeAthleteSnapshot`) then `composeUnifiedWorkspace`. No invented workout/nutrition/recovery/coach card data.
+4. Persist only through existing `persistRuntime({ athleteIds })` when anything was created. Skip the whole step when `getBootstrapStatus() !== ready` (so mocked-bootstrap tests do not lazily create a Composition Root) or when the records already exist.
+5. Athlete id continues to originate exclusively from `AuthContext.user.id` and is threaded through the existing runtime lifecycle. No globally cached active athlete id.
+6. Failures throw `RuntimeSessionError(..., "initialization_failed")`. The orchestrator enters the existing `failed` state; `RuntimeFailureScreen` remains the UX; Retry uses the existing `retrySession()` full pipeline reset. Raw exceptions are never shown.
+
+**Alternatives considered:**
+- **Treat empty first-start as the product behavior and only fix Profile screens** — rejected; Home/Profile/feature screens are designed to read hydrated identity/workspace, and leaving them uninitialized is the confirmed production blocker.
+- **Manually insert SQLite rows from feature code / a new first-run repository** — rejected; violates the existing persistence/write-through boundary and the sprint's "do not modify SQLite architecture / repository contracts" constraint.
+- **Invent default workout/nutrition/recovery/coach domain data so Home is non-empty** — rejected; existing builders already define first-run defaults, and `validateWorkspace` only requires snapshot + timeline + coaching session to be present. An empty-but-projected dashboard is the correct first-run Home.
+- **Call backend workout-resolution during bootstrap** — rejected; the current runtime bootstrap does not expect a current workout, and the sprint forbids new networking/endpoints.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- REGISTER → LOGIN → RUNTIME START → HOME now initializes identity and workspace for a brand-new athlete through the existing compose APIs and write-through path. Returning athletes are unchanged (init is a no-op when records exist). A → logout → B isolation is unchanged: B is first-run initialized under B's id; A's rows stay on disk and are not hydrated into B.
+- First-run persist runs before the Runtime Observer wraps `build()`; later in-session mutations still go through observer → write-through. Home may still be structurally empty (`isEmpty: true` for workout/nutrition/recovery/coach cards) but Dashboard Restore now projects a real workspace (`projectedCount: 1`) instead of the empty fallback.
+- New tests: `runtime/session/__tests__/firstRunBootstrap.integration.test.tsx`. Full suite (820 suites / 3465 tests) and typecheck remain green.
