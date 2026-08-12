@@ -14,33 +14,20 @@ See [TECH_STACK.md](./TECH_STACK.md) for versions. Onboarding: [PROJECT_CONTEXT.
 ## System Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        MOBILE CLIENT (app/)                      │
-│  Expo Router → Screens → Features → Service Factory → Provider  │
-│  Runtime Bootstrap Gate (Sprint 33.1B) → Composition Root       │
-│                                                                 │
-│  AI runtime (application layer, in-memory):                     │
-│  Application → Composition Root → Container → Registry →        │
-│  Factories → Feature Services → Program Generation Orchestrator │
-│  → Blueprint → Knowledge → Selection → Programming →            │
-│  Progression → Adaptation → Assembly → WorkoutSession           │
-│  → Decision Intelligence (decision graph / execution reports)   │
-│  → Workout Runtime (live execution state of WorkoutSession)     │
-│  → Rest Runtime (deterministic rest periods; injected elapsed)  │
-│  → Domain Events (immutable execution events → Event Stream)    │
-│  → Performance Engine (single-session snapshots from results)   │
-│  → Achievement Engine (Personal Records from snapshots)         │
-│  → Athlete History (immutable chronological domain record)      │
-│  → Recovery Intelligence (deterministic recovery snapshots)     │
-│  → Insight Engine (deterministic domain insight snapshots)      │
-│  → Coach Intelligence (immutable Coaching Context preparation)  │
-│  → Conversation Orchestrator (immutable Conversation Context)   │
-└────────────────────────────┬────────────────────────────────────┘
-                             │ HTTPS + JWT
-                             ▼
+┌──────────────────────────────┐  ┌──────────────────────────────┐
+│     MOBILE CLIENT (app/)     │  │     ADMIN WEB (admin/)       │
+│  Expo Router → Screens →     │  │  Vite + React (desktop-first)│
+│  Features → Runtime Session  │  │  Login → Admin Shell →       │
+│                              │  │  Dashboard / Users / System  │
+└──────────────┬───────────────┘  └──────────────┬───────────────┘
+               │ HTTPS + JWT                     │ HTTPS + JWT
+               │                                 │ get_current_superuser
+               └──────────────┬──────────────────┘
+                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                      BACKEND API (backend/)                      │
 │         FastAPI Routes → Services → Repositories → Models         │
+│         /api/v1/admin → UserService + AdminService (ops)          │
 │                              │                                   │
 │                    CoachService → AIOrchestrator                   │
 │                              │                                   │
@@ -2207,8 +2194,21 @@ Full detail: [GOAL_PROGRESS_ENGINE.md](./GOAL_PROGRESS_ENGINE.md). Goal Evaluati
 |--------|------|
 | `core/config.py` | Pydantic Settings from environment |
 | `core/dependencies.py` | FastAPI DI wiring for services |
-| `security/` | JWT, Argon2 hashing, `get_current_user` |
+| `security/` | JWT, Argon2 hashing, `get_current_user`, `get_current_superuser` |
 | `db/` | Engine, session factory, Alembic base |
+
+### Admin Control Plane (`admin/` + `/api/v1/admin`) — Sprint 39.1
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Operational web Admin Panel for pre-beta production control. Not the mobile EVOLVE visual system |
+| **Flow** | Admin UI → Admin API (`/api/v1/admin`) → existing application services (`UserService`) → existing repositories → PostgreSQL |
+| **AuthZ** | `get_current_superuser`: authenticated user required, then live `User.is_superuser` must be true, otherwise 403. No role hierarchy. JWT carries no admin claim |
+| **UI** | Separate Vite + React app under `admin/` (login, protected shell, dashboard, users, user detail, system health). Desktop-first SaaS layout |
+| **Audit** | `admin_audit_logs` — smallest append-only trail (actor, action, target, timestamp, result). Not event sourcing |
+| **Design** | **Foundation only.** No second database, no second domain layer, no mobile/Runtime/SQLite changes, no payments/push/live LLM |
+
+Decision record: ADR-157 in [DECISIONS.md](./DECISIONS.md).
 
 ---
 
@@ -2426,5 +2426,6 @@ AIOrchestrator.process_message (async)
 | 112 | Notification & Reminder Framework Foundation (Sprint 31.7) |
 | 113 | Progress & Analytics Framework Foundation (Sprint 31.8) |
 | 114 | Coach Timeline Framework Foundation (Sprint 31.9) |
+| 157 | Admin Foundation + Production Control Plane (Sprint 39.1) |
 
 Full list: [DECISIONS.md](./DECISIONS.md). Audit: [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md).

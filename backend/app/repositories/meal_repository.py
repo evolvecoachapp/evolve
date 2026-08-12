@@ -170,6 +170,14 @@ class MealRepository:
         count_query = select(func.count()).select_from(query.subquery())
         return self.db.execute(count_query).scalar_one()
 
+    def count_all_logs(self) -> int:
+        """Return the platform-wide count of non-deleted meal logs."""
+        return self.db.execute(
+            select(func.count())
+            .select_from(MealLog)
+            .where(MealLog.deleted_at.is_(None))
+        ).scalar_one()
+
     def sum_totals_for_date(self, user_id: uuid.UUID, for_date: date) -> dict[str, object]:
         """Aggregate a user's logged macro totals for a single calendar date.
 

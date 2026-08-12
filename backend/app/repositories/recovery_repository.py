@@ -125,3 +125,11 @@ class RecoveryCheckInRepository:
         query = self._filtered_query(user_id, date_from=date_from, date_to=date_to)
         count_query = select(func.count()).select_from(query.subquery())
         return self.db.execute(count_query).scalar_one()
+
+    def count_all(self) -> int:
+        """Return the platform-wide count of non-deleted recovery check-ins."""
+        return self.db.execute(
+            select(func.count())
+            .select_from(RecoveryCheckIn)
+            .where(RecoveryCheckIn.deleted_at.is_(None))
+        ).scalar_one()

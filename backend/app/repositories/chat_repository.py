@@ -132,3 +132,9 @@ class ChatRepository:
             .select_from(ChatMessage)
             .where(ChatMessage.conversation_id == conversation_id)
         ).scalar_one()
+
+    def count_conversations(self) -> int:
+        """Return the platform-wide count of conversations."""
+        return self.db.execute(
+            select(func.count()).select_from(Conversation)
+        ).scalar_one()

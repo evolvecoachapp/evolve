@@ -35,3 +35,4 @@ from app.models.meal import (  # noqa: F401
 from app.models.recovery import RecoveryCheckIn  # noqa: F401
 from app.models.progress import Progress  # noqa: F401
 from app.models.goal import Goal  # noqa: F401
+from app.models.admin_audit_log import AdminAuditLog  # noqa: F401

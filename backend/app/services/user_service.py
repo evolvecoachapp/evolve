@@ -14,6 +14,7 @@ from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import UserUpdate
 from app.services.auth_service import UserAlreadyExistsError
+from app.utils.pagination import Page, clamp_pagination
 
 __all__ = ["UserServiceError", "UserNotFoundError", "UserService"]
 
@@ -86,4 +87,61 @@ class UserService:
             self.user_repository.db.rollback()
             raise UserAlreadyExistsError("User already exists.") from exc
 
+        return updated
+
+    def get_user(self, user_id: uuid.UUID) -> User:
+        """Return a live (non-deleted) user by id.
+
+        Raises:
+            UserNotFoundError: If ``user_id`` does not resolve to a
+                non-deleted account.
+        """
+        user = self.user_repository.get_by_id(user_id)
+        if user is None or user.deleted_at is not None:
+            raise UserNotFoundError("User not found.")
+        return user
+
+    def list_users(
+        self,
+        *,
+        is_active: bool | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> Page[User]:
+        """Return a paginated page of live users, most recently created first."""
+        safe_limit, safe_offset = clamp_pagination(limit, offset)
+        items = self.user_repository.list(
+            limit=safe_limit,
+            offset=safe_offset,
+            include_deleted=False,
+            is_active=is_active,
+        )
+        total = self.user_repository.count(include_deleted=False, is_active=is_active)
+        return Page(items=items, total=total, limit=safe_limit, offset=safe_offset)
+
+    def count_users(self) -> dict[str, int]:
+        """Return platform-wide live-user counts for the Admin dashboard."""
+        return {
+            "total": self.user_repository.count(include_deleted=False),
+            "active": self.user_repository.count(include_deleted=False, is_active=True),
+            "inactive": self.user_repository.count(include_deleted=False, is_active=False),
+            "superusers": self.user_repository.count(
+                include_deleted=False, is_superuser=True
+            ),
+        }
+
+    def set_account_status(self, user_id: uuid.UUID, *, is_active: bool) -> User:
+        """Activate or deactivate a live account via the existing ``is_active`` field.
+
+        Uses :meth:`UserRepository.update` — there is no separate account-status
+        aggregate. ``is_superuser`` is never changed here.
+
+        Raises:
+            UserNotFoundError: If ``user_id`` does not resolve to a
+                non-deleted account.
+        """
+        user = self.get_user(user_id)
+        user.is_active = is_active
+        updated = self.user_repository.update(user)
+        self.user_repository.db.commit()
         return updated

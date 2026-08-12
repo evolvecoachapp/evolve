@@ -98,6 +98,14 @@ class ProgressRepository:
         count_query = select(func.count()).select_from(query.subquery())
         return self.db.execute(count_query).scalar_one()
 
+    def count_all(self) -> int:
+        """Return the platform-wide count of non-deleted progress entries."""
+        return self.db.execute(
+            select(func.count())
+            .select_from(Progress)
+            .where(Progress.deleted_at.is_(None))
+        ).scalar_one()
+
     def list_for_trend(
         self,
         user_id: uuid.UUID,

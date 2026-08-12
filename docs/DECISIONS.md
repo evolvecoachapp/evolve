@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-08-13  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-156). Append only — never renumber.
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-157). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -5622,3 +5622,34 @@ Auditing `UserPublic`/`UserUpdate` (`backend/app/schemas/user.py`) against the P
 - REGISTER → LOGIN → RUNTIME START → HOME now initializes identity and workspace for a brand-new athlete through the existing compose APIs and write-through path. Returning athletes are unchanged (init is a no-op when records exist). A → logout → B isolation is unchanged: B is first-run initialized under B's id; A's rows stay on disk and are not hydrated into B.
 - First-run persist runs before the Runtime Observer wraps `build()`; later in-session mutations still go through observer → write-through. Home may still be structurally empty (`isEmpty: true` for workout/nutrition/recovery/coach cards) but Dashboard Restore now projects a real workspace (`projectedCount: 1`) instead of the empty fallback.
 - New tests: `runtime/session/__tests__/firstRunBootstrap.integration.test.tsx`. Full suite (820 suites / 3465 tests) and typecheck remain green.
+
+---
+
+## ADR-157: Admin Foundation + Production Control Plane (Sprint 39.1)
+
+**Status:** Accepted
+**Date:** 2026-08-13
+**Context:** Sprint 37.4 marked the product as ready for Backend/Admin/AI infrastructure. No admin frontend, admin router, `require_superuser` dependency, or audit log existed. `User.is_superuser` was already on the users table (migration `5ccce88c59dd`) but never checked. Domain services (Workout/Nutrition/Recovery/Goal/Progress/Coach) are user-scoped and have no platform-wide aggregates. The Admin Panel must be the operational control plane before beta, without redesigning the mobile app, Runtime/SQLite, or inventing a second domain/database.
+
+**Decision:**
+
+1. **Separate Admin web app** under `admin/` (Vite + React + TypeScript). It is not the mobile EVOLVE visual system. Desktop-first SaaS layout: login, protected shell, dashboard, users, user detail, system health. Feature-management pages are deferred.
+2. **Authorization is `User.is_superuser` only.** `get_current_superuser` requires a valid access token and a live superuser row; otherwise 403. No role enum, no JWT admin claim, no client-trusted flag. Normal users cannot call `/api/v1/admin/*`.
+3. **Admin API is a thin control plane over existing services.** User list/detail/status go through `UserService` + `UserRepository` (`set_account_status` mutates the existing `is_active` field via `UserRepository.update`). `AdminService` is operational orchestration (dashboard counts, health ping, audit), not a second business-logic layer.
+4. **Platform-wide activity counts** are not available on existing domain services (they are per-user). Add `count_all` / `count_all_logs` / `count_conversations` to the existing repositories rather than creating new repositories or duplicating CRUD.
+5. **Smallest audit log:** `admin_audit_logs` records administrator identity, action, target, timestamp, and result for admin session start/end and user-status mutations. Not event sourcing. No payloads, tokens, or secrets.
+6. **Health is admin-gated.** `GET /api/v1/admin/health` pings PostgreSQL and returns sanitized `ok`/`degraded` without raw exceptions. Public `GET /health` remains unimplemented (`GET /` is still the unauthenticated stub).
+7. **CORS** is enabled for configured Admin origins (`CORS_ORIGINS`). Native mobile clients do not use CORS.
+8. **First superuser** is granted in the database (`UPDATE users SET is_superuser = true WHERE email = ...`). No public bootstrap endpoint.
+
+**Alternatives considered:**
+- **Embed Admin inside the Expo mobile app / Expo web** — rejected; Admin is an operational desktop control plane with a different visual language, and the sprint forbids redesigning the mobile app.
+- **Invent a role hierarchy (client/coach/admin)** — rejected; the current schema only has `is_superuser`. The sprint forbids inventing roles the code does not already support.
+- **Dedicated AdminUserService duplicating User CRUD** — rejected; that would be a second business-logic layer. User operations stay on `UserService`.
+- **Public `/health` plus Admin health** — deferred; this sprint's system-health requirement is the Admin control-plane page. A public liveness probe can land later without changing Admin.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Normal administration of users and system health no longer requires CLI/database work, once at least one superuser exists.
+- Mobile Runtime/SQLite/Observer architecture is unchanged. Payments, push notifications, and live LLM remain out of scope.
+

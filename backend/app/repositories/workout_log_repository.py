@@ -158,6 +158,14 @@ class WorkoutLogRepository:
         count_query = select(func.count()).select_from(query.subquery())
         return self.db.execute(count_query).scalar_one()
 
+    def count_all(self) -> int:
+        """Return the platform-wide count of non-deleted workout logs."""
+        return self.db.execute(
+            select(func.count())
+            .select_from(WorkoutLog)
+            .where(WorkoutLog.deleted_at.is_(None))
+        ).scalar_one()
+
     # -- WorkoutLogExercise -----------------------------------------------
 
     def add_exercise(self, entry: WorkoutLogExercise) -> WorkoutLogExercise:

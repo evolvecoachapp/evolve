@@ -93,11 +93,12 @@ These domains are TypeScript application modules with in-memory repositories. Th
 |------|-------|
 | Stack | FastAPI 0.116, SQLAlchemy 2.0, Pydantic 2.11, Uvicorn |
 | Architecture | Clean Architecture enforced — routes thin, logic in services |
-| Domains live | Auth, users, exercises, catalog, workouts (templates), workout logs, workout resolution, nutrition, recovery, coach, goals, progress |
-| API endpoints | **56 implemented**, **6 planned** ([API_STATUS.md](./API_STATUS.md)) |
+| Domains live | Auth, users, exercises, catalog, workouts (templates), workout logs, workout resolution, nutrition, recovery, coach, goals, progress, admin (control plane) |
+| API endpoints | **64 implemented**, **6 planned** ([API_STATUS.md](./API_STATUS.md)) |
 | Missing HTTP APIs | Program/workout authoring & assignment, exercise writes, conversation list |
-| Entry point | `GET /` health stub; no `/health` with DB check |
+| Entry point | `GET /` health stub; Admin `GET /api/v1/admin/health` pings PostgreSQL (superuser-only). No public `/health` |
 | OpenAPI | Auto-generated at `/docs`, `/redoc` |
+| Admin | Separate Vite + React app (`admin/`). Server-side `is_superuser` gate. See Admin section below |
 
 ---
 
@@ -123,8 +124,8 @@ These domains are TypeScript application modules with in-memory repositories. Th
 |------|-------|
 | Engine | PostgreSQL 17 (Docker Compose locally) |
 | ORM | SQLAlchemy 2.x declarative |
-| Migrations | 10 Alembic versions applied |
-| Tables | users, exercises, muscle_groups, equipment, programs, workouts, workout_logs, meals, recovery_check_ins, conversations, chat_messages, goals, progress_entries |
+| Migrations | 11 Alembic versions applied |
+| Tables | users, exercises, muscle_groups, equipment, programs, workouts, workout_logs, meals, recovery_check_ins, conversations, chat_messages, goals, progress_entries, admin_audit_logs |
 | Seeds | Exercise catalog via `database/seeds/seed_exercises.py`; default beginner program via `database/seeds/seed_default_program.py` (Sprint 6.3.1) |
 
 ---
@@ -134,9 +135,10 @@ These domains are TypeScript application modules with in-memory repositories. Th
 | Layer | State |
 |-------|-------|
 | Backend | JWT (HS256), Argon2 passwords, stateless sessions |
-| Endpoints | `POST /auth/register`, `/login`, `/refresh`; `GET /users/me`; `PATCH /users/me` |
+| Endpoints | `POST /auth/register`, `/login`, `/refresh`; `GET /users/me`; `PATCH /users/me`; Admin: `/api/v1/admin/*` via `get_current_superuser` |
 | Mobile | `expo-secure-store` for tokens; 401 → refresh → retry-once |
-| Gaps | No role enum (uses `is_superuser`) |
+| Admin | Session tokens in `sessionStorage`; login uses existing `/auth/login` then `POST /api/v1/admin/session` |
+| Gaps | No role enum (uses `User.is_superuser` boolean only — by design for Sprint 39.1) |
 
 ---
 
@@ -144,8 +146,8 @@ These domains are TypeScript application modules with in-memory repositories. Th
 
 | Layer | State |
 |-------|-------|
-| Backend unit | 19 files — services, engines, orchestrator, intent, LLM provider |
-| Backend integration | 11 files — real PostgreSQL via pytest fixtures (incl. workout templates, workout log skip) |
+| Backend unit | 20 files — services, engines, orchestrator, intent, LLM provider, admin |
+| Backend integration | 12 files — real PostgreSQL via pytest fixtures (incl. admin control plane, workout templates, workout log skip) |
 | Backend runner | pytest 9.1 + pytest-asyncio |
 | Mobile | Jest + Testing Library — auth, API client, screens, feature architecture, Workout backend service/adapters; plus domain suites for exercise-kb (6), exercise-selection (8), programming (7) |
 | CI pipeline | **Not configured** (no `.github/workflows`) |
@@ -178,9 +180,34 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 
 ---
 
+## Admin
+
+| Item | State |
+|------|-------|
+| Stack | Vite + React 19 + TypeScript + React Router (desktop-first SaaS UI under `admin/`) |
+| Auth | Existing `POST /api/v1/auth/login` + `POST /api/v1/admin/session`; `User.is_superuser` enforced server-side |
+| Pages | Login, Dashboard, Users, User detail (activate/deactivate), System health, logout |
+| Audit | `admin_audit_logs` for session start/end and user status mutations |
+| First superuser | Grant via SQL: `UPDATE users SET is_superuser = true WHERE email = '...';` — no public bootstrap endpoint |
+| Out of scope | Feature management pages, payments, push, live LLM, role hierarchy |
+
+---
+
 ## Last Completed Sprint
 
-**38.3 — First-Run Runtime Bootstrap** (2026-08-13)
+**39.1 — Admin Foundation + Production Control Plane** (2026-08-13)
+
+- Inspected the existing backend: `User.is_superuser` already existed but was never enforced; no admin router, no audit log, no admin web app
+- Added `get_current_superuser` (authenticated + live `is_superuser`, else 403). No role hierarchy
+- Admin API under `/api/v1/admin`: session start/end, me, dashboard summary, users list/detail, account status (`UserService.set_account_status` via existing `is_active` + `UserRepository.update`), system health (DB ping, no raw errors)
+- Reused `UserService` / `UserRepository` for user operations; platform-wide activity counts use new `count_all` methods on existing domain repositories (domain services remain user-scoped)
+- `admin_audit_logs` + `AdminService` for operational audit (not event sourcing)
+- New `admin/` Vite React app: login, protected shell, dashboard, users, user detail, system, loading/error/empty states, logout
+- CORS for the Admin origin; JWT secrets never shown in the UI
+- Tests: backend unit + integration for authz/users/dashboard/health; admin Jest for protected routing, login failure, logout, loading/error, dashboard rendering
+- No mobile/Runtime/SQLite changes; no second database or second domain layer; ADR-157
+
+Previous: **38.3 — First-Run Runtime Bootstrap** (2026-08-13)
 
 - Narrow production-blocker fix: REGISTER → LOGIN → RUNTIME START → HOME for a brand-new athlete. Tracing the live path showed the session did **not** crash — hydration of 0 records succeeded and Home rendered `EmptyDashboard` — but Athlete Identity and Unified Workspace were never composed, so Profile/feature screens failed later
 - After `hydrateRuntime` and before `restoreDashboard`, `RuntimeSessionOrchestrator` now calls `initializeFirstRunRuntime()`: if identity is missing, `composeAthleteIdentity` with Auth-sourced `identitySeed` (display name / given / family) and existing builder defaults; if workspace is missing, compose the snapshot/timeline/coaching-session/intelligence-workspace dependencies the existing `validateWorkspace` already requires, then `composeUnifiedWorkspace`

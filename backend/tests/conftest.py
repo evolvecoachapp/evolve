@@ -109,6 +109,30 @@ def auth_headers(test_user: User) -> dict[str, str]:
 
 
 @pytest.fixture()
+def superuser(db_session: Session) -> User:
+    """Create and persist an active superuser for Admin control-plane tests."""
+    user = User(
+        email=f"{uuid.uuid4().hex}@example.com",
+        username=f"admin_{uuid.uuid4().hex[:12]}",
+        hashed_password=hash_password("Sprint3.3-Testing!"),
+        is_active=True,
+        is_verified=True,
+        is_superuser=True,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+@pytest.fixture()
+def superuser_headers(superuser: User) -> dict[str, str]:
+    """Return an ``Authorization`` header carrying a valid access token for :func:`superuser`."""
+    token = create_access_token(superuser.id)
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture()
 def client(db_session: Session) -> Generator[TestClient, None, None]:
     """Yield a :class:`TestClient` with ``get_db`` overridden to the isolated test session.
 

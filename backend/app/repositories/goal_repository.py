@@ -78,3 +78,9 @@ class GoalRepository:
         query = self._filtered_query(user_id, status=status)
         count_query = select(func.count()).select_from(query.subquery())
         return self.db.execute(count_query).scalar_one()
+
+    def count_all(self) -> int:
+        """Return the platform-wide count of non-deleted goals."""
+        return self.db.execute(
+            select(func.count()).select_from(Goal).where(Goal.deleted_at.is_(None))
+        ).scalar_one()

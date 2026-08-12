@@ -40,6 +40,14 @@ class Settings(BaseSettings):
         description="Value embedded as the 'iss' claim and verified on decode.",
     )
 
+    cors_origins: str = Field(
+        default="http://localhost:5173",
+        description=(
+            "Comma-separated list of allowed CORS origins for the Admin web "
+            "app. Native mobile clients do not use CORS."
+        ),
+    )
+
     workout_log_edit_window_hours: int = Field(
         default=24,
         description=(
@@ -199,6 +207,12 @@ class Settings(BaseSettings):
             "plateau rather than a meaningful trend."
         ),
     )
+
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        """Parse ``cors_origins`` into a list of stripped origin URLs."""
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
 
 settings = Settings()

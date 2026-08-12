@@ -9,7 +9,7 @@ returns ORM model instances.
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import Select, func, select
 from sqlalchemy.orm import Session
 
 from app.models.user import User
@@ -51,17 +51,61 @@ class UserRepository:
             select(User).where(User.username == username)
         ).scalar_one_or_none()
 
-    def list(self, *, limit: int = 100, offset: int = 0) -> list[User]:
-        """Return a page of users ordered by creation date.
+    def _filtered_query(
+        self,
+        *,
+        include_deleted: bool = False,
+        is_active: bool | None = None,
+        is_superuser: bool | None = None,
+    ) -> Select:
+        """Build the shared filter predicate for :meth:`list` and :meth:`count`."""
+        query = select(User)
+        if not include_deleted:
+            query = query.where(User.deleted_at.is_(None))
+        if is_active is not None:
+            query = query.where(User.is_active.is_(is_active))
+        if is_superuser is not None:
+            query = query.where(User.is_superuser.is_(is_superuser))
+        return query
 
-        Does not filter by ``deleted_at`` or ``is_active`` — applying such
-        rules is a service-layer responsibility.
+    def list(
+        self,
+        *,
+        limit: int = 100,
+        offset: int = 0,
+        include_deleted: bool = False,
+        is_active: bool | None = None,
+        is_superuser: bool | None = None,
+    ) -> list[User]:
+        """Return a page of users ordered by most recently created first.
+
+        Filtering by ``deleted_at`` / ``is_active`` / ``is_superuser`` is
+        applied here as query predicates; which combination a caller
+        requests remains a service-layer decision.
         """
-        return list(
-            self.db.execute(
-                select(User).order_by(User.created_at).limit(limit).offset(offset)
-            ).scalars()
+        query = self._filtered_query(
+            include_deleted=include_deleted,
+            is_active=is_active,
+            is_superuser=is_superuser,
         )
+        query = query.order_by(User.created_at.desc()).limit(limit).offset(offset)
+        return list(self.db.execute(query).scalars())
+
+    def count(
+        self,
+        *,
+        include_deleted: bool = False,
+        is_active: bool | None = None,
+        is_superuser: bool | None = None,
+    ) -> int:
+        """Return the total count of users matching the same filters as :meth:`list`."""
+        query = self._filtered_query(
+            include_deleted=include_deleted,
+            is_active=is_active,
+            is_superuser=is_superuser,
+        )
+        count_query = select(func.count()).select_from(query.subquery())
+        return self.db.execute(count_query).scalar_one()
 
     def update(self, user: User) -> User:
         """Flush pending changes on an already-tracked :class:`User` and return it.

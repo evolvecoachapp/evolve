@@ -15,6 +15,7 @@ from app.ai.memory_engine import MemoryEngine
 from app.ai.orchestrator import AIOrchestrator
 from app.ai.progress_analyzer import ProgressAnalyzer
 from app.db.database import get_db
+from app.repositories.admin_audit_log_repository import AdminAuditLogRepository
 from app.repositories.chat_repository import ChatRepository
 from app.repositories.equipment_repository import EquipmentRepository
 from app.repositories.exercise_repository import ExerciseRepository
@@ -27,6 +28,7 @@ from app.repositories.recovery_repository import RecoveryCheckInRepository
 from app.repositories.user_repository import UserRepository
 from app.repositories.workout_log_repository import WorkoutLogRepository
 from app.repositories.workout_repository import WorkoutRepository
+from app.services.admin_service import AdminService
 from app.services.catalog_service import CatalogService
 from app.services.coach_service import CoachService
 from app.services.exercise_service import ExerciseService
@@ -98,6 +100,29 @@ def get_recovery_service(db: Session = Depends(get_db)) -> RecoveryService:
 def get_user_service(db: Session = Depends(get_db)) -> UserService:
     """Resolve a :class:`UserService` bound to a request-scoped session."""
     return UserService(UserRepository(db))
+
+
+def get_admin_service(
+    db: Session = Depends(get_db),
+    user_service: UserService = Depends(get_user_service),
+) -> AdminService:
+    """Resolve an :class:`AdminService` bound to a request-scoped session.
+
+    User reads/mutations still go through :class:`UserService`. Activity
+    counts use existing domain repositories (those services are user-scoped
+    and have no platform-wide aggregates).
+    """
+    return AdminService(
+        db,
+        user_service,
+        AdminAuditLogRepository(db),
+        WorkoutLogRepository(db),
+        MealRepository(db),
+        RecoveryCheckInRepository(db),
+        GoalRepository(db),
+        ProgressRepository(db),
+        ChatRepository(db),
+    )
 
 
 def get_goal_repository(db: Session = Depends(get_db)) -> GoalRepository:

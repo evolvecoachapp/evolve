@@ -120,3 +120,52 @@ def test_update_profile_skips_uniqueness_check_for_unchanged_email(service, user
 
     assert updated.email == "coach@evolve.app"
     user_repository.exists_email.assert_not_called()
+
+
+def test_get_user_returns_live_account(service, user_repository):
+    user = _make_user()
+    user_repository.get_by_id.return_value = user
+
+    assert service.get_user(USER_ID) is user
+
+
+def test_get_user_raises_when_missing(service, user_repository):
+    user_repository.get_by_id.return_value = None
+
+    with pytest.raises(UserNotFoundError):
+        service.get_user(USER_ID)
+
+
+def test_list_users_returns_page(service, user_repository):
+    users = [_make_user()]
+    user_repository.list.return_value = users
+    user_repository.count.return_value = 1
+
+    page = service.list_users(limit=20, offset=0)
+
+    assert page.items == users
+    assert page.total == 1
+    assert page.limit == 20
+    assert page.offset == 0
+    user_repository.list.assert_called_once_with(
+        limit=20, offset=0, include_deleted=False, is_active=None
+    )
+
+
+def test_count_users_returns_breakdown(service, user_repository):
+    user_repository.count.side_effect = [10, 8, 2, 1]
+
+    counts = service.count_users()
+
+    assert counts == {"total": 10, "active": 8, "inactive": 2, "superusers": 1}
+
+
+def test_set_account_status_updates_is_active(service, user_repository):
+    user = _make_user()
+    user_repository.get_by_id.return_value = user
+    user_repository.update.side_effect = lambda updated: updated
+
+    updated = service.set_account_status(USER_ID, is_active=False)
+
+    assert updated.is_active is False
+    user_repository.db.commit.assert_called_once()

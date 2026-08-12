@@ -31,6 +31,10 @@ _INACTIVE_ACCOUNT_EXCEPTION = HTTPException(
     status_code=status.HTTP_403_FORBIDDEN,
     detail="This account is inactive.",
 )
+_NOT_SUPERUSER_EXCEPTION = HTTPException(
+    status_code=status.HTTP_403_FORBIDDEN,
+    detail="Administrator access required.",
+)
 
 
 def get_auth_service(db: Session = Depends(get_db)) -> AuthService:
@@ -77,3 +81,17 @@ def get_current_user(
         raise _INVALID_CREDENTIALS_EXCEPTION from exc
     except InactiveAccountError as exc:
         raise _INACTIVE_ACCOUNT_EXCEPTION from exc
+
+
+def get_current_superuser(current_user: User = Depends(get_current_user)) -> User:
+    """Require an authenticated superuser for Admin control-plane routes.
+
+    Authorization is enforced exclusively server-side from the live
+    ``User.is_superuser`` column — never from a JWT claim or a client flag.
+
+    Raises:
+        HTTPException: 403 if the authenticated account is not a superuser.
+    """
+    if not current_user.is_superuser:
+        raise _NOT_SUPERUSER_EXCEPTION
+    return current_user
