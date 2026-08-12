@@ -1,19 +1,24 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { fetchCheckIns, fetchReadiness } from "../api/admin";
 import { errorMessage, formatDay } from "../components/Field";
+import { FeedbackBanner } from "../components/FeedbackBanner";
+import { PageHeader } from "../components/PageHeader";
 import { PageState } from "../components/PageState";
 import { PaginationBar } from "../components/PaginationBar";
+import { UserLink } from "../components/UserLink";
 import type { Readiness, RecoveryCheckIn } from "../types/admin";
 
 export function RecoveryPage() {
+  const [params] = useSearchParams();
   const [items, setItems] = useState<RecoveryCheckIn[]>([]);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
-  const [userId, setUserId] = useState("");
+  const [userId, setUserId] = useState(params.get("user") ?? "");
   const [readiness, setReadiness] = useState<Readiness | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ tone: "success" | "error"; message: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   function load(nextOffset = 0) {
@@ -35,15 +40,18 @@ export function RecoveryPage() {
 
   function loadReadiness() {
     if (!userId) {
-      setError("Enter a user id to load readiness.");
+      setNotice({ tone: "error", message: "Enter a user id to load readiness." });
       return;
     }
-    setError(null);
+    setNotice(null);
     fetchReadiness(userId)
-      .then(setReadiness)
+      .then((record) => {
+        setReadiness(record);
+        setNotice({ tone: "success", message: "Readiness loaded." });
+      })
       .catch((caught: unknown) => {
         setReadiness(null);
-        setError(errorMessage(caught, "Unable to load readiness."));
+        setNotice({ tone: "error", message: errorMessage(caught, "Unable to load readiness.") });
       });
   }
 
@@ -53,18 +61,17 @@ export function RecoveryPage() {
 
   return (
     <main className="page">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow">Activity</p>
-          <h1>Recovery</h1>
-        </div>
-        <p className="muted">{total} check-ins</p>
-      </header>
+      <PageHeader eyebrow="Activity" title="Recovery" meta={`${total} check-ins`} />
+      <p className="readonly-note">Read-only check-ins and readiness. Admin cannot mutate athlete recovery.</p>
       <form className="toolbar" onSubmit={(event) => { event.preventDefault(); load(0); }}>
-        <input className="input" placeholder="Filter by user id" value={userId} onChange={(event) => setUserId(event.target.value)} />
+        <label>
+          User id
+          <input className="input" value={userId} onChange={(event) => setUserId(event.target.value)} placeholder="Filter by user id" />
+        </label>
         <button type="submit" className="btn btn-secondary">Filter</button>
         <button type="button" className="btn btn-secondary" onClick={loadReadiness}>Load readiness</button>
       </form>
+      {notice ? <FeedbackBanner tone={notice.tone}>{notice.message}</FeedbackBanner> : null}
       {readiness ? (
         <section className="detail-grid">
           <div className="detail-field"><span>Readiness</span><strong>{readiness.readiness_score} · {readiness.readiness_level}</strong></div>
@@ -83,7 +90,7 @@ export function RecoveryPage() {
                 {items.map((item) => (
                   <tr key={item.id}>
                     <td><Link to={`/recovery/${item.id}`}>{formatDay(item.checkin_date)}</Link></td>
-                    <td><Link to={`/users/${item.user_id}`}>{item.user_id.slice(0, 8)}</Link></td>
+                    <td><UserLink userId={item.user_id} /></td>
                     <td>{item.sleep_hours}</td>
                     <td>{item.soreness}</td>
                     <td>{item.fatigue}</td>

@@ -26,3 +26,11 @@ export function formatDay(value: string | null | undefined): string {
 export function errorMessage(caught: unknown, fallback: string): string {
   return caught instanceof AdminApiError ? caught.message : fallback;
 }
+
+export function shortId(value: string): string {
+  return value.slice(0, 8);
+}
+
+export function formatLabel(value: string): string {
+  return value.replace(/_/g, " ");
+}

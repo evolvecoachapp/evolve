@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { fetchWorkoutLogs } from "../api/admin";
-import { errorMessage, formatDay } from "../components/Field";
+import { errorMessage, formatDay, formatLabel, shortId } from "../components/Field";
+import { PageHeader } from "../components/PageHeader";
 import { PageState } from "../components/PageState";
 import { PaginationBar } from "../components/PaginationBar";
 import { StatusBadge } from "../components/StatusBadge";
+import { UserLink } from "../components/UserLink";
 import type { WorkoutLogSummary } from "../types/admin";
 
 function logTone(status: string): "success" | "warning" | "neutral" | "danger" {
@@ -16,10 +18,11 @@ function logTone(status: string): "success" | "warning" | "neutral" | "danger" {
 }
 
 export function WorkoutLogsPage() {
+  const [params] = useSearchParams();
   const [items, setItems] = useState<WorkoutLogSummary[]>([]);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
-  const [userId, setUserId] = useState("");
+  const [userId, setUserId] = useState(params.get("user") ?? "");
   const [status, setStatus] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,21 +50,22 @@ export function WorkoutLogsPage() {
 
   return (
     <main className="page">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow">Activity</p>
-          <h1>Workout logs</h1>
-        </div>
-        <p className="muted">{total} sessions</p>
-      </header>
+      <PageHeader eyebrow="Activity" title="Workout logs" meta={`${total} sessions`} />
+      <p className="readonly-note">Read-only athlete sessions. Admin cannot start, finish, or skip logs.</p>
       <form className="toolbar" onSubmit={(event) => { event.preventDefault(); load(0); }}>
-        <input className="input" placeholder="Filter by user id" value={userId} onChange={(event) => setUserId(event.target.value)} />
-        <select className="input" value={status} onChange={(event) => setStatus(event.target.value)}>
-          <option value="">All statuses</option>
-          <option value="in_progress">In progress</option>
-          <option value="completed">Completed</option>
-          <option value="skipped">Skipped</option>
-        </select>
+        <label>
+          User id
+          <input className="input" value={userId} onChange={(event) => setUserId(event.target.value)} placeholder="Filter by user id" />
+        </label>
+        <label>
+          Status
+          <select className="input" value={status} onChange={(event) => setStatus(event.target.value)}>
+            <option value="">All statuses</option>
+            <option value="in_progress">In progress</option>
+            <option value="completed">Completed</option>
+            <option value="skipped">Skipped</option>
+          </select>
+        </label>
         <button type="submit" className="btn btn-secondary">Filter</button>
       </form>
       {loading ? <PageState kind="loading" title="Loading workout logs" message="Fetching session history." /> : null}
@@ -75,9 +79,9 @@ export function WorkoutLogsPage() {
               <tbody>
                 {items.map((log) => (
                   <tr key={log.id}>
-                    <td><Link to={`/workout-logs/${log.id}`}>{log.id.slice(0, 8)}</Link></td>
-                    <td><Link to={`/users/${log.user_id}`}>{log.user_id.slice(0, 8)}</Link></td>
-                    <td><StatusBadge tone={logTone(log.status)}>{log.status}</StatusBadge></td>
+                    <td><Link to={`/workout-logs/${log.id}`}>{shortId(log.id)}</Link></td>
+                    <td><UserLink userId={log.user_id} /></td>
+                    <td><StatusBadge tone={logTone(log.status)}>{formatLabel(log.status)}</StatusBadge></td>
                     <td>{formatDay(log.scheduled_date ?? log.created_at)}</td>
                   </tr>
                 ))}

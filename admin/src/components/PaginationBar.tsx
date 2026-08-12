@@ -12,7 +12,7 @@ export function PaginationBar({ total, limit, offset, onChange }: PaginationBarP
     return null;
   }
   return (
-    <div className="pagination">
+    <nav className="pagination" aria-label="Pagination">
       <button
         type="button"
         className="btn btn-secondary"
@@ -32,6 +32,6 @@ export function PaginationBar({ total, limit, offset, onChange }: PaginationBarP
       >
         Next
       </button>
-    </div>
+    </nav>
   );
 }

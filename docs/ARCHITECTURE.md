@@ -2198,7 +2198,7 @@ Full detail: [GOAL_PROGRESS_ENGINE.md](./GOAL_PROGRESS_ENGINE.md). Goal Evaluati
 | `security/` | JWT, Argon2 hashing, `get_current_user`, `get_current_superuser` |
 | `db/` | Engine, session factory, Alembic base |
 
-### Admin Control Plane (`admin/` + `/api/v1/admin`) — Sprint 39.1 + 39.2
+### Admin Control Plane (`admin/` + `/api/v1/admin`) — Sprint 39.1–39.3
 
 | Aspect | Implementation |
 |--------|----------------|
@@ -2209,9 +2209,10 @@ Full detail: [GOAL_PROGRESS_ENGINE.md](./GOAL_PROGRESS_ENGINE.md). Goal Evaluati
 | **Audit** | `admin_audit_logs` — smallest append-only trail (actor, action, target, timestamp, result). Not event sourcing |
 | **39.1 Foundation** | Session, me, dashboard, users list/detail/status, system health |
 | **39.2 Feature management** | Exercises, programs, workouts, workout logs, nutrition, recovery, goals/progress, coach. Catalog mutations reuse `ExerciseService` / `WorkoutService` / `CatalogService`. User-owned domains are **read-only** via smallest `list_all` / `get_any_*` methods on existing services. Hard delete is unsupported (deactivate/archive only). No second Admin domain layer |
+| **39.3 UX / operations completion** | Grouped sidebar, operational dashboard (existing dashboard + health + recent users, no invented analytics), Users search/filter/pagination, inline mutation feedback, confirmation before account/catalog impact, coherent loading/empty/error on every Admin page. User search `q` is an optional filter on the existing `UserRepository.list` path |
 | **Design** | No second database, no second domain layer, no mobile/Runtime/SQLite changes, no payments/push/live LLM |
 
-Decision records: ADR-157 and ADR-158 in [DECISIONS.md](./DECISIONS.md).
+Decision records: ADR-157, ADR-158, and ADR-159 in [DECISIONS.md](./DECISIONS.md).
 
 ---
 
@@ -2431,5 +2432,6 @@ AIOrchestrator.process_message (async)
 | 114 | Coach Timeline Framework Foundation (Sprint 31.9) |
 | 157 | Admin Foundation + Production Control Plane (Sprint 39.1) |
 | 158 | Admin Feature Management (Sprint 39.2) |
+| 159 | Admin UX / Operations Completion (Sprint 39.3) |
 
 Full list: [DECISIONS.md](./DECISIONS.md). Audit: [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md).

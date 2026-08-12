@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 
 import { fetchHealth } from "../api/admin";
+import { errorMessage } from "../components/Field";
+import { PageHeader } from "../components/PageHeader";
 import { PageState } from "../components/PageState";
-import { StatusBadge } from "../components/StatusBadge";
-import { AdminApiError, type AdminSystemHealth } from "../types/admin";
+import { healthTone, StatusBadge } from "../components/StatusBadge";
+import type { AdminSystemHealth } from "../types/admin";
 
 export function SystemPage() {
   const [health, setHealth] = useState<AdminSystemHealth | null>(null);
@@ -21,11 +23,7 @@ export function SystemPage() {
       .catch((caught: unknown) => {
         setHealth(null);
         setLoading(false);
-        setError(
-          caught instanceof AdminApiError
-            ? caught.message
-            : "Unable to load system health.",
-        );
+        setError(errorMessage(caught, "Unable to load system health."));
       });
   }
 
@@ -33,20 +31,13 @@ export function SystemPage() {
     load();
   }, []);
 
-  const tone =
-    health?.status === "ok" ? "success" : health?.status === "degraded" ? "warning" : "danger";
-
   return (
     <main className="page">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow">Operations</p>
-          <h1>System health</h1>
-        </div>
+      <PageHeader eyebrow="Operations" title="System">
         <button type="button" className="btn btn-secondary" onClick={load} disabled={loading}>
-          Refresh
+          {loading ? "Checking…" : "Refresh"}
         </button>
-      </header>
+      </PageHeader>
       {loading ? (
         <PageState kind="loading" title="Checking system" message="Pinging API and database status." />
       ) : null}
@@ -54,24 +45,37 @@ export function SystemPage() {
         <PageState kind="error" title="Health unavailable" message={error} actionLabel="Retry" onAction={load} />
       ) : null}
       {!loading && !error && health ? (
-        <section className="detail-grid">
-          <div className="detail-field">
-            <span>Overall</span>
-            <StatusBadge tone={tone}>{health.status}</StatusBadge>
-          </div>
-          <div className="detail-field">
-            <span>API</span>
-            <strong>{health.api}</strong>
-          </div>
-          <div className="detail-field">
-            <span>Database</span>
-            <strong>{health.database}</strong>
-          </div>
-          <div className="detail-field">
-            <span>Version</span>
-            <strong>{health.version}</strong>
-          </div>
-        </section>
+        <>
+          <section className="detail-grid" aria-label="System health">
+            <div className="detail-field">
+              <span>Overall</span>
+              <StatusBadge tone={healthTone(health.status)}>{health.status}</StatusBadge>
+            </div>
+            <div className="detail-field">
+              <span>API</span>
+              <StatusBadge tone={healthTone(health.api)}>{health.api}</StatusBadge>
+            </div>
+            <div className="detail-field">
+              <span>Database</span>
+              <StatusBadge tone={healthTone(health.database)}>{health.database}</StatusBadge>
+            </div>
+            <div className="detail-field">
+              <span>Version</span>
+              <strong>{health.version}</strong>
+            </div>
+          </section>
+          <section className="panel">
+            <h2>Operational notes</h2>
+            <p className="muted">
+              {health.status === "ok"
+                ? "API and database are responding. No operational errors were reported."
+                : "The control plane is degraded. Database connectivity failed; the API process is still reachable."}
+            </p>
+            <p className="muted">
+              Health responses never include JWT secrets, password hashes, API keys, tokens, or stack traces.
+            </p>
+          </section>
+        </>
       ) : null}
     </main>
   );

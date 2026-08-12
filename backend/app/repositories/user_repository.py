@@ -9,10 +9,15 @@ returns ORM model instances.
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models.user import User
+
+
+def _escape_like(value: str) -> str:
+    """Escape LIKE wildcards so user search cannot inject ``%`` / ``_``."""
+    return value.replace("\\", "\\\\").replace("%", r"\%").replace("_", r"\_")
 
 
 class UserRepository:
@@ -57,6 +62,7 @@ class UserRepository:
         include_deleted: bool = False,
         is_active: bool | None = None,
         is_superuser: bool | None = None,
+        search: str | None = None,
     ) -> Select:
         """Build the shared filter predicate for :meth:`list` and :meth:`count`."""
         query = select(User)
@@ -66,6 +72,16 @@ class UserRepository:
             query = query.where(User.is_active.is_(is_active))
         if is_superuser is not None:
             query = query.where(User.is_superuser.is_(is_superuser))
+        if search:
+            pattern = f"%{_escape_like(search)}%"
+            query = query.where(
+                or_(
+                    User.email.ilike(pattern, escape="\\"),
+                    User.username.ilike(pattern, escape="\\"),
+                    User.first_name.ilike(pattern, escape="\\"),
+                    User.last_name.ilike(pattern, escape="\\"),
+                )
+            )
         return query
 
     def list(
@@ -76,17 +92,19 @@ class UserRepository:
         include_deleted: bool = False,
         is_active: bool | None = None,
         is_superuser: bool | None = None,
+        search: str | None = None,
     ) -> list[User]:
         """Return a page of users ordered by most recently created first.
 
-        Filtering by ``deleted_at`` / ``is_active`` / ``is_superuser`` is
-        applied here as query predicates; which combination a caller
+        Filtering by ``deleted_at`` / ``is_active`` / ``is_superuser`` / ``search``
+        is applied here as query predicates; which combination a caller
         requests remains a service-layer decision.
         """
         query = self._filtered_query(
             include_deleted=include_deleted,
             is_active=is_active,
             is_superuser=is_superuser,
+            search=search,
         )
         query = query.order_by(User.created_at.desc()).limit(limit).offset(offset)
         return list(self.db.execute(query).scalars())
@@ -97,12 +115,14 @@ class UserRepository:
         include_deleted: bool = False,
         is_active: bool | None = None,
         is_superuser: bool | None = None,
+        search: str | None = None,
     ) -> int:
         """Return the total count of users matching the same filters as :meth:`list`."""
         query = self._filtered_query(
             include_deleted=include_deleted,
             is_active=is_active,
             is_superuser=is_superuser,
+            search=search,
         )
         count_query = select(func.count()).select_from(query.subquery())
         return self.db.execute(count_query).scalar_one()

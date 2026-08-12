@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { fetchWorkoutLog } from "../api/admin";
-import { errorMessage, Field, formatDate } from "../components/Field";
+import { errorMessage, Field, formatDate, formatLabel } from "../components/Field";
+import { PageHeader } from "../components/PageHeader";
 import { PageState } from "../components/PageState";
 import { StatusBadge } from "../components/StatusBadge";
+import { UserLink } from "../components/UserLink";
 import type { WorkoutLogDetail } from "../types/admin";
 
 export function WorkoutLogDetailPage() {
@@ -35,21 +37,24 @@ export function WorkoutLogDetailPage() {
 
   return (
     <main className="page">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow"><Link to="/workout-logs">Workout logs</Link> / Session</p>
-          <h1>{log ? log.id.slice(0, 8) : "Workout log"}</h1>
-        </div>
-      </header>
+      <PageHeader
+        eyebrow={<><Link to="/workout-logs">Workout logs</Link> / Session</>}
+        title={log ? log.id.slice(0, 8) : "Workout log"}
+      />
       {loading ? <PageState kind="loading" title="Loading session" message="Fetching completion status and sets." /> : null}
       {error ? <PageState kind="error" title="Session unavailable" message={error} actionLabel="Retry" onAction={load} /> : null}
       {!loading && log ? (
         <>
           <section className="detail-grid">
-            <Field label="User" value={log.user_id} />
+            <div className="detail-field">
+              <span>User</span>
+              <strong><UserLink userId={log.user_id} /></strong>
+            </div>
             <div className="detail-field">
               <span>Status</span>
-              <StatusBadge tone={log.status === "completed" ? "success" : log.status === "in_progress" ? "warning" : "neutral"}>{log.status}</StatusBadge>
+              <StatusBadge tone={log.status === "completed" ? "success" : log.status === "in_progress" ? "warning" : "neutral"}>
+                {formatLabel(log.status)}
+              </StatusBadge>
             </div>
             <Field label="Started" value={formatDate(log.started_at)} />
             <Field label="Completed" value={formatDate(log.completed_at)} />

@@ -105,18 +105,23 @@ class UserService:
         self,
         *,
         is_active: bool | None = None,
+        search: str | None = None,
         limit: int = 20,
         offset: int = 0,
     ) -> Page[User]:
         """Return a paginated page of live users, most recently created first."""
         safe_limit, safe_offset = clamp_pagination(limit, offset)
+        query = search.strip() if search else None
         items = self.user_repository.list(
             limit=safe_limit,
             offset=safe_offset,
             include_deleted=False,
             is_active=is_active,
+            search=query or None,
         )
-        total = self.user_repository.count(include_deleted=False, is_active=is_active)
+        total = self.user_repository.count(
+            include_deleted=False, is_active=is_active, search=query or None
+        )
         return Page(items=items, total=total, limit=safe_limit, offset=safe_offset)
 
     def count_users(self) -> dict[str, int]:

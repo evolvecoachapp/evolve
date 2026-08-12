@@ -94,13 +94,14 @@ def get_admin_health(
 @router.get("/users", response_model=AdminUserPage)
 def list_admin_users(
     is_active: bool | None = Query(default=None),
+    q: str | None = Query(default=None, max_length=100),
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     _current_user: User = Depends(get_current_superuser),
     user_service: UserService = Depends(get_user_service),
 ) -> AdminUserPage:
     """Return a paginated page of live users."""
-    page = user_service.list_users(is_active=is_active, limit=limit, offset=offset)
+    page = user_service.list_users(is_active=is_active, search=q, limit=limit, offset=offset)
     return AdminUserPage(
         items=[UserRead.model_validate(user) for user in page.items],
         total=page.total,

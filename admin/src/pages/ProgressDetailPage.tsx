@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { fetchProgressEntry } from "../api/admin";
-import { errorMessage, Field, formatDay } from "../components/Field";
+import { errorMessage, Field, formatDay, formatLabel } from "../components/Field";
+import { PageHeader } from "../components/PageHeader";
 import { PageState } from "../components/PageState";
+import { UserLink } from "../components/UserLink";
 import type { ProgressEntry } from "../types/admin";
 
 export function ProgressDetailPage() {
@@ -34,21 +36,22 @@ export function ProgressDetailPage() {
 
   return (
     <main className="page">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow"><Link to="/progress">Progress</Link> / Entry</p>
-          <h1>{entry ? `${entry.metric_type} · ${entry.value}` : "Progress entry"}</h1>
-        </div>
-      </header>
+      <PageHeader
+        eyebrow={<><Link to="/progress">Progress</Link> / Entry</>}
+        title={entry ? `${formatLabel(entry.metric_type)} · ${entry.value}` : "Progress entry"}
+      />
       {loading ? <PageState kind="loading" title="Loading entry" message="Fetching progress details." /> : null}
       {error ? <PageState kind="error" title="Entry unavailable" message={error} actionLabel="Retry" onAction={load} /> : null}
       {!loading && entry ? (
         <section className="detail-grid">
-          <Field label="User" value={entry.user_id} />
-          <Field label="Metric" value={entry.metric_type} />
+          <div className="detail-field">
+            <span>User</span>
+            <strong><UserLink userId={entry.user_id} /></strong>
+          </div>
+          <Field label="Metric" value={formatLabel(entry.metric_type)} />
           <Field label="Value" value={`${entry.value} ${entry.unit}`} />
           <Field label="Date" value={formatDay(entry.recorded_date)} />
-          <Field label="Source" value={entry.source} />
+          <Field label="Source" value={formatLabel(entry.source)} />
           <Field label="Goal" value={entry.goal_id ?? "—"} />
           <Field label="Notes" value={entry.notes ?? "—"} />
         </section>

@@ -186,18 +186,31 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 |------|-------|
 | Stack | Vite + React 19 + TypeScript + React Router (desktop-first SaaS UI under `admin/`) |
 | Auth | Existing `POST /api/v1/auth/login` + `POST /api/v1/admin/session`; `User.is_superuser` enforced server-side |
-| Pages | Login, Dashboard, Users, User detail, Exercises, Programs, Workouts, Workout logs, Nutrition, Recovery, Goals, Progress, Coach, System health |
+| Pages | Login, Dashboard (operational overview), Users, User detail, Exercises, Programs, Workouts, Workout logs, Nutrition, Recovery, Goals, Progress, Coach, System health |
 | Audit | `admin_audit_logs` for session start/end, user status, and catalog mutations (exercise/program/workout/catalog create-update-deactivate/archive/day changes) |
 | First superuser | Grant via SQL: `UPDATE users SET is_superuser = true WHERE email = '...';` — no public bootstrap endpoint |
-| Mutations | Catalog: create/edit + deactivate/archive through existing `ExerciseService` / `WorkoutService` / `CatalogService`. User-owned nutrition/recovery/goals/progress/coach/workout-logs: **read-only** |
+| Mutations | Catalog: create/edit + deactivate/archive through existing `ExerciseService` / `WorkoutService` / `CatalogService`. User-owned nutrition/recovery/goals/progress/coach/workout-logs: **read-only**. Account status via existing `User.is_active` with confirmation and self-deactivation protection |
+| UX | Grouped sidebar, inline mutation feedback (idle → saving → success/failure), confirmation dialogs, loading/empty/error/retry on every page. Users search (`q` on existing list path), status filter, pagination |
 | Unsupported | Hard delete of exercises/programs/workouts; muscle-group/equipment update/delete; admin mutations of user-owned nutrition/recovery/goals/progress/coach/workout-log records |
-| Out of scope | Payments, push, live LLM, role hierarchy, second domain layer |
+| Out of scope | Payments, push, live LLM, role hierarchy, second domain layer, toast framework, invented analytics |
 
 ---
 
 ## Last Completed Sprint
 
-**39.2 — Admin Feature Management** (2026-08-13)
+**39.3 — Admin UX / Operations Completion** (2026-08-13)
+
+- Focused Admin UX pass on the Sprint 39.1/39.2 control plane so operators can use it daily with minimal CLI/database work
+- Shell: grouped sidebar (Overview / Catalog / Activity / Operations), active routes, consistent page headers, logout confirmation, skip-to-content
+- Dashboard: existing KPI counts plus recent users, system health snapshot, operational summary, and quick links — all from `GET /admin/dashboard`, `GET /admin/health`, and `GET /admin/users` (no invented analytics, no polling)
+- Users: search (`q` on existing `UserRepository.list`), status filter, pagination, clearer badges, confirmation + success/failure for account status; self-deactivation remains blocked
+- Catalog: create/edit forms keep validation, saving state, success/failure banners, and confirmation before deactivate/archive/publish; mutation errors no longer hide the list
+- Activity modules stay read-only: labeled filters, pagination, user links, empty/loading/error, secondary actions (readiness/summary/targets) use inline notices instead of replacing the list
+- System: overall / API / database badges, version, sanitized operational notes (no secrets or stack traces)
+- Tests: admin Jest for dashboard, users search/filter, mutation confirmation/feedback, system health, protected routes, catalog create success; backend user-search unit + integration because the list contract gained `q`
+- No mobile/Runtime/SQLite changes; no second domain layer; no payments/push/live LLM; ADR-159
+
+Previous: **39.2 — Admin Feature Management** (2026-08-13)
 
 - Extended the Sprint 39.1 Admin foundation into operational feature control without rebuilding the Admin app or adding a second domain layer
 - New `/api/v1/admin` ops routes (`admin_ops.py`) reuse `ExerciseService`, `WorkoutService`, `CatalogService`, `WorkoutLogService`, `NutritionService`, `RecoveryService`, `GoalService`, `ProgressService`, `CoachService`

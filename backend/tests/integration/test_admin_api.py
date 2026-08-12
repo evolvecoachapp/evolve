@@ -73,6 +73,22 @@ def test_admin_users_list_returns_page_for_superuser(
         assert "is_superuser" in item
 
 
+def test_admin_users_list_filters_by_search(
+    client: TestClient,
+    test_user: User,
+    superuser_headers: dict[str, str],
+) -> None:
+    response = client.get(
+        f"{API_PREFIX}/users",
+        params={"q": test_user.email},
+        headers=superuser_headers,
+    )
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["total"] == 1
+    assert payload["items"][0]["id"] == str(test_user.id)
+
+
 def test_admin_user_detail_requires_authentication(
     client: TestClient, test_user: User
 ) -> None:

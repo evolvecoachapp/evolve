@@ -38,11 +38,15 @@ export function fetchHealth(): Promise<AdminSystemHealth> {
 }
 
 export function fetchUsers(params?: {
+  q?: string;
   isActive?: boolean;
   limit?: number;
   offset?: number;
 }): Promise<AdminUserPage> {
   const search = new URLSearchParams();
+  if (params?.q) {
+    search.set("q", params.q);
+  }
   if (params?.isActive !== undefined) {
     search.set("is_active", String(params.isActive));
   }

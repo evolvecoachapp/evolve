@@ -17,15 +17,21 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   return (
     <div className="dialog-backdrop" role="presentation">
-      <div className="dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
+      <div
+        className="dialog"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="confirm-title"
+        aria-describedby="confirm-message"
+      >
         <h2 id="confirm-title">{title}</h2>
-        <p>{message}</p>
+        <p id="confirm-message">{message}</p>
         <div className="dialog-actions">
           <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={busy}>
             Cancel
           </button>
           <button type="button" className="btn btn-danger" onClick={onConfirm} disabled={busy}>
-            {confirmLabel}
+            {busy ? `${confirmLabel}…` : confirmLabel}
           </button>
         </div>
       </div>

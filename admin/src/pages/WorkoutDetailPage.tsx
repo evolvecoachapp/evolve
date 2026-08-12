@@ -4,6 +4,8 @@ import { Link, useParams } from "react-router-dom";
 import { deactivateWorkout, fetchWorkout, updateWorkout } from "../api/admin";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { errorMessage, Field } from "../components/Field";
+import { FeedbackBanner } from "../components/FeedbackBanner";
+import { PageHeader } from "../components/PageHeader";
 import { PageState } from "../components/PageState";
 import { StatusBadge } from "../components/StatusBadge";
 import type { Workout } from "../types/admin";
@@ -12,6 +14,7 @@ export function WorkoutDetailPage() {
   const { workoutId } = useParams<{ workoutId: string }>();
   const [workout, setWorkout] = useState<Workout | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ tone: "success" | "error"; message: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [confirm, setConfirm] = useState(false);
@@ -41,11 +44,12 @@ export function WorkoutDetailPage() {
   async function save() {
     if (!workout) return;
     setSaving(true);
-    setError(null);
+    setNotice(null);
     try {
       setWorkout(await updateWorkout(workout.id, { description }));
+      setNotice({ tone: "success", message: "Workout saved." });
     } catch (caught: unknown) {
-      setError(errorMessage(caught, "Unable to update this workout."));
+      setNotice({ tone: "error", message: errorMessage(caught, "Unable to update this workout.") });
     } finally {
       setSaving(false);
     }
@@ -54,12 +58,14 @@ export function WorkoutDetailPage() {
   async function deactivate() {
     if (!workout) return;
     setSaving(true);
-    setError(null);
+    setNotice(null);
     try {
       setWorkout(await deactivateWorkout(workout.id));
       setConfirm(false);
+      setNotice({ tone: "success", message: "Workout deactivated." });
     } catch (caught: unknown) {
-      setError(errorMessage(caught, "Unable to deactivate this workout."));
+      setNotice({ tone: "error", message: errorMessage(caught, "Unable to deactivate this workout.") });
+      setConfirm(false);
     } finally {
       setSaving(false);
     }
@@ -67,18 +73,17 @@ export function WorkoutDetailPage() {
 
   return (
     <main className="page">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow"><Link to="/workouts">Workouts</Link> / Template</p>
-          <h1>{workout?.name ?? "Workout"}</h1>
-        </div>
+      <PageHeader
+        eyebrow={<><Link to="/workouts">Workouts</Link> / Template</>}
+        title={workout?.name ?? "Workout"}
+      >
         {workout?.is_active ? (
           <button type="button" className="btn btn-secondary" disabled={saving} onClick={() => setConfirm(true)}>Deactivate</button>
         ) : null}
-      </header>
+      </PageHeader>
       {loading ? <PageState kind="loading" title="Loading workout" message="Fetching template details." /> : null}
       {error && !workout ? <PageState kind="error" title="Workout unavailable" message={error} actionLabel="Retry" onAction={load} /> : null}
-      {error && workout ? <div className="banner banner-error" role="alert">{error}</div> : null}
+      {notice ? <FeedbackBanner tone={notice.tone}>{notice.message}</FeedbackBanner> : null}
       {!loading && workout ? (
         <>
           <section className="detail-grid">
@@ -90,8 +95,13 @@ export function WorkoutDetailPage() {
             </div>
           </section>
           <form className="panel" onSubmit={(event) => { event.preventDefault(); void save(); }}>
-            <label>Description<textarea className="input" rows={3} value={description} onChange={(event) => setDescription(event.target.value)} /></label>
-            <button type="submit" className="btn btn-primary" disabled={saving}>Save</button>
+            <label>
+              Description
+              <textarea className="input" rows={3} value={description} onChange={(event) => setDescription(event.target.value)} />
+            </label>
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              {saving ? "Saving…" : "Save"}
+            </button>
           </form>
           <section className="panel">
             <h2>Exercises</h2>

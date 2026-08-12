@@ -7,7 +7,9 @@ import {
   fetchExercises,
   fetchMuscleGroups,
 } from "../api/admin";
-import { errorMessage } from "../components/Field";
+import { errorMessage, formatLabel } from "../components/Field";
+import { FeedbackBanner } from "../components/FeedbackBanner";
+import { PageHeader } from "../components/PageHeader";
 import { PageState } from "../components/PageState";
 import { PaginationBar } from "../components/PaginationBar";
 import { StatusBadge } from "../components/StatusBadge";
@@ -20,6 +22,7 @@ export function ExercisesPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ tone: "success" | "error"; message: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [muscleGroups, setMuscleGroups] = useState<CatalogItem[]>([]);
   const [creating, setCreating] = useState(false);
@@ -30,8 +33,10 @@ export function ExercisesPage() {
     muscle_group_id: "",
   });
 
-  function load(nextOffset = offset) {
-    setLoading(true);
+  function load(nextOffset = offset, quiet = false) {
+    if (!quiet) {
+      setLoading(true);
+    }
     setError(null);
     fetchExercises({
       q: search || undefined,
@@ -62,7 +67,7 @@ export function ExercisesPage() {
   async function onCreate(event: React.FormEvent) {
     event.preventDefault();
     setCreating(true);
-    setError(null);
+    setNotice(null);
     try {
       let muscleGroupId = form.muscle_group_id;
       if (!muscleGroupId) {
@@ -83,9 +88,10 @@ export function ExercisesPage() {
         equipment: [],
       });
       setForm({ name: "", difficulty_level: "beginner", category: "compound", muscle_group_id: "" });
-      load(0);
+      setNotice({ tone: "success", message: "Exercise created." });
+      load(0, true);
     } catch (caught: unknown) {
-      setError(errorMessage(caught, "Unable to create exercise."));
+      setNotice({ tone: "error", message: errorMessage(caught, "Unable to create exercise.") });
     } finally {
       setCreating(false);
     }
@@ -93,27 +99,33 @@ export function ExercisesPage() {
 
   return (
     <main className="page">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow">Catalog</p>
-          <h1>Exercises</h1>
-        </div>
-        <p className="muted">{total} exercises</p>
-      </header>
-      <form className="toolbar" onSubmit={(event) => { event.preventDefault(); load(0); }}>
-        <input
-          className="input"
-          placeholder="Search name"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
-        <select className="input" value={category} onChange={(event) => setCategory(event.target.value)}>
-          <option value="">All categories</option>
-          <option value="compound">Compound</option>
-          <option value="isolation">Isolation</option>
-          <option value="cardio">Cardio</option>
-          <option value="mobility">Mobility</option>
-        </select>
+      <PageHeader eyebrow="Catalog" title="Exercises" meta={`${total} exercises`} />
+      <form
+        className="toolbar"
+        onSubmit={(event) => {
+          event.preventDefault();
+          load(0);
+        }}
+      >
+        <label>
+          Search
+          <input
+            className="input"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search name"
+          />
+        </label>
+        <label>
+          Category
+          <select className="input" value={category} onChange={(event) => setCategory(event.target.value)}>
+            <option value="">All categories</option>
+            <option value="compound">Compound</option>
+            <option value="isolation">Isolation</option>
+            <option value="cardio">Cardio</option>
+            <option value="mobility">Mobility</option>
+          </select>
+        </label>
         <button type="submit" className="btn btn-secondary">Filter</button>
       </form>
       <form className="panel" onSubmit={(event) => void onCreate(event)}>
@@ -121,11 +133,21 @@ export function ExercisesPage() {
         <div className="form-grid">
           <label>
             Name
-            <input className="input" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required minLength={2} />
+            <input
+              className="input"
+              value={form.name}
+              onChange={(event) => setForm({ ...form, name: event.target.value })}
+              required
+              minLength={2}
+            />
           </label>
           <label>
             Difficulty
-            <select className="input" value={form.difficulty_level} onChange={(event) => setForm({ ...form, difficulty_level: event.target.value })}>
+            <select
+              className="input"
+              value={form.difficulty_level}
+              onChange={(event) => setForm({ ...form, difficulty_level: event.target.value })}
+            >
               <option value="beginner">Beginner</option>
               <option value="intermediate">Intermediate</option>
               <option value="advanced">Advanced</option>
@@ -133,7 +155,11 @@ export function ExercisesPage() {
           </label>
           <label>
             Category
-            <select className="input" value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}>
+            <select
+              className="input"
+              value={form.category}
+              onChange={(event) => setForm({ ...form, category: event.target.value })}
+            >
               <option value="compound">Compound</option>
               <option value="isolation">Isolation</option>
               <option value="cardio">Cardio</option>
@@ -142,7 +168,11 @@ export function ExercisesPage() {
           </label>
           <label>
             Primary muscle group
-            <select className="input" value={form.muscle_group_id} onChange={(event) => setForm({ ...form, muscle_group_id: event.target.value })}>
+            <select
+              className="input"
+              value={form.muscle_group_id}
+              onChange={(event) => setForm({ ...form, muscle_group_id: event.target.value })}
+            >
               <option value="">Create from name</option>
               {muscleGroups.map((group) => (
                 <option key={group.id} value={group.id}>{group.name}</option>
@@ -150,8 +180,11 @@ export function ExercisesPage() {
             </select>
           </label>
         </div>
-        <button type="submit" className="btn btn-primary" disabled={creating}>Create</button>
+        <button type="submit" className="btn btn-primary" disabled={creating}>
+          {creating ? "Creating…" : "Create"}
+        </button>
       </form>
+      {notice ? <FeedbackBanner tone={notice.tone}>{notice.message}</FeedbackBanner> : null}
       {loading ? <PageState kind="loading" title="Loading exercises" message="Fetching the exercise catalog." /> : null}
       {error ? <PageState kind="error" title="Exercises unavailable" message={error} actionLabel="Retry" onAction={() => load(offset)} /> : null}
       {!loading && !error && items.length === 0 ? (
@@ -173,8 +206,8 @@ export function ExercisesPage() {
                 {items.map((exercise) => (
                   <tr key={exercise.id}>
                     <td><Link to={`/exercises/${exercise.id}`}>{exercise.name}</Link></td>
-                    <td>{exercise.category}</td>
-                    <td>{exercise.difficulty_level}</td>
+                    <td>{formatLabel(exercise.category)}</td>
+                    <td>{formatLabel(exercise.difficulty_level)}</td>
                     <td>
                       <StatusBadge tone={exercise.is_active ? "success" : "danger"}>
                         {exercise.is_active ? "Active" : "Inactive"}

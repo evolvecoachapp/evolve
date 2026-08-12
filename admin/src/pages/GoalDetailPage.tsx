@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { fetchGoal } from "../api/admin";
-import { errorMessage, Field, formatDay } from "../components/Field";
+import { errorMessage, Field, formatDay, formatLabel } from "../components/Field";
+import { PageHeader } from "../components/PageHeader";
 import { PageState } from "../components/PageState";
 import { StatusBadge } from "../components/StatusBadge";
+import { UserLink } from "../components/UserLink";
 import type { Goal } from "../types/admin";
 
 export function GoalDetailPage() {
@@ -35,23 +37,24 @@ export function GoalDetailPage() {
 
   return (
     <main className="page">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow"><Link to="/goals">Goals</Link> / Detail</p>
-          <h1>{goal?.description ?? "Goal"}</h1>
-        </div>
-      </header>
+      <PageHeader
+        eyebrow={<><Link to="/goals">Goals</Link> / Detail</>}
+        title={goal?.description ?? "Goal"}
+      />
       {loading ? <PageState kind="loading" title="Loading goal" message="Fetching goal details." /> : null}
       {error ? <PageState kind="error" title="Goal unavailable" message={error} actionLabel="Retry" onAction={load} /> : null}
       {!loading && goal ? (
         <section className="detail-grid">
-          <Field label="User" value={goal.user_id} />
-          <Field label="Type" value={goal.goal_type} />
+          <div className="detail-field">
+            <span>User</span>
+            <strong><UserLink userId={goal.user_id} /></strong>
+          </div>
+          <Field label="Type" value={formatLabel(goal.goal_type)} />
           <div className="detail-field">
             <span>Status</span>
-            <StatusBadge tone={goal.status === "achieved" ? "success" : goal.status === "active" ? "warning" : "neutral"}>{goal.status}</StatusBadge>
+            <StatusBadge tone={goal.status === "achieved" ? "success" : goal.status === "active" ? "warning" : "neutral"}>{formatLabel(goal.status)}</StatusBadge>
           </div>
-          <Field label="Priority" value={goal.priority} />
+          <Field label="Priority" value={formatLabel(goal.priority)} />
           <Field label="Target" value={goal.target_value ? `${goal.target_value} ${goal.target_unit ?? ""}` : "—"} />
           <Field label="Start" value={formatDay(goal.start_date)} />
           <Field label="Target date" value={formatDay(goal.target_date)} />

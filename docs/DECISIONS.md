@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-08-13  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-158). Append only — never renumber.
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-159). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -5677,5 +5677,29 @@ Auditing `UserPublic`/`UserUpdate` (`backend/app/schemas/user.py`) against the P
 **Consequences:**
 - Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
 - Operators can manage the public catalog and inspect athlete activity without a second database or domain.
+- Mobile Runtime/SQLite/Observer architecture is unchanged. Payments, push, and live LLM remain out of scope.
+
+## ADR-159: Admin UX / Operations Completion (Sprint 39.3)
+
+**Status:** Accepted
+**Date:** 2026-08-13
+**Context:** Sprints 39.1 and 39.2 shipped a working Admin control plane (auth, dashboard KPIs, users, catalog mutations, read-only athlete activity, system health). Daily operations still required too much scanning of incomplete screens: the dashboard was KPI-only, Users lacked search/filter/pagination, catalog mutations mixed list errors with form errors and had no success feedback, and several activity secondary actions replaced the list with a full-page error. Inventing analytics, a toast framework, or a second Admin domain layer would exceed the sprint.
+
+**Decision:**
+
+1. **UX completion on the existing Admin app.** Keep the Sprint 39.1 visual language. Group the sidebar, add page-header consistency, confirm logout, and keep authenticated boot in `ProtectedRoute`.
+2. **Dashboard is an operational overview of existing endpoints.** Compose `GET /admin/dashboard`, `GET /admin/health`, and `GET /admin/users?limit=8` once on load (no polling). Do not invent analytics the backend cannot provide.
+3. **Users search is a small extension of the existing list path.** `q` is an optional ILIKE filter on email/username/first_name/last_name in `UserRepository` / `UserService.list_users`. Not a new repository or search engine. Status filter and pagination already existed.
+4. **Inline mutation feedback, not a toast system.** Catalog and account-status mutations use idle → saving → success/failure via existing banners plus `ConfirmDialog`. List-load errors stay on `PageState`; form/mutation errors do not hide the table.
+5. **Activity modules remain read-only.** Filters, pagination, user links, and empty/loading/error states only. No admin writes to nutrition/recovery/goals/progress/coach/workout-logs.
+
+**Alternatives considered:**
+- **Client-side user search of the current page** — rejected; that is not search and would hide accounts on other pages.
+- **Global toast/snackbar architecture** — rejected; none existed, and inline banners are enough for a desktop control plane.
+- **New dashboard analytics endpoints** — rejected; the sprint forbids inventing backend capabilities.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- Operators can run daily catalog and account operations from Admin with confirmation and visible save results, without CLI for those supported actions.
 - Mobile Runtime/SQLite/Observer architecture is unchanged. Payments, push, and live LLM remain out of scope.
 

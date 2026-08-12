@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { fetchMealLog } from "../api/admin";
-import { errorMessage, Field, formatDate } from "../components/Field";
+import { errorMessage, Field, formatDate, formatLabel } from "../components/Field";
+import { PageHeader } from "../components/PageHeader";
 import { PageState } from "../components/PageState";
+import { UserLink } from "../components/UserLink";
 import type { MealLog } from "../types/admin";
 
 export function MealLogDetailPage() {
@@ -34,18 +36,19 @@ export function MealLogDetailPage() {
 
   return (
     <main className="page">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow"><Link to="/nutrition">Nutrition</Link> / Meal log</p>
-          <h1>{log?.name_snapshot ?? "Meal log"}</h1>
-        </div>
-      </header>
+      <PageHeader
+        eyebrow={<><Link to="/nutrition">Nutrition</Link> / Meal log</>}
+        title={log?.name_snapshot ?? "Meal log"}
+      />
       {loading ? <PageState kind="loading" title="Loading meal log" message="Fetching diary entry details." /> : null}
       {error ? <PageState kind="error" title="Meal log unavailable" message={error} actionLabel="Retry" onAction={load} /> : null}
       {!loading && log ? (
         <section className="detail-grid">
-          <Field label="User" value={log.user_id} />
-          <Field label="Type" value={log.meal_type} />
+          <div className="detail-field">
+            <span>User</span>
+            <strong><UserLink userId={log.user_id} /></strong>
+          </div>
+          <Field label="Type" value={formatLabel(log.meal_type)} />
           <Field label="Calories" value={log.calories} />
           <Field label="Protein" value={log.protein_g} />
           <Field label="Carbs" value={log.carbs_g} />

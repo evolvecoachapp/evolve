@@ -3,7 +3,9 @@ import { Link, useParams } from "react-router-dom";
 
 import { deactivateExercise, fetchExercise, updateExercise } from "../api/admin";
 import { ConfirmDialog } from "../components/ConfirmDialog";
-import { errorMessage, Field } from "../components/Field";
+import { errorMessage, Field, formatLabel } from "../components/Field";
+import { FeedbackBanner } from "../components/FeedbackBanner";
+import { PageHeader } from "../components/PageHeader";
 import { PageState } from "../components/PageState";
 import { StatusBadge } from "../components/StatusBadge";
 import type { Exercise } from "../types/admin";
@@ -12,6 +14,7 @@ export function ExerciseDetailPage() {
   const { exerciseId } = useParams<{ exerciseId: string }>();
   const [exercise, setExercise] = useState<Exercise | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ tone: "success" | "error"; message: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [confirm, setConfirm] = useState(false);
@@ -41,12 +44,13 @@ export function ExerciseDetailPage() {
   async function save() {
     if (!exercise) return;
     setSaving(true);
-    setError(null);
+    setNotice(null);
     try {
       const updated = await updateExercise(exercise.id, { description });
       setExercise(updated);
+      setNotice({ tone: "success", message: "Exercise saved." });
     } catch (caught: unknown) {
-      setError(errorMessage(caught, "Unable to update this exercise."));
+      setNotice({ tone: "error", message: errorMessage(caught, "Unable to update this exercise.") });
     } finally {
       setSaving(false);
     }
@@ -55,13 +59,15 @@ export function ExerciseDetailPage() {
   async function deactivate() {
     if (!exercise) return;
     setSaving(true);
-    setError(null);
+    setNotice(null);
     try {
       const updated = await deactivateExercise(exercise.id);
       setExercise(updated);
       setConfirm(false);
+      setNotice({ tone: "success", message: "Exercise deactivated." });
     } catch (caught: unknown) {
-      setError(errorMessage(caught, "Unable to deactivate this exercise."));
+      setNotice({ tone: "error", message: errorMessage(caught, "Unable to deactivate this exercise.") });
+      setConfirm(false);
     } finally {
       setSaving(false);
     }
@@ -69,28 +75,27 @@ export function ExerciseDetailPage() {
 
   return (
     <main className="page">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow"><Link to="/exercises">Exercises</Link> / Catalog</p>
-          <h1>{exercise?.name ?? "Exercise"}</h1>
-        </div>
+      <PageHeader
+        eyebrow={<><Link to="/exercises">Exercises</Link> / Catalog</>}
+        title={exercise?.name ?? "Exercise"}
+      >
         {exercise?.is_active ? (
           <button type="button" className="btn btn-secondary" onClick={() => setConfirm(true)} disabled={saving}>
             Deactivate
           </button>
         ) : null}
-      </header>
+      </PageHeader>
       {loading ? <PageState kind="loading" title="Loading exercise" message="Fetching catalog details." /> : null}
       {error && !exercise ? (
         <PageState kind="error" title="Exercise unavailable" message={error} actionLabel="Retry" onAction={load} />
       ) : null}
-      {error && exercise ? <div className="banner banner-error" role="alert">{error}</div> : null}
+      {notice ? <FeedbackBanner tone={notice.tone}>{notice.message}</FeedbackBanner> : null}
       {!loading && exercise ? (
         <>
           <section className="detail-grid">
             <Field label="Slug" value={exercise.slug} />
-            <Field label="Category" value={exercise.category} />
-            <Field label="Difficulty" value={exercise.difficulty_level} />
+            <Field label="Category" value={formatLabel(exercise.category)} />
+            <Field label="Difficulty" value={formatLabel(exercise.difficulty_level)} />
             <div className="detail-field">
               <span>Status</span>
               <StatusBadge tone={exercise.is_active ? "success" : "danger"}>
@@ -108,7 +113,9 @@ export function ExerciseDetailPage() {
               Description
               <textarea className="input" value={description} onChange={(event) => setDescription(event.target.value)} rows={4} />
             </label>
-            <button type="submit" className="btn btn-primary" disabled={saving}>Save</button>
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              {saving ? "Saving…" : "Save"}
+            </button>
           </form>
         </>
       ) : null}

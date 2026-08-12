@@ -1,27 +1,33 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { fetchMealLogs, fetchMeals, fetchNutritionTargets } from "../api/admin";
-import { errorMessage, formatDate, formatDay } from "../components/Field";
+import { errorMessage, formatDate, formatDay, formatLabel } from "../components/Field";
+import { FeedbackBanner } from "../components/FeedbackBanner";
+import { PageHeader } from "../components/PageHeader";
 import { PageState } from "../components/PageState";
 import { PaginationBar } from "../components/PaginationBar";
+import { UserLink } from "../components/UserLink";
 import type { Meal, MealLog, NutritionTargets } from "../types/admin";
 
 export function NutritionPage() {
+  const [params] = useSearchParams();
   const [tab, setTab] = useState<"meals" | "logs" | "targets">("meals");
   const [meals, setMeals] = useState<Meal[]>([]);
   const [logs, setLogs] = useState<MealLog[]>([]);
   const [mealTotal, setMealTotal] = useState(0);
   const [logTotal, setLogTotal] = useState(0);
   const [offset, setOffset] = useState(0);
-  const [userId, setUserId] = useState("");
+  const [userId, setUserId] = useState(params.get("user") ?? "");
   const [targets, setTargets] = useState<NutritionTargets | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   function loadMeals(nextOffset = 0) {
     setLoading(true);
     setError(null);
+    setNotice(null);
     fetchMeals({ createdById: userId || undefined, limit: 20, offset: nextOffset })
       .then((page) => {
         setMeals(page.items);
@@ -39,6 +45,7 @@ export function NutritionPage() {
   function loadLogs(nextOffset = 0) {
     setLoading(true);
     setError(null);
+    setNotice(null);
     fetchMealLogs({ userId: userId || undefined, limit: 20, offset: nextOffset })
       .then((page) => {
         setLogs(page.items);
@@ -55,13 +62,15 @@ export function NutritionPage() {
 
   function loadTargets() {
     if (!userId) {
-      setError("Enter a user id to load nutrition targets.");
+      setNotice("Enter a user id to load nutrition targets.");
       setTargets(null);
       setLoading(false);
+      setError(null);
       return;
     }
     setLoading(true);
     setError(null);
+    setNotice(null);
     fetchNutritionTargets(userId)
       .then((record) => {
         setTargets(record);
@@ -88,21 +97,21 @@ export function NutritionPage() {
 
   return (
     <main className="page">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow">Activity</p>
-          <h1>Nutrition</h1>
-        </div>
-      </header>
-      <div className="tabs">
-        <button type="button" className={tab === "meals" ? "tab active" : "tab"} onClick={() => switchTab("meals")}>Meals</button>
-        <button type="button" className={tab === "logs" ? "tab active" : "tab"} onClick={() => switchTab("logs")}>Meal logs</button>
-        <button type="button" className={tab === "targets" ? "tab active" : "tab"} onClick={() => switchTab("targets")}>Targets</button>
+      <PageHeader eyebrow="Activity" title="Nutrition" />
+      <p className="readonly-note">Read-only meals, logs, and targets. Admin cannot mutate athlete nutrition.</p>
+      <div className="tabs" role="tablist" aria-label="Nutrition views">
+        <button type="button" role="tab" aria-selected={tab === "meals"} className={tab === "meals" ? "tab active" : "tab"} onClick={() => switchTab("meals")}>Meals</button>
+        <button type="button" role="tab" aria-selected={tab === "logs"} className={tab === "logs" ? "tab active" : "tab"} onClick={() => switchTab("logs")}>Meal logs</button>
+        <button type="button" role="tab" aria-selected={tab === "targets"} className={tab === "targets" ? "tab active" : "tab"} onClick={() => switchTab("targets")}>Targets</button>
       </div>
       <form className="toolbar" onSubmit={(event) => { event.preventDefault(); switchTab(tab); }}>
-        <input className="input" placeholder="User id" value={userId} onChange={(event) => setUserId(event.target.value)} />
+        <label>
+          User id
+          <input className="input" value={userId} onChange={(event) => setUserId(event.target.value)} placeholder="User id" />
+        </label>
         <button type="submit" className="btn btn-secondary">Apply</button>
       </form>
+      {notice ? <FeedbackBanner tone="error">{notice}</FeedbackBanner> : null}
       {loading ? <PageState kind="loading" title="Loading nutrition" message="Fetching meals, logs, or targets." /> : null}
       {error ? <PageState kind="error" title="Nutrition unavailable" message={error} actionLabel="Retry" onAction={() => switchTab(tab)} /> : null}
       {!loading && !error && tab === "meals" && meals.length === 0 ? <PageState kind="empty" title="No meals" message="Meal templates will appear here." /> : null}
@@ -115,9 +124,9 @@ export function NutritionPage() {
                 {meals.map((meal) => (
                   <tr key={meal.id}>
                     <td><Link to={`/nutrition/meals/${meal.id}`}>{meal.name}</Link></td>
-                    <td>{meal.meal_type}</td>
+                    <td>{formatLabel(meal.meal_type)}</td>
                     <td>{meal.calories}</td>
-                    <td>{meal.created_by_id ? meal.created_by_id.slice(0, 8) : "—"}</td>
+                    <td>{meal.created_by_id ? <UserLink userId={meal.created_by_id} /> : "—"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -136,7 +145,7 @@ export function NutritionPage() {
                 {logs.map((log) => (
                   <tr key={log.id}>
                     <td><Link to={`/nutrition/logs/${log.id}`}>{log.name_snapshot}</Link></td>
-                    <td><Link to={`/users/${log.user_id}`}>{log.user_id.slice(0, 8)}</Link></td>
+                    <td><UserLink userId={log.user_id} /></td>
                     <td>{log.calories}</td>
                     <td>{formatDate(log.consumed_at)}</td>
                   </tr>
@@ -146,6 +155,9 @@ export function NutritionPage() {
           </div>
           <PaginationBar total={logTotal} limit={20} offset={offset} onChange={(next) => loadLogs(next)} />
         </>
+      ) : null}
+      {!loading && !error && tab === "targets" && !targets && !notice ? (
+        <PageState kind="empty" title="No targets loaded" message="Enter a user id and apply to inspect daily targets." />
       ) : null}
       {!loading && !error && tab === "targets" && targets ? (
         <section className="detail-grid">

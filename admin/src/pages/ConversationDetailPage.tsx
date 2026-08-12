@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { fetchConversation, fetchConversationMessages } from "../api/admin";
-import { errorMessage, Field, formatDate } from "../components/Field";
+import { errorMessage, Field, formatDate, shortId } from "../components/Field";
+import { PageHeader } from "../components/PageHeader";
 import { PageState } from "../components/PageState";
+import { UserLink } from "../components/UserLink";
 import type { ChatMessage, Conversation } from "../types/admin";
 
 export function ConversationDetailPage() {
@@ -40,18 +42,19 @@ export function ConversationDetailPage() {
 
   return (
     <main className="page">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow"><Link to="/coach">Coach</Link> / Conversation</p>
-          <h1>{conversation ? conversation.id.slice(0, 8) : "Conversation"}</h1>
-        </div>
-      </header>
+      <PageHeader
+        eyebrow={<><Link to="/coach">Coach</Link> / Conversation</>}
+        title={conversation ? shortId(conversation.id) : "Conversation"}
+      />
       {loading ? <PageState kind="loading" title="Loading conversation" message="Fetching messages." /> : null}
       {error ? <PageState kind="error" title="Conversation unavailable" message={error} actionLabel="Retry" onAction={load} /> : null}
       {!loading && conversation ? (
         <>
           <section className="detail-grid">
-            <Field label="User" value={conversation.user_id} />
+            <div className="detail-field">
+              <span>User</span>
+              <strong><UserLink userId={conversation.user_id} /></strong>
+            </div>
             <Field label="Created" value={formatDate(conversation.created_at)} />
             <Field label="Last message" value={formatDate(conversation.last_message_at)} />
           </section>

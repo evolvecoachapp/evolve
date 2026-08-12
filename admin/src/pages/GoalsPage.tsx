@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { fetchGoals } from "../api/admin";
-import { errorMessage, formatDay } from "../components/Field";
+import { errorMessage, formatDay, formatLabel } from "../components/Field";
+import { PageHeader } from "../components/PageHeader";
 import { PageState } from "../components/PageState";
 import { PaginationBar } from "../components/PaginationBar";
 import { StatusBadge } from "../components/StatusBadge";
+import { UserLink } from "../components/UserLink";
 import type { Goal } from "../types/admin";
 
 function goalTone(status: string): "success" | "warning" | "neutral" | "danger" {
@@ -16,10 +18,11 @@ function goalTone(status: string): "success" | "warning" | "neutral" | "danger" 
 }
 
 export function GoalsPage() {
+  const [params] = useSearchParams();
   const [items, setItems] = useState<Goal[]>([]);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
-  const [userId, setUserId] = useState("");
+  const [userId, setUserId] = useState(params.get("user") ?? "");
   const [status, setStatus] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,21 +50,22 @@ export function GoalsPage() {
 
   return (
     <main className="page">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow">Activity</p>
-          <h1>Goals</h1>
-        </div>
-        <p className="muted">{total} goals</p>
-      </header>
+      <PageHeader eyebrow="Activity" title="Goals" meta={`${total} goals`} />
+      <p className="readonly-note">Read-only athlete goals. Admin cannot create or close goals.</p>
       <form className="toolbar" onSubmit={(event) => { event.preventDefault(); load(0); }}>
-        <input className="input" placeholder="Filter by user id" value={userId} onChange={(event) => setUserId(event.target.value)} />
-        <select className="input" value={status} onChange={(event) => setStatus(event.target.value)}>
-          <option value="">All statuses</option>
-          <option value="active">Active</option>
-          <option value="achieved">Achieved</option>
-          <option value="abandoned">Abandoned</option>
-        </select>
+        <label>
+          User id
+          <input className="input" value={userId} onChange={(event) => setUserId(event.target.value)} placeholder="Filter by user id" />
+        </label>
+        <label>
+          Status
+          <select className="input" value={status} onChange={(event) => setStatus(event.target.value)}>
+            <option value="">All statuses</option>
+            <option value="active">Active</option>
+            <option value="achieved">Achieved</option>
+            <option value="abandoned">Abandoned</option>
+          </select>
+        </label>
         <button type="submit" className="btn btn-secondary">Filter</button>
       </form>
       {loading ? <PageState kind="loading" title="Loading goals" message="Fetching athlete goals." /> : null}
@@ -76,8 +80,8 @@ export function GoalsPage() {
                 {items.map((goal) => (
                   <tr key={goal.id}>
                     <td><Link to={`/goals/${goal.id}`}>{goal.description}</Link></td>
-                    <td><Link to={`/users/${goal.user_id}`}>{goal.user_id.slice(0, 8)}</Link></td>
-                    <td><StatusBadge tone={goalTone(goal.status)}>{goal.status}</StatusBadge></td>
+                    <td><UserLink userId={goal.user_id} /></td>
+                    <td><StatusBadge tone={goalTone(goal.status)}>{formatLabel(goal.status)}</StatusBadge></td>
                     <td>{formatDay(goal.target_date)}</td>
                   </tr>
                 ))}

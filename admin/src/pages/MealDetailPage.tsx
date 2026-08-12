@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { fetchMeal } from "../api/admin";
-import { errorMessage, Field } from "../components/Field";
+import { errorMessage, Field, formatLabel } from "../components/Field";
+import { PageHeader } from "../components/PageHeader";
 import { PageState } from "../components/PageState";
 import { StatusBadge } from "../components/StatusBadge";
+import { UserLink } from "../components/UserLink";
 import type { Meal } from "../types/admin";
 
 export function MealDetailPage() {
@@ -35,17 +37,15 @@ export function MealDetailPage() {
 
   return (
     <main className="page">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow"><Link to="/nutrition">Nutrition</Link> / Meal</p>
-          <h1>{meal?.name ?? "Meal"}</h1>
-        </div>
-      </header>
+      <PageHeader
+        eyebrow={<><Link to="/nutrition">Nutrition</Link> / Meal</>}
+        title={meal?.name ?? "Meal"}
+      />
       {loading ? <PageState kind="loading" title="Loading meal" message="Fetching meal template details." /> : null}
       {error ? <PageState kind="error" title="Meal unavailable" message={error} actionLabel="Retry" onAction={load} /> : null}
       {!loading && meal ? (
         <section className="detail-grid">
-          <Field label="Type" value={meal.meal_type} />
+          <Field label="Type" value={formatLabel(meal.meal_type)} />
           <Field label="Calories" value={meal.calories} />
           <Field label="Protein" value={meal.protein_g} />
           <Field label="Carbs" value={meal.carbs_g} />
@@ -54,7 +54,10 @@ export function MealDetailPage() {
             <span>Status</span>
             <StatusBadge tone={meal.is_active ? "success" : "danger"}>{meal.is_active ? "Active" : "Inactive"}</StatusBadge>
           </div>
-          <Field label="Owner" value={meal.created_by_id ?? "—"} />
+          <div className="detail-field">
+            <span>Owner</span>
+            <strong>{meal.created_by_id ? <UserLink userId={meal.created_by_id} /> : "—"}</strong>
+          </div>
         </section>
       ) : null}
     </main>

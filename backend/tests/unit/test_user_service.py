@@ -148,7 +148,21 @@ def test_list_users_returns_page(service, user_repository):
     assert page.limit == 20
     assert page.offset == 0
     user_repository.list.assert_called_once_with(
-        limit=20, offset=0, include_deleted=False, is_active=None
+        limit=20, offset=0, include_deleted=False, is_active=None, search=None
+    )
+
+
+def test_list_users_passes_search(service, user_repository):
+    user_repository.list.return_value = []
+    user_repository.count.return_value = 0
+
+    service.list_users(search=" ada ", limit=20, offset=0)
+
+    user_repository.list.assert_called_once_with(
+        limit=20, offset=0, include_deleted=False, is_active=None, search="ada"
+    )
+    user_repository.count.assert_called_once_with(
+        include_deleted=False, is_active=None, search="ada"
     )
 
 
