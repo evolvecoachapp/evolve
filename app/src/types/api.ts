@@ -377,3 +377,72 @@ export interface DailyNutritionReadDto {
   summary_text: string;
   for_date: string;
 }
+
+/*
+ * ---------------------------------------------------------------------------
+ * Recovery domain (backend/app/schemas/recovery.py).
+ *
+ * `sleep_hours` / `readiness_score` Decimal fields are serialized by
+ * FastAPI/Pydantic as JSON *strings* (e.g. `"7.50"`), never numbers —
+ * callers must coerce before arithmetic.
+ * ---------------------------------------------------------------------------
+ */
+
+/** Mirrors `app.ai.recovery_engine.ReadinessLevel`. */
+export type ReadinessLevelDto = "low" | "moderate" | "high";
+
+/** Mirrors `app.schemas.recovery.RecoveryCheckInCreate`. */
+export interface RecoveryCheckInCreateRequest {
+  checkin_date: string;
+  sleep_hours: number | string;
+  sleep_quality: number;
+  soreness: number;
+  fatigue: number;
+  resting_heart_rate?: number | null;
+  hrv_ms?: number | null;
+  notes?: string | null;
+}
+
+/** Mirrors `app.schemas.recovery.RecoveryCheckInUpdate`. */
+export interface RecoveryCheckInUpdateRequest {
+  sleep_hours?: number | string | null;
+  sleep_quality?: number | null;
+  soreness?: number | null;
+  fatigue?: number | null;
+  resting_heart_rate?: number | null;
+  hrv_ms?: number | null;
+  notes?: string | null;
+}
+
+/** Mirrors `app.schemas.recovery.RecoveryCheckInRead`. */
+export interface RecoveryCheckInReadDto {
+  id: string;
+  user_id: string;
+  checkin_date: string;
+  sleep_hours: string | number;
+  sleep_quality: number;
+  soreness: number;
+  fatigue: number;
+  resting_heart_rate: number | null;
+  hrv_ms: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Mirrors `app.schemas.recovery.RecoveryCheckInPage`. */
+export interface RecoveryCheckInPageDto {
+  items: RecoveryCheckInReadDto[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+/** Mirrors `app.schemas.recovery.ReadinessRead`. */
+export interface ReadinessReadDto {
+  readiness_score: string | number;
+  readiness_level: ReadinessLevelDto;
+  recommendation_text: string;
+  protocols: string[];
+  for_date: string;
+}
