@@ -14,8 +14,8 @@ export interface UseCoachConversationOptions {
 
 /**
  * Subscribes to CoachExperienceViewModel conversation surface — no business logic.
- * Production path applies hydrated workspace output via applyHydratedCoachExperience().
- * CoachExperienceService is test/preview-only when injected explicitly.
+ * Production Coach tab injects BackendCoachExperienceService via CoachExperienceScreen.
+ * Omitting `service` remains available for runtime-path tests only.
  */
 export function useCoachConversation({
   service,

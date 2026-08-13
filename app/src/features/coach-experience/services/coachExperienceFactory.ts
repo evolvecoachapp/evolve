@@ -12,7 +12,7 @@ const PROVIDERS: Record<CoachExperienceProviderId, CoachExperienceService> = {
   local: localCoachExperienceService,
 };
 
-/** Resolves the active provider from env — defaults to mock. */
+/** Resolves the active provider from env — defaults to backend. */
 export function resolveCoachExperienceProviderId(): CoachExperienceProviderId {
   const configured = process.env
     .EXPO_PUBLIC_COACH_EXPERIENCE_PROVIDER as
@@ -21,7 +21,7 @@ export function resolveCoachExperienceProviderId(): CoachExperienceProviderId {
   if (configured && configured in PROVIDERS) {
     return configured;
   }
-  return "mock";
+  return "backend";
 }
 
 export function createCoachExperienceService(

@@ -208,6 +208,33 @@ describe("coach-experience application APIs", () => {
     );
   });
 
+  it("sendCoachMessage adopts the backend conversation UUID after the first POST", async () => {
+    const backendId = "11111111-1111-4111-8111-111111111111";
+    const service = createService({ empty: true });
+    const originalSend = service.sendMessage.bind(service);
+    service.sendMessage = async ({ message }) => {
+      const result = await originalSend({
+        conversationId: backendId,
+        message,
+      });
+      return { ...result, conversationId: backendId };
+    };
+
+    const loaded = await loadCoachConversation({ service });
+    expect(loaded.conversation.id).not.toBe(backendId);
+
+    const next = await sendCoachMessage({
+      service,
+      experience: loaded,
+      message: "How should I train today?",
+    });
+
+    expect(next.conversation.id).toBe(backendId);
+    expect(next.conversation.messages.at(-1)?.content).toContain(
+      "How should I train today?",
+    );
+  });
+
   it("regenerateCoachResponse replaces a coach message", async () => {
     const service = createService();
     const loaded = await loadCoachConversation({ service });

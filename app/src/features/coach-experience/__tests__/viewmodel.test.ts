@@ -23,6 +23,7 @@ function createService(options?: {
   fail?: boolean;
   failOnce?: boolean;
   empty?: boolean;
+  providerId?: CoachExperienceService["providerId"];
 }): CoachExperienceService {
   let calls = 0;
   const dto = options?.empty
@@ -38,7 +39,7 @@ function createService(options?: {
   };
 
   return {
-    providerId: "mock",
+    providerId: options?.providerId ?? "mock",
     async getExperience() {
       calls += 1;
       if (options?.fail) {
@@ -183,6 +184,39 @@ describe("CoachExperienceViewModel", () => {
     expect(viewModel.loading.isSending).toBe(false);
   });
 
+  it("sendMessage on the backend provider adopts the returned conversation UUID", async () => {
+    const backendId = "11111111-1111-4111-8111-111111111111";
+    const service = createService({ empty: true, providerId: "backend" });
+    service.sendMessage = async ({ message }) => {
+      const now = "2026-08-13T10:00:00.000Z";
+      return {
+        conversationId: backendId,
+        userMessage: {
+          id: "user-1",
+          role: "user",
+          content: message,
+          createdAt: now,
+        },
+        coachMessage: {
+          id: "coach-1",
+          role: "coach",
+          content: "Keep intensity moderate today.",
+          createdAt: now,
+        },
+      };
+    };
+    const viewModel = new CoachExperienceViewModel({ service });
+    await viewModel.loadConversation();
+
+    await viewModel.sendMessage("How should I train today?");
+
+    expect(viewModel.conversation?.id).toBe(backendId);
+    expect(viewModel.messages.at(-1)?.content).toBe(
+      "Keep intensity moderate today.",
+    );
+    expect(viewModel.messages.at(-1)?.citations).toEqual([]);
+  });
+
   it("regenerateResponse updates a coach message", async () => {
     const viewModel = new CoachExperienceViewModel({
       service: createService(),
@@ -198,6 +232,24 @@ describe("CoachExperienceViewModel", () => {
       viewModel.messages.find((message) => message.id === coachMessage.id)
         ?.content,
     ).toBe("Fresh coach reply");
+  });
+
+  it("no-ops regenerateResponse for the backend provider without calling the service", async () => {
+    const regenerateResponse = jest.fn();
+    const service = createService({ providerId: "backend" });
+    service.regenerateResponse = regenerateResponse;
+    const viewModel = new CoachExperienceViewModel({ service });
+    await viewModel.loadConversation();
+    const before = viewModel.messages.map((message) => message.content);
+    const coachMessage = viewModel.messages.find(
+      (message) => message.role === "coach",
+    )!;
+
+    await viewModel.regenerateResponse(coachMessage.id);
+
+    expect(regenerateResponse).not.toHaveBeenCalled();
+    expect(viewModel.messages.map((message) => message.content)).toEqual(before);
+    expect(viewModel.error).toBeNull();
   });
 
   it("pinInsight and dismissInsight update insight projection", async () => {

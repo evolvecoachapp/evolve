@@ -18,18 +18,23 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
   ios: {
-    supportsTablet: true,
+  supportsTablet: true,
+  bundleIdentifier: "com.evolvecoachapp.evolve",
+  infoPlist: {
+    ITSAppUsesNonExemptEncryption: false,
   },
-  android: {
-    adaptiveIcon: {
-      backgroundColor: "#E6F4FE",
-      foregroundImage: "./assets/images/android-icon-foreground.png",
-      backgroundImage: "./assets/images/android-icon-background.png",
-      monochromeImage: "./assets/images/android-icon-monochrome.png",
-    },
-    edgeToEdgeEnabled: true,
-    predictiveBackGestureEnabled: false,
+},
+android: {
+  package: "com.evolvecoachapp.evolve",
+  adaptiveIcon: {
+    backgroundColor: "#E6F4FE",
+    foregroundImage: "./assets/images/android-icon-foreground.png",
+    backgroundImage: "./assets/images/android-icon-background.png",
+    monochromeImage: "./assets/images/android-icon-monochrome.png",
   },
+  edgeToEdgeEnabled: true,
+  predictiveBackGestureEnabled: false,
+},
   web: {
     output: "static",
     favicon: "./assets/images/favicon.png",
@@ -52,6 +57,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     typedRoutes: true,
   },
   extra: {
-    apiBaseUrl: API_BASE_URL,
+  apiBaseUrl: API_BASE_URL,
+  eas: {
+    projectId: "84a111e1-a07e-4eea-a874-a583e1addc71",
   },
+},
 });

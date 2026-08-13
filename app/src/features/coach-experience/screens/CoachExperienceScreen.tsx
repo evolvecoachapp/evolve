@@ -31,7 +31,10 @@ import {
   usePullToRefresh,
 } from "../hooks";
 import type { CoachQuickAction } from "../models/CoachQuickAction";
-import type { CoachExperienceService } from "../services";
+import {
+  coachExperienceService,
+  type CoachExperienceService,
+} from "../services";
 
 export interface CoachExperienceScreenProps {
   readonly service?: CoachExperienceService;
@@ -39,11 +42,11 @@ export interface CoachExperienceScreenProps {
 
 /**
  * Flagship Coach Experience screen — composition only.
- * Production data flows from hydrated Unified Workspace via applyHydratedCoachExperience().
- * CoachExperienceService is test/preview-only when injected via the service prop.
+ * Production injects the backend Coach Experience service (POST /api/v1/coach/messages).
+ * Tests may inject mock/local services via the service prop.
  */
 export function CoachExperienceScreen({
-  service,
+  service = coachExperienceService,
 }: CoachExperienceScreenProps = {}) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -51,6 +54,7 @@ export function CoachExperienceScreen({
   const { user } = useAuth();
 
   const conversation = useCoachConversation({ service, athleteId: user?.id });
+  const allowRegenerate = service.providerId !== "backend";
   const insights = useCoachInsights({ viewModel: conversation.viewModel });
   const recommendations = useCoachRecommendations({
     viewModel: conversation.viewModel,
@@ -209,8 +213,11 @@ export function CoachExperienceScreen({
               <ConversationList
                 messages={conversation.messages}
                 typing={conversation.typing}
-                onRegenerate={(messageId) =>
-                  void conversation.regenerateResponse(messageId)
+                onRegenerate={
+                  allowRegenerate
+                    ? (messageId) =>
+                        void conversation.regenerateResponse(messageId)
+                    : undefined
                 }
               />
 

@@ -4,9 +4,9 @@
  * Sprint 31.3 — AI Coach Experience (flagship product UI).
  *
  * React UI → CoachExperienceViewModel → Application → Mappers →
- * Hydrated Unified Workspace + Coach Conversation orchestration (production)
+ * BackendCoachExperienceService → POST /api/v1/coach/messages (production)
  *
- * CoachExperienceService (Mock / Backend / Local) is test/preview-only when injected.
+ * Mock / Local CoachExperienceService remain injectable for tests.
  */
 
 export * from "./models";

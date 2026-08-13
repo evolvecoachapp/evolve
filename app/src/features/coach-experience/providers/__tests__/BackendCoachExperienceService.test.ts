@@ -5,9 +5,21 @@ import {
   mapBackendCoachMessagesToExperienceDto,
 } from "../../mappers/mapBackendCoachToExperienceDto";
 
+const persisted = { conversationId: null as string | null };
+
 jest.mock("../../../../api/coach", () => ({
   sendCoachMessage: jest.fn(),
   listCoachConversationMessages: jest.fn(),
+}));
+
+jest.mock("../backendCoachConversationStore", () => ({
+  persistBackendCoachConversationId: jest.fn(async (id: string) => {
+    persisted.conversationId = id;
+  }),
+  loadBackendCoachConversationId: jest.fn(async () => persisted.conversationId),
+  clearBackendCoachConversationId: jest.fn(async () => {
+    persisted.conversationId = null;
+  }),
 }));
 
 // Imported after the mocks are registered so the provider module picks up the mocked functions.
@@ -24,6 +36,16 @@ const mockedListCoachConversationMessages = jest.requireMock("../../../../api/co
   .listCoachConversationMessages as jest.MockedFunction<
   typeof import("../../../../api/coach").listCoachConversationMessages
 >;
+const mockedPersistConversationId = jest.requireMock(
+  "../backendCoachConversationStore",
+).persistBackendCoachConversationId as jest.MockedFunction<
+  typeof import("../backendCoachConversationStore").persistBackendCoachConversationId
+>;
+const mockedLoadConversationId = jest.requireMock(
+  "../backendCoachConversationStore",
+).loadBackendCoachConversationId as jest.MockedFunction<
+  typeof import("../backendCoachConversationStore").loadBackendCoachConversationId
+>;
 
 const CONVERSATION_ID = "11111111-1111-4111-8111-111111111111";
 
@@ -33,7 +55,7 @@ function buildReply(overrides: Record<string, unknown> = {}) {
     message: "Keep intensity moderate today.",
     intent: "workout" as const,
     engines_invoked: ["workout_coach_engine"],
-    artifacts: null,
+    artifacts: { state: "in_progress" },
     ...overrides,
   };
 }
@@ -51,7 +73,8 @@ function buildChatMessage(overrides: Record<string, unknown> = {}) {
 
 describe("backendCoachExperienceService", () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    persisted.conversationId = null;
+    jest.clearAllMocks();
     resetBackendCoachExperienceState();
   });
 
@@ -102,8 +125,47 @@ describe("backendCoachExperienceService", () => {
       expect(dto.conversation.id).toBe(CONVERSATION_ID);
       expect(dto.conversation.messages).toHaveLength(2);
       expect(dto.conversation.messages[1]?.role).toBe("coach");
+      expect(dto.conversation.messages[1]?.content).toBe(
+        "Keep intensity moderate today.",
+      );
       expect(dto.dailyInsight).toBeNull();
       expect(dto.quickActions).toEqual([]);
+    });
+
+    it("restores a persisted conversation id after an in-memory reset", async () => {
+      mockedSendCoachMessage.mockResolvedValueOnce(buildReply());
+      mockedListCoachConversationMessages.mockResolvedValueOnce({
+        items: [
+          buildChatMessage({
+            role: "assistant",
+            content: "Keep intensity moderate today.",
+          }),
+        ],
+        total: 1,
+        limit: 100,
+        offset: 0,
+      });
+
+      await backendCoachExperienceService.sendMessage({
+        conversationId: BACKEND_PENDING_CONVERSATION_ID,
+        message: "How should I train today?",
+      });
+      expect(mockedPersistConversationId).toHaveBeenCalledWith(CONVERSATION_ID);
+
+      resetBackendCoachExperienceState();
+      persisted.conversationId = CONVERSATION_ID;
+
+      const dto = await backendCoachExperienceService.getExperience();
+
+      expect(mockedLoadConversationId).toHaveBeenCalled();
+      expect(mockedListCoachConversationMessages).toHaveBeenCalledWith(
+        CONVERSATION_ID,
+        { limit: 100, offset: 0 },
+      );
+      expect(dto.conversation.id).toBe(CONVERSATION_ID);
+      expect(dto.conversation.messages[0]?.content).toBe(
+        "Keep intensity moderate today.",
+      );
     });
   });
 
@@ -144,7 +206,9 @@ describe("backendCoachExperienceService", () => {
       expect(result.conversationId).toBe(CONVERSATION_ID);
       expect(result.userMessage.content).toBe("How should I train today?");
       expect(result.coachMessage.content).toBe("Keep intensity moderate today.");
-      expect(result.coachMessage.citations).toEqual(["workout_coach_engine"]);
+      expect(result.coachMessage.citations).toBeUndefined();
+      expect(JSON.stringify(result)).not.toContain("workout_coach_engine");
+      expect(JSON.stringify(result)).not.toContain("in_progress");
     });
 
     it("passes a backend conversation UUID on subsequent sends", async () => {
@@ -283,7 +347,7 @@ describe("backendCoachExperienceService", () => {
       ).rejects.toThrow("Service Unavailable");
     });
 
-    it("wraps a history GET failure as a CoachExperienceError", async () => {
+    it("returns the empty experience when a persisted conversation is gone", async () => {
       mockedSendCoachMessage.mockResolvedValueOnce(buildReply());
       mockedListCoachConversationMessages.mockRejectedValueOnce(
         new ApiError(404, null, "Conversation not found for this user."),
@@ -294,22 +358,42 @@ describe("backendCoachExperienceService", () => {
         message: "Hello",
       });
 
+      const dto = await backendCoachExperienceService.getExperience();
+      expect(dto.empty).toBe(true);
+      expect(dto.conversation.id).toBe(BACKEND_PENDING_CONVERSATION_ID);
+    });
+
+    it("wraps a non-404 history GET failure as a CoachExperienceError", async () => {
+      mockedSendCoachMessage.mockResolvedValueOnce(buildReply());
+      mockedListCoachConversationMessages.mockRejectedValueOnce(
+        new ApiError(500, null, "Internal Server Error"),
+      );
+
+      await backendCoachExperienceService.sendMessage({
+        conversationId: BACKEND_PENDING_CONVERSATION_ID,
+        message: "Hello",
+      });
+
       const failure = backendCoachExperienceService.getExperience();
       await expect(failure).rejects.toBeInstanceOf(CoachExperienceError);
-      await expect(failure).rejects.toThrow(/not found/i);
+      await expect(failure).rejects.toThrow("Internal Server Error");
     });
   });
 
   describe("unsupported Coach operations", () => {
+    it("no-ops regenerateResponse without calling the Coach API", async () => {
+      const result = await backendCoachExperienceService.regenerateResponse({
+        conversationId: CONVERSATION_ID,
+        messageId: "msg-2",
+      });
+
+      expect(result.id).toBe("msg-2");
+      expect(result.role).toBe("coach");
+      expect(mockedSendCoachMessage).not.toHaveBeenCalled();
+      expect(mockedListCoachConversationMessages).not.toHaveBeenCalled();
+    });
+
     it.each([
-      [
-        "regenerateResponse",
-        () =>
-          backendCoachExperienceService.regenerateResponse({
-            conversationId: CONVERSATION_ID,
-            messageId: "msg-2",
-          }),
-      ],
       ["pinInsight", () => backendCoachExperienceService.pinInsight("insight-1")],
       [
         "dismissInsight",

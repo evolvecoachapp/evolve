@@ -108,18 +108,15 @@ export interface MapBackendCoachReplyToSendResultInput {
 
 /**
  * Maps `POST /messages` (coach reply only) plus the sent user text into the
- * Experience send-result DTO. The reply schema has no message ids or
- * timestamps — those are filled from `createdAt` rather than invented backend
- * fields.
+ * Experience send-result DTO. Only `reply.message` becomes visible coach
+ * content — intent, engines_invoked, and artifacts stay off the chat bubble.
+ * The reply schema has no message ids or timestamps — those are filled from
+ * `createdAt` rather than invented backend fields.
  */
 export function mapBackendCoachReplyToSendResult(
   input: MapBackendCoachReplyToSendResultInput,
 ): CoachSendMessageResultDto {
   const { reply, userContent, createdAt } = input;
-  const citations =
-    reply.engines_invoked.length > 0
-      ? Object.freeze([...reply.engines_invoked])
-      : undefined;
 
   const userMessage: CoachMessageDto = Object.freeze({
     id: `user-${reply.conversation_id}-${createdAt}`,
@@ -132,7 +129,6 @@ export function mapBackendCoachReplyToSendResult(
     role: "coach",
     content: reply.message,
     createdAt,
-    citations,
   });
 
   return Object.freeze({

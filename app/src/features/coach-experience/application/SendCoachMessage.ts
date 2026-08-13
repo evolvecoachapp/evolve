@@ -42,7 +42,7 @@ export async function sendCoachMessage({
   const now = coachMessage.createdAt;
 
   const conversation = createCoachConversation({
-    id: experience.conversation.id,
+    id: result.conversationId,
     title: experience.conversation.title,
     messages: [
       ...experience.conversation.messages,

@@ -92,7 +92,7 @@ describe("mapBackendCoachToExperienceDto", () => {
     expect(mapped.citations).toBeUndefined();
   });
 
-  it("maps POST reply engines_invoked onto coach citations without fabricating a user id from the backend", () => {
+  it("maps only POST reply.message into the coach bubble and never exposes engines_invoked as citations", () => {
     const result = mapBackendCoachReplyToSendResult({
       reply: buildReply(),
       userContent: "How should I train today?",
@@ -106,15 +106,21 @@ describe("mapBackendCoachToExperienceDto", () => {
     expect(result.coachMessage.content).toBe(
       "Keep intensity moderate and reassess after warm-up.",
     );
-    expect(result.coachMessage.citations).toEqual(["workout_coach_engine"]);
+    expect(result.coachMessage.citations).toBeUndefined();
+    expect(JSON.stringify(result)).not.toContain("workout_coach_engine");
+    expect(JSON.stringify(result)).not.toContain("intent");
+    expect(JSON.stringify(result)).not.toContain("artifacts");
   });
 
-  it("omits citations when the orchestrator invoked no engines", () => {
+  it("omits citations even when the orchestrator invoked engines", () => {
     const result = mapBackendCoachReplyToSendResult({
       reply: buildReply({ intent: "general", engines_invoked: [] }),
       userContent: "Hello",
       createdAt: "2026-08-12T10:01:00.000Z",
     });
     expect(result.coachMessage.citations).toBeUndefined();
+    expect(result.coachMessage.content).toBe(
+      "Keep intensity moderate and reassess after warm-up.",
+    );
   });
 });

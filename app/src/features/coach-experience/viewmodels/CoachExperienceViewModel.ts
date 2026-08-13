@@ -50,7 +50,7 @@ export interface CoachExperienceViewModelDeps {
 
 /**
  * Coach Experience ViewModel — application orchestration only.
- * Production path applies hydrated Unified Workspace via applyHydratedCoachExperience().
+ * Production injects BackendCoachExperienceService via CoachExperienceScreen.
  */
 export class CoachExperienceViewModel {
   private readonly service: CoachExperienceService | null;
@@ -320,6 +320,10 @@ export class CoachExperienceViewModel {
 
   async regenerateResponse(messageId: string): Promise<void> {
     if (!this._experience) {
+      return;
+    }
+
+    if (this.service?.providerId === "backend") {
       return;
     }
 

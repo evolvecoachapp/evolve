@@ -18,6 +18,11 @@ import {
   CoachExperienceError,
   type CoachExperienceService,
 } from "../types/coachExperienceService";
+import {
+  clearBackendCoachConversationId,
+  loadBackendCoachConversationId,
+  persistBackendCoachConversationId,
+} from "./backendCoachConversationStore";
 
 /**
  * Backend provider — talks to the already-implemented Coach FastAPI
@@ -27,23 +32,17 @@ import {
  * - Send via `POST /messages` (omits `conversation_id` until the backend
  *   has returned one; then resumes that conversation)
  * - Experience read via `GET /conversations/{id}/messages` once a
- *   conversation id is known from a prior send
+ *   conversation id is known from a prior send or persisted restart
  *
  * Explicitly unsupported (no matching Coach API endpoint):
- * - `regenerateResponse()` — no regenerate route
+ * - `regenerateResponse()` — no-op; no regenerate route
  * - `pinInsight()` / `dismissInsight()` — no insight model or routes
  * - `getConversationHistory()` — Experience lists conversations; backend
  *   only pages messages inside one known conversation
  * - `getDailyInsight()` / `getRecommendations()` / `getQuickActions()` —
  *   no insight / recommendation / quick-action routes
  *
- * There is no `GET /conversations` or "latest conversation" route, so a
- * cold `getExperience()` cannot discover an existing thread and returns
- * the empty Experience DTO until a send stores a conversation id.
- *
- * Production Coach UI remains Runtime Session → Unified Workspace. This
- * provider is additive and selected only when
- * `EXPO_PUBLIC_COACH_EXPERIENCE_PROVIDER=backend`.
+ * Production Coach tab uses this provider by default.
  */
 
 const UUID_RE =
@@ -90,6 +89,31 @@ function resolveConversationId(inputId: string): string | undefined {
   return lastKnownConversationId ?? undefined;
 }
 
+async function rememberConversationId(conversationId: string): Promise<void> {
+  lastKnownConversationId = conversationId;
+  try {
+    await persistBackendCoachConversationId(conversationId);
+  } catch {
+    // In-memory id still resumes the thread for this session.
+  }
+}
+
+async function hydrateStoredConversationId(): Promise<string | null> {
+  if (lastKnownConversationId) {
+    return lastKnownConversationId;
+  }
+  try {
+    const persisted = await loadBackendCoachConversationId();
+    if (persisted && isUuid(persisted)) {
+      lastKnownConversationId = persisted;
+      return persisted;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 async function fetchLatestMessagePage(
   conversationId: string,
 ): Promise<ChatMessagePageDto> {
@@ -108,16 +132,25 @@ async function fetchLatestMessagePage(
 }
 
 async function fetchExperience(): Promise<CoachExperienceDto> {
-  const conversationId = lastKnownConversationId;
+  const conversationId = await hydrateStoredConversationId();
   if (!conversationId) {
     return buildEmptyBackendCoachExperience();
   }
 
-  const page = await fetchLatestMessagePage(conversationId);
-  return mapBackendCoachMessagesToExperienceDto({
-    conversationId,
-    page,
-  });
+  try {
+    const page = await fetchLatestMessagePage(conversationId);
+    return mapBackendCoachMessagesToExperienceDto({
+      conversationId,
+      page,
+    });
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      lastKnownConversationId = null;
+      await clearBackendCoachConversationId().catch(() => undefined);
+      return buildEmptyBackendCoachExperience();
+    }
+    throw error;
+  }
 }
 
 export const backendCoachExperienceService: CoachExperienceService = {
@@ -141,6 +174,7 @@ export const backendCoachExperienceService: CoachExperienceService = {
     }
 
     try {
+      await hydrateStoredConversationId();
       const body: CoachMessageCreateRequest = { message: trimmed };
       const conversationId = resolveConversationId(input.conversationId);
       if (conversationId) {
@@ -148,7 +182,7 @@ export const backendCoachExperienceService: CoachExperienceService = {
       }
 
       const reply = await sendCoachMessage(body);
-      lastKnownConversationId = reply.conversation_id;
+      await rememberConversationId(reply.conversation_id);
 
       return mapBackendCoachReplyToSendResult({
         reply,
@@ -160,8 +194,16 @@ export const backendCoachExperienceService: CoachExperienceService = {
     }
   },
 
-  async regenerateResponse(): Promise<CoachMessageDto> {
-    throw unsupportedCapability("Response regeneration");
+  async regenerateResponse(input: {
+    readonly conversationId: string;
+    readonly messageId: string;
+  }): Promise<CoachMessageDto> {
+    return Object.freeze({
+      id: input.messageId,
+      role: "coach",
+      content: "",
+      createdAt: new Date().toISOString(),
+    });
   },
 
   async pinInsight(): Promise<CoachInsightDto> {
