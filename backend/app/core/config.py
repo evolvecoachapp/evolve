@@ -18,6 +18,14 @@ class Settings(BaseSettings):
     app_name: str = Field(default="EVOLVE API")
     debug: bool = Field(default=False)
     api_version: str = Field(default="1.0.0")
+    app_env: str = Field(
+        default="development",
+        description=(
+            "Deployment environment selector: 'development' (host uvicorn), "
+            "'docker' (local Compose stack), or 'production'. Does not change "
+            "domain behavior; used for logging and environment separation."
+        ),
+    )
 
     jwt_secret_key: str = Field(
         ...,

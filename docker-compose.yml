@@ -1,21 +1,61 @@
+# Local production-like stack: PostgreSQL + FastAPI.
+# Copy .env.example to .env (and/or keep backend/.env for host uvicorn).
+# Compose reads root `.env` and optional `backend/.env`; DATABASE_URL in the
+# backend container is always overridden to host `postgres`.
+# Do not commit secrets. VPS provisioning is out of scope for this sprint.
+
 services:
   postgres:
     image: postgres:17
-
     container_name: evolve-postgres
-
     restart: unless-stopped
-
     environment:
-      POSTGRES_DB: evolve
-      POSTGRES_USER: evolve
-      POSTGRES_PASSWORD: evolve
-
+      POSTGRES_DB: ${POSTGRES_DB:-evolve}
+      POSTGRES_USER: ${POSTGRES_USER:-evolve}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-evolve}
     ports:
-      - "5432:5432"
-
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-evolve} -d ${POSTGRES_DB:-evolve}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: evolve-backend
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+      - path: backend/.env
+        required: false
+    environment:
+      APP_ENV: ${APP_ENV:-docker}
+      DEBUG: ${DEBUG:-false}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-evolve}:${POSTGRES_PASSWORD:-evolve}@postgres:5432/${POSTGRES_DB:-evolve}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
 
 volumes:
   postgres_data:

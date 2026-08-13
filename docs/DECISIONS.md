@@ -4,7 +4,7 @@
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
 **Last Updated:** 2026-08-13  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-159). Append only — never renumber.
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-160). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -5702,4 +5702,31 @@ Auditing `UserPublic`/`UserUpdate` (`backend/app/schemas/user.py`) against the P
 - Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
 - Operators can run daily catalog and account operations from Admin with confirmation and visible save results, without CLI for those supported actions.
 - Mobile Runtime/SQLite/Observer architecture is unchanged. Payments, push, and live LLM remain out of scope.
+
+## ADR-160: Production Deployment Foundation (Sprint 40.0)
+
+**Status:** Accepted
+**Date:** 2026-08-13
+**Context:** Mobile/runtime/persistence are frozen and the Admin panel is complete through Sprint 39.3. The backend already has FastAPI, PostgreSQL, and Alembic, but `docker-compose.yml` ran Postgres only, there was no backend Dockerfile, and the only DB-aware health route was superuser-gated (`GET /api/v1/admin/health`). A public probe and a deterministic `docker compose up` path are required before any VPS work. Redesigning backend architecture, Runtime/SQLite, or adding VPS/CI/push/payments/live LLM would exceed this sprint.
+
+**Decision:**
+
+1. **One Compose file is the local production-like stack.** Extend the existing root `docker-compose.yml` with a `backend` service. Keep the existing `postgres_data` volume so Postgres survives backend recreation. Do not add a second compose tree or IaC in this sprint.
+2. **Production-suitable backend image, no secrets.** `backend/Dockerfile` uses Python 3.13 (current project), installs `requirements.txt`, copies backend source, exposes 8000, and runs Uvicorn. `.env` is dockerignored. JWT and database credentials come from the environment at runtime.
+3. **Alembic remains the only schema authority.** The container entrypoint waits for Postgres, runs `alembic upgrade head`, then execs Uvicorn. Existing migrations are not rewritten. No `create_all()`.
+4. **Public health is a deployment probe; Admin health stays gated.** `GET /health` returns 200 when the API is up and PostgreSQL answers `SELECT 1`, and 503 with sanitized `degraded`/`unavailable` when the DB is down. Responses never include secrets or stack traces. `GET /api/v1/admin/health` is unchanged.
+5. **Environment separation is configuration, not a new architecture.** `APP_ENV` is `development` | `docker` | `production`. Existing names (`DATABASE_URL`, `JWT_SECRET_KEY`, `CORS_ORIGINS`, …) are preserved. Compose overrides `DATABASE_URL` to host `postgres`. CORS origins are never hardcoded for production.
+6. **Logging uses the stdlib + Uvicorn.** Startup, migration failure, and health-check failure go to stderr so they appear in `docker compose logs`. No new logging framework.
+7. **Mobile is documentation-only.** Production mobile builds must set `EXPO_PUBLIC_API_BASE_URL` to the deployed API origin. No mobile code change.
+
+**Alternatives considered:**
+- **Reuse Admin `GET /api/v1/admin/health` as the Compose probe** — rejected; it requires a superuser JWT, so orchestrators cannot use it.
+- **`Base.metadata.create_all()` at startup** — rejected; Decision 004 already makes Alembic the only schema authority.
+- **Separate `docker/docker-compose.prod.yml` + VPS scripts** — deferred; this sprint is foundation only, not hosting.
+- **Gunicorn + multiple workers / new logging stack** — rejected as unnecessary for a first production-like image; Uvicorn and stdlib logging are already in the project.
+
+**Consequences:**
+- Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
+- `docker compose up` is a valid way to boot API + Postgres with migrations applied. Host-based `uvicorn` + Compose Postgres remains valid for development (`APP_ENV=development`, `DATABASE_URL` on localhost).
+- VPS provisioning, TLS, managed secrets, CI/CD, backups, and monitoring remain future work. Mobile Runtime/SQLite/Admin feature scope is unchanged.
 

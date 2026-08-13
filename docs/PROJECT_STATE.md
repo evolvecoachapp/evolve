@@ -96,7 +96,7 @@ These domains are TypeScript application modules with in-memory repositories. Th
 | Domains live | Auth, users, exercises, catalog, workouts (templates), workout logs, workout resolution, nutrition, recovery, coach, goals, progress, admin (control plane) |
 | API endpoints | **64 implemented**, **6 planned** ([API_STATUS.md](./API_STATUS.md)) |
 | Missing HTTP APIs | Program/workout authoring & assignment, exercise writes, conversation list |
-| Entry point | `GET /` health stub; Admin `GET /api/v1/admin/health` pings PostgreSQL (superuser-only). No public `/health` |
+| Entry point | Public `GET /health` (API + DB ping, 200 / 503); `GET /` remains a lightweight stub; Admin `GET /api/v1/admin/health` is superuser-only |
 | OpenAPI | Auto-generated at `/docs`, `/redoc` |
 | Admin | Separate Vite + React app (`admin/`). Server-side `is_superuser` gate. See Admin section below |
 
@@ -158,12 +158,14 @@ These domains are TypeScript application modules with in-memory repositories. Th
 
 | Item | State |
 |------|-------|
-| Local DB | `docker-compose.yml` — PostgreSQL only |
-| Backend container | Dockerfile referenced in architecture; **not in repo root backend/** |
-| Production compose | Planned under `docker/` — **not present** |
+| Local / production-like stack | `docker-compose.yml` — PostgreSQL 17 + backend API; persistent `postgres_data` volume |
+| Backend container | `backend/Dockerfile` (Python 3.13, Uvicorn, Alembic on start) |
+| Host API port | `${BACKEND_PORT:-8000}` |
+| Production compose | Same Compose file with `APP_ENV=production` and real secrets/CORS; VPS provisioning **not started** |
 | Infrastructure as Code | Planned under `infrastructure/` — **not present** |
 | CI/CD | **Not started** |
-| Secrets | `.env.example` templates exist; no managed secrets store |
+| Secrets | `.env.example` templates exist; no managed secrets store; secrets are not baked into the image |
+| Mobile API URL | Production mobile builds must set `EXPO_PUBLIC_API_BASE_URL` to the deployed API; mobile behavior is unchanged |
 
 ---
 
@@ -174,7 +176,7 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 **Highlights (open):**
 - Mobile backend providers not wired for coach/nutrition (Sprint 5.3) — Workout wired in Sprint 6.3
 - No program management HTTP API; workout template *authoring* (write) HTTP API still missing (reads live since Sprint 6.3)
-- No CI pipeline or backend Docker service
+- No CI pipeline (backend Docker service shipped in Sprint 40.0)
 - `docs/TASKS.md` Phase 1–2 checkboxes out of sync with code
 - AI workout pipeline stops at Workout Assembly — no program generation yet
 
@@ -198,7 +200,19 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 
 ## Last Completed Sprint
 
-**39.3 — Admin UX / Operations Completion** (2026-08-13)
+**40.0 — Production Deployment Foundation** (2026-08-13)
+
+- Reproducible local production-like stack only — no VPS, CI/CD, push, payments, live LLM, or Admin/mobile feature work
+- `backend/Dockerfile`: Python 3.13 multi-stage image, `requirements.txt`, non-root user, Uvicorn on port 8000, no secrets in the image
+- `docker-compose.yml`: Postgres + backend, existing `postgres_data` volume, health checks, restart policies, `depends_on` until Postgres is healthy, configurable `BACKEND_PORT`
+- Startup: `docker compose up` → Postgres healthy → wait for DB → `alembic upgrade head` → API → `GET /health` 200
+- Public `GET /health` pings PostgreSQL and returns 200 or sanitized 503; Admin health remains superuser-gated
+- `APP_ENV` separates development / docker / production; `CORS_ORIGINS` stays environment-driven
+- Stdlib logging to container stderr; existing Alembic migrations unchanged
+- Mobile unchanged; future production apps must point `EXPO_PUBLIC_API_BASE_URL` at the deployed API
+- ADR-160
+
+Previous: **39.3 — Admin UX / Operations Completion** (2026-08-13)
 
 - Focused Admin UX pass on the Sprint 39.1/39.2 control plane so operators can use it daily with minimal CLI/database work
 - Shell: grouped sidebar (Overview / Catalog / Activity / Operations), active routes, consistent page headers, logout confirmation, skip-to-content

@@ -33,6 +33,8 @@ Thumbs.db
 # Mobile (app/) — Node/Expo; see app/.gitignore for the full list
 node_modules/
 .expo/
+dist/
+coverage/
 
 # AI reports
 REPORT.md

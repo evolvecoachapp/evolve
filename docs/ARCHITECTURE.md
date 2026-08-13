@@ -2193,7 +2193,8 @@ Full detail: [GOAL_PROGRESS_ENGINE.md](./GOAL_PROGRESS_ENGINE.md). Goal Evaluati
 
 | Module | Role |
 |--------|------|
-| `core/config.py` | Pydantic Settings from environment |
+| `core/config.py` | Pydantic Settings from environment (`APP_ENV`, `CORS_ORIGINS`, `DATABASE_URL`, JWT, domain tunables) |
+| `core/health.py` | Public deployment health ping (sanitized; no secrets or stack traces) |
 | `core/dependencies.py` | FastAPI DI wiring for services |
 | `security/` | JWT, Argon2 hashing, `get_current_user`, `get_current_superuser` |
 | `db/` | Engine, session factory, Alembic base |
@@ -2213,6 +2214,23 @@ Full detail: [GOAL_PROGRESS_ENGINE.md](./GOAL_PROGRESS_ENGINE.md). Goal Evaluati
 | **Design** | No second database, no second domain layer, no mobile/Runtime/SQLite changes, no payments/push/live LLM |
 
 Decision records: ADR-157, ADR-158, and ADR-159 in [DECISIONS.md](./DECISIONS.md).
+
+### Deployment Foundation — Sprint 40.0
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Purpose** | Reproducible local production-like API + PostgreSQL stack. Not VPS provisioning, CI/CD, or cloud orchestration |
+| **Backend image** | `backend/Dockerfile` — Python 3.13 multi-stage image, installs `requirements.txt`, runs as non-root, exposes port 8000, launches Uvicorn. Secrets are not copied into the image |
+| **Compose** | Root `docker-compose.yml` — `postgres` (existing `postgres_data` volume) + `backend`. Health checks, `restart: unless-stopped`, `depends_on` with `service_healthy`, host API port `${BACKEND_PORT:-8000}`. Env files: root `.env` and optional `backend/.env` (host uvicorn); `DATABASE_URL` is overridden to host `postgres` |
+| **Startup** | `docker compose up` → Postgres healthy → entrypoint waits for DB → `alembic upgrade head` → Uvicorn → `GET /health` succeeds |
+| **Migrations** | Existing Alembic only. No `create_all()`, no new migrations unless a proven deployment blocker exists |
+| **Health** | Public `GET /health` — 200 when API is up and PostgreSQL answers `SELECT 1`; 503 + sanitized `degraded` when the DB is unreachable. Admin `GET /api/v1/admin/health` remains superuser-gated |
+| **Config** | `APP_ENV=development\|docker\|production` plus existing env names. Compose overrides `DATABASE_URL` to host `postgres`. CORS origins from `CORS_ORIGINS` only |
+| **Logging** | Stdlib logging to stderr (startup, migration, health-check failure, Uvicorn). No new logging framework |
+| **Mobile** | Unchanged. A future production mobile build must set `EXPO_PUBLIC_API_BASE_URL` to the deployed API origin (default remains `http://localhost:8000`) |
+| **Out of scope** | VPS, TLS termination, managed secrets store, CI/CD, push, payments, live LLM, Admin feature work |
+
+Decision record: ADR-160 in [DECISIONS.md](./DECISIONS.md).
 
 ---
 
@@ -2433,5 +2451,6 @@ AIOrchestrator.process_message (async)
 | 157 | Admin Foundation + Production Control Plane (Sprint 39.1) |
 | 158 | Admin Feature Management (Sprint 39.2) |
 | 159 | Admin UX / Operations Completion (Sprint 39.3) |
+| 160 | Production Deployment Foundation (Sprint 40.0) |
 
 Full list: [DECISIONS.md](./DECISIONS.md). Audit: [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md).
