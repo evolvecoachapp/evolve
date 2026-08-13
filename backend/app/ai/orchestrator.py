@@ -5,36 +5,34 @@ are: intent classification, context assembly, engine routing, response
 synthesis, and persistence. It contains no domain algorithms of its own —
 engines compute, the Orchestrator coordinates.
 
-As of Sprint 4.5, ``Intent.WORKOUT``/``Intent.NUTRITION``/``Intent.RECOVERY``
-have adapters registered (``app/ai/coach_engines.py`` — see Decision 017 in
-``docs/DECISIONS.md``); ``Intent.GENERAL`` and ``Intent.PROGRESS`` (the
-Progress Analyzer ships decoupled from the Orchestrator this sprint — see
-Decision 023) still fall through to a direct LLM completion built from the
-assembled memory context, now with graceful degradation on
-:class:`~app.ai.llm_provider.LLMProviderError` (Decision 021) — a failed
-upstream call returns a fixed apology reply, never an unhandled 500.
+Sprint 4.5 registered ``Intent.WORKOUT``/``NUTRITION``/``RECOVERY`` adapters
+(``app/ai/coach_engines.py``, Decision 017). ``Intent.GENERAL`` and
+``Intent.PROGRESS`` have no engine (Progress Analyzer stays decoupled —
+Decision 023) and never call
+:meth:`~app.ai.progress_analyzer.ProgressAnalyzer.handle` on a chat turn.
 
-``process_message`` was originally the only ``async def`` in the backend
-(Decision 009 in ``docs/DECISIONS.md``): the one call in the request path
-that crosses a real network boundary (the LLM call). Sprint 4.6 extends
-that boundary twice more — :func:`~app.ai.intent.classify_intent` (Decision
-024) and :class:`~app.ai.progress_analyzer.ProgressAnalyzer` (Decision
-022) — both for the same reason: each calls
-:meth:`~app.ai.llm_provider.LLMProvider.complete`. Everything else this
-method calls into — :class:`~app.ai.memory_engine.MemoryEngine`,
-:class:`~app.repositories.chat_repository.ChatRepository` — stays
-synchronous, matching every other service/repository in the codebase.
+Coach Stabilization Sprint 2 fills the documented context-assembly and
+response-synthesis jobs: every turn builds a :class:`CoachContext`, and
+when ``AI_PROVIDER=openai_compatible`` the LLM writes the user-facing
+reply from that brief plus optional engine ``DOMAIN_FACTS``. Domain
+engines stay deterministic; their templated ``reply_text`` is the mock
+path and the LLM-failure fallback. ``AI_PROVIDER=mock`` keeps the
+previous engine-template replies so local development and tests stay
+deterministic (Decision 020/021).
 """
 
 import uuid
 
 from pydantic import BaseModel
 
-from app.ai.contracts import EngineInput, Intent, MemoryContext
+from app.ai.coach_context import CoachContext, CoachContextAssembler, empty_coach_context
+from app.ai.coach_prompt import build_coach_prompt
+from app.ai.contracts import EngineInput, EngineOutput, Intent, MemoryContext
 from app.ai.engine import AIEngine
 from app.ai.intent import classify_intent
-from app.ai.llm_provider import LLMMessage, LLMProvider, LLMProviderError
+from app.ai.llm_provider import LLMProvider, LLMProviderError
 from app.ai.memory_engine import MemoryEngine
+from app.core.config import settings
 from app.models.chat import ChatRole
 
 _LLM_UNAVAILABLE_REPLY = (
@@ -42,6 +40,8 @@ _LLM_UNAVAILABLE_REPLY = (
     "again in a moment — I can still help with workout, nutrition, and "
     "recovery questions directly."
 )
+
+_OPENAI_COMPATIBLE = "openai_compatible"
 
 
 class CoachResponse(BaseModel):
@@ -59,9 +59,10 @@ class AIOrchestrator:
     response synthesis, and persistence for a single incoming Coach message.
 
     ``engines`` defaults to an empty registry; any intent with no
-    registered engine falls back to a direct LLM completion.
+    registered engine falls back to an LLM completion (or the apology
+    string on :class:`~app.ai.llm_provider.LLMProviderError`).
     :func:`~app.core.dependencies.get_coach_service` wires this with the
-    three Sprint 4.5 adapters (``app/ai/coach_engines.py``) registered.
+    three Sprint 4.5 adapters and a :class:`CoachContextAssembler`.
     """
 
     def __init__(
@@ -69,10 +70,12 @@ class AIOrchestrator:
         memory_engine: MemoryEngine,
         llm_provider: LLMProvider,
         engines: dict[Intent, AIEngine] | None = None,
+        context_assembler: CoachContextAssembler | None = None,
     ) -> None:
         self.memory_engine = memory_engine
         self.llm_provider = llm_provider
         self.engines = engines or {}
+        self.context_assembler = context_assembler
 
     async def process_message(
         self,
@@ -82,37 +85,32 @@ class AIOrchestrator:
     ) -> CoachResponse:
         """Process one incoming user message and return the Coach's reply.
 
-        Resolves/creates the target conversation, assembles recent
-        context, classifies intent, routes to a registered engine (or
-        falls back to a direct LLM completion when none is registered),
-        persists both the user message and the reply, and returns the
-        synthesized :class:`CoachResponse`.
+        Resolves/creates the target conversation, assembles memory and a
+        bounded :class:`CoachContext`, classifies intent, optionally runs a
+        domain engine for deterministic facts, synthesizes the user-facing
+        reply (LLM when ``openai_compatible``; engine template under
+        ``mock``), persists both turns, and returns a :class:`CoachResponse`.
         """
         conversation = self.memory_engine.start_or_resume_conversation(
             user_id, conversation_id
         )
-        context = self.memory_engine.get_context(user_id, conversation.id)
+        memory = self.memory_engine.get_context(user_id, conversation.id)
+        coach_context = self._assemble_context(user_id)
         intent = await classify_intent(message, self.llm_provider)
 
-        engine = self.engines.get(intent)
-        if engine is not None:
-            output = engine.handle(
-                EngineInput(user_id=user_id, intent=intent, message=message, context=context)
-            )
-            reply_text = output.reply_text
-            engines_invoked = [output.engine_name]
-            artifacts = output.artifacts
-        else:
-            try:
-                completion = await self.llm_provider.complete(
-                    self._build_prompt(context, message)
-                )
-                reply_text = completion.content
-                artifacts = None
-            except LLMProviderError:
-                reply_text = _LLM_UNAVAILABLE_REPLY
-                artifacts = {"llm_error": True}
-            engines_invoked = []
+        engine_output = self._run_engine(
+            user_id, intent, message, memory, coach_context
+        )
+        engines_invoked = [engine_output.engine_name] if engine_output is not None else []
+        artifacts = engine_output.artifacts if engine_output is not None else None
+
+        reply_text, artifacts = await self._synthesize_reply(
+            message=message,
+            memory=memory,
+            coach_context=coach_context,
+            engine_output=engine_output,
+            artifacts=artifacts,
+        )
 
         self.memory_engine.record_turn(user_id, conversation.id, ChatRole.USER, message)
         self.memory_engine.record_turn(
@@ -135,9 +133,74 @@ class AIOrchestrator:
             artifacts=artifacts,
         )
 
-    @staticmethod
-    def _build_prompt(context: MemoryContext, message: str) -> list[LLMMessage]:
-        """Translate assembled memory context plus the new message into LLM-ready prompt turns."""
-        prompt = [LLMMessage(role=turn.role.value, content=turn.content) for turn in context.turns]
-        prompt.append(LLMMessage(role=ChatRole.USER.value, content=message))
-        return prompt
+    def _assemble_context(self, user_id: uuid.UUID) -> CoachContext:
+        """Assemble athlete context, returning an empty brief if assembly fails."""
+        if self.context_assembler is None:
+            return empty_coach_context()
+        try:
+            return self.context_assembler.assemble(user_id)
+        except Exception:
+            return empty_coach_context()
+
+    def _run_engine(
+        self,
+        user_id: uuid.UUID,
+        intent: Intent,
+        message: str,
+        memory: MemoryContext,
+        coach_context: CoachContext,
+    ) -> EngineOutput | None:
+        """Run the registered engine for ``intent``, or ``None`` if none is registered.
+
+        ``Intent.PROGRESS`` has no engine by design (Decision 023) — progress
+        numbers live on :class:`CoachContext` instead of
+        :class:`~app.ai.progress_analyzer.ProgressAnalyzer`.
+        """
+        engine = self.engines.get(intent)
+        if engine is None:
+            return None
+        return engine.handle(
+            EngineInput(
+                user_id=user_id,
+                intent=intent,
+                message=message,
+                context=memory,
+                coach_context=coach_context,
+            )
+        )
+
+    async def _synthesize_reply(
+        self,
+        *,
+        message: str,
+        memory: MemoryContext,
+        coach_context: CoachContext,
+        engine_output: EngineOutput | None,
+        artifacts: dict | None,
+    ) -> tuple[str, dict | None]:
+        """Return ``(reply_text, artifacts)`` for the user-facing message.
+
+        Under ``AI_PROVIDER=mock``, a registered engine's templated
+        ``reply_text`` is used directly (existing tests and local
+        development). Under ``openai_compatible``, every intent is
+        LLM-written; engine artifacts become ``DOMAIN_FACTS``. LLM failure
+        falls back to the engine template, or the fixed apology when no
+        engine ran — never an unhandled exception.
+        """
+        if engine_output is not None and settings.ai_provider != _OPENAI_COMPATIBLE:
+            return engine_output.reply_text, artifacts
+
+        try:
+            completion = await self.llm_provider.complete(
+                build_coach_prompt(
+                    coach_context=coach_context,
+                    memory=memory,
+                    message=message,
+                    domain_facts=artifacts if artifacts else None,
+                )
+            )
+            return completion.content, artifacts
+        except LLMProviderError:
+            if engine_output is not None:
+                return engine_output.reply_text, artifacts
+            return _LLM_UNAVAILABLE_REPLY, {"llm_error": True}

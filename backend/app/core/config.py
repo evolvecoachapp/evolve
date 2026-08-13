@@ -116,7 +116,7 @@ class Settings(BaseSettings):
         description="Per-request timeout for the 'openai_compatible' LLMProvider.",
     )
     ai_llm_max_output_tokens: int = Field(
-        default=500,
+        default=800,
         description="Maximum output tokens requested per completion — a basic cost control.",
     )
 

@@ -8,6 +8,7 @@ nothing to do with auth, starting with the Exercise catalog domain.
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
+from app.ai.coach_context import CoachContextAssembler
 from app.ai.coach_engines import NutritionCoachEngine, RecoveryCoachEngine, WorkoutCoachEngine
 from app.ai.contracts import Intent
 from app.ai.llm_provider import get_llm_provider
@@ -158,11 +159,33 @@ def get_progress_service(
     )
 
 
+def get_coach_context_assembler(
+    user_service: UserService = Depends(get_user_service),
+    goal_service: GoalService = Depends(get_goal_service),
+    workout_resolution_service: WorkoutResolutionService = Depends(get_workout_resolution_service),
+    workout_log_service: WorkoutLogService = Depends(get_workout_log_service),
+    nutrition_service: NutritionService = Depends(get_nutrition_service),
+    recovery_service: RecoveryService = Depends(get_recovery_service),
+    progress_service: ProgressService = Depends(get_progress_service),
+) -> CoachContextAssembler:
+    """Resolve a :class:`CoachContextAssembler` bound to a request-scoped session."""
+    return CoachContextAssembler(
+        user_service,
+        goal_service,
+        workout_resolution_service,
+        workout_log_service,
+        nutrition_service,
+        recovery_service,
+        progress_service,
+    )
+
+
 def get_coach_service(
     db: Session = Depends(get_db),
     workout_resolution_service: WorkoutResolutionService = Depends(get_workout_resolution_service),
     nutrition_service: NutritionService = Depends(get_nutrition_service),
     recovery_service: RecoveryService = Depends(get_recovery_service),
+    context_assembler: CoachContextAssembler = Depends(get_coach_context_assembler),
 ) -> CoachService:
     """Resolve a :class:`CoachService` bound to a request-scoped session.
 
@@ -171,15 +194,17 @@ def get_coach_service(
     017 in ``docs/DECISIONS.md``) registered for
     :attr:`~app.ai.contracts.Intent.WORKOUT`/
     :attr:`~app.ai.contracts.Intent.NUTRITION`/
-    :attr:`~app.ai.contracts.Intent.RECOVERY`.
+    :attr:`~app.ai.contracts.Intent.RECOVERY`, plus a
+    :class:`~app.ai.coach_context.CoachContextAssembler` for every turn.
     :attr:`~app.ai.contracts.Intent.GENERAL`/
-    :attr:`~app.ai.contracts.Intent.PROGRESS` have no engine yet and fall
-    back to the configured :func:`~app.ai.llm_provider.get_llm_provider`
-    (``MockLLMProvider`` by default, or a real
-    :class:`~app.ai.llm_provider.OpenAICompatibleLLMProvider` when
-    ``AI_PROVIDER=openai_compatible`` — see Decision 020 in
-    ``docs/DECISIONS.md``), with graceful degradation on
-    :class:`~app.ai.llm_provider.LLMProviderError` (Decision 021).
+    :attr:`~app.ai.contracts.Intent.PROGRESS` have no engine (Decision 023);
+    progress numbers come from the assembled context, not
+    :class:`~app.ai.progress_analyzer.ProgressAnalyzer`. Under
+    ``AI_PROVIDER=mock`` domain intents keep templated engine replies;
+    under ``AI_PROVIDER=openai_compatible`` the LLM synthesizes the
+    user-facing message from context and engine artifacts, with graceful
+    degradation on :class:`~app.ai.llm_provider.LLMProviderError`
+    (Decisions 020/021).
     """
     chat_repository = ChatRepository(db)
     memory_engine = MemoryEngine(chat_repository)
@@ -188,5 +213,10 @@ def get_coach_service(
         Intent.NUTRITION: NutritionCoachEngine(nutrition_service),
         Intent.RECOVERY: RecoveryCoachEngine(recovery_service),
     }
-    orchestrator = AIOrchestrator(memory_engine, get_llm_provider(), engines=engines)
+    orchestrator = AIOrchestrator(
+        memory_engine,
+        get_llm_provider(),
+        engines=engines,
+        context_assembler=context_assembler,
+    )
     return CoachService(orchestrator, chat_repository)

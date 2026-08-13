@@ -13,6 +13,7 @@ from enum import Enum
 
 from pydantic import BaseModel
 
+from app.ai.coach_context import CoachContext
 from app.models.chat import ChatRole
 
 
@@ -66,12 +67,15 @@ class EngineInput(BaseModel):
     Engines are stateless per invocation (per
     ``EVOLVE_ARCHITECTURE.md`` §4) — everything an engine needs is on this
     object; nothing is read from ambient/global state.
+    ``coach_context`` is optional so existing engine tests and adapters
+    stay valid without passing an athlete brief.
     """
 
     user_id: uuid.UUID
     intent: Intent
     message: str
     context: MemoryContext
+    coach_context: CoachContext | None = None
 
 
 class EngineOutput(BaseModel):
