@@ -109,6 +109,12 @@ export function CoachExperienceScreen({
     conversation.experience &&
     !conversation.isEmpty;
 
+  // Fresh users have an empty experience and still need the composer to start
+  // the first message. Keep CoachEmpty, but never hide ConversationInput
+  // behind `isEmpty`.
+  const showComposer =
+    !conversation.loading.isLoading && !showFullPageError;
+
   return (
     <GradientBackground variant="canvas">
       <TabScreenContainer
@@ -227,12 +233,14 @@ export function CoachExperienceScreen({
                   onRetry={() => void conversation.refresh()}
                 />
               ) : null}
-
-              <ConversationInput
-                onSend={(message) => void conversation.sendMessage(message)}
-                disabled={conversation.loading.isSending}
-              />
             </>
+          ) : null}
+
+          {showComposer ? (
+            <ConversationInput
+              onSend={(message) => void conversation.sendMessage(message)}
+              disabled={conversation.loading.isSending}
+            />
           ) : null}
         </View>
       </TabScreenContainer>
