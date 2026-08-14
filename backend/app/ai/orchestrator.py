@@ -11,14 +11,13 @@ Sprint 4.5 registered ``Intent.WORKOUT``/``NUTRITION``/``RECOVERY`` adapters
 Decision 023) and never call
 :meth:`~app.ai.progress_analyzer.ProgressAnalyzer.handle` on a chat turn.
 
-Coach Stabilization Sprint 2 fills the documented context-assembly and
-response-synthesis jobs: every turn builds a :class:`CoachContext`, and
-when ``AI_PROVIDER=openai_compatible`` the LLM writes the user-facing
-reply from that brief plus optional engine ``DOMAIN_FACTS``. Domain
-engines stay deterministic; their templated ``reply_text`` is the mock
-path and the LLM-failure fallback. ``AI_PROVIDER=mock`` keeps the
-previous engine-template replies so local development and tests stay
-deterministic (Decision 020/021).
+ADR-161: interactive chat turns use deterministic keyword routing (no LLM
+classify hop) and exactly one synthesis completion under
+``AI_PROVIDER=openai_compatible``. Domain engines stay authoritative;
+their templated ``reply_text`` is the mock path and the LLM-failure /
+unsanitary-output fallback. ``AI_PROVIDER=mock`` keeps engine-template
+replies so local development and tests stay deterministic (Decision
+020/021). Completions are parsed and sanitized before persist.
 """
 
 import uuid
@@ -26,10 +25,11 @@ import uuid
 from pydantic import BaseModel
 
 from app.ai.coach_context import CoachContext, CoachContextAssembler, empty_coach_context
+from app.ai.coach_output import finalize_coach_reply
 from app.ai.coach_prompt import build_coach_prompt
 from app.ai.contracts import EngineInput, EngineOutput, Intent, MemoryContext
 from app.ai.engine import AIEngine
-from app.ai.intent import classify_intent
+from app.ai.intent import _classify_intent_by_keyword
 from app.ai.llm_provider import LLMProvider, LLMProviderError
 from app.ai.memory_engine import MemoryEngine
 from app.core.config import settings
@@ -86,17 +86,18 @@ class AIOrchestrator:
         """Process one incoming user message and return the Coach's reply.
 
         Resolves/creates the target conversation, assembles memory and a
-        bounded :class:`CoachContext`, classifies intent, optionally runs a
-        domain engine for deterministic facts, synthesizes the user-facing
-        reply (LLM when ``openai_compatible``; engine template under
-        ``mock``), persists both turns, and returns a :class:`CoachResponse`.
+        bounded :class:`CoachContext`, classifies intent with the keyword
+        matcher (no LLM), optionally runs a domain engine for deterministic
+        facts, synthesizes the user-facing reply (one LLM call when
+        ``openai_compatible``; engine template under ``mock``), persists
+        both turns, and returns a :class:`CoachResponse`.
         """
         conversation = self.memory_engine.start_or_resume_conversation(
             user_id, conversation_id
         )
         memory = self.memory_engine.get_context(user_id, conversation.id)
         coach_context = self._assemble_context(user_id)
-        intent = await classify_intent(message, self.llm_provider)
+        intent = _classify_intent_by_keyword(message)
 
         engine_output = self._run_engine(
             user_id, intent, message, memory, coach_context
@@ -183,9 +184,11 @@ class AIOrchestrator:
         Under ``AI_PROVIDER=mock``, a registered engine's templated
         ``reply_text`` is used directly (existing tests and local
         development). Under ``openai_compatible``, every intent is
-        LLM-written; engine artifacts become ``DOMAIN_FACTS``. LLM failure
-        falls back to the engine template, or the fixed apology when no
-        engine ran — never an unhandled exception.
+        LLM-written from unlabeled context plus optional engine facts;
+        the completion is parsed and sanitized before persist. LLM
+        failure or unsanitary output falls back to the engine template,
+        or the fixed apology when no engine ran — never an unhandled
+        exception and never a leaked raw completion.
         """
         if engine_output is not None and settings.ai_provider != _OPENAI_COMPATIBLE:
             return engine_output.reply_text, artifacts
@@ -199,8 +202,20 @@ class AIOrchestrator:
                     domain_facts=artifacts if artifacts else None,
                 )
             )
-            return completion.content, artifacts
         except LLMProviderError:
-            if engine_output is not None:
-                return engine_output.reply_text, artifacts
-            return _LLM_UNAVAILABLE_REPLY, {"llm_error": True}
+            return self._fallback_reply(engine_output, artifacts)
+
+        sanitized = finalize_coach_reply(completion.content)
+        if sanitized is None:
+            return self._fallback_reply(engine_output, artifacts)
+        return sanitized, artifacts
+
+    @staticmethod
+    def _fallback_reply(
+        engine_output: EngineOutput | None,
+        artifacts: dict | None,
+    ) -> tuple[str, dict | None]:
+        """Engine template when one ran; otherwise the fixed apology."""
+        if engine_output is not None:
+            return engine_output.reply_text, artifacts
+        return _LLM_UNAVAILABLE_REPLY, {"llm_error": True}

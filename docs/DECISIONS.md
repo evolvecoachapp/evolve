@@ -807,7 +807,7 @@ Ship `GoalService`/`ProgressService` and `/api/v1/goals`/`/api/v1/progress` (inc
 
 ## Decision 024 — Intent Classification Becomes LLM-Primary, With the Existing Keyword Matcher as Fallback
 
-**Status:** Accepted
+**Status:** Superseded for interactive Coach chat turns by ADR-161. `classify_intent` remains LLM-primary for any non-chat caller.
 
 **Context:**
 `classify_intent()` has been a keyword-matching stub since Sprint 4.2 (Decision 018 explicitly deferred upgrading it, pending this sprint's LLM vendor decision). With a real `LLMProvider` now available (Decision 020) and every LLM call already required to degrade gracefully (Decision 021), upgrading intent classification to use it became viable without introducing a new, unguarded failure mode.
@@ -828,6 +828,7 @@ Ship `GoalService`/`ProgressService` and `/api/v1/goals`/`/api/v1/progress` (inc
 **Consequences:**
 - `app/ai/intent.py` exports both `classify_intent` (async, LLM-primary) and the still-public-for-tests `_classify_intent_by_keyword`.
 - `AIOrchestrator.process_message`'s one call site becomes `intent = await classify_intent(message, self.llm_provider)` — every message now costs at least one LLM round trip for classification alone, on top of any engine/fallback completion; acceptable given Decision 021's resilience guarantees, but a future cost/latency optimization (e.g. a cheaper/smaller classification model) is left for a later sprint if it proves material.
+- **Superseded for chat turns (ADR-161):** interactive `AIOrchestrator.process_message` no longer calls `classify_intent`. Chat routing uses `_classify_intent_by_keyword` and a single synthesis completion. `classify_intent` itself is unchanged.
 
 ---
 
@@ -5729,4 +5730,29 @@ Auditing `UserPublic`/`UserUpdate` (`backend/app/schemas/user.py`) against the P
 - Documentation: [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [CHANGELOG.md](./CHANGELOG.md).
 - `docker compose up` is a valid way to boot API + Postgres with migrations applied. Host-based `uvicorn` + Compose Postgres remains valid for development (`APP_ENV=development`, `DATABASE_URL` on localhost).
 - VPS provisioning, TLS, managed secrets, CI/CD, backups, and monitoring remain future work. Mobile Runtime/SQLite/Admin feature scope is unchanged.
+
+## ADR-161: One-Call Coach Synthesis With Keyword Routing and Sanitized Output
+
+**Status:** Accepted
+**Date:** 2026-08-14
+**Context:** Decision 024 made `classify_intent` LLM-primary, so every production Coach turn paid for two sequential OpenRouter completions (classify, then synthesize). Real free-model replies also echoed internal prompt material (`ATHLETE_CONTEXT`, `DOMAIN_FACTS`, `Instructions`, `Key point`, `Structure`, implementation notes) because the synthesis prompt taught those labels and the Orchestrator persisted `completion.content` unchanged. A second classify hop cannot run in parallel with synthesis if domain engines must still compute authoritative facts first.
+
+**Decision:**
+
+1. **Interactive Coach chat turns use deterministic keyword routing.** `AIOrchestrator.process_message` calls `_classify_intent_by_keyword` only. No LLM classification round-trip on this path. `classify_intent` remains the Decision 024 LLM-primary helper for any non-chat caller and is not deleted.
+2. **Exactly one LLM completion per production turn.** After keyword routing and the matching domain engine (workout / nutrition / recovery), `openai_compatible` performs one synthesis call. `Intent.PROGRESS` and `Intent.GENERAL` still have no engine.
+3. **Domain engines remain authoritative.** Engines still compute facts; their templated `reply_text` is the `AI_PROVIDER=mock` path and the fallback when the synthesis call fails or the completion cannot be sanitized.
+4. **Structured output, then sanitize.** The model is asked for `{"reply": "<user-facing coach reply>"}` only. `CoachLLMOutput` plus `finalize_coach_reply` parse JSON when present, tolerate raw prose from weak/free models, strip heading-level leak patterns, and reject empty or still-leaky text. Only the sanitized `reply` is persisted and returned. Raw leaked completions are never stored.
+5. **No provider-config change.** OpenRouter base URL, model, and keys are unchanged. No `response_format` requirement is added to the provider.
+
+**Alternatives considered:**
+- **Keep LLM-primary classify and accept ~10s turns** — rejected; Decision 024 already named this as later cost/latency debt, and production made it material.
+- **One LLM call that both classifies and writes the reply** — rejected; engines need intent before synthesis so computed facts can ground the reply.
+- **Run every domain engine every turn** — rejected; `CoachContext` already carries those slices; keyword-selected engine artifacts are enough.
+
+**Consequences:**
+- Decision 024 is superseded for interactive Coach chat turns only.
+- Tests that asserted `llm_provider.complete.call_count == 2` for a chat turn now expect `1` (or `0` on the mock+engine path, which no longer spends a classify completion).
+- Ambiguous messages without keywords route to `GENERAL` and skip engines; athlete context still grounds the reply.
+- Mobile, OpenRouter configuration, ChatRepository, and `get_db` are unchanged.
 

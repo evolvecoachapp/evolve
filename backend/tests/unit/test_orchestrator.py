@@ -2,20 +2,15 @@
 
 ``MemoryEngine`` and ``LLMProvider`` are both mocked — these tests
 exercise the Orchestrator's control flow (conversation resolution,
-context assembly, intent-based routing, fallback-to-LLM, graceful
+context assembly, keyword intent routing, fallback-to-LLM, graceful
 degradation on an LLM failure, and persistence calls) in isolation. See
 ``tests/integration/test_chat_persistence.py`` for a full end-to-end
 flow against a real PostgreSQL instance.
 
-Since Sprint 4.6 (Decision 024), ``AIOrchestrator.process_message`` calls
-``await classify_intent(message, self.llm_provider)`` — which itself calls
-``llm_provider.complete(...)`` once for classification before any
-routing decision is made. The mocked ``llm_provider`` here always returns
-a fixed reply that never parses as a valid ``Intent`` label, so
-classification deterministically falls through to the keyword matcher —
-exactly the "mock provider always falls back" behavior Decision 024
-documents — meaning every test below still routes on the same keywords as
-before this sprint, just via one extra ``complete()`` call.
+ADR-161: chat turns classify with ``_classify_intent_by_keyword`` only.
+Under ``AI_PROVIDER=mock`` a matching engine supplies the reply with
+zero provider calls; an unmatched intent spends exactly one synthesis
+``complete()`` (the mock placeholder), never a classify hop.
 """
 
 import uuid
@@ -57,15 +52,26 @@ def orchestrator(memory_engine, llm_provider):
     return AIOrchestrator(memory_engine, llm_provider)
 
 
+def _stub_engine(name: str, reply: str) -> object:
+    return type(
+        "StubEngine",
+        (),
+        {
+            "name": name,
+            "handle": lambda self, engine_input: EngineOutput(
+                engine_name=name,
+                reply_text=reply,
+            ),
+        },
+    )()
+
+
 async def test_process_message_falls_back_to_llm_when_no_engine_registered(
     orchestrator, memory_engine, llm_provider, conversation
 ):
     response = await orchestrator.process_message(USER_ID, "What workout should I do today?")
 
-    # One call for intent classification (falls back to the keyword matcher
-    # since "a mock coach reply" isn't a valid Intent label), one for the
-    # actual reply, since no engine is registered for Intent.WORKOUT.
-    assert llm_provider.complete.call_count == 2
+    assert llm_provider.complete.call_count == 1
     assert response.message == "a mock coach reply"
     assert response.conversation_id == conversation.id
     assert response.intent == Intent.WORKOUT
@@ -105,47 +111,78 @@ async def test_process_message_persists_both_user_and_assistant_turns(
 async def test_process_message_routes_to_a_registered_engine_when_intent_matches(
     memory_engine, llm_provider
 ):
-    engine = type(
-        "StubEngine",
-        (),
-        {
-            "name": "workout_engine",
-            "handle": lambda self, engine_input: EngineOutput(
-                engine_name="workout_engine",
-                reply_text="engine-generated reply",
-            ),
-        },
-    )()
-    orchestrator = AIOrchestrator(memory_engine, llm_provider, engines={Intent.WORKOUT: engine})
+    orchestrator = AIOrchestrator(
+        memory_engine,
+        llm_provider,
+        engines={Intent.WORKOUT: _stub_engine("workout_engine", "engine-generated reply")},
+    )
 
     response = await orchestrator.process_message(USER_ID, "Adjust my leg day workout")
 
-    # Only the intent-classification call happens; the engine (not the LLM)
-    # produces the reply.
-    llm_provider.complete.assert_called_once()
+    llm_provider.complete.assert_not_called()
     assert response.message == "engine-generated reply"
+    assert response.intent == Intent.WORKOUT
     assert response.engines_invoked == ["workout_engine"]
+
+
+@pytest.mark.parametrize(
+    ("message", "intent", "engine_name"),
+    [
+        ("What's my workout today?", Intent.WORKOUT, "workout_engine"),
+        ("What should I eat for lunch?", Intent.NUTRITION, "nutrition_engine"),
+        ("I'm feeling really sore and fatigued", Intent.RECOVERY, "recovery_engine"),
+    ],
+)
+async def test_keyword_routing_invokes_the_matching_domain_engine(
+    memory_engine, llm_provider, message, intent, engine_name
+):
+    engines = {
+        Intent.WORKOUT: _stub_engine("workout_engine", "workout-template"),
+        Intent.NUTRITION: _stub_engine("nutrition_engine", "nutrition-template"),
+        Intent.RECOVERY: _stub_engine("recovery_engine", "recovery-template"),
+    }
+    orchestrator = AIOrchestrator(memory_engine, llm_provider, engines=engines)
+
+    response = await orchestrator.process_message(USER_ID, message)
+
+    llm_provider.complete.assert_not_called()
+    assert response.intent == intent
+    assert response.engines_invoked == [engine_name]
+    assert response.message == f"{intent.value}-template"
+
+
+async def test_progress_and_general_do_not_invoke_domain_engines(
+    memory_engine, llm_provider
+):
+    engines = {
+        Intent.WORKOUT: _stub_engine("workout_engine", "should-not-run"),
+        Intent.NUTRITION: _stub_engine("nutrition_engine", "should-not-run"),
+        Intent.RECOVERY: _stub_engine("recovery_engine", "should-not-run"),
+    }
+    orchestrator = AIOrchestrator(memory_engine, llm_provider, engines=engines)
+
+    progress = await orchestrator.process_message(USER_ID, "How is my progress toward my goal?")
+    general = await orchestrator.process_message(USER_ID, "Hey, how's it going?")
+
+    assert progress.intent == Intent.PROGRESS
+    assert progress.engines_invoked == []
+    assert general.intent == Intent.GENERAL
+    assert general.engines_invoked == []
+    assert llm_provider.complete.call_count == 2
 
 
 async def test_process_message_uses_llm_fallback_for_an_unregistered_intent(
     memory_engine, llm_provider
 ):
-    engine = type(
-        "StubEngine",
-        (),
-        {
-            "name": "nutrition_engine",
-            "handle": lambda self, engine_input: EngineOutput(
-                engine_name="nutrition_engine",
-                reply_text="should never be called",
-            ),
-        },
-    )()
-    orchestrator = AIOrchestrator(memory_engine, llm_provider, engines={Intent.NUTRITION: engine})
+    orchestrator = AIOrchestrator(
+        memory_engine,
+        llm_provider,
+        engines={Intent.NUTRITION: _stub_engine("nutrition_engine", "should never be called")},
+    )
 
     response = await orchestrator.process_message(USER_ID, "What should I train today?")
 
-    assert llm_provider.complete.call_count == 2
+    assert llm_provider.complete.call_count == 1
     assert response.message == "a mock coach reply"
     assert response.engines_invoked == []
 
@@ -153,12 +190,10 @@ async def test_process_message_uses_llm_fallback_for_an_unregistered_intent(
 async def test_process_message_degrades_gracefully_when_the_llm_call_fails(
     memory_engine, mocker
 ):
-    """Both the intent-classification call and the reply-fallback call fail.
+    """A failed synthesis call still returns a CoachResponse, never a 500.
 
-    ``classify_intent`` swallows its own ``LLMProviderError`` internally
-    (falling back to the keyword matcher), but the Orchestrator's own
-    LLM-fallback branch must also catch the error and return a normal
-    ``CoachResponse`` with a fixed apology, never propagate a 500.
+    Keyword routing does not call the provider, so a raising ``complete``
+    only hits the no-engine synthesis fallback.
     """
     llm_provider = mocker.Mock()
     llm_provider.complete = mocker.AsyncMock(side_effect=LLMProviderError("upstream is down"))
@@ -170,3 +205,4 @@ async def test_process_message_degrades_gracefully_when_the_llm_call_fails(
     assert response.engines_invoked == []
     assert response.artifacts == {"llm_error": True}
     assert "trouble reaching" in response.message.lower()
+    llm_provider.complete.assert_called_once()

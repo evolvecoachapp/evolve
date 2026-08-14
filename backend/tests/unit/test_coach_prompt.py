@@ -60,6 +60,9 @@ def test_system_prompt_covers_persona_safety_and_anti_leak():
     assert "engines" in lowered
     assert "intents" in lowered
     assert "artifacts" in lowered
+    assert '{"reply"' in COACH_SYSTEM_PROMPT
+    assert "ATHLETE_CONTEXT" not in COACH_SYSTEM_PROMPT
+    assert "DOMAIN_FACTS" not in COACH_SYSTEM_PROMPT
 
 
 def test_prompt_order_is_system_context_memory_facts_then_user_message():
@@ -81,11 +84,13 @@ def test_prompt_order_is_system_context_memory_facts_then_user_message():
         "user",
     ]
     assert prompt[0].content == COACH_SYSTEM_PROMPT
-    assert prompt[1].content.startswith("ATHLETE_CONTEXT:")
+    assert prompt[1].content.startswith("{")
     assert "Alex" in prompt[1].content
+    assert "ATHLETE_CONTEXT" not in prompt[1].content
     assert prompt[2].content == "yesterday I trained"
     assert prompt[3].content == "nice work"
-    assert prompt[4].content.startswith("DOMAIN_FACTS")
+    assert prompt[4].content.startswith("Authoritative computed values")
+    assert "DOMAIN_FACTS" not in prompt[4].content
     assert "Push Day" in prompt[4].content
     assert "active_workout_log_id" not in prompt[4].content
     assert prompt[-1].role == "user"
@@ -101,7 +106,8 @@ def test_domain_facts_omitted_when_engine_did_not_run():
     )
 
     assert [item.role for item in prompt] == ["system", "system", "user"]
-    assert not any(item.content.startswith("DOMAIN_FACTS") for item in prompt)
+    assert not any("Authoritative computed values" in item.content for item in prompt)
+    assert not any("DOMAIN_FACTS" in item.content for item in prompt)
     assert prompt[-1].content == "How's it going?"
 
 
@@ -113,4 +119,5 @@ def test_empty_domain_facts_are_treated_as_absent():
         domain_facts={},
     )
 
-    assert not any(item.content.startswith("DOMAIN_FACTS") for item in prompt)
+    assert not any("Authoritative computed values" in item.content for item in prompt)
+    assert not any("DOMAIN_FACTS" in item.content for item in prompt)

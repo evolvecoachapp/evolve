@@ -96,6 +96,8 @@ def test_general_message_falls_back_to_the_mock_llm(
     assert body["engines_invoked"] == []
     assert body["artifacts"] is None
     assert "mock LLM provider" in body["message"]
+    assert "ATHLETE_CONTEXT" not in body["message"]
+    assert "DOMAIN_FACTS" not in body["message"]
 
 
 def test_workout_intent_routes_to_the_workout_engine_with_no_active_program(
@@ -157,6 +159,11 @@ def test_conversation_persists_and_resumes_across_messages_and_is_readable(
         "user",
         "assistant",
     ]
+    for message in history["items"]:
+        if message["role"] == "assistant":
+            assert "ATHLETE_CONTEXT" not in message["content"]
+            assert "DOMAIN_FACTS" not in message["content"]
+            assert "Instructions:" not in message["content"]
 
 
 def test_explicit_unknown_conversation_id_is_rejected(

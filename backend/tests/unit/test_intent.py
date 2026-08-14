@@ -1,12 +1,9 @@
 """Unit tests for :func:`~app.ai.intent.classify_intent`.
 
-Covers the LLM-primary/keyword-fallback shape introduced in Sprint 4.6
-(Decision 024 in ``docs/DECISIONS.md``): a valid LLM label wins outright,
-an unparseable LLM response or a raised
-:class:`~app.ai.llm_provider.LLMProviderError` both fall back to the
-original keyword matcher, and the deterministic ``MockLLMProvider`` always
-takes the fallback path since its fixed reply never parses as an
-``Intent``.
+``classify_intent`` remains the Decision 024 LLM-primary helper for
+non-chat callers. Interactive Coach chat turns use
+:func:`_classify_intent_by_keyword` only (ADR-161) and do not call this
+function. These tests keep the public classify contract unchanged.
 """
 
 import pytest

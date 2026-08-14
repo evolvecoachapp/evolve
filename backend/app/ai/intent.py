@@ -1,16 +1,17 @@
 """Intent classification for incoming Coach messages.
 
-``classify_intent`` is LLM-primary with a keyword-based fallback (Decision
-024 in ``docs/DECISIONS.md``): it asks the configured
-:class:`~app.ai.llm_provider.LLMProvider` to name one of the five
-:class:`~app.ai.contracts.Intent` labels, and falls back to the original
-keyword matcher (now :func:`_classify_intent_by_keyword`) whenever the LLM
-call fails (:class:`~app.ai.llm_provider.LLMProviderError`) or returns
-something that doesn't parse into a valid label. Under
-``AI_PROVIDER=mock`` this *always* falls back to the keyword matcher — the
-mock's fixed placeholder text never parses as a valid intent label — so
-every existing test written against the mock provider's routing behavior
-stays fully deterministic with no special-casing.
+Interactive Coach chat turns route with
+:func:`_classify_intent_by_keyword` only (ADR-161, superseding Decision
+024 for this path) so a turn never spends an LLM round-trip on
+classification. ``classify_intent`` remains the LLM-primary helper with a
+keyword fallback (Decision 024) for any non-chat caller: it asks the
+configured :class:`~app.ai.llm_provider.LLMProvider` to name one of the
+five :class:`~app.ai.contracts.Intent` labels, and falls back to the
+keyword matcher whenever the LLM call fails
+(:class:`~app.ai.llm_provider.LLMProviderError`) or returns something that
+doesn't parse into a valid label. Under ``AI_PROVIDER=mock`` that helper
+*always* falls back to the keyword matcher — the mock's fixed placeholder
+text never parses as a valid intent label.
 """
 
 from app.ai.contracts import Intent

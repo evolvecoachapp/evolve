@@ -20,12 +20,11 @@ from app.models.chat import ChatRole
 class Intent(str, Enum):
     """The coaching domain a message appears to be about.
 
-    Produced by :func:`app.ai.intent.classify_intent` and used by
+    Produced for chat turns by
+    :func:`app.ai.intent._classify_intent_by_keyword` (ADR-161) and used by
     :class:`~app.ai.orchestrator.AIOrchestrator` to select a registered
-    :class:`~app.ai.engine.AIEngine`. No engine is registered for any
-    intent yet (Sprint 4.2 ships the contract only) — every message
-    currently falls through to a direct LLM completion regardless of the
-    classified intent.
+    :class:`~app.ai.engine.AIEngine`. ``classify_intent`` remains the
+    LLM-primary helper for non-chat callers.
     """
 
     GENERAL = "general"
@@ -84,3 +83,13 @@ class EngineOutput(BaseModel):
     engine_name: str
     reply_text: str
     artifacts: dict | None = None
+
+
+class CoachLLMOutput(BaseModel):
+    """Structured completion the Coach LLM is asked to return.
+
+    Only ``reply`` is user-facing. Extra keys from weak models are ignored
+    and never persisted or returned on the HTTP contract.
+    """
+
+    reply: str
