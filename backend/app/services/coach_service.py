@@ -9,8 +9,10 @@ creation/resumption
 (:meth:`~app.ai.memory_engine.MemoryEngine.start_or_resume_conversation`),
 intent routing (``AIOrchestrator.engines``), and turn/artifact persistence
 (``AIOrchestrator`` + ``MemoryEngine``) all stay exactly where they already
-lived — this service adds nothing to that pipeline besides the ownership
-check and, for history reads, a direct repository query.
+lived — this service adds the ownership check, a commit of the request
+session after a successful send (so flushed conversation rows survive
+``get_db`` closing the session), and, for history reads, a direct
+repository query.
 """
 
 import uuid
@@ -37,9 +39,10 @@ class CoachService:
     Depends on an :class:`AIOrchestrator` (already wired with every
     registered engine adapter and the LLM provider — see
     :func:`~app.core.dependencies.get_coach_service`) and a
-    :class:`ChatRepository` used *only* for the ownership check and history
-    reads below — never for conversation creation, message persistence, or
-    anything else ``AIOrchestrator``/``MemoryEngine`` already own.
+    :class:`ChatRepository` used for the ownership check, history reads,
+    and the request-session commit after a successful send — never for
+    conversation creation or message persistence, which
+    ``AIOrchestrator``/``MemoryEngine`` already own.
     """
 
     def __init__(self, orchestrator: AIOrchestrator, chat_repository: ChatRepository) -> None:
@@ -54,11 +57,10 @@ class CoachService:
     ) -> CoachResponse:
         """Send one message to the Coach and return its synthesized reply.
 
-        Performs exactly one thing before delegating: if ``conversation_id``
-        is given, verify it belongs to ``user_id``. Everything else —
-        resuming/creating the conversation, classifying intent, routing to
-        an engine or the LLM fallback, and persisting both turns — happens
-        inside :meth:`AIOrchestrator.process_message`.
+        If ``conversation_id`` is given, verify it belongs to ``user_id``,
+        then delegate to :meth:`AIOrchestrator.process_message`. Commits the
+        request session afterwards so flushed conversation rows survive
+        ``get_db`` closing the session (which otherwise rolls back).
 
         Raises:
             ConversationAccessDeniedError: If ``conversation_id`` is given
@@ -66,7 +68,9 @@ class CoachService:
         """
         if conversation_id is not None:
             self._check_owned(user_id, conversation_id)
-        return await self.orchestrator.process_message(user_id, message, conversation_id)
+        response = await self.orchestrator.process_message(user_id, message, conversation_id)
+        self.chat_repository.db.commit()
+        return response
 
     def get_conversation_history(
         self,

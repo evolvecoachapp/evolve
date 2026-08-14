@@ -10,16 +10,73 @@ active program, no complete nutrition profile, and no check-in yet), the
 mock-LLM fallback for an unmatched message, conversation persistence/
 resumption, and cross-user ownership enforcement. Mirrors
 ``test_recovery_api.py``/``test_chat_persistence.py``.
+
+``test_posted_conversation_survives_a_closed_request_session`` does **not**
+use the shared ``client`` fixture: that fixture reuses one Session across
+requests, so a ``flush()`` is still visible to a later GET without a
+commit. The production ``get_db`` closes the session after each request,
+which rolls back uncommitted work.
 """
 
 import uuid
+from collections.abc import Generator
 
+import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
+from app.db.database import engine, get_db
+from app.main import app
 from app.models.user import User
+from app.security.hashing import hash_password
 from app.security.jwt import create_access_token
 
 API_PREFIX = "/api/v1/coach"
+
+
+@pytest.fixture()
+def per_request_client() -> Generator[tuple[TestClient, dict[str, str]], None, None]:
+    """Yield a TestClient whose ``get_db`` matches production session lifetime.
+
+    Each request gets a new :class:`~sqlalchemy.orm.Session` that is closed
+    afterwards. Sessions join one outer connection transaction via
+    ``create_savepoint``, so ``Session.commit()`` is visible to the next
+    request while teardown still rolls back.
+    """
+    connection = engine.connect()
+    outer = connection.begin()
+    seed = Session(bind=connection, join_transaction_mode="create_savepoint")
+    user = User(
+        email=f"{uuid.uuid4().hex}@example.com",
+        username=f"user_{uuid.uuid4().hex[:12]}",
+        hashed_password=hash_password("Sprint3.3-Testing!"),
+        is_active=True,
+        is_verified=True,
+    )
+    seed.add(user)
+    seed.commit()
+    seed.refresh(user)
+    user_id = user.id
+    seed.close()
+
+    def _get_db() -> Generator[Session, None, None]:
+        session = Session(bind=connection, join_transaction_mode="create_savepoint")
+        try:
+            yield session
+        finally:
+            session.close()
+
+    previous = app.dependency_overrides.pop(get_db, None)
+    app.dependency_overrides[get_db] = _get_db
+    headers = {"Authorization": f"Bearer {create_access_token(user_id)}"}
+    try:
+        yield TestClient(app), headers
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+        if previous is not None:
+            app.dependency_overrides[get_db] = previous
+        outer.rollback()
+        connection.close()
 
 
 def _send(client: TestClient, headers: dict[str, str], message: str, **extra) -> dict:
@@ -147,3 +204,41 @@ def test_conversation_not_accessible_to_other_users(
 def test_unauthenticated_request_is_rejected(client: TestClient) -> None:
     response = client.post(f"{API_PREFIX}/messages", json={"message": "hello"})
     assert response.status_code in (401, 403)
+
+
+def test_posted_conversation_survives_a_closed_request_session(
+    per_request_client: tuple[TestClient, dict[str, str]],
+) -> None:
+    """POST must commit so a later request can read and resume the conversation.
+
+    Uses :func:`per_request_client` so each HTTP call closes its session,
+    matching production ``get_db``. A flush-only send would 200 and then 404
+    on history and on a follow-up POST with the returned id.
+    """
+    client, headers = per_request_client
+
+    first = _send(client, headers, "How's it going?")
+    conversation_id = first["conversation_id"]
+
+    history_response = client.get(
+        f"{API_PREFIX}/conversations/{conversation_id}/messages", headers=headers
+    )
+    assert history_response.status_code == 200, history_response.text
+    history = history_response.json()
+    assert history["total"] == 2
+    assert [message["content"] for message in history["items"]] == [
+        "How's it going?",
+        first["message"],
+    ]
+    assert [message["role"] for message in history["items"]] == ["user", "assistant"]
+
+    second = _send(
+        client, headers, "Still doing fine, thanks", conversation_id=conversation_id
+    )
+    assert second["conversation_id"] == conversation_id
+
+    resumed = client.get(
+        f"{API_PREFIX}/conversations/{conversation_id}/messages", headers=headers
+    )
+    assert resumed.status_code == 200, resumed.text
+    assert resumed.json()["total"] == 4

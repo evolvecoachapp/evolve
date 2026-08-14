@@ -56,6 +56,7 @@ async def test_send_message_without_conversation_id_skips_the_ownership_check(
 
     chat_repository.get_conversation.assert_not_called()
     orchestrator.process_message.assert_called_once_with(USER_ID, "hello", None)
+    chat_repository.db.commit.assert_called_once()
 
 
 async def test_send_message_with_owned_conversation_id_delegates_to_orchestrator(
@@ -69,7 +70,25 @@ async def test_send_message_with_owned_conversation_id_delegates_to_orchestrator
     response = await service.send_message(USER_ID, "hello", conversation_id)
 
     orchestrator.process_message.assert_called_once_with(USER_ID, "hello", conversation_id)
+    chat_repository.db.commit.assert_called_once()
     assert response.message == "a reply"
+
+
+async def test_send_message_commits_after_the_orchestrator_persists(
+    service, orchestrator, chat_repository
+):
+    order: list[str] = []
+
+    async def _process(*_args, **_kwargs):
+        order.append("process")
+        return orchestrator.process_message.return_value
+
+    orchestrator.process_message.side_effect = _process
+    chat_repository.db.commit.side_effect = lambda: order.append("commit")
+
+    await service.send_message(USER_ID, "hello")
+
+    assert order == ["process", "commit"]
 
 
 async def test_send_message_raises_when_conversation_not_owned_by_caller(
@@ -83,6 +102,7 @@ async def test_send_message_raises_when_conversation_not_owned_by_caller(
     with pytest.raises(ConversationAccessDeniedError):
         await service.send_message(USER_ID, "hello", conversation_id)
     orchestrator.process_message.assert_not_called()
+    chat_repository.db.commit.assert_not_called()
 
 
 async def test_send_message_raises_when_conversation_does_not_exist(
@@ -93,6 +113,7 @@ async def test_send_message_raises_when_conversation_does_not_exist(
     with pytest.raises(ConversationAccessDeniedError):
         await service.send_message(USER_ID, "hello", uuid.uuid4())
     orchestrator.process_message.assert_not_called()
+    chat_repository.db.commit.assert_not_called()
 
 
 # -- get_conversation_history -------------------------------------------------
