@@ -6,9 +6,11 @@ import { coachLayout, spacing } from "../../../theme/theme";
 import { useThemedStyles } from "../../../theme/useThemedStyles";
 import {
   CoachMessageRoles,
+  CoachMessageStatuses,
   type CoachMessage,
 } from "../models/CoachMessage";
 import { CoachAvatar } from "./CoachAvatar";
+import { CoachMarkdownText } from "./CoachMarkdownText";
 
 interface MessageBubbleProps {
   readonly message: CoachMessage;
@@ -64,6 +66,11 @@ export function MessageBubble({
         ...typography.bodyRelaxed,
         color: colors.ink,
       },
+      failedLabel: {
+        ...typography.micro,
+        color: colors.warm,
+        marginTop: spacing.xs,
+      },
       citations: {
         ...typography.caption,
         color: colors.inkMuted,
@@ -95,9 +102,20 @@ export function MessageBubble({
             variant={isUser ? "elevated" : "glass"}
             glow={!isUser}
             padding="compact"
-            style={styles.card}
+            style={StyleSheet.flatten([
+              styles.card,
+              message.status === CoachMessageStatuses.PENDING
+                ? { opacity: 0.72 }
+                : null,
+              message.status === CoachMessageStatuses.ERROR
+                ? { borderWidth: 1, borderColor: colors.warm }
+                : null,
+            ])}
           >
-            <Text style={styles.content}>{message.content}</Text>
+            <CoachMarkdownText content={message.content} style={styles.content} />
+            {message.status === CoachMessageStatuses.ERROR ? (
+              <Text style={styles.failedLabel}>Couldn’t send</Text>
+            ) : null}
             {message.citations.length > 0 ? (
               <Text style={styles.citations}>
                 Sources: {message.citations.join(", ")}

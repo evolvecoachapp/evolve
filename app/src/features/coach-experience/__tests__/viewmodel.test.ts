@@ -217,6 +217,158 @@ describe("CoachExperienceViewModel", () => {
     expect(viewModel.messages.at(-1)?.citations).toEqual([]);
   });
 
+  it("appends an optimistic user bubble and typing state before the provider resolves", async () => {
+    let resolveSend!: (value: {
+      conversationId: string;
+      userMessage: {
+        id: string;
+        role: "user";
+        content: string;
+        createdAt: string;
+      };
+      coachMessage: {
+        id: string;
+        role: "coach";
+        content: string;
+        createdAt: string;
+      };
+    }) => void;
+    const service = createService();
+    service.sendMessage = jest.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveSend = resolve;
+        }),
+    );
+    const viewModel = new CoachExperienceViewModel({
+      service,
+      now: () => new Date("2026-08-20T10:00:00.000Z"),
+    });
+    await viewModel.loadConversation();
+    const before = viewModel.messages.length;
+
+    const pending = viewModel.sendMessage("Keep rest short");
+
+    expect(viewModel.messages.length).toBe(before + 1);
+    expect(viewModel.messages.at(-1)?.content).toBe("Keep rest short");
+    expect(viewModel.messages.at(-1)?.role).toBe("user");
+    expect(viewModel.messages.at(-1)?.status).toBe("pending");
+    expect(viewModel.typing.visible).toBe(true);
+    expect(viewModel.loading.isSending).toBe(true);
+
+    resolveSend({
+      conversationId: "conv-today",
+      userMessage: {
+        id: "user-server",
+        role: "user",
+        content: "Keep rest short",
+        createdAt: "2026-08-20T10:00:00.000Z",
+      },
+      coachMessage: {
+        id: "coach-server",
+        role: "coach",
+        content: "Two minutes between sets is enough.",
+        createdAt: "2026-08-20T10:00:01.000Z",
+      },
+    });
+    await pending;
+
+    const userTurns = viewModel.messages.filter(
+      (message) => message.content === "Keep rest short",
+    );
+    expect(userTurns).toHaveLength(1);
+    expect(userTurns[0]?.id).toBe("user-server");
+    expect(userTurns[0]?.status).toBe("complete");
+    expect(viewModel.messages.at(-1)?.content).toBe(
+      "Two minutes between sets is enough.",
+    );
+    expect(viewModel.typing.visible).toBe(false);
+    expect(viewModel.loading.isSending).toBe(false);
+  });
+
+  it("shows the first optimistic bubble from an empty conversation", async () => {
+    let resolveSend!: (value: {
+      conversationId: string;
+      userMessage: {
+        id: string;
+        role: "user";
+        content: string;
+        createdAt: string;
+      };
+      coachMessage: {
+        id: string;
+        role: "coach";
+        content: string;
+        createdAt: string;
+      };
+    }) => void;
+    const service = createService({ empty: true });
+    service.sendMessage = jest.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveSend = resolve;
+        }),
+    );
+    const viewModel = new CoachExperienceViewModel({
+      service,
+      now: () => new Date("2026-08-20T10:00:00.000Z"),
+    });
+    await viewModel.loadConversation();
+    expect(viewModel.isEmpty).toBe(true);
+
+    const pending = viewModel.sendMessage("How should I train today?");
+
+    expect(viewModel.isEmpty).toBe(false);
+    expect(viewModel.messages).toHaveLength(1);
+    expect(viewModel.messages[0]?.content).toBe("How should I train today?");
+    expect(viewModel.typing.visible).toBe(true);
+
+    resolveSend({
+      conversationId: "11111111-1111-4111-8111-111111111111",
+      userMessage: {
+        id: "user-1",
+        role: "user",
+        content: "How should I train today?",
+        createdAt: "2026-08-20T10:00:00.000Z",
+      },
+      coachMessage: {
+        id: "coach-1",
+        role: "coach",
+        content: "Keep intensity moderate today.",
+        createdAt: "2026-08-20T10:00:01.000Z",
+      },
+    });
+    await pending;
+
+    expect(viewModel.messages).toHaveLength(2);
+    expect(viewModel.messages.filter((message) => message.role === "user")).toHaveLength(
+      1,
+    );
+  });
+
+  it("keeps the user bubble and re-enables send after a failed turn", async () => {
+    const service = createService();
+    service.sendMessage = jest.fn(async () => {
+      throw new CoachExperienceError("send failed", "mock");
+    });
+    const viewModel = new CoachExperienceViewModel({
+      service,
+      now: () => new Date("2026-08-20T10:00:00.000Z"),
+    });
+    await viewModel.loadConversation();
+    const before = viewModel.messages.length;
+
+    await viewModel.sendMessage("Can I add a set?");
+
+    expect(viewModel.messages.length).toBe(before + 1);
+    expect(viewModel.messages.at(-1)?.content).toBe("Can I add a set?");
+    expect(viewModel.messages.at(-1)?.status).toBe("error");
+    expect(viewModel.typing.visible).toBe(false);
+    expect(viewModel.loading.isSending).toBe(false);
+    expect(viewModel.error?.message).toContain("send failed");
+  });
+
+
   it("regenerateResponse updates a coach message", async () => {
     const viewModel = new CoachExperienceViewModel({
       service: createService(),

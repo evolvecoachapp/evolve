@@ -1,5 +1,5 @@
-import { View } from "react-native";
-import { RefreshControl } from "react-native";
+import { useRef, useState } from "react";
+import { RefreshControl, View, type ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../../auth/useAuth";
@@ -8,6 +8,7 @@ import { TabScreenContainer } from "../../../components/TabScreenContainer";
 import { isReachableRoute } from "../../../navigation/isReachableRoute";
 import { useTheme } from "../../../theme/ThemeContext";
 import { floatingFooterMetrics, spacing } from "../../../theme/theme";
+import { useFloatingFooterBottomOffset } from "../../../theme/useTabLayout";
 import { useThemedStyles } from "../../../theme/useThemedStyles";
 import {
   CoachEmpty,
@@ -25,6 +26,7 @@ import {
 } from "../components";
 import {
   useCoachConversation,
+  useCoachConversationScroll,
   useCoachInsights,
   useCoachQuickActions,
   useCoachRecommendations,
@@ -35,6 +37,7 @@ import {
   coachExperienceService,
   type CoachExperienceService,
 } from "../services";
+import { coachKeyboardOverlapPadding } from "../utils/coachComposerInsets";
 
 export interface CoachExperienceScreenProps {
   readonly service?: CoachExperienceService;
@@ -52,6 +55,12 @@ export function CoachExperienceScreen({
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { user } = useAuth();
+  const scrollRef = useRef<ScrollView>(null);
+  const tabAwareBottom = useFloatingFooterBottomOffset();
+  const [keyboardLift, setKeyboardLift] = useState(0);
+  const [composerHeight, setComposerHeight] = useState(
+    floatingFooterMetrics.coachInputContentHeight,
+  );
 
   const conversation = useCoachConversation({ service, athleteId: user?.id });
   const allowRegenerate = service.providerId !== "backend";
@@ -68,12 +77,23 @@ export function CoachExperienceScreen({
     refreshing: conversation.loading.isRefreshing,
   });
 
+  const lastMessage = conversation.messages.at(-1);
+  const scrollToLatest = useCoachConversationScroll(scrollRef, {
+    messageCount: conversation.messages.length,
+    lastMessageId: lastMessage?.id,
+    lastMessageLength: lastMessage?.content.length,
+    typingVisible: conversation.typing.visible,
+    keyboardLift,
+  });
+
+  const extraKeyboardPadding = coachKeyboardOverlapPadding(
+    keyboardLift,
+    tabAwareBottom,
+  );
+
   const styles = useThemedStyles(() => ({
     stack: {
       gap: spacing.lg,
-      paddingBottom: floatingFooterMetrics.scrollReserve(
-        floatingFooterMetrics.coachInputContentHeight + spacing["3xl"],
-      ),
     },
   }));
 
@@ -88,7 +108,7 @@ export function CoachExperienceScreen({
     isReachableRoute(destination) ? () => navigatePlaceholder(destination) : undefined;
 
   const handleQuickAction = (action: CoachQuickAction) => {
-    if (!action.enabled) {
+    if (!action.enabled || conversation.loading.isSending) {
       return;
     }
     void conversation.sendMessage(action.prompt);
@@ -103,11 +123,22 @@ export function CoachExperienceScreen({
     !!conversation.error &&
     !conversation.experience;
 
+  const hasConversationTurns =
+    conversation.messages.length > 0 || conversation.typing.visible;
+
+  const showEmpty =
+    !conversation.loading.isLoading &&
+    !showFullPageError &&
+    !conversation.error &&
+    conversation.isEmpty &&
+    !hasConversationTurns &&
+    !conversation.loading.isSending;
+
   const showContent =
     !conversation.loading.isLoading &&
     !showFullPageError &&
-    conversation.experience &&
-    !conversation.isEmpty;
+    !!conversation.experience &&
+    (!conversation.isEmpty || hasConversationTurns);
 
   // Fresh users have an empty experience and still need the composer to start
   // the first message. Keep CoachEmpty, but never hide ConversationInput
@@ -118,11 +149,13 @@ export function CoachExperienceScreen({
   return (
     <GradientBackground variant="canvas">
       <TabScreenContainer
+        ref={scrollRef}
         gradient={false}
         withHeader={false}
         contentContainerStyle={{
           paddingTop: insets.top + spacing.lg,
         }}
+        onContentSizeChange={() => scrollToLatest(false)}
         refreshControl={
           <RefreshControl
             refreshing={pull.refreshing}
@@ -132,7 +165,17 @@ export function CoachExperienceScreen({
           />
         }
       >
-        <View style={styles.stack}>
+        <View
+          style={[
+            styles.stack,
+            {
+              paddingBottom:
+                floatingFooterMetrics.scrollReserve(
+                  composerHeight + spacing["3xl"],
+                ) + extraKeyboardPadding,
+            },
+          ]}
+        >
           {conversation.loading.isLoading && !conversation.experience ? (
             <CoachLoading />
           ) : null}
@@ -144,12 +187,7 @@ export function CoachExperienceScreen({
             />
           ) : null}
 
-          {!conversation.loading.isLoading &&
-          !showFullPageError &&
-          !conversation.error &&
-          conversation.isEmpty ? (
-            <CoachEmpty />
-          ) : null}
+          {showEmpty ? <CoachEmpty /> : null}
 
           {showContent ? (
             <>
@@ -230,20 +268,26 @@ export function CoachExperienceScreen({
               {conversation.error ? (
                 <CoachInlineError
                   error={conversation.error}
-                  onRetry={() => void conversation.refresh()}
+                  onRetry={
+                    hasConversationTurns
+                      ? undefined
+                      : () => void conversation.refresh()
+                  }
                 />
               ) : null}
             </>
           ) : null}
-
-          {showComposer ? (
-            <ConversationInput
-              onSend={(message) => void conversation.sendMessage(message)}
-              disabled={conversation.loading.isSending}
-            />
-          ) : null}
         </View>
       </TabScreenContainer>
+
+      {showComposer ? (
+        <ConversationInput
+          onSend={(message) => void conversation.sendMessage(message)}
+          disabled={conversation.loading.isSending}
+          onKeyboardHeightChange={setKeyboardLift}
+          onComposerLayout={setComposerHeight}
+        />
+      ) : null}
     </GradientBackground>
   );
 }

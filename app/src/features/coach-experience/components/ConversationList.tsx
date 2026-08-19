@@ -22,6 +22,7 @@ export function ConversationList({
     StyleSheet.create({
       list: {
         gap: spacing.md,
+        paddingBottom: spacing.sm,
       },
     }),
   );

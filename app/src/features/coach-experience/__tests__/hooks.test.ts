@@ -150,6 +150,75 @@ describe("coach-experience hooks", () => {
     expect(result.current.streamingPrepared).toBe(true);
   });
 
+  it("useCoachConversation.sendMessage shows an optimistic bubble before the provider resolves", async () => {
+    let resolveSend!: (value: {
+      conversationId: string;
+      userMessage: {
+        id: string;
+        role: "user";
+        content: string;
+        createdAt: string;
+      };
+      coachMessage: {
+        id: string;
+        role: "coach";
+        content: string;
+        createdAt: string;
+      };
+    }) => void;
+    const service = createService();
+    service.sendMessage = jest.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveSend = resolve;
+        }),
+    );
+    const { result } = renderHook(() =>
+      useCoachConversation({ service }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.loading.isLoading).toBe(false);
+    });
+
+    const before = result.current.messages.length;
+    let pending: Promise<void> | undefined;
+    act(() => {
+      pending = result.current.sendMessage("Show weekly progress");
+    });
+
+    expect(result.current.messages.length).toBe(before + 1);
+    expect(result.current.messages.at(-1)?.content).toBe("Show weekly progress");
+    expect(result.current.typing.visible).toBe(true);
+    expect(result.current.loading.isSending).toBe(true);
+
+    await act(async () => {
+      resolveSend({
+        conversationId: "conv-today",
+        userMessage: {
+          id: "user-server",
+          role: "user",
+          content: "Show weekly progress",
+          createdAt: "2026-08-20T10:00:00.000Z",
+        },
+        coachMessage: {
+          id: "coach-server",
+          role: "coach",
+          content: "Reply: Show weekly progress",
+          createdAt: "2026-08-20T10:00:01.000Z",
+        },
+      });
+      await pending;
+    });
+
+    expect(
+      result.current.messages.filter(
+        (message) => message.content === "Show weekly progress",
+      ),
+    ).toHaveLength(1);
+    expect(result.current.loading.isSending).toBe(false);
+  });
+
   it("useCoachInsights projects daily and pinned insights", async () => {
     const viewModel = new CoachExperienceViewModel({
       service: successService,

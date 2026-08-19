@@ -13,8 +13,10 @@ import {
   sendCoachMessage,
   sendRuntimeCoachMessage,
 } from "../application";
-import type { CoachConversationHistoryItem } from "../models/CoachExperience";
-import type { CoachExperience } from "../models/CoachExperience";
+import type {
+  CoachConversationHistoryItem,
+  CoachExperience,
+} from "../models/CoachExperience";
 import {
   createCoachErrorState,
   type CoachErrorState,
@@ -32,6 +34,7 @@ import {
   CoachTypingStatuses,
   type CoachTypingState,
 } from "../models/CoachTypingState";
+import { CoachMessageStatuses } from "../models/CoachMessage";
 import { rebuildCoachExperience } from "../mappers";
 import type { CoachMessageDto } from "../types/coachExperienceDto";
 import { CoachRuntimeError } from "../application/sendRuntimeCoachMessage";
@@ -41,6 +44,11 @@ import {
   CoachExperienceError,
   type CoachExperienceService,
 } from "../services";
+import {
+  appendOptimisticUserMessage,
+  createPendingUserMessage,
+  markCoachMessageStatus,
+} from "../utils/optimisticCoachMessage";
 
 export interface CoachExperienceViewModelDeps {
   readonly service?: CoachExperienceService;
@@ -253,7 +261,7 @@ export class CoachExperienceViewModel {
   }
 
   async sendMessage(message: string): Promise<void> {
-    if (!this._experience) {
+    if (!this._experience || this._loading.isSending) {
       return;
     }
 
@@ -262,6 +270,13 @@ export class CoachExperienceViewModel {
       return;
     }
 
+    const snapshot: CoachExperience = this._experience;
+    const pending = createPendingUserMessage({
+      content: trimmed,
+      createdAt: this.now().toISOString(),
+    });
+
+    this._experience = appendOptimisticUserMessage(snapshot, pending);
     this._loading = createCoachLoadingState(CoachLoadingStatuses.SENDING);
     this._typing = createCoachTypingState(CoachTypingStatuses.TYPING);
     this._streamingPrepared = true;
@@ -272,14 +287,14 @@ export class CoachExperienceViewModel {
       if (this.service) {
         this._experience = await sendCoachMessage({
           service: this.service,
-          experience: this._experience,
+          experience: snapshot,
           message: trimmed,
         });
       } else if (this.athleteId) {
         const createdAt = this.now().toISOString();
         const turn = sendRuntimeCoachMessage({
           athleteId: this.athleteId,
-          conversationId: this._experience.conversation.id,
+          conversationId: snapshot.conversation.id,
           message: trimmed,
           sessionId: this._sessionId,
           createdAt,
@@ -310,6 +325,13 @@ export class CoachExperienceViewModel {
       this._typing = createCoachTypingState(CoachTypingStatuses.IDLE);
       this._error = null;
     } catch (caught: unknown) {
+      if (this._experience) {
+        this._experience = markCoachMessageStatus(
+          this._experience,
+          pending.id,
+          CoachMessageStatuses.ERROR,
+        );
+      }
       this._loading = createCoachLoadingState(CoachLoadingStatuses.IDLE);
       this._typing = createCoachTypingState(CoachTypingStatuses.IDLE);
       this._error = this.toErrorState(caught);

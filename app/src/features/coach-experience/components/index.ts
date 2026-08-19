@@ -1,6 +1,7 @@
 export { CoachHeader } from "./CoachHeader";
 export { ConversationList } from "./ConversationList";
 export { MessageBubble } from "./MessageBubble";
+export { CoachMarkdownText } from "./CoachMarkdownText";
 export { TypingIndicator } from "./TypingIndicator";
 export { InsightCard } from "./InsightCard";
 export { RecommendationCard } from "./RecommendationCard";
