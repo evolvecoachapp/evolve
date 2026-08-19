@@ -57,6 +57,18 @@ _CONTEXT_DUMP = re.compile(
     r'(?i)"(?:as_of|display_name|readiness_score|today_workout_name|engines_invoked)"'
 )
 
+_FENCE_BLOCK = re.compile(
+    r"```(?:json)?\s*(.*?)\s*```",
+    re.IGNORECASE | re.DOTALL,
+)
+
+_REPLY_FIELD = re.compile(
+    r'"reply"\s*:\s*"((?:[^"\\]|\\.)*)"',
+    re.DOTALL,
+)
+
+_LITERAL_ESCAPE = re.compile(r"\\([nrt\"\\])")
+
 
 def finalize_coach_reply(raw: str) -> str | None:
     """Return a sanitized user-facing reply, or ``None`` if it cannot be salvaged.
@@ -81,21 +93,57 @@ def _extract_reply(raw: str) -> str | None:
     """Prefer a structured ``reply`` field; otherwise treat ``raw`` as prose."""
     data = _extract_json_object(raw)
     if data is not None:
-        try:
-            parsed = CoachLLMOutput.model_validate(data)
-        except ValidationError:
-            reply = data.get("reply")
-            if isinstance(reply, str) and reply.strip():
-                return reply.strip()
+        reply = _reply_from_mapping(data)
+        if reply is None:
             return None
-        return parsed.reply.strip() or None
-    return raw.strip() or None
+        return _decode_escaped_sequences(reply)
+
+    loose = _extract_reply_field_loosely(raw)
+    if loose is not None:
+        return _decode_escaped_sequences(loose)
+
+    stripped = raw.strip() or None
+    if stripped is None:
+        return None
+    return _decode_escaped_sequences(stripped)
+
+
+def _reply_from_mapping(data: dict[str, Any]) -> str | None:
+    """Return a non-empty ``reply`` string from a parsed object, if present."""
+    try:
+        parsed = CoachLLMOutput.model_validate(data)
+    except ValidationError:
+        reply = data.get("reply")
+        if isinstance(reply, str) and reply.strip():
+            return reply.strip()
+        return None
+    return parsed.reply.strip() or None
 
 
 def _extract_json_object(raw: str) -> dict[str, Any] | None:
     """Return the first JSON object that contains a ``reply`` key, if any."""
-    text = _strip_code_fences(raw.strip())
-    decoder = json.JSONDecoder()
+    text = raw.strip()
+    candidates = [text]
+    fenced = _fenced_payload(text)
+    if fenced is not None and fenced not in candidates:
+        candidates.insert(0, fenced)
+
+    for candidate in candidates:
+        found = _parse_reply_object(candidate)
+        if found is not None:
+            return found
+    return None
+
+
+def _parse_reply_object(text: str) -> dict[str, Any] | None:
+    """Parse ``text`` as JSON and return an object that contains ``reply``."""
+    value: Any = _loads_json(text)
+    if isinstance(value, str):
+        value = _loads_json(value)
+    if isinstance(value, dict) and "reply" in value:
+        return value
+
+    decoder = json.JSONDecoder(strict=False)
     for index, char in enumerate(text):
         if char != "{":
             continue
@@ -108,12 +156,52 @@ def _extract_json_object(raw: str) -> dict[str, Any] | None:
     return None
 
 
-def _strip_code_fences(text: str) -> str:
-    """Remove a wrapping markdown fence so weak models' ```json blocks parse."""
+def _loads_json(text: str) -> Any:
+    """Load JSON, allowing raw control characters inside strings.
+
+    Weak models often insert real newlines inside ``reply`` instead of
+    ``\\n``. Python's default ``strict=True`` rejects that as invalid, which
+    used to fall through to the prose path and leak the JSON wrapper.
+    """
+    try:
+        return json.loads(text, strict=False)
+    except json.JSONDecodeError:
+        return None
+
+
+def _fenced_payload(text: str) -> str | None:
+    """Return the inner body of a wrapping markdown fence, if one is present."""
+    match = _FENCE_BLOCK.search(text)
+    if match:
+        inner = match.group(1).strip()
+        return inner or None
     if not text.startswith("```"):
-        return text
+        return None
     text = re.sub(r"^```(?:json)?\s*", "", text, count=1, flags=re.IGNORECASE)
-    return re.sub(r"\s*```\s*$", "", text)
+    return re.sub(r"\s*```\s*$", "", text).strip() or None
+
+
+def _extract_reply_field_loosely(text: str) -> str | None:
+    """Extract a ``reply`` string when the payload is near-JSON but not parseable."""
+    match = _REPLY_FIELD.search(text)
+    if not match:
+        return None
+    captured = match.group(1)
+    try:
+        decoded = json.loads(f'"{captured}"', strict=False)
+    except json.JSONDecodeError:
+        decoded = _decode_escaped_sequences(captured)
+    if isinstance(decoded, str) and decoded.strip():
+        return decoded.strip()
+    return None
+
+
+def _decode_escaped_sequences(text: str) -> str:
+    """Turn leftover JSON-style ``\\n`` / ``\\t`` / ``\\r`` into real characters."""
+    if "\\" not in text:
+        return text
+    mapping = {"n": "\n", "r": "\r", "t": "\t", '"': '"', "\\": "\\"}
+    return _LITERAL_ESCAPE.sub(lambda match: mapping[match.group(1)], text)
 
 
 def _sanitize_reply(text: str) -> str | None:

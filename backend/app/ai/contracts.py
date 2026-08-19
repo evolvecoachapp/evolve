@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.ai.coach_context import CoachContext
 from app.models.chat import ChatRole
@@ -91,5 +91,7 @@ class CoachLLMOutput(BaseModel):
     Only ``reply`` is user-facing. Extra keys from weak models are ignored
     and never persisted or returned on the HTTP contract.
     """
+
+    model_config = ConfigDict(extra="ignore")
 
     reply: str

@@ -143,6 +143,64 @@ async def test_openai_extracts_structured_json_and_persists_only_the_reply(
     assert '{"reply"' not in assistant_call.args[3]
 
 
+async def test_openai_extracts_fenced_json_and_persists_only_the_reply(
+    memory_engine, llm_provider, context_assembler, openai_settings, conversation
+):
+    llm_provider.complete.return_value = LLMCompletion(
+        content='```json\n{"reply": "Drink water and get to bed on time."}\n```'
+    )
+    orchestrator = AIOrchestrator(
+        memory_engine, llm_provider, context_assembler=context_assembler
+    )
+
+    response = await orchestrator.process_message(USER_ID, "Any recovery tips?")
+
+    assert response.message == "Drink water and get to bed on time."
+    assert '"reply"' not in response.message
+    assert llm_provider.complete.call_count == 1
+    assistant_call = memory_engine.record_turn.call_args_list[1]
+    assert assistant_call.args[3] == "Drink water and get to bed on time."
+
+
+async def test_openai_extracts_json_with_raw_newlines_and_never_returns_wrapper(
+    memory_engine, llm_provider, context_assembler, openai_settings, conversation
+):
+    llm_provider.complete.return_value = LLMCompletion(
+        content='{"reply":"Certamente.\n\nRiposa oggi."}'
+    )
+    orchestrator = AIOrchestrator(
+        memory_engine, llm_provider, context_assembler=context_assembler
+    )
+
+    response = await orchestrator.process_message(USER_ID, "I had a stressful week")
+
+    assert response.message == "Certamente.\n\nRiposa oggi."
+    assert not response.message.lstrip().startswith("{")
+    assert '"reply"' not in response.message
+    assert llm_provider.complete.call_count == 1
+    assistant_call = memory_engine.record_turn.call_args_list[1]
+    assert assistant_call.args[3] == "Certamente.\n\nRiposa oggi."
+
+
+async def test_openai_decodes_escaped_newlines_in_structured_reply(
+    memory_engine, llm_provider, context_assembler, openai_settings, conversation
+):
+    llm_provider.complete.return_value = LLMCompletion(
+        content='{"reply":"Certamente.\\n\\nRiposa oggi."}'
+    )
+    orchestrator = AIOrchestrator(
+        memory_engine, llm_provider, context_assembler=context_assembler
+    )
+
+    response = await orchestrator.process_message(USER_ID, "I had a stressful week")
+
+    assert response.message == "Certamente.\n\nRiposa oggi."
+    assert "\\n" not in response.message
+    assert llm_provider.complete.call_count == 1
+    assistant_call = memory_engine.record_turn.call_args_list[1]
+    assert assistant_call.args[3] == "Certamente.\n\nRiposa oggi."
+
+
 async def test_openai_extracts_prose_wrapped_json(
     memory_engine, llm_provider, context_assembler, openai_settings
 ):

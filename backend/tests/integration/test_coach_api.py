@@ -164,6 +164,7 @@ def test_conversation_persists_and_resumes_across_messages_and_is_readable(
             assert "ATHLETE_CONTEXT" not in message["content"]
             assert "DOMAIN_FACTS" not in message["content"]
             assert "Instructions:" not in message["content"]
+            assert not message["content"].lstrip().startswith('{"reply"')
 
 
 def test_explicit_unknown_conversation_id_is_rejected(
