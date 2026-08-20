@@ -83,4 +83,12 @@ describe("coachKeyboardOverlapPadding", () => {
   it("does not double-count when keyboard lift is below the tab-bar offset", () => {
     expect(coachKeyboardOverlapPadding(80, 120)).toBe(0);
   });
+
+  it("uses the full Android keyboard overlap rather than stacking it on the tab bar", () => {
+    const tabAwareBottom = 48 + 64 + 12;
+    const androidKeyboardLift = 320;
+    expect(
+      coachKeyboardOverlapPadding(androidKeyboardLift, tabAwareBottom),
+    ).toBe(androidKeyboardLift - tabAwareBottom);
+  });
 });

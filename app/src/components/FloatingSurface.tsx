@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  Dimensions,
   Keyboard,
   Platform,
   StyleSheet,
@@ -12,6 +13,10 @@ import { useTheme } from "../theme/ThemeContext";
 import { floatingFooterMetrics, spacing } from "../theme/theme";
 import { useFloatingFooterBottomOffset } from "../theme/useTabLayout";
 import { useThemedStyles } from "../theme/useThemedStyles";
+import {
+  floatingFooterAnchorBottom,
+  floatingFooterKeyboardLift,
+} from "./floatingFooterKeyboardLift";
 
 type FloatingSurfaceVariant = "bar" | "footer";
 
@@ -152,15 +157,11 @@ export function FloatingFooterAnchor({
       return;
     }
 
-    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-
-    const onShow = (event: KeyboardEvent) => {
-      const { height } = event.endCoordinates;
-      const lift =
-        Platform.OS === "ios"
-          ? height
-          : Math.max(0, height - insets.bottom);
+    const applyEvent = (event: KeyboardEvent) => {
+      const lift = floatingFooterKeyboardLift(event, {
+        platform: Platform.OS,
+        windowHeight: Dimensions.get("window").height,
+      });
       setKeyboardLift(lift);
       onKeyboardHeightChange?.(lift);
     };
@@ -169,16 +170,24 @@ export function FloatingFooterAnchor({
       onKeyboardHeightChange?.(0);
     };
 
-    const showSub = Keyboard.addListener(showEvent, onShow);
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showSub = Keyboard.addListener(showEvent, applyEvent);
     const hideSub = Keyboard.addListener(hideEvent, onHide);
+    const frameSub =
+      Platform.OS === "android"
+        ? Keyboard.addListener("keyboardDidChangeFrame", applyEvent)
+        : null;
 
     return () => {
       showSub.remove();
       hideSub.remove();
+      frameSub?.remove();
     };
-  }, [insets.bottom, keyboardAware, onKeyboardHeightChange]);
+  }, [keyboardAware, onKeyboardHeightChange]);
 
-  const bottom = keyboardLift > 0 ? keyboardLift : baseBottom;
+  const bottom = floatingFooterAnchorBottom(keyboardLift, baseBottom);
 
   const styles = useThemedStyles(() => ({
     anchor: {
@@ -198,3 +207,7 @@ export function FloatingFooterAnchor({
 }
 
 export { floatingFooterMetrics };
+export {
+  floatingFooterAnchorBottom,
+  floatingFooterKeyboardLift,
+} from "./floatingFooterKeyboardLift";
