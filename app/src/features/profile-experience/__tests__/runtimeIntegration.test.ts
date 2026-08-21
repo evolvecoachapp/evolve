@@ -194,6 +194,81 @@ describe("Profile runtime integration", () => {
     expect(result.current.isEmpty).toBe(true);
   });
 
+  it("useProfile merges backend UserPublic so a complete profile is not empty", async () => {
+    seedHydratedIdentity(ATHLETE_ID, { birthYear: null });
+
+    const { result } = renderHook(() =>
+      useProfile({
+        athleteId: ATHLETE_ID,
+        backendUser: {
+          id: ATHLETE_ID,
+          email: "jordan@evolve.app",
+          username: "jordan",
+          first_name: "Jordan",
+          last_name: "Lee",
+          birth_date: "1994-02-10",
+          gender: "female",
+          height_cm: 170,
+          current_weight_kg: 62,
+          target_weight_kg: null,
+          activity_level: "moderately_active",
+          goal: "general_fitness",
+          is_active: true,
+          is_verified: true,
+          created_at: "2026-01-15T00:00:00.000Z",
+          updated_at: "2026-08-21T00:00:00.000Z",
+        },
+      }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.loading.isLoading).toBe(false);
+    });
+
+    expect(result.current.isEmpty).toBe(false);
+    expect(result.current.profile?.email).toBe("jordan@evolve.app");
+    expect(result.current.profile?.heightCm).toBe(170);
+    expect(result.current.profile?.weightKg).toBe(62);
+    expect(result.current.profile?.primaryGoal).toBe("general_fitness");
+    expect(result.current.profile?.activityLevel).toBe("moderately_active");
+    expect(result.current.profile?.goals).toEqual([]);
+  });
+
+  it("useProfile still shows empty when backend user is incomplete", async () => {
+    seedHydratedIdentity(ATHLETE_ID, { birthYear: null });
+
+    const { result } = renderHook(() =>
+      useProfile({
+        athleteId: ATHLETE_ID,
+        backendUser: {
+          id: ATHLETE_ID,
+          email: "jordan@evolve.app",
+          username: "jordan",
+          first_name: null,
+          last_name: null,
+          birth_date: null,
+          gender: null,
+          height_cm: null,
+          current_weight_kg: null,
+          target_weight_kg: null,
+          activity_level: null,
+          goal: null,
+          is_active: true,
+          is_verified: false,
+          created_at: "2026-01-15T00:00:00.000Z",
+          updated_at: "2026-01-15T00:00:00.000Z",
+        },
+      }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.loading.isLoading).toBe(false);
+    });
+
+    expect(result.current.isEmpty).toBe(true);
+    expect(result.current.profile?.email).toBe("jordan@evolve.app");
+  });
+
   it("useProfile waits for runtime session before applying hydrated identity", async () => {
     seedHydratedIdentity();
     mockRuntimeStarting();
@@ -307,7 +382,7 @@ describe("Profile runtime integration", () => {
     viewModel.applyHydratedProfile(profile);
 
     expect(viewModel.isRuntimeDriven).toBe(true);
-    expect(viewModel.profile).toBe(profile);
+    expect(viewModel.profile?.displayName).toBe("Alex Rivera");
     expect(viewModel.loading.status).toBe(ProfileLoadingStatuses.IDLE);
   });
 

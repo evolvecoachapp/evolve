@@ -10,6 +10,8 @@ interface AuthContextValue {
   user: UserPublic | null;
   login: (email: string, password: string) => Promise<void>;
   register: (data: UserCreate) => Promise<void>;
+  /** Reloads `user` from `GET /api/v1/users/me` without changing tokens. */
+  refreshUser: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -77,6 +79,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [login],
   );
 
+  const refreshUser = useCallback(async () => {
+    const currentUser = await getCurrentUser();
+    setUser(currentUser);
+  }, []);
+
   const logout = useCallback(async () => {
     await clearTokens();
     setUser(null);
@@ -89,9 +96,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       login,
       register,
+      refreshUser,
       logout,
     }),
-    [isBootstrapping, user, login, register, logout],
+    [isBootstrapping, user, login, register, refreshUser, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

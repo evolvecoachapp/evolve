@@ -58,10 +58,14 @@ describe("backendProfileExperienceService", () => {
       expect(dto.id).toBe("user-1");
       expect(dto.displayName).toBe("Jordan Lee");
       expect(dto.email).toBe("jordan@evolve.app");
-      expect(dto.heightCm).toBe(170);
-      expect(dto.weightKg).toBe(62);
-      expect(dto.age).toBeGreaterThan(0);
-      expect(dto.accountStatus).toBe("Active");
+    expect(dto.heightCm).toBe(170);
+    expect(dto.weightKg).toBe(62);
+    expect(dto.age).toBeGreaterThan(0);
+    expect(dto.firstName).toBe("Jordan");
+      expect(dto.primaryGoal).toBe("lose_weight");
+      expect(dto.activityLevel).toBe("lightly_active");
+      expect(dto.targetWeightKg).toBe(60);
+      expect(dto.goals).toEqual([]);
     });
 
     it("coerces Decimal-as-string height/weight from the backend into numbers", async () => {

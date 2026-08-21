@@ -43,6 +43,7 @@ export function ProfileExperienceScreen({ service }: ProfileExperienceScreenProp
   const dashboard = useProfile({
     service,
     athleteId: user?.id,
+    backendUser: user,
   });
 
   const styles = useThemedStyles(({ colors, typography }) => ({
@@ -77,7 +78,15 @@ export function ProfileExperienceScreen({ service }: ProfileExperienceScreenProp
           {dashboard.error && !dashboard.loading.isLoading ? (
             <ProfileError error={dashboard.error} onRetry={() => void dashboard.refresh()} />
           ) : null}
-          {!dashboard.loading.isLoading && !dashboard.error && dashboard.isEmpty ? <ProfileEmpty /> : null}
+          {!dashboard.loading.isLoading && !dashboard.error && dashboard.isEmpty ? (
+            <ProfileEmpty
+              onCompleteSetup={
+                isReachableRoute("/(app)/setup")
+                  ? () => router.push("/(app)/setup" as never)
+                  : undefined
+              }
+            />
+          ) : null}
           {showContent ? (
             <>
               <ProfileHeader profile={dashboard.profile!} />

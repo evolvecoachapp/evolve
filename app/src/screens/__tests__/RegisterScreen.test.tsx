@@ -4,13 +4,16 @@ import { RegisterScreen } from "../RegisterScreen";
 import { useAuth } from "../../auth/useAuth";
 import { ThemeProvider } from "../../theme/ThemeContext";
 
+const mockReplace = jest.fn();
+const mockPush = jest.fn();
+
 jest.mock("../../auth/useAuth");
 jest.mock("../../theme/themeStorage", () => ({
   getStoredThemePreference: jest.fn().mockResolvedValue(null),
   setStoredThemePreference: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
+  useRouter: () => ({ replace: mockReplace, push: mockPush }),
 }));
 
 const mockedUseAuth = useAuth as jest.Mock;
@@ -32,7 +35,7 @@ function renderRegisterScreen() {
 
 describe("RegisterScreen", () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    jest.clearAllMocks();
   });
 
   it("calls register with the entered email, username, and password", async () => {
@@ -53,6 +56,20 @@ describe("RegisterScreen", () => {
         password: "Password123!",
       }),
     );
+    expect(mockReplace).toHaveBeenCalledWith("/(app)/setup");
+  });
+
+  it("navigates to athlete setup after a successful registration", async () => {
+    mockedUseAuth.mockReturnValue({ register: jest.fn().mockResolvedValue(undefined) });
+
+    const { getByPlaceholderText, getByText } = renderRegisterScreen();
+    fireEvent.changeText(getByPlaceholderText("you@example.com"), "user@example.com");
+    fireEvent.changeText(getByPlaceholderText("yourname"), "evolveuser");
+    fireEvent.changeText(getByPlaceholderText("At least 8 characters"), "Password123!");
+    fireEvent.press(getByText("Create account"));
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/(app)/setup"));
+    expect(mockReplace).not.toHaveBeenCalledWith("/(app)/(tabs)");
   });
 
   it("shows the error message when registration fails", async () => {
@@ -69,5 +86,6 @@ describe("RegisterScreen", () => {
     fireEvent.press(getByText("Create account"));
 
     expect(await findByText("A user with this email or username already exists.")).toBeTruthy();
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 });

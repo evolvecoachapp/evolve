@@ -79,7 +79,7 @@ function buildUnsupportedProfileDefaults(): Pick<
   };
 }
 
-function computeAgeFromBirthDate(birthDate: string | null, referenceDate: Date): number | null {
+export function computeAgeFromBirthDate(birthDate: string | null, referenceDate: Date): number | null {
   if (!birthDate) {
     return null;
   }
@@ -126,6 +126,13 @@ export function mapUserPublicToProfileDto(
     age: computeAgeFromBirthDate(user.birth_date, referenceDate),
     heightCm: toNumberOrNull(user.height_cm),
     weightKg: toNumberOrNull(user.current_weight_kg),
+    firstName: user.first_name,
+    lastName: user.last_name,
+    gender: user.gender,
+    birthDate: user.birth_date,
+    targetWeightKg: toNumberOrNull(user.target_weight_kg),
+    primaryGoal: user.goal,
+    activityLevel: user.activity_level,
     ...defaults,
     accountStatus: user.is_active ? "Active" : "Inactive",
     appVersion: options.appVersion ?? "",

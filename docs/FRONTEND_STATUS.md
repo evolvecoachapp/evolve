@@ -146,7 +146,7 @@ Default provider for all domains is **mock**. Mock providers serve static fixtur
 | Item | Sprint |
 |------|--------|
 | Implement all `Backend*Service` providers | 5.3 |
-| Profile completion onboarding (height/weight/activity/goal) | 5.3+ |
+| Profile completion onboarding (height/weight/activity/goal) | Sprint 1 shipped — `/(app)/setup` PATCHes `/users/me`; experience/equipment still later |
 | Wire analytics domain into Progress charts (replace ChartPlaceholder) | TBD (post-14.0) |
 | Push notifications | 5.4 |
 | Offline workout logging with sync | 5.4 |

@@ -263,6 +263,23 @@ def test_complete_profile_fills_every_section(assembler, services):
     services.progress_service.get_progress_summary.assert_not_called()
 
 
+def test_user_goal_is_exposed_as_primary_goal_without_tracked_goal_rows(
+    assembler, services
+):
+    """Profile completion writes User.goal; CoachContext already maps it.
+
+    This is the contract onboarding relies on — no CoachContext code change.
+    """
+    _stub_complete_profile(services)
+    services.user_service.get_user.return_value = _user(goal=UserGoal.GAIN_MUSCLE)
+    services.goal_service.list_goals.return_value = _page([], limit=MAX_ACTIVE_GOALS)
+
+    context = assembler.assemble(USER_ID, as_of=AS_OF)
+
+    assert context.profile.primary_goal == "gain_muscle"
+    assert context.goals == []
+
+
 def test_incomplete_nutrition_marks_section_unavailable_without_failing(
     assembler, services
 ):

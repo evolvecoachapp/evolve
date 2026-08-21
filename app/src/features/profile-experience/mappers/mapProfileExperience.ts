@@ -25,6 +25,13 @@ export function mapAthleteProfile(dto: AthleteProfileDto): AthleteProfile {
     age: dto.age,
     heightCm: dto.heightCm,
     weightKg: dto.weightKg,
+    firstName: dto.firstName ?? null,
+    lastName: dto.lastName ?? null,
+    gender: dto.gender ?? null,
+    birthDate: dto.birthDate ?? null,
+    targetWeightKg: dto.targetWeightKg ?? null,
+    primaryGoal: dto.primaryGoal ?? null,
+    activityLevel: dto.activityLevel ?? null,
     goals: dto.goals.map((g) =>
       createAthleteGoal({
         ...g,

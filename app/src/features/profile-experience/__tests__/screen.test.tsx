@@ -1,11 +1,11 @@
-import { render, waitFor } from "@testing-library/react-native";
+import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import React from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useAuth } from "../../../auth/useAuth";
 import { RUNTIME_SESSION_STATUS } from "../../../runtime/session/RuntimeSessionStatus";
 import { useRuntimeSession } from "../../../runtime/session/RuntimeSessionContext";
 import { ThemeProvider } from "../../../theme/ThemeContext";
-import { mockProfileExperienceService } from "../providers/MockProfileExperienceService";
+import { mockProfileExperienceService, emptyMockProfileExperienceService } from "../providers/MockProfileExperienceService";
 import { ProfileExperienceScreen } from "../screens";
 
 const mockRouterPush = jest.fn();
@@ -42,11 +42,11 @@ const safeAreaMetrics = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
 };
 
-function renderScreen() {
+function renderScreen(service = mockProfileExperienceService) {
   return render(
     <SafeAreaProvider initialMetrics={safeAreaMetrics}>
       <ThemeProvider>
-        <ProfileExperienceScreen service={mockProfileExperienceService} />
+        <ProfileExperienceScreen service={service} />
       </ThemeProvider>
     </SafeAreaProvider>,
   );
@@ -54,6 +54,7 @@ function renderScreen() {
 
 describe("ProfileExperienceScreen composition", () => {
   beforeEach(() => {
+    mockRouterPush.mockClear();
     mockedUseAuth.mockReturnValue({
       user: { id: "athlete-001", username: "alex", first_name: "Alex", last_name: "Rivera" },
       isAuthenticated: true,
@@ -86,5 +87,16 @@ describe("ProfileExperienceScreen composition", () => {
     });
 
     expect(getByText("Increase Squat 1RM")).toBeTruthy();
+  });
+
+  it("shows a setup CTA when the backend profile is incomplete", async () => {
+    const { getByText } = renderScreen(emptyMockProfileExperienceService);
+
+    await waitFor(() => {
+      expect(getByText("Finish your athlete setup")).toBeTruthy();
+    });
+
+    fireEvent.press(getByText("Complete athlete setup"));
+    expect(mockRouterPush).toHaveBeenCalledWith("/(app)/setup");
   });
 });

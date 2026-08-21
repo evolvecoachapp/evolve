@@ -10,13 +10,16 @@ import {
   updateNutritionPreferences,
   updateTrainingPreferences,
 } from "../application";
+import { isAthleteSetupComplete } from "../../athlete-setup/isBackendProfileComplete";
 import {
+  createAthleteProfile,
   createProfileErrorState,
   createProfileLoadingState,
   createProfileSavingState,
   ProfileLoadingStatuses,
   ProfileSavingStatuses,
   type AthleteProfile,
+  type AthleteProfileInput,
   type ProfileErrorState,
   type ProfileLoadingState,
   type ProfileSavingState,
@@ -72,11 +75,18 @@ export class ProfileExperienceViewModel {
   get saving(): ProfileSavingState { return this._saving; }
   get error(): ProfileErrorState | null { return this._error; }
   get isEmpty(): boolean {
-    return !!this._profile &&
+    if (!this._profile) {
+      return false;
+    }
+    if (isAthleteSetupComplete(this._profile)) {
+      return false;
+    }
+    return (
       this._profile.goals.length === 0 &&
       !this._profile.age &&
       !this._profile.heightCm &&
-      !this._profile.weightKg;
+      !this._profile.weightKg
+    );
   }
 
   subscribe(listener: () => void): () => void {
@@ -120,8 +130,8 @@ export class ProfileExperienceViewModel {
   }
 
   /** Applies a profile projected from hydrated Athlete Identity. */
-  applyHydratedProfile(profile: AthleteProfile): void {
-    this._profile = profile;
+  applyHydratedProfile(profile: AthleteProfileInput): void {
+    this._profile = createAthleteProfile(profile);
     this._loading = createProfileLoadingState(ProfileLoadingStatuses.IDLE);
     this._error = null;
     this.notify();

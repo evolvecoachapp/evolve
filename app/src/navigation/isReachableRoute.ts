@@ -21,6 +21,7 @@ const REACHABLE_ROUTES: ReadonlySet<string> = new Set([
   "/(app)/(tabs)/progress",
   "/(app)/(tabs)/profile",
   "/(app)/goals",
+  "/(app)/setup",
   "/(app)/recovery",
   "/(app)/notifications",
   "/(app)/settings",

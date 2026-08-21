@@ -19,6 +19,7 @@ describe("isReachableRoute", () => {
 
   it("returns true for the secondary and detail routes that actually exist", () => {
     expect(isReachableRoute("/(app)/goals")).toBe(true);
+    expect(isReachableRoute("/(app)/setup")).toBe(true);
     expect(isReachableRoute("/(app)/recovery")).toBe(true);
     expect(isReachableRoute("/(app)/notifications")).toBe(true);
     expect(isReachableRoute("/(app)/settings")).toBe(true);

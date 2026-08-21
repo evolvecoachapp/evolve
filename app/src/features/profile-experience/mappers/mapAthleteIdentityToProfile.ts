@@ -151,6 +151,13 @@ export function mapAthleteIdentityToProfile(
     age: computeAge(profile.birthYear, referenceDate),
     heightCm: null,
     weightKg: null,
+    firstName: profile.givenName,
+    lastName: profile.familyName,
+    gender: null,
+    birthDate: null,
+    targetWeightKg: null,
+    primaryGoal: null,
+    activityLevel: null,
     goals: Object.freeze([]),
     trainingPreferences: createTrainingPreferences({
       level: mapTrainingLevel(profile.experienceLevel),

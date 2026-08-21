@@ -31,14 +31,19 @@ const testUser: UserPublic = {
 };
 
 function Probe() {
-  const { isBootstrapping, isAuthenticated, user, login, logout } = useAuth();
+  const { isBootstrapping, isAuthenticated, user, login, logout, refreshUser } = useAuth();
   return (
     <View>
       <Text testID="bootstrapping">{String(isBootstrapping)}</Text>
       <Text testID="authenticated">{String(isAuthenticated)}</Text>
       <Text testID="username">{user?.username ?? ""}</Text>
+      <Text testID="first-name">{user?.first_name ?? ""}</Text>
+      <Text testID="goal">{user?.goal ?? ""}</Text>
       <Text testID="login" onPress={() => login("user@example.com", "Password123!")}>
         login
+      </Text>
+      <Text testID="refresh" onPress={() => refreshUser()}>
+        refresh
       </Text>
       <Text testID="logout" onPress={() => logout()}>
         logout
@@ -121,5 +126,28 @@ describe("AuthProvider", () => {
 
     await waitFor(() => expect(getByTestId("authenticated").props.children).toBe("false"));
     expect(mockedSecureStorage.clearTokens).toHaveBeenCalled();
+  });
+
+  it("refreshUser reloads GET /users/me into AuthContext after a profile PATCH", async () => {
+    mockedSecureStorage.getTokens.mockResolvedValue({ accessToken: "a", refreshToken: "r" });
+    mockedAuthApi.getCurrentUser
+      .mockResolvedValueOnce(testUser)
+      .mockResolvedValueOnce({
+        ...testUser,
+        first_name: "Jordan",
+        goal: "gain_muscle",
+        height_cm: 170,
+        current_weight_kg: 62,
+      });
+
+    const { getByTestId } = renderProbe();
+    await waitFor(() => expect(getByTestId("authenticated").props.children).toBe("true"));
+    expect(getByTestId("username").props.children).toBe("evolveuser");
+
+    fireEvent.press(getByTestId("refresh"));
+
+    await waitFor(() => expect(getByTestId("first-name").props.children).toBe("Jordan"));
+    expect(getByTestId("goal").props.children).toBe("gain_muscle");
+    expect(mockedAuthApi.getCurrentUser).toHaveBeenCalledTimes(2);
   });
 });

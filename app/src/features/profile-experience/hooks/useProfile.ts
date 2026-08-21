@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useMemo, useReducer } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import type { UserPublic } from "../../../types/api";
 import { useRuntimeSession } from "../../../runtime/session/RuntimeSessionContext";
 import { RUNTIME_SESSION_STATUS } from "../../../runtime/session/RuntimeSessionStatus";
+import { mergeUserPublicIntoProfile } from "../mappers/mergeUserPublicIntoProfile";
 import type { ProfileExperienceService } from "../services";
 import { readHydratedProfile } from "../services/readHydratedProfile";
 import { ProfileExperienceViewModel } from "../viewmodels";
@@ -9,6 +11,7 @@ export interface UseProfileOptions {
   readonly service?: ProfileExperienceService;
   readonly viewModel?: ProfileExperienceViewModel;
   readonly athleteId?: string;
+  readonly backendUser?: UserPublic | null;
   readonly autoLoad?: boolean;
 }
 
@@ -21,12 +24,16 @@ export function useProfile({
   service,
   viewModel: injected,
   athleteId,
+  backendUser = null,
   autoLoad = true,
 }: UseProfileOptions = {}) {
   const [, bump] = useReducer((count: number) => count + 1, 0);
   const { status: runtimeStatus } = useRuntimeSession();
   const isRuntimePath = service === undefined && injected === undefined;
   const athleteKey = athleteId ?? "";
+  const backendUserKey = backendUser?.updated_at ?? backendUser?.id ?? "";
+  const backendUserRef = useRef(backendUser);
+  backendUserRef.current = backendUser;
 
   const viewModel = useMemo(
     () => injected ?? new ProfileExperienceViewModel({ service, athleteId }),
@@ -55,12 +62,14 @@ export function useProfile({
 
     const profile = readHydratedProfile(athleteId);
     if (profile) {
-      viewModel.applyHydratedProfile(profile);
+      viewModel.applyHydratedProfile(
+        mergeUserPublicIntoProfile(profile, backendUserRef.current),
+      );
       return;
     }
 
     viewModel.applyIdentityFailure("Athlete identity unavailable.");
-  }, [autoLoad, injected, viewModel, isRuntimePath, athleteKey, athleteId, runtimeStatus]);
+  }, [autoLoad, injected, viewModel, isRuntimePath, athleteKey, athleteId, runtimeStatus, backendUserKey]);
 
   const refresh = useCallback(async () => {
     if (service) {
@@ -73,8 +82,16 @@ export function useProfile({
       return;
     }
 
-    viewModel.refreshFromHydratedProfile(readHydratedProfile(athleteId));
-  }, [viewModel, service, athleteId]);
+    const hydrated = readHydratedProfile(athleteId);
+    if (!hydrated) {
+      viewModel.applyIdentityFailure("Athlete identity unavailable.");
+      return;
+    }
+
+    viewModel.refreshFromHydratedProfile(
+      mergeUserPublicIntoProfile(hydrated, backendUserRef.current),
+    );
+  }, [viewModel, service, athleteId, backendUserKey]);
 
   return {
     profile: viewModel.profile,

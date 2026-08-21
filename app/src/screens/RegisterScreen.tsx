@@ -11,10 +11,8 @@ import { useThemedStyles } from "../theme/useThemedStyles";
 
 /**
  * Collects only `UserCreate`'s required fields (email, username, password).
- * The optional profile fields (height, weight, activity level, goal) are
- * intentionally not collected here — a full profile-completion step is
- * deferred to whichever later mobile sprint first needs them (e.g. the
- * Nutrition Engine screens).
+ * Fitness profile fields are collected on the authenticated athlete-setup
+ * screen immediately after a successful registration.
  */
 export function RegisterScreen() {
   const router = useRouter();
@@ -54,7 +52,7 @@ export function RegisterScreen() {
     setIsSubmitting(true);
     try {
       await register({ email: email.trim(), username: username.trim(), password });
-      router.replace("/(app)/(tabs)");
+      router.replace("/(app)/setup" as never);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {

@@ -7,6 +7,7 @@ import type { NutritionPreferences } from "../models/NutritionPreferences";
 import type { ProfileSection } from "../models/ProfileSection";
 import type { TrainingPreferences } from "../models/TrainingPreferences";
 import type { ConnectedServiceEntry } from "../models/ConnectedServices";
+import type { ActivityLevel, Gender, Goal } from "../../../types/api";
 
 export interface AthleteGoalDto {
   readonly id: string;
@@ -105,6 +106,13 @@ export interface AthleteProfileDto {
   readonly age: number | null;
   readonly heightCm: number | null;
   readonly weightKg: number | null;
+  readonly firstName?: string | null;
+  readonly lastName?: string | null;
+  readonly gender?: Gender | null;
+  readonly birthDate?: string | null;
+  readonly targetWeightKg?: number | null;
+  readonly primaryGoal?: Goal | null;
+  readonly activityLevel?: ActivityLevel | null;
   readonly goals: readonly AthleteGoalDto[];
   readonly trainingPreferences: TrainingPreferencesDto;
   readonly nutritionPreferences: NutritionPreferencesDto;
