@@ -141,6 +141,11 @@ describe("WorkoutRuntimeViewModel", () => {
       WorkoutRuntimeStatuses.COMPLETED,
     );
     expect(viewModel.runtime?.notes.sessionNotes).toBe("feeling strong");
+
+    await viewModel.finishWorkout();
+    expect(viewModel.runtime?.state.status).toBe(
+      WorkoutRuntimeStatuses.COMPLETED,
+    );
   });
 
   it("handles empty workout", async () => {

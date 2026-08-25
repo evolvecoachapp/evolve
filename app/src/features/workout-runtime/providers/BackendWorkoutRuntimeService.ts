@@ -10,6 +10,7 @@ import { ApiError } from "../../../api/client";
 import { backendWorkoutService } from "../../workout/providers/BackendWorkoutService";
 import { WorkoutServiceError } from "../../workout/types/workoutService";
 import {
+  isInProgressWorkoutLog,
   mapBackendWorkoutToExperienceDto,
   mapWorkoutLogDetailToRuntimeDto,
   titlesForBackendPreview,
@@ -64,22 +65,23 @@ async function resolveActiveLog(
   preview: WorkoutPreviewDto,
 ): Promise<WorkoutLogDetailDto | null> {
   const active = await getActiveWorkoutLog();
-  if (active) {
+  if (isInProgressWorkoutLog(active)) {
     return active;
   }
 
-  if (preview.active_workout_log_id) {
-    try {
-      return await getWorkoutLog(preview.active_workout_log_id);
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 404) {
-        return null;
-      }
-      throw error;
-    }
+  if (preview.today_log_status !== "in_progress" || !preview.active_workout_log_id) {
+    return null;
   }
 
-  return null;
+  try {
+    const log = await getWorkoutLog(preview.active_workout_log_id);
+    return isInProgressWorkoutLog(log) ? log : null;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 function assertProgramAssigned(preview: WorkoutPreviewDto): void {
@@ -146,7 +148,7 @@ export const backendWorkoutRuntimeService = {
       }
 
       const existing = await getActiveWorkoutLog();
-      if (existing) {
+      if (isInProgressWorkoutLog(existing)) {
         return mapLogToRuntime(preview, existing);
       }
 
@@ -228,6 +230,7 @@ export const backendWorkoutRuntimeService = {
       await finishWorkoutLog(runtimeId, {
         notes: input.sessionNotes.trim() ? input.sessionNotes : undefined,
       });
+      return await fetchTodayRuntime();
     } catch (error) {
       throw toWorkoutRuntimeExperienceError(error, "Failed to finish the workout.");
     }

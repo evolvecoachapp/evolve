@@ -12,6 +12,7 @@ export {
   type MapWorkoutRuntimeToSessionSummaryOptions,
 } from "./mapWorkoutRuntimeToSessionSummary";
 export {
+  isInProgressWorkoutLog,
   mapBackendWorkoutToExperienceDto,
   mapEmptyWorkoutRuntimeDto,
   mapWorkoutExerciseReadToRuntimeExerciseDto,

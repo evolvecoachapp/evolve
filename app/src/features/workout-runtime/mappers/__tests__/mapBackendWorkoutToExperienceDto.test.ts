@@ -146,6 +146,7 @@ describe("mapBackendWorkoutToExperienceDto", () => {
     expect(dto.subtitle).toBe("Leg Day");
     expect(dto.sessionNotes).toBe("felt strong");
     expect(dto.startedAt).toBe("2026-08-12T10:00:00Z");
+    expect(dto.finishedAt).toBeNull();
     expect(dto.empty).toBe(false);
     expect(dto.exercises).toHaveLength(1);
     expect(dto.exercises[0]?.id).toBe("log-exercise-1");
@@ -173,6 +174,7 @@ describe("mapBackendWorkoutToExperienceDto", () => {
     expect(dto.title).toBe("Beginner Foundation");
     expect(dto.subtitle).toBe("Lower A");
     expect(dto.startedAt).toBeNull();
+    expect(dto.finishedAt).toBeNull();
     expect(dto.exercises[0]?.sets).toHaveLength(3);
     expect(dto.exercises[0]?.sets.every((set) => set.completed !== true)).toBe(true);
     expect(dto.exercises[0]?.sets[0]).toMatchObject({
@@ -229,6 +231,67 @@ describe("mapBackendWorkoutToExperienceDto", () => {
     });
     expect(none.empty).toBe(true);
     expect(none.title).toBe("No Workout");
+  });
+
+  it("maps a completed WorkoutLogDetail with finishedAt so it cannot stay editable", () => {
+    const dto = mapWorkoutLogDetailToRuntimeDto(
+      buildWorkoutLogDetail({
+        status: "completed",
+        completed_at: "2026-08-12T11:00:00Z",
+      }),
+      "Beginner Foundation",
+      "Leg Day",
+    );
+
+    expect(dto.id).toBe("log-1");
+    expect(dto.finishedAt).toBe("2026-08-12T11:00:00Z");
+    expect(dto.startedAt).toBe("2026-08-12T10:00:00Z");
+  });
+
+  it("does not keep a completed log as today's editable session when the cursor advanced", () => {
+    const nextDay = buildWorkoutPublic({
+      id: "workout-2",
+      name: "Upper A",
+      slug: "upper-a",
+    });
+    const dto = mapBackendWorkoutToExperienceDto({
+      preview: buildPreview({
+        day_number: 4,
+        day_label: "Upper A",
+        workout: nextDay,
+        today_log_status: "completed",
+        active_workout_log_id: "log-1",
+      }),
+      activeLog: buildWorkoutLogDetail({
+        status: "completed",
+        completed_at: "2026-08-12T11:00:00Z",
+      }),
+    });
+
+    expect(dto.id).toBe("workout-2");
+    expect(dto.subtitle).toBe("Upper A");
+    expect(dto.startedAt).toBeNull();
+    expect(dto.finishedAt).toBeNull();
+  });
+
+  it("maps rest day after a completed log instead of reusing that log", () => {
+    const dto = mapBackendWorkoutToExperienceDto({
+      preview: buildPreview({
+        state: "rest_day",
+        workout: null,
+        day_label: "Recovery",
+        today_log_status: "none",
+        active_workout_log_id: null,
+      }),
+      activeLog: buildWorkoutLogDetail({
+        status: "completed",
+        completed_at: "2026-08-12T11:00:00Z",
+      }),
+    });
+
+    expect(dto.empty).toBe(true);
+    expect(dto.id).toBe("workout-runtime-rest-day");
+    expect(dto.title).toBe("Rest Day");
   });
 
   it("mapEmptyWorkoutRuntimeDto marks empty and clears exercises", () => {

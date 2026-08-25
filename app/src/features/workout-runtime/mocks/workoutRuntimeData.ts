@@ -8,6 +8,7 @@ export const mockWorkoutRuntimeData: WorkoutRuntimeDto = {
   muscleGroups: "Chest, Shoulders, Triceps",
   sessionNotes: "",
   startedAt: null,
+  finishedAt: null,
   empty: false,
   exercises: [
     {
@@ -157,5 +158,6 @@ export const emptyWorkoutRuntimeData: WorkoutRuntimeDto = {
   exercises: [],
   sessionNotes: "",
   startedAt: null,
+  finishedAt: null,
   empty: true,
 };

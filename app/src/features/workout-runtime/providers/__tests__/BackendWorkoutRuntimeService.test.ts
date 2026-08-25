@@ -226,25 +226,39 @@ describe("backendWorkoutRuntimeService", () => {
   });
 
   describe("supported mutations", () => {
-    it("finishes the workout via POST /workout-logs/{id}/finish with session notes", async () => {
+    it("finishes the workout via POST /workout-logs/{id}/finish then refreshes today and active", async () => {
       api.finishWorkoutLog.mockResolvedValueOnce(
         buildWorkoutLogDetail({ status: "completed", notes: "solid session" }),
       );
-
-      await expect(
-        backendWorkoutRuntimeService.finishRuntime({
-          runtimeId: "log-1",
-          sessionNotes: "solid session",
+      api.getTodayPreview.mockResolvedValueOnce(
+        buildPreview({
+          state: "rest_day",
+          workout: null,
+          day_label: "Recovery",
+          today_log_status: "none",
+          active_workout_log_id: null,
         }),
-      ).resolves.toBeUndefined();
+      );
+      api.getActiveWorkoutLog.mockResolvedValueOnce(null);
+
+      const dto = await backendWorkoutRuntimeService.finishRuntime({
+        runtimeId: "log-1",
+        sessionNotes: "solid session",
+      });
 
       expect(api.finishWorkoutLog).toHaveBeenCalledWith("log-1", {
         notes: "solid session",
       });
+      expect(api.getTodayPreview).toHaveBeenCalledTimes(1);
+      expect(api.getActiveWorkoutLog).toHaveBeenCalledTimes(1);
+      expect(dto?.id).toBe("workout-runtime-rest-day");
+      expect(dto?.title).toBe("Rest Day");
     });
 
     it("omits blank session notes rather than sending an empty string", async () => {
       api.finishWorkoutLog.mockResolvedValueOnce(buildWorkoutLogDetail({ status: "completed" }));
+      api.getTodayPreview.mockResolvedValueOnce(buildPreview());
+      api.getActiveWorkoutLog.mockResolvedValueOnce(null);
 
       await backendWorkoutRuntimeService.finishRuntime({
         runtimeId: "log-1",
@@ -254,6 +268,55 @@ describe("backendWorkoutRuntimeService", () => {
       expect(api.finishWorkoutLog).toHaveBeenCalledWith("log-1", {
         notes: undefined,
       });
+    });
+
+    it("does not keep a completed log as the active runtime after finish when preview still lists it", async () => {
+      api.finishWorkoutLog.mockResolvedValueOnce(
+        buildWorkoutLogDetail({ status: "completed", completed_at: "2026-08-12T11:00:00Z" }),
+      );
+      api.getTodayPreview.mockResolvedValueOnce(
+        buildPreview({
+          day_number: 4,
+          day_label: "Upper A",
+          workout: {
+            ...buildWorkoutPublic(),
+            id: "workout-2",
+            name: "Upper A",
+            slug: "upper-a",
+          },
+          today_log_status: "completed",
+          active_workout_log_id: "log-1",
+        }),
+      );
+      api.getActiveWorkoutLog.mockResolvedValueOnce(null);
+      api.getWorkoutLog.mockResolvedValueOnce(
+        buildWorkoutLogDetail({ status: "completed", completed_at: "2026-08-12T11:00:00Z" }),
+      );
+
+      const dto = await backendWorkoutRuntimeService.finishRuntime({
+        runtimeId: "log-1",
+        sessionNotes: "",
+      });
+
+      expect(api.getWorkoutLog).not.toHaveBeenCalled();
+      expect(dto?.id).toBe("workout-2");
+      expect(dto?.startedAt).toBeNull();
+    });
+
+    it("getRuntime ignores a completed log id left on today's preview", async () => {
+      api.getTodayPreview.mockResolvedValueOnce(
+        buildPreview({
+          today_log_status: "completed",
+          active_workout_log_id: "log-1",
+        }),
+      );
+      api.getActiveWorkoutLog.mockResolvedValueOnce(null);
+
+      const dto = await backendWorkoutRuntimeService.getRuntime();
+
+      expect(api.getWorkoutLog).not.toHaveBeenCalled();
+      expect(dto.id).toBe("workout-1");
+      expect(dto.startedAt).toBeNull();
     });
 
     it("rejects finish without a session id (validation failure)", async () => {

@@ -260,6 +260,7 @@ export function mapWorkoutRuntime(
   const durationSeconds = options.durationSeconds ?? 0;
   const progress = computeWorkoutProgress(exercises, durationSeconds);
   const statistics = computeWorkoutStatistics(exercises, progress);
+  const finishedAt = options.finishedAt ?? dto.finishedAt ?? null;
   const allComplete =
     !isEmpty &&
     exercises.every(
@@ -270,7 +271,7 @@ export function mapWorkoutRuntime(
     WorkoutRuntimeStatuses.READY;
   if (isEmpty) {
     status = WorkoutRuntimeStatuses.EMPTY;
-  } else if (options.finishedAt || allComplete) {
+  } else if (finishedAt || allComplete) {
     status = WorkoutRuntimeStatuses.COMPLETED;
   } else if (progress.completedSets > 0) {
     status = WorkoutRuntimeStatuses.ACTIVE;
@@ -292,7 +293,7 @@ export function mapWorkoutRuntime(
       createWorkoutNotes(dto.sessionNotes ?? "", null),
     state: createWorkoutRuntimeState(status),
     startedAt: options.startedAt ?? dto.startedAt ?? null,
-    finishedAt: options.finishedAt ?? null,
+    finishedAt,
     historyDestination: "/(app)/workout/history",
     statisticsDestination: "/(app)/workout/analytics",
     isEmpty,

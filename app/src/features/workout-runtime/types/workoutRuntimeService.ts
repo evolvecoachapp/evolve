@@ -18,10 +18,15 @@ export interface WorkoutRuntimeExperienceService {
 
   getRuntime(): Promise<WorkoutRuntimeDto>;
 
+  /**
+   * Finish the in-progress WorkoutLog. Backend returns the reconciled
+   * next-day runtime (never the completed log as the active session).
+   * Mock/local may return void and keep in-memory completion local.
+   */
   finishRuntime(input: {
     readonly runtimeId: string;
     readonly sessionNotes: string;
-  }): Promise<void>;
+  }): Promise<WorkoutRuntimeDto | void>;
 
   /**
    * Start today's resolved workout as a WorkoutLog.

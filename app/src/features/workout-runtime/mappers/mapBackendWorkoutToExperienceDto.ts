@@ -213,6 +213,20 @@ function uniqueMuscleGroups(exercises: readonly WorkoutExerciseDto[]): string {
     .join(", ");
 }
 
+/** True when a log is the one-at-a-time in-progress session, never history. */
+export function isInProgressWorkoutLog(
+  log: WorkoutLogDetailDto | null | undefined,
+): log is WorkoutLogDetailDto {
+  return log != null && log.status === "in_progress";
+}
+
+function finishedAtForLog(dto: WorkoutLogDetailDto): string | null {
+  if (dto.status === "completed" || dto.status === "skipped") {
+    return dto.completed_at;
+  }
+  return null;
+}
+
 /** Maps an in-progress/completed `WorkoutLogDetail` onto `WorkoutRuntimeDto`. */
 export function mapWorkoutLogDetailToRuntimeDto(
   dto: WorkoutLogDetailDto,
@@ -233,6 +247,7 @@ export function mapWorkoutLogDetailToRuntimeDto(
     exercises,
     sessionNotes: dto.notes ?? "",
     startedAt: dto.started_at,
+    finishedAt: finishedAtForLog(dto),
     empty: exercises.length === 0,
   });
 }
@@ -257,6 +272,7 @@ export function mapWorkoutPublicToRuntimeDto(
     exercises,
     sessionNotes: "",
     startedAt: null,
+    finishedAt: null,
     empty: exercises.length === 0,
   });
 }
@@ -275,8 +291,8 @@ export function mapEmptyWorkoutRuntimeDto(
 
 /**
  * Composes today's runtime read model from resolution preview + optional active log.
- * Prefer the live log when present; otherwise seed from today's template on a
- * training day; otherwise return an explicit empty runtime (never invent sets).
+ * Prefer the live in-progress log when present; a completed/skipped log must not
+ * remain the editable session — fall through to the next resolved day instead.
  */
 export function mapBackendWorkoutToExperienceDto(input: {
   readonly preview: WorkoutPreviewDto;
@@ -284,7 +300,7 @@ export function mapBackendWorkoutToExperienceDto(input: {
 }): WorkoutRuntimeDto {
   const { preview, activeLog } = input;
 
-  if (activeLog) {
+  if (isInProgressWorkoutLog(activeLog)) {
     const { title, subtitle } = titlesForBackendPreview(preview);
     return mapWorkoutLogDetailToRuntimeDto(activeLog, title, subtitle);
   }

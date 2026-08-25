@@ -31,5 +31,6 @@ export interface WorkoutRuntimeDto {
   readonly exercises: readonly WorkoutExerciseDto[];
   readonly sessionNotes?: string;
   readonly startedAt?: string | null;
+  readonly finishedAt?: string | null;
   readonly empty?: boolean;
 }

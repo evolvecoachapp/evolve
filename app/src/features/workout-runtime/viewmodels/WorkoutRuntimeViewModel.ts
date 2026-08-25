@@ -222,11 +222,19 @@ export class WorkoutRuntimeViewModel {
   }
 
   async completeSetAsync(): Promise<void> {
-    if (!this._runtime || this._mutating) {
+    if (
+      !this._runtime ||
+      this._mutating ||
+      this._runtime.state.isCompleted ||
+      this._runtime.finishedAt !== null
+    ) {
       return;
     }
 
-    if (this.isBackendSession() && this.service?.saveSet && this._runtime.startedAt) {
+    if (this.isBackendSession() && this.service?.saveSet) {
+      if (!this._runtime.startedAt) {
+        return;
+      }
       const exercise = this.currentExercise();
       const currentSet = this.currentSet();
       if (!exercise || !currentSet) {
@@ -439,28 +447,25 @@ export class WorkoutRuntimeViewModel {
   }
 
   async finishWorkout(): Promise<void> {
-    if (!this._runtime) {
+    if (!this._runtime || this._mutating || !this.canFinishSession) {
       return;
     }
 
+    this._mutating = true;
+    this.notifyListeners();
     try {
       if (this.isBackendSession() && this.service) {
-        if (!this._runtime.startedAt) {
-          this._error = createWorkoutErrorState(
-            "Start the workout before finishing.",
-            "workout_runtime_not_started",
-            true,
-          );
-          this.notify();
-          return;
-        }
-        await this.service.finishRuntime({
+        const dto = await this.service.finishRuntime({
           runtimeId: this._runtime.id,
           sessionNotes: this._runtime.notes.sessionNotes,
         });
         this._finishDialogVisible = false;
         this._error = null;
-        await this.refresh();
+        if (dto) {
+          this.applyExperienceDto(dto);
+        } else {
+          await this.refresh();
+        }
         return;
       }
 
@@ -475,9 +480,10 @@ export class WorkoutRuntimeViewModel {
       this._error = null;
     } catch (caught: unknown) {
       this._error = this.toErrorState(caught);
+    } finally {
+      this._mutating = false;
+      this.notify();
     }
-
-    this.notify();
   }
 
   private applyExperienceDto(

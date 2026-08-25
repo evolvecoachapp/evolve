@@ -312,16 +312,22 @@ describe("Workout vertical slice — backend production path", () => {
     });
   });
 
-  it("finish uses the WorkoutLog id then refreshes today's resolution", async () => {
-    stubToday(
-      buildPreview({ today_log_status: "in_progress", active_workout_log_id: "log-1" }),
-      buildWorkoutLogDetail(),
-    );
-    api.finishWorkoutLog.mockResolvedValueOnce(
-      buildWorkoutLogDetail({ status: "completed", completed_at: "2026-08-25T11:00:00Z" }),
-    );
+  function buildNextTrainingDayPreview() {
+    return buildPreview({
+      day_number: 2,
+      day_label: "Full Body B",
+      workout: {
+        ...buildWorkoutPublic(),
+        id: "workout-template-2",
+        name: "Beginner Full Body B",
+      },
+      today_log_status: "completed",
+      active_workout_log_id: "log-1",
+    });
+  }
 
-    const nextDay = buildPreview({
+  function buildRestDayPreview() {
+    return buildPreview({
       state: "rest_day",
       workout: null,
       day_label: "Rest",
@@ -329,21 +335,178 @@ describe("Workout vertical slice — backend production path", () => {
       today_log_status: "none",
       active_workout_log_id: null,
     });
+  }
 
+  async function loadInProgressSession() {
+    stubToday(
+      buildPreview({ today_log_status: "in_progress", active_workout_log_id: "log-1" }),
+      buildWorkoutLogDetail(),
+    );
     const viewModel = new WorkoutRuntimeViewModel({
       service: backendWorkoutRuntimeService,
     });
     await viewModel.loadWorkout();
     expect(viewModel.runtime?.id).toBe("log-1");
+    expect(viewModel.canFinishSession).toBe(true);
+    return viewModel;
+  }
 
-    api.getTodayPreview.mockResolvedValue(nextDay);
+  it("useWorkoutRuntime finish clears the completed log from the active session", async () => {
+    stubToday(
+      buildPreview({ today_log_status: "in_progress", active_workout_log_id: "log-1" }),
+      buildWorkoutLogDetail(),
+    );
+
+    const { result } = renderHook(() =>
+      useWorkoutRuntime({ service: backendWorkoutRuntimeService, athleteId: "user-1" }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.runtime?.id).toBe("log-1");
+      expect(result.current.canFinishSession).toBe(true);
+    });
+
+    api.finishWorkoutLog.mockResolvedValueOnce(
+      buildWorkoutLogDetail({ status: "completed", completed_at: "2026-08-25T11:00:00Z" }),
+    );
+    api.getTodayPreview.mockResolvedValue(buildNextTrainingDayPreview());
+    api.getActiveWorkoutLog.mockResolvedValue(null);
+
+    await act(async () => {
+      await result.current.finishWorkout();
+    });
+
+    expect(result.current.runtime?.id).toBe("workout-template-2");
+    expect(result.current.canFinishSession).toBe(false);
+    expect(result.current.canStart).toBe(true);
+  });
+
+  it("successful finish clears the active runtime/log id", async () => {
+    const viewModel = await loadInProgressSession();
+    api.finishWorkoutLog.mockResolvedValueOnce(
+      buildWorkoutLogDetail({ status: "completed", completed_at: "2026-08-25T11:00:00Z" }),
+    );
+    api.getTodayPreview.mockResolvedValue(buildNextTrainingDayPreview());
+    api.getActiveWorkoutLog.mockResolvedValue(null);
+
+    await viewModel.finishWorkout();
+
+    expect(viewModel.runtime?.id).not.toBe("log-1");
+    expect(viewModel.canFinishSession).toBe(false);
+  });
+
+  it("finish refreshes today's resolution and the active log", async () => {
+    const viewModel = await loadInProgressSession();
+    const todayCallsBefore = api.getTodayPreview.mock.calls.length;
+    const activeCallsBefore = api.getActiveWorkoutLog.mock.calls.length;
+
+    api.finishWorkoutLog.mockResolvedValueOnce(
+      buildWorkoutLogDetail({ status: "completed", completed_at: "2026-08-25T11:00:00Z" }),
+    );
+    api.getTodayPreview.mockResolvedValue(buildRestDayPreview());
     api.getActiveWorkoutLog.mockResolvedValue(null);
 
     await viewModel.finishWorkout();
 
     expect(api.finishWorkoutLog).toHaveBeenCalledWith("log-1", { notes: undefined });
+    expect(api.getTodayPreview.mock.calls.length).toBeGreaterThan(todayCallsBefore);
+    expect(api.getActiveWorkoutLog.mock.calls.length).toBeGreaterThan(activeCallsBefore);
+  });
+
+  it("completed log cannot receive another set after finish", async () => {
+    const viewModel = await loadInProgressSession();
+    api.finishWorkoutLog.mockResolvedValueOnce(
+      buildWorkoutLogDetail({ status: "completed", completed_at: "2026-08-25T11:00:00Z" }),
+    );
+    api.getTodayPreview.mockResolvedValue(buildNextTrainingDayPreview());
+    api.getActiveWorkoutLog.mockResolvedValue(null);
+
+    await viewModel.finishWorkout();
+    api.logWorkoutSet.mockClear();
+
+    viewModel.updateWeight(24);
+    viewModel.updateRepetitions(10);
+    await viewModel.completeSetAsync();
+
+    expect(api.logWorkoutSet).not.toHaveBeenCalled();
+    expect(viewModel.runtime?.id).not.toBe("log-1");
+  });
+
+  it("repeated finish cannot be sent", async () => {
+    const viewModel = await loadInProgressSession();
+    let releaseFinish: ((value: unknown) => void) | undefined;
+    api.finishWorkoutLog.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          releaseFinish = resolve;
+        }),
+    );
+    api.getTodayPreview.mockResolvedValue(buildRestDayPreview());
+    api.getActiveWorkoutLog.mockResolvedValue(null);
+
+    const first = viewModel.finishWorkout();
+    const second = viewModel.finishWorkout();
+    releaseFinish?.(
+      buildWorkoutLogDetail({ status: "completed", completed_at: "2026-08-25T11:00:00Z" }),
+    );
+    await Promise.all([first, second]);
+    await viewModel.finishWorkout();
+
+    expect(api.finishWorkoutLog).toHaveBeenCalledTimes(1);
+    expect(viewModel.canFinishSession).toBe(false);
+  });
+
+  it("renders Rest Day after finish when the cursor advanced to a rest day", async () => {
+    const viewModel = await loadInProgressSession();
+    api.finishWorkoutLog.mockResolvedValueOnce(
+      buildWorkoutLogDetail({ status: "completed", completed_at: "2026-08-25T11:00:00Z" }),
+    );
+    api.getTodayPreview.mockResolvedValue(buildRestDayPreview());
+    api.getActiveWorkoutLog.mockResolvedValue(null);
+
+    await viewModel.finishWorkout();
+
     expect(viewModel.isRestDay).toBe(true);
+    expect(viewModel.runtime?.id).toBe(WORKOUT_RUNTIME_REST_DAY_ID);
     expect(viewModel.runtime?.title).toBe("Rest Day");
+    expect(viewModel.canFinishSession).toBe(false);
+    expect(viewModel.canStart).toBe(false);
+  });
+
+  it("renders the next training day after finish even if preview still lists the completed log", async () => {
+    const viewModel = await loadInProgressSession();
+    api.finishWorkoutLog.mockResolvedValueOnce(
+      buildWorkoutLogDetail({ status: "completed", completed_at: "2026-08-25T11:00:00Z" }),
+    );
+    api.getTodayPreview.mockResolvedValue(buildNextTrainingDayPreview());
+    api.getActiveWorkoutLog.mockResolvedValue(null);
+    api.getWorkoutLog.mockResolvedValue(
+      buildWorkoutLogDetail({ status: "completed", completed_at: "2026-08-25T11:00:00Z" }),
+    );
+
+    await viewModel.finishWorkout();
+
+    expect(viewModel.runtime?.id).toBe("workout-template-2");
+    expect(viewModel.runtime?.subtitle).toBe("Beginner Full Body B");
+    expect(viewModel.runtime?.startedAt).toBeNull();
+    expect(viewModel.canStart).toBe(true);
+    expect(viewModel.canFinishSession).toBe(false);
+    expect(api.getWorkoutLog).not.toHaveBeenCalled();
+  });
+
+  it("reload after completion reconstructs backend state and does not reopen the completed log", async () => {
+    stubToday(buildNextTrainingDayPreview(), null);
+
+    const reloaded = new WorkoutRuntimeViewModel({
+      service: backendWorkoutRuntimeService,
+    });
+    await reloaded.loadWorkout();
+
+    expect(reloaded.runtime?.id).toBe("workout-template-2");
+    expect(reloaded.runtime?.startedAt).toBeNull();
+    expect(reloaded.canStart).toBe(true);
+    expect(reloaded.canFinishSession).toBe(false);
+    expect(api.getWorkoutLog).not.toHaveBeenCalled();
   });
 
   it("reload reconstructs an in-progress session from the backend log", async () => {
