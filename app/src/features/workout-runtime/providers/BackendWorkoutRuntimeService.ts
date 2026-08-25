@@ -1,39 +1,38 @@
 import {
+  advanceRestDay as requestAdvanceRestDay,
   finishWorkoutLog,
   getActiveWorkoutLog,
   getTodayPreview,
   getWorkoutLog,
+  startWorkoutLog,
 } from "../../../api/workouts";
 import { ApiError } from "../../../api/client";
-import { mapBackendWorkoutToExperienceDto } from "../mappers/mapBackendWorkoutToExperienceDto";
+import { backendWorkoutService } from "../../workout/providers/BackendWorkoutService";
+import { WorkoutServiceError } from "../../workout/types/workoutService";
+import {
+  mapBackendWorkoutToExperienceDto,
+  mapWorkoutLogDetailToRuntimeDto,
+  titlesForBackendPreview,
+} from "../mappers/mapBackendWorkoutToExperienceDto";
 import type { WorkoutRuntimeDto } from "../types/workoutRuntimeDto";
 import {
   WorkoutRuntimeExperienceError,
   type WorkoutRuntimeExperienceService,
+  type WorkoutRuntimeSaveSetInput,
 } from "../types/workoutRuntimeService";
 import type { WorkoutLogDetailDto, WorkoutPreviewDto } from "../../../types/api";
 
 /**
- * Backend provider — talks to the already-implemented Workout FastAPI surface
- * (`/api/v1/workout-resolution`, `/api/v1/workout-logs`) via the shared
- * authenticated API client.
+ * Backend provider — production source of truth for the Workout tab.
  *
- * Supported:
- * - Runtime read via today's resolution preview + active/in-progress log
- * - Workout completion via `POST /workout-logs/{id}/finish`
+ * Reads `GET /api/v1/workout-resolution/today` (which auto-assigns the default
+ * program) and executes sessions through `/api/v1/workout-logs`.
  *
- * Explicitly unsupported on this Experience contract (no matching methods /
- * no matching writable API for the Experience surface):
- * - Set completion / set CRUD mid-session (catalog `BackendWorkoutService`)
- * - Rest-timer persistence
- * - Exercise substitutions
- * - Workout analytics / auto-PRs
- * - Day navigation beyond "today"
- *
- * Production UI remains hydration/runtime-driven; this provider is activated
- * only when `EXPO_PUBLIC_WORKOUT_RUNTIME_PROVIDER=backend` (additive, same
- * pattern as Nutrition/Recovery Experience backends).
+ * Session identity is the WorkoutLog id after start — never the template
+ * Workout id used for the pre-start prescription preview.
  */
+
+let lastPreview: WorkoutPreviewDto | null = null;
 
 function toWorkoutRuntimeExperienceError(
   error: unknown,
@@ -42,7 +41,17 @@ function toWorkoutRuntimeExperienceError(
   if (error instanceof WorkoutRuntimeExperienceError) {
     return error;
   }
+  if (error instanceof WorkoutServiceError) {
+    return new WorkoutRuntimeExperienceError(error.message, "backend");
+  }
   if (error instanceof ApiError) {
+    if (error.status === 503) {
+      return new WorkoutRuntimeExperienceError(
+        error.message ||
+          "The default training program is not configured. Pull to refresh after it is seeded.",
+        "backend",
+      );
+    }
     return new WorkoutRuntimeExperienceError(error.message, "backend");
   }
   return new WorkoutRuntimeExperienceError(
@@ -73,14 +82,44 @@ async function resolveActiveLog(
   return null;
 }
 
-async function fetchTodayRuntime(): Promise<WorkoutRuntimeDto> {
+function assertProgramAssigned(preview: WorkoutPreviewDto): void {
+  if (preview.state !== "no_active_program") {
+    return;
+  }
+  throw new WorkoutRuntimeExperienceError(
+    "No active training program is assigned yet. Pull to retry — EVOLVE assigns the default program on first workout load.",
+    "backend",
+  );
+}
+
+async function fetchTodayPreview(): Promise<WorkoutPreviewDto> {
   const preview = await getTodayPreview();
+  lastPreview = preview;
+  assertProgramAssigned(preview);
+  return preview;
+}
+
+async function fetchTodayRuntime(): Promise<WorkoutRuntimeDto> {
+  const preview = await fetchTodayPreview();
   const activeLog = await resolveActiveLog(preview);
   return mapBackendWorkoutToExperienceDto({ preview, activeLog });
 }
 
-export const backendWorkoutRuntimeService: WorkoutRuntimeExperienceService = {
-  providerId: "backend",
+function mapLogToRuntime(
+  preview: WorkoutPreviewDto,
+  log: WorkoutLogDetailDto,
+): WorkoutRuntimeDto {
+  const { title, subtitle } = titlesForBackendPreview(preview);
+  return mapWorkoutLogDetailToRuntimeDto(log, title, subtitle);
+}
+
+/** Test-only: drop cached preview between cases so saveSet cannot reuse a stale rest-day title. */
+export function resetBackendWorkoutRuntimeServiceForTests(): void {
+  lastPreview = null;
+}
+
+export const backendWorkoutRuntimeService = {
+  providerId: "backend" as const,
 
   async getRuntime() {
     try {
@@ -90,7 +129,93 @@ export const backendWorkoutRuntimeService: WorkoutRuntimeExperienceService = {
     }
   },
 
-  async finishRuntime(input) {
+  async startRuntime() {
+    try {
+      const preview = await fetchTodayPreview();
+      if (preview.state === "rest_day") {
+        throw new WorkoutRuntimeExperienceError(
+          "Today is a scheduled rest day.",
+          "backend",
+        );
+      }
+      if (preview.state !== "training_day" || !preview.workout) {
+        throw new WorkoutRuntimeExperienceError(
+          "No workout is scheduled to start.",
+          "backend",
+        );
+      }
+
+      const existing = await getActiveWorkoutLog();
+      if (existing) {
+        return mapLogToRuntime(preview, existing);
+      }
+
+      const log = await startWorkoutLog({
+        workout_id: preview.workout.id,
+        program_assignment_id: preview.assignment_id ?? undefined,
+      });
+      return mapLogToRuntime(preview, log);
+    } catch (error) {
+      throw toWorkoutRuntimeExperienceError(error, "Failed to start the workout.");
+    }
+  },
+
+  async saveSet(input: WorkoutRuntimeSaveSetInput) {
+    const runtimeId = input.runtimeId?.trim();
+    if (!runtimeId) {
+      throw new WorkoutRuntimeExperienceError(
+        "A workout session id is required to log a set.",
+        "backend",
+      );
+    }
+    if (input.repetitions === null && input.weight === null) {
+      throw new WorkoutRuntimeExperienceError(
+        "Enter reps or weight to log this set.",
+        "backend",
+      );
+    }
+
+    try {
+      const saved = await backendWorkoutService.saveSet({
+        sessionId: runtimeId,
+        exerciseId: input.exerciseId,
+        setId: input.setId,
+        completedReps: input.repetitions,
+        completedWeight: input.weight,
+        rpe: input.rpe,
+        completed: true,
+      });
+      if (!saved) {
+        throw new WorkoutRuntimeExperienceError(
+          "Enter reps or weight to log this set.",
+          "backend",
+        );
+      }
+
+      const preview = lastPreview ?? (await fetchTodayPreview());
+      const log = await getWorkoutLog(runtimeId);
+      return mapLogToRuntime(preview, log);
+    } catch (error) {
+      throw toWorkoutRuntimeExperienceError(error, "Failed to save the logged set.");
+    }
+  },
+
+  async advanceRestDay() {
+    try {
+      const preview = await requestAdvanceRestDay();
+      lastPreview = preview;
+      assertProgramAssigned(preview);
+      const activeLog = await resolveActiveLog(preview);
+      return mapBackendWorkoutToExperienceDto({ preview, activeLog });
+    } catch (error) {
+      throw toWorkoutRuntimeExperienceError(error, "Failed to advance past rest day.");
+    }
+  },
+
+  async finishRuntime(input: {
+    readonly runtimeId: string;
+    readonly sessionNotes: string;
+  }) {
     const runtimeId = input.runtimeId?.trim();
     if (!runtimeId) {
       throw new WorkoutRuntimeExperienceError(
@@ -107,4 +232,5 @@ export const backendWorkoutRuntimeService: WorkoutRuntimeExperienceService = {
       throw toWorkoutRuntimeExperienceError(error, "Failed to finish the workout.");
     }
   },
-};
+} satisfies WorkoutRuntimeExperienceService;
+

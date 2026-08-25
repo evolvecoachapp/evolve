@@ -21,12 +21,14 @@ import {
 } from "../models/experience/WorkoutLoadingState";
 import type { WorkoutRuntime } from "../models/experience/WorkoutRuntime";
 import type { WorkoutSet } from "../models/experience/WorkoutSet";
-import { rebuildWorkoutRuntime } from "../mappers";
+import { mapWorkoutRuntime, rebuildWorkoutRuntime } from "../mappers";
+import { WORKOUT_RUNTIME_REST_DAY_ID } from "../mappers/mapBackendWorkoutToExperienceDto";
 import {
   WorkoutRuntimeExperienceError,
   type WorkoutRuntimeExperienceService,
 } from "../services/experience";
 import { persistWorkoutRuntimeMutation } from "../../../runtime/domain-persistence/application/persistWorkoutRuntimeMutation";
+import type { WorkoutRuntimeDto } from "../types/workoutRuntimeDto";
 
 export interface WorkoutRuntimeViewModelDeps {
   readonly service?: WorkoutRuntimeExperienceService;
@@ -36,7 +38,8 @@ export interface WorkoutRuntimeViewModelDeps {
 
 /**
  * Workout Runtime ViewModel — application orchestration only.
- * Production path applies hydrated workspace output via applyHydratedWorkout().
+ * Production path loads today's workout through WorkoutRuntimeExperienceService.
+ * `applyHydratedWorkout` remains for workspace-hydration tests.
  */
 export class WorkoutRuntimeViewModel {
   private readonly service: WorkoutRuntimeExperienceService | null;
@@ -48,6 +51,7 @@ export class WorkoutRuntimeViewModel {
   private _loading: WorkoutLoadingState;
   private _error: WorkoutErrorState | null = null;
   private _finishDialogVisible = false;
+  private _mutating = false;
 
   constructor(deps: WorkoutRuntimeViewModelDeps = {}) {
     this.service = deps.service ?? null;
@@ -83,6 +87,33 @@ export class WorkoutRuntimeViewModel {
 
   get finishDialogVisible(): boolean {
     return this._finishDialogVisible;
+  }
+
+  get canStart(): boolean {
+    return (
+      !!this._runtime &&
+      !this._runtime.isEmpty &&
+      !this._runtime.startedAt &&
+      !this._runtime.state.isCompleted &&
+      this._runtime.id !== WORKOUT_RUNTIME_REST_DAY_ID
+    );
+  }
+
+  get isRestDay(): boolean {
+    return this._runtime?.id === WORKOUT_RUNTIME_REST_DAY_ID;
+  }
+
+  get canFinishSession(): boolean {
+    return (
+      !!this._runtime &&
+      !this._runtime.isEmpty &&
+      !!this._runtime.startedAt &&
+      this._runtime.finishedAt === null
+    );
+  }
+
+  private isBackendSession(): boolean {
+    return this.service?.providerId === "backend";
   }
 
   currentExercise(): WorkoutExercise | null {
@@ -187,13 +218,85 @@ export class WorkoutRuntimeViewModel {
   }
 
   completeSet(): void {
-    if (!this._runtime) {
+    void this.completeSetAsync();
+  }
+
+  async completeSetAsync(): Promise<void> {
+    if (!this._runtime || this._mutating) {
       return;
     }
+
+    if (this.isBackendSession() && this.service?.saveSet && this._runtime.startedAt) {
+      const exercise = this.currentExercise();
+      const currentSet = this.currentSet();
+      if (!exercise || !currentSet) {
+        return;
+      }
+
+      this._mutating = true;
+      this.notifyListeners();
+      try {
+        const dto = await this.service.saveSet({
+          runtimeId: this._runtime.id,
+          exerciseId: exercise.id,
+          setId: currentSet.id,
+          weight: currentSet.weight,
+          repetitions: currentSet.repetitions,
+          rpe: currentSet.rpe,
+        });
+        this.applyExperienceDto(dto, { startRest: true });
+        this._error = null;
+      } catch (caught: unknown) {
+        this._error = this.toErrorState(caught);
+      } finally {
+        this._mutating = false;
+        this.notify();
+      }
+      return;
+    }
+
     this._runtime = completeWorkoutSet(this._runtime, {
       now: this.now(),
     });
     this.notify();
+  }
+
+  async startWorkout(): Promise<void> {
+    if (!this.service?.startRuntime || this._mutating) {
+      return;
+    }
+
+    this._mutating = true;
+    this.notifyListeners();
+    try {
+      const dto = await this.service.startRuntime();
+      this.applyExperienceDto(dto);
+      this._error = null;
+    } catch (caught: unknown) {
+      this._error = this.toErrorState(caught);
+    } finally {
+      this._mutating = false;
+      this.notify();
+    }
+  }
+
+  async advanceRestDay(): Promise<void> {
+    if (!this.service?.advanceRestDay || this._mutating) {
+      return;
+    }
+
+    this._mutating = true;
+    this.notifyListeners();
+    try {
+      const dto = await this.service.advanceRestDay();
+      this.applyExperienceDto(dto);
+      this._error = null;
+    } catch (caught: unknown) {
+      this._error = this.toErrorState(caught);
+    } finally {
+      this._mutating = false;
+      this.notify();
+    }
   }
 
   skipExercise(): void {
@@ -341,6 +444,26 @@ export class WorkoutRuntimeViewModel {
     }
 
     try {
+      if (this.isBackendSession() && this.service) {
+        if (!this._runtime.startedAt) {
+          this._error = createWorkoutErrorState(
+            "Start the workout before finishing.",
+            "workout_runtime_not_started",
+            true,
+          );
+          this.notify();
+          return;
+        }
+        await this.service.finishRuntime({
+          runtimeId: this._runtime.id,
+          sessionNotes: this._runtime.notes.sessionNotes,
+        });
+        this._finishDialogVisible = false;
+        this._error = null;
+        await this.refresh();
+        return;
+      }
+
       this._runtime = await finishWorkout(this._runtime, {
         service: this.service ?? undefined,
         now: this.now(),
@@ -355,6 +478,22 @@ export class WorkoutRuntimeViewModel {
     }
 
     this.notify();
+  }
+
+  private applyExperienceDto(
+    dto: WorkoutRuntimeDto,
+    options: { startRest?: boolean } = {},
+  ): void {
+    let runtime = mapWorkoutRuntime({ dto });
+    if (options.startRest && !runtime.state.isCompleted && !runtime.isEmpty) {
+      const exercise = runtime.exercises[runtime.currentExerciseIndex];
+      const nextSet = exercise?.sets[runtime.currentSetIndex];
+      if (nextSet && !nextSet.completed) {
+        runtime = startRestTimer(runtime, nextSet.restSeconds);
+      }
+    }
+    this._runtime = runtime;
+    this._loading = createWorkoutLoadingState(WorkoutLoadingStatuses.IDLE);
   }
 
   private toErrorState(caught: unknown): WorkoutErrorState {

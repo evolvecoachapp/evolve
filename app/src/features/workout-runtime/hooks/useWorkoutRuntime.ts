@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useReducer } from "react";
-import { useRuntimeSession } from "../../../runtime/session/RuntimeSessionContext";
-import { RUNTIME_SESSION_STATUS } from "../../../runtime/session/RuntimeSessionStatus";
-import { loadHydratedWorkoutRuntime } from "../application/loadHydratedWorkoutRuntime";
-import type { WorkoutRuntimeExperienceService } from "../services/experience";
+import {
+  workoutRuntimeExperienceService,
+  type WorkoutRuntimeExperienceService,
+} from "../services/experience";
 import { WorkoutRuntimeViewModel } from "../viewmodels";
 
 export interface UseWorkoutRuntimeOptions {
@@ -14,8 +14,8 @@ export interface UseWorkoutRuntimeOptions {
 
 /**
  * Subscribes to WorkoutRuntimeViewModel — no business logic in the hook.
- * Production path applies hydrated workspace output via applyHydratedWorkout().
- * WorkoutRuntimeExperienceService is test/preview-only when injected explicitly.
+ * Production path loads GET /workout-resolution/today via the experience
+ * service (backend by default). Inject `service` or `viewModel` in tests.
  */
 export function useWorkoutRuntime({
   service,
@@ -24,12 +24,15 @@ export function useWorkoutRuntime({
   autoLoad = true,
 }: UseWorkoutRuntimeOptions = {}) {
   const [, bump] = useReducer((count: number) => count + 1, 0);
-  const { status: runtimeStatus } = useRuntimeSession();
-  const isRuntimePath = service === undefined && injected === undefined;
   const athleteKey = athleteId ?? "";
 
   const viewModel = useMemo(
-    () => injected ?? new WorkoutRuntimeViewModel({ service, athleteId }),
+    () =>
+      injected ??
+      new WorkoutRuntimeViewModel({
+        service: service ?? workoutRuntimeExperienceService,
+        athleteId,
+      }),
     [injected, service, athleteId],
   );
 
@@ -40,38 +43,8 @@ export function useWorkoutRuntime({
       return;
     }
 
-    if (!isRuntimePath) {
-      void viewModel.loadWorkout();
-      return;
-    }
-
-    if (!athleteId) {
-      return;
-    }
-
-    if (runtimeStatus !== RUNTIME_SESSION_STATUS.ready) {
-      return;
-    }
-
-    let cancelled = false;
-
-    void loadHydratedWorkoutRuntime({ athleteId }).then((runtime) => {
-      if (cancelled) {
-        return;
-      }
-
-      if (runtime) {
-        viewModel.applyHydratedWorkout(runtime);
-        return;
-      }
-
-      viewModel.applyWorkoutFailure("Workout runtime unavailable.");
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [autoLoad, injected, viewModel, isRuntimePath, athleteKey, athleteId, runtimeStatus]);
+    void viewModel.loadWorkout();
+  }, [autoLoad, injected, viewModel, athleteKey]);
 
   const loadWorkout = useCallback(
     () => viewModel.loadWorkout(),
@@ -79,21 +52,21 @@ export function useWorkoutRuntime({
   );
 
   const refresh = useCallback(async () => {
-    if (service) {
-      await viewModel.refresh();
-      return;
-    }
+    await viewModel.refresh();
+  }, [viewModel]);
 
-    if (!athleteId) {
-      viewModel.applyWorkoutFailure("Workout runtime unavailable.");
-      return;
-    }
-
-    const runtime = await loadHydratedWorkoutRuntime({ athleteId });
-    viewModel.refreshFromHydratedWorkout(runtime);
-  }, [viewModel, service, athleteId]);
-
-  const completeSet = useCallback(() => viewModel.completeSet(), [viewModel]);
+  const completeSet = useCallback(
+    () => viewModel.completeSetAsync(),
+    [viewModel],
+  );
+  const startWorkout = useCallback(
+    () => viewModel.startWorkout(),
+    [viewModel],
+  );
+  const advanceRestDay = useCallback(
+    () => viewModel.advanceRestDay(),
+    [viewModel],
+  );
   const skipExercise = useCallback(
     () => viewModel.skipExercise(),
     [viewModel],
@@ -154,9 +127,14 @@ export function useWorkoutRuntime({
     loading: viewModel.loading,
     error: viewModel.error,
     isEmpty: viewModel.isEmpty,
+    canStart: viewModel.canStart,
+    isRestDay: viewModel.isRestDay,
+    canFinishSession: viewModel.canFinishSession,
     finishDialogVisible: viewModel.finishDialogVisible,
     loadWorkout,
     refresh,
+    startWorkout,
+    advanceRestDay,
     completeSet,
     skipExercise,
     nextExercise,

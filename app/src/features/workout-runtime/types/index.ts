@@ -6,5 +6,6 @@ export type {
 export type {
   WorkoutRuntimeExperienceService,
   WorkoutRuntimeProviderId,
+  WorkoutRuntimeSaveSetInput,
 } from "./workoutRuntimeService";
 export { WorkoutRuntimeExperienceError } from "./workoutRuntimeService";

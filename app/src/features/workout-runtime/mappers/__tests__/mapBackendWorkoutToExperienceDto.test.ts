@@ -200,7 +200,7 @@ describe("mapBackendWorkoutToExperienceDto", () => {
 
     expect(dto.id).toBe("workout-1");
     expect(dto.title).toBe("Beginner Foundation");
-    expect(dto.subtitle).toBe("Lower A");
+    expect(dto.subtitle).toBe("Leg Day");
     expect(dto.exercises[0]?.sets).toHaveLength(3);
   });
 
@@ -216,6 +216,7 @@ describe("mapBackendWorkoutToExperienceDto", () => {
     expect(rest.empty).toBe(true);
     expect(rest.exercises).toHaveLength(0);
     expect(rest.title).toBe("Rest Day");
+    expect(rest.id).toBe("workout-runtime-rest-day");
 
     const none = mapBackendWorkoutToExperienceDto({
       preview: buildPreview({

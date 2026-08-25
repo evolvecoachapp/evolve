@@ -44,8 +44,8 @@ export interface WorkoutRuntimeScreenProps {
 
 /**
  * Operational Workout Runtime screen — composition only.
- * Production data flows from hydrated Unified Workspace via applyHydratedWorkout().
- * WorkoutRuntimeExperienceService is test/preview-only when injected via the service prop.
+ * Production data loads today's workout from GET /workout-resolution/today.
+ * Inject `service` in tests/previews.
  */
 export function WorkoutRuntimeScreen({
   service,
@@ -89,14 +89,12 @@ export function WorkoutRuntimeScreen({
     isReachableRoute(destination) ? () => navigatePlaceholder(destination) : undefined;
 
   const canCompleteSet =
+    !!workout.runtime?.startedAt &&
     !!workout.currentSet &&
     workout.currentSet.status === WorkoutSetStatuses.CURRENT &&
-    !workout.runtime?.state.isCompleted;
-
-  const canFinish =
-    !!workout.runtime &&
-    !workout.runtime.isEmpty &&
     !workout.runtime.state.isCompleted;
+
+  const canFinish = workout.canFinishSession;
 
   return (
     <GradientBackground variant="canvas">
@@ -130,7 +128,18 @@ export function WorkoutRuntimeScreen({
           {!workout.loading.isLoading &&
           !workout.error &&
           workout.isEmpty ? (
-            <EmptyWorkout />
+            <EmptyWorkout
+              title={workout.runtime?.title}
+              subtitle={workout.runtime?.subtitle}
+              actionLabel={
+                workout.isRestDay ? "Continue to next day" : undefined
+              }
+              onAction={
+                workout.isRestDay
+                  ? () => void workout.advanceRestDay()
+                  : undefined
+              }
+            />
           ) : null}
 
           {!workout.loading.isLoading &&
@@ -213,13 +222,15 @@ export function WorkoutRuntimeScreen({
 
       {workout.runtime && !workout.isEmpty && !workout.error ? (
         <WorkoutBottomBar
-          onCompleteSet={workout.completeSet}
+          onCompleteSet={() => void workout.completeSet()}
           onSkipExercise={navigation.skipExercise}
           onPrevious={navigation.previousExercise}
           onNext={navigation.nextExercise}
           onFinish={workout.openFinishDialog}
+          onStart={() => void workout.startWorkout()}
           canCompleteSet={canCompleteSet}
           canFinish={canFinish}
+          canStart={workout.canStart}
         />
       ) : null}
 

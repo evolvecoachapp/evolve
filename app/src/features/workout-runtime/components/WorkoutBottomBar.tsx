@@ -10,9 +10,12 @@ interface WorkoutBottomBarProps {
   readonly onPrevious: () => void;
   readonly onNext: () => void;
   readonly onFinish: () => void;
+  readonly onStart?: () => void;
   readonly canCompleteSet: boolean;
   readonly canFinish: boolean;
+  readonly canStart?: boolean;
   readonly completeLabel?: string;
+  readonly startLabel?: string;
 }
 
 /** Bottom action bar — large one-handed targets, presentation only. */
@@ -22,9 +25,12 @@ export function WorkoutBottomBar({
   onPrevious,
   onNext,
   onFinish,
+  onStart,
   canCompleteSet,
   canFinish,
+  canStart = false,
   completeLabel = "Complete set",
+  startLabel = "Start workout",
 }: WorkoutBottomBarProps) {
   const styles = useThemedStyles(() => ({
     surface: {
@@ -42,14 +48,25 @@ export function WorkoutBottomBar({
   return (
     <FloatingFooterAnchor>
       <FloatingSurface variant="footer" style={styles.surface}>
-        <AppButton
-          label={completeLabel}
-          onPress={onCompleteSet}
-          size="lg"
-          interaction="floating"
-          disabled={!canCompleteSet}
-          haptic="medium"
-        />
+        {canStart ? (
+          <AppButton
+            label={startLabel}
+            onPress={onStart ?? (() => {})}
+            size="lg"
+            interaction="floating"
+            disabled={!onStart}
+            haptic="medium"
+          />
+        ) : (
+          <AppButton
+            label={completeLabel}
+            onPress={onCompleteSet}
+            size="lg"
+            interaction="floating"
+            disabled={!canCompleteSet}
+            haptic="medium"
+          />
+        )}
         <View style={styles.row}>
           <View style={styles.flex}>
             <AppButton

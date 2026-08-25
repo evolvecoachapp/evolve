@@ -15,14 +15,14 @@ const PROVIDERS: Record<
   local: localWorkoutRuntimeService,
 };
 
-/** Resolves the active provider from env — defaults to mock. */
+/** Resolves the active provider from env — defaults to backend when unset or unknown, mirroring `workoutServiceFactory`. */
 export function resolveWorkoutRuntimeProviderId(): WorkoutRuntimeProviderId {
   const configured = process.env
     .EXPO_PUBLIC_WORKOUT_RUNTIME_PROVIDER as WorkoutRuntimeProviderId | undefined;
   if (configured && configured in PROVIDERS) {
     return configured;
   }
-  return "mock";
+  return "backend";
 }
 
 export function createWorkoutRuntimeExperienceService(

@@ -18,4 +18,8 @@ export {
   mapWorkoutLogDetailToRuntimeDto,
   mapWorkoutLogExerciseToRuntimeExerciseDto,
   mapWorkoutPublicToRuntimeDto,
+  titlesForBackendPreview,
+  WORKOUT_RUNTIME_NO_PROGRAM_ID,
+  WORKOUT_RUNTIME_PROGRAM_COMPLETE_ID,
+  WORKOUT_RUNTIME_REST_DAY_ID,
 } from "./mapBackendWorkoutToExperienceDto";

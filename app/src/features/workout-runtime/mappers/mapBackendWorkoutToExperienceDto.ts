@@ -25,6 +25,21 @@ import type {
 const DEFAULT_REST_SECONDS = 90;
 const DEFAULT_TARGET_REPS = 8;
 
+/** Stable empty-runtime ids so the Workout tab can distinguish rest vs missing data. */
+export const WORKOUT_RUNTIME_REST_DAY_ID = "workout-runtime-rest-day";
+export const WORKOUT_RUNTIME_PROGRAM_COMPLETE_ID = "workout-runtime-program-complete";
+export const WORKOUT_RUNTIME_NO_PROGRAM_ID = "workout-runtime-no-program";
+
+/** Shared titles for template preview and log-backed runtime so Start does not flicker labels. */
+export function titlesForBackendPreview(preview: WorkoutPreviewDto): {
+  title: string;
+  subtitle: string;
+} {
+  const title = preview.program?.name ?? preview.workout?.name ?? "Workout";
+  const subtitle = preview.workout?.name ?? preview.day_label ?? "Today's workout";
+  return { title, subtitle };
+}
+
 function formatSlugLabel(slug: string | null | undefined, fallback: string): string {
   if (!slug || !slug.trim()) {
     return fallback;
@@ -270,20 +285,18 @@ export function mapBackendWorkoutToExperienceDto(input: {
   const { preview, activeLog } = input;
 
   if (activeLog) {
-    const title = preview.program?.name ?? preview.workout?.name ?? "Workout";
-    const subtitle = preview.workout?.name ?? preview.day_label ?? "Today's workout";
+    const { title, subtitle } = titlesForBackendPreview(preview);
     return mapWorkoutLogDetailToRuntimeDto(activeLog, title, subtitle);
   }
 
   if (preview.state === "training_day" && preview.workout) {
-    const title = preview.program?.name ?? preview.workout.name;
-    const subtitle = preview.day_label ?? preview.workout.name;
+    const { title, subtitle } = titlesForBackendPreview(preview);
     return mapWorkoutPublicToRuntimeDto(preview.workout, title, subtitle);
   }
 
   if (preview.state === "rest_day") {
     return mapEmptyWorkoutRuntimeDto({
-      id: "workout-runtime-rest-day",
+      id: WORKOUT_RUNTIME_REST_DAY_ID,
       title: "Rest Day",
       subtitle: preview.day_label ?? "Scheduled rest",
     });
@@ -291,14 +304,14 @@ export function mapBackendWorkoutToExperienceDto(input: {
 
   if (preview.state === "program_complete") {
     return mapEmptyWorkoutRuntimeDto({
-      id: "workout-runtime-program-complete",
+      id: WORKOUT_RUNTIME_PROGRAM_COMPLETE_ID,
       title: "Program Complete",
       subtitle: preview.program?.name ?? "No workout scheduled",
     });
   }
 
   return mapEmptyWorkoutRuntimeDto({
-    id: "workout-runtime-no-program",
+    id: WORKOUT_RUNTIME_NO_PROGRAM_ID,
     title: "No Workout",
     subtitle: "No active training program",
   });

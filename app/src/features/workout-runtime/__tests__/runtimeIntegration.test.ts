@@ -12,7 +12,6 @@ import { createStubPlanHistory } from "../../../features/home-experience/testSup
 import { CoachTimelineEventCategories } from "../../../features/coach-timeline/models/CoachTimelineEvent";
 import { appendSeedEntry } from "../../../features/proactive-insights/testSupport/fixtures";
 import {
-  composeTestWorkspaceForAthlete,
   FIXED_DASHBOARD_ATHLETE_ID,
   FIXED_DASHBOARD_PROJECTED_AT,
 } from "../../../integrations/dashboard-projection/testSupport/fixtures";
@@ -33,7 +32,10 @@ import { resetRuntimeSession } from "../../../runtime/session/RuntimeSessionOrch
 import { resetRuntimeObserver } from "../../../runtime/runtime-observer/RuntimeObserver";
 import { RUNTIME_SESSION_STATUS } from "../../../runtime/session/RuntimeSessionStatus";
 import { useRuntimeSession } from "../../../runtime/session/RuntimeSessionContext";
-import { mockWorkoutRuntimeService } from "../providers/MockWorkoutRuntimeService";
+import {
+  mockWorkoutRuntimeService,
+  emptyMockWorkoutRuntimeService,
+} from "../providers/MockWorkoutRuntimeService";
 import { useWorkoutRuntime } from "../hooks/useWorkoutRuntime";
 import { loadHydratedWorkoutRuntime } from "../application/loadHydratedWorkoutRuntime";
 import { WorkoutRuntimeViewModel } from "../viewmodels/WorkoutRuntimeViewModel";
@@ -68,14 +70,6 @@ function mockRuntimeReady(): void {
   mockedUseRuntimeSession.mockReturnValue({
     isStarting: false,
     status: RUNTIME_SESSION_STATUS.ready,
-    retrySession: jest.fn(),
-  });
-}
-
-function mockRuntimeStarting(): void {
-  mockedUseRuntimeSession.mockReturnValue({
-    isStarting: true,
-    status: RUNTIME_SESSION_STATUS.starting,
     retrySession: jest.fn(),
   });
 }
@@ -135,11 +129,6 @@ async function seedPopulatedHydratedWorkout(
   }
 }
 
-function seedEmptyHydratedWorkout(athleteId: string = ATHLETE_ID): void {
-  const unifiedService = getCompositionRoot().resolve("UnifiedWorkspaceService");
-  composeTestWorkspaceForAthlete(unifiedService, athleteId);
-}
-
 describe("Workout runtime integration", () => {
   beforeEach(() => {
     jest.restoreAllMocks();
@@ -152,27 +141,28 @@ describe("Workout runtime integration", () => {
     resetCompositionRoot();
   });
 
-  it("useWorkoutRuntime applies hydrated workspace output after runtime session is ready", async () => {
-    await seedPopulatedHydratedWorkout();
+  it("useWorkoutRuntime loads from the injected experience service", async () => {
     const getRuntimeSpy = jest.spyOn(mockWorkoutRuntimeService, "getRuntime");
 
-    const { result } = renderHook(() => useWorkoutRuntime({ athleteId: ATHLETE_ID }));
+    const { result } = renderHook(() =>
+      useWorkoutRuntime({ service: mockWorkoutRuntimeService, athleteId: ATHLETE_ID }),
+    );
 
     await waitFor(() => {
       expect(result.current.loading.isLoading).toBe(false);
     });
 
-    expect(getRuntimeSpy).not.toHaveBeenCalled();
+    expect(getRuntimeSpy).toHaveBeenCalled();
     expect(result.current.error).toBeNull();
-    expect(result.current.runtime?.title).toBe("Strength Block");
+    expect(result.current.runtime?.title).toBe("Upper Body Strength");
     expect(result.current.runtime?.exercises.length).toBeGreaterThan(0);
     expect(result.current.isEmpty).toBe(false);
   });
 
-  it("useWorkoutRuntime renders empty workout state when workspace has no active plan", async () => {
-    seedEmptyHydratedWorkout();
-
-    const { result } = renderHook(() => useWorkoutRuntime({ athleteId: ATHLETE_ID }));
+  it("useWorkoutRuntime renders empty workout state from an empty experience provider", async () => {
+    const { result } = renderHook(() =>
+      useWorkoutRuntime({ service: emptyMockWorkoutRuntimeService, athleteId: ATHLETE_ID }),
+    );
 
     await waitFor(() => {
       expect(result.current.loading.isLoading).toBe(false);
@@ -182,32 +172,23 @@ describe("Workout runtime integration", () => {
     expect(result.current.runtime?.state.status).toBe(WorkoutRuntimeStatuses.EMPTY);
   });
 
-  it("useWorkoutRuntime waits for runtime session before applying hydrated workout", async () => {
+  it("loadHydratedWorkoutRuntime still projects a populated workspace workout", async () => {
     await seedPopulatedHydratedWorkout();
-    mockRuntimeStarting();
 
-    const { result, rerender } = renderHook(() =>
-      useWorkoutRuntime({ athleteId: ATHLETE_ID }),
-    );
+    const runtime = await loadHydratedWorkoutRuntime({ athleteId: ATHLETE_ID });
 
-    expect(result.current.runtime).toBeNull();
-    expect(result.current.loading.isLoading).toBe(true);
-
-    mockRuntimeReady();
-    rerender({});
-
-    await waitFor(() => {
-      expect(result.current.runtime?.title).toBe("Strength Block");
-    });
+    expect(runtime?.title).toBe("Strength Block");
+    expect(runtime?.exercises.length).toBeGreaterThan(0);
+    expect(runtime?.isEmpty).toBe(false);
   });
 
-  it("useWorkoutRuntime.refresh re-applies hydrated workout on restart rendering", async () => {
-    await seedPopulatedHydratedWorkout();
-
-    const { result } = renderHook(() => useWorkoutRuntime({ athleteId: ATHLETE_ID }));
+  it("useWorkoutRuntime.refresh reloads from the experience provider", async () => {
+    const { result } = renderHook(() =>
+      useWorkoutRuntime({ service: mockWorkoutRuntimeService, athleteId: ATHLETE_ID }),
+    );
 
     await waitFor(() => {
-      expect(result.current.runtime?.title).toBe("Strength Block");
+      expect(result.current.runtime?.title).toBe("Upper Body Strength");
     });
 
     await act(async () => {
@@ -215,22 +196,11 @@ describe("Workout runtime integration", () => {
     });
 
     expect(result.current.loading.isRefreshing).toBe(false);
-    expect(result.current.runtime?.title).toBe("Strength Block");
+    expect(result.current.runtime?.title).toBe("Upper Body Strength");
     expect(result.current.error).toBeNull();
   });
 
-  it("useWorkoutRuntime surfaces unavailable workout when hydration produced no workspace", async () => {
-    const { result } = renderHook(() => useWorkoutRuntime({ athleteId: ATHLETE_ID }));
-
-    await waitFor(() => {
-      expect(result.current.loading.isLoading).toBe(false);
-    });
-
-    expect(result.current.runtime).toBeNull();
-    expect(result.current.error?.code).toBe("workout_runtime_unavailable");
-  });
-
-  it("WorkoutRuntimeViewModel.applyHydratedWorkout is the production data entry point", async () => {
+  it("applyHydratedWorkout remains available for workspace hydration tests", async () => {
     await seedPopulatedHydratedWorkout();
     const runtime = await loadHydratedWorkoutRuntime({ athleteId: ATHLETE_ID });
     const viewModel = new WorkoutRuntimeViewModel({ athleteId: ATHLETE_ID });
