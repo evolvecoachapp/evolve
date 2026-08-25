@@ -3,8 +3,8 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
-**Last Updated:** 2026-08-13  
-**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-160). Append only — never renumber.
+**Last Updated:** 2026-08-26  
+**Purpose:** Log of significant architectural decisions (ADR-001 through ADR-162). Append only — never renumber.
 **Source of Truth:** Yes — for architecture decisions and rationale.
 
 New decisions append as Decision 031, 032, … Format inspired by lightweight ADRs. **Decision NNN = ADR-NNN.**
@@ -5755,4 +5755,27 @@ Auditing `UserPublic`/`UserUpdate` (`backend/app/schemas/user.py`) against the P
 - Tests that asserted `llm_provider.complete.call_count == 2` for a chat turn now expect `1` (or `0` on the mock+engine path, which no longer spends a classify completion).
 - Ambiguous messages without keywords route to `GENERAL` and skip engines; athlete context still grounds the reply.
 - Mobile, OpenRouter configuration, ChatRepository, and `get_db` are unchanged.
+
+## ADR-162: Reconcile `beginner-foundation` In Place (Workout Program Expansion)
+
+**Status:** Accepted
+**Date:** 2026-08-26
+**Context:** Production `beginner-foundation` is published as a 4-week program but only has week 1 days 1–3 (`Full Body A` / `Rest` / `Full Body B`). Completing those three slots exhausts the assignment cursor. The original seed skipped entirely when the slug already existed, so rerunning it could not expand production. A new `WorkoutPlan` table, AI generation, or mobile Workout changes would exceed this sprint. Resetting assignment cursors or deleting logs would be unsafe for existing users.
+
+**Decision:**
+
+1. **Keep the existing Program model and ProgramAssignment cursor.** Expand by inserting `ProgramDay` rows only. No new table, no migration, no AI.
+2. **Change the default-program seed from skip-if-exists to ensure/reconcile.** Reuse `beginner-full-body-a` / `beginner-full-body-b` and the existing program row. Insert missing `(program_id, week_number, day_number)` slots; never update or delete existing days (uniqueness is `uq_program_days_program_week_day`).
+3. **Do not mutate user progress.** Assignments, `cursor_exhausted`, and `WorkoutLog` rows are left untouched. Users still in week 1 can advance into the new days; users who already exhausted stay complete.
+4. **Schedule is a repeating 3-day A/B pattern with weekend-style rest:** week 1/3 start on A; week 2/4 start on B.
+
+**Alternatives considered:**
+- **Leave skip-if-exists and add a one-shot expansion script** — rejected as two operators paths; one idempotent seed is enough for fresh and production databases.
+- **Clear `cursor_exhausted` so finished users continue** — rejected; that would re-present the last completed slot or silently reopen a completed program. Mid-program cursors already remain valid.
+- **New WorkoutPlan / AI-authored weeks** — rejected by sprint scope.
+
+**Consequences:**
+- Operators run `python database/seeds/seed_default_program.py` after `seed_exercises.py` on both new and existing databases.
+- Mobile Workout, Coach, Nutrition, Recovery, and schema are unchanged.
+- Documentation: [CHANGELOG.md](./CHANGELOG.md), [PROJECT_STATE.md](./PROJECT_STATE.md), [BACKEND_STATUS.md](./BACKEND_STATUS.md), [SPRINT_HISTORY.md](./SPRINT_HISTORY.md).
 

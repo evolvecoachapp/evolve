@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0 (current release)
 **Status:** Living Document
-**Last Updated:** 2026-08-13  
+**Last Updated:** 2026-08-26  
 **Purpose:** Semantic release history; accumulate changes under `[Unreleased]` until tagged.  
 **Source of Truth:** Yes — for release versions and shipped changes.
 All notable changes to EVOLVE are documented in this file.
@@ -27,6 +27,7 @@ Each release section groups changes under: `Added`, `Changed`, `Deprecated`, `Re
 ## [Unreleased]
 
 ### Added
+- Workout Program Expansion — `beginner-foundation` is now a usable 4-week A/B + rest program on the existing `Program` / `ProgramDay` / `ProgramAssignment` cursor model. `database/seeds/seed_default_program.py` is an idempotent ensure/reconcile (not skip-if-exists): a fresh database gets all 28 days; a production database that already has week 1 days 1–3 receives only the missing slots; reruns never duplicate `ProgramDay` rows. Existing workouts (`beginner-full-body-a` / `beginner-full-body-b`), assignment cursors, and workout logs are reused/left untouched. No new table, no AI generation, no mobile Workout / Coach / Nutrition / Recovery changes. ADR-162.
 - Profile Onboarding Sprint 1 — post-register athlete setup persists to existing `PATCH /api/v1/users/me` (first name, birth date, gender, height, weight, `User.goal`, activity level, optional target weight for lose/gain). Profile tab merges live `UserPublic` over Athlete Identity. Incomplete profiles are guided to `/(app)/setup`. No backend schema/Coach/Workout/Nutrition/Recovery changes.
 - Sprint 40.0 (deploy) — Production Deployment Foundation: reproducible local production-like FastAPI + PostgreSQL stack without changing application/domain architecture. `backend/Dockerfile` (Python 3.13, Uvicorn, non-root, no secrets in the image); Compose postgres + backend with persistent `postgres_data`, health checks, restart policies, and configurable `BACKEND_PORT`; Alembic `upgrade head` before the API is ready; public `GET /health` (200 when API + DB are up, 503 sanitized `degraded` when DB is down); `APP_ENV` + existing env names for development / docker / production; CORS from `CORS_ORIGINS` only. Mobile unchanged (future production builds must set `EXPO_PUBLIC_API_BASE_URL`). No VPS, CI/CD, push, payments, or live LLM. ADR-160 — docs: ARCHITECTURE, PROJECT_STATE, CHANGELOG, DECISIONS
 - Sprint 39.3 (admin) — Admin UX / Operations Completion: production control-plane polish on the existing Admin Panel. Grouped sidebar, operational dashboard (existing dashboard + health + recent users only), Users search/filter/pagination, inline mutation feedback, confirmation before account/catalog impact, coherent loading/empty/error on every page, sanitized system health. User search `q` is an optional ILIKE filter on the existing `UserRepository` list path (not a new repository). Activity modules remain read-only. No mobile/Runtime/SQLite redesign, no toast framework, no invented analytics, no payments/push/live LLM. Admin `npm test -- --no-coverage` / `npm run typecheck`; focused backend user-list tests. ADR-159 — docs: ARCHITECTURE, PROJECT_STATE, CHANGELOG, DECISIONS

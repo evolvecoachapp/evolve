@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document (append-only)  
-**Last Updated:** 2026-07-24  
+**Last Updated:** 2026-08-26  
 **Purpose:** Chronological record of every sprint. Append new entries at the bottom — never rewrite past entries.  
 **Source of Truth:** Yes — for sprint chronology and completion dates.
 ---
@@ -942,4 +942,18 @@
 | **Results** | Dedicated Agent Capability Registry Foundation. ADR-067 recorded. Docs: AGENT_CAPABILITY.md. |
 | **Status** | Complete |
 | **Notes** | Foundation only. No AI, prompts, networking, persistence, memory, or agent execution. Coach Agent and Agent Collaboration behaviour unchanged; future sprints migrate Coach to capabilities. |
+
+### Workout Program Expansion — Beginner Foundation 4-Week Schedule
+
+| Field | Detail |
+|-------|--------|
+| **Sprint ID** | Workout Program Expansion |
+| **Title** | Beginner Foundation 4-Week Schedule |
+| **Date** | 2026-08-26 |
+| **Goal** | Make production `beginner-foundation` a usable 4-week beginner program without changing mobile Workout or the Program/assignment architecture |
+| **Files modified** | `database/seeds/seed_default_program.py`, docs |
+| **Files created** | `backend/tests/unit/test_seed_default_program.py`, `backend/tests/integration/test_seed_default_program.py` |
+| **Architecture impact** | None — existing `Program` / `ProgramDay` / `ProgramAssignment` cursor; seed semantics changed from skip-if-exists to additive reconcile |
+| **Status** | Complete |
+| **Notes** | Schedule: weeks 1/3 `A / Rest / B / Rest / A / Rest / Rest`; weeks 2/4 `B / Rest / A / Rest / B / Rest / Rest`. Reuses Full Body A/B templates. Existing cursors and logs are not reset. ADR-162. |
 

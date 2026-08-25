@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-08-13  
+**Last Updated:** 2026-08-26  
 **Purpose:** Snapshot of the current project state only.  
 **Source of Truth:** Yes — for current sprint, completion %, and live system status.
 
@@ -126,7 +126,7 @@ These domains are TypeScript application modules with in-memory repositories. Th
 | ORM | SQLAlchemy 2.x declarative |
 | Migrations | 11 Alembic versions applied |
 | Tables | users, exercises, muscle_groups, equipment, programs, workouts, workout_logs, meals, recovery_check_ins, conversations, chat_messages, goals, progress_entries, admin_audit_logs |
-| Seeds | Exercise catalog via `database/seeds/seed_exercises.py`; default beginner program via `database/seeds/seed_default_program.py` (Sprint 6.3.1) |
+| Seeds | Exercise catalog via `database/seeds/seed_exercises.py`; default beginner program via `database/seeds/seed_default_program.py` (Sprint 6.3.1 create; Workout Program Expansion reconcile to 4 weeks) |
 
 ---
 
@@ -200,7 +200,15 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for the full list.
 
 ## Last Completed Sprint
 
-**40.0 — Production Deployment Foundation** (2026-08-13)
+**Workout Program Expansion** (2026-08-26)
+
+- Expanded production `beginner-foundation` from 3 scheduled days (week 1 days 1–3) to a full 4-week A/B + rest calendar on existing `ProgramDay` rows
+- `seed_default_program.py` is now ensure/reconcile: reuse workouts and the program row, insert only missing `(week_number, day_number)` slots, never duplicate, never reset assignments or logs
+- Mobile Workout runtime, Coach, Nutrition, Recovery, and schema/migrations unchanged
+- Unit tests cover fresh/existing/rerun/cursor/log invariants without PostgreSQL; integration tests remain for when the database is available
+- ADR-162
+
+Previous: **40.0 — Production Deployment Foundation** (2026-08-13)
 
 - Reproducible local production-like stack only — no VPS, CI/CD, push, payments, live LLM, or Admin/mobile feature work
 - `backend/Dockerfile`: Python 3.13 multi-stage image, `requirements.txt`, non-root user, Uvicorn on port 8000, no secrets in the image

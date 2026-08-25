@@ -3,7 +3,7 @@
 **Project:** EVOLVE  
 **Version:** 0.6.0  
 **Status:** Living Document  
-**Last Updated:** 2026-07-15  
+**Last Updated:** 2026-08-26  
 **Purpose:** Backend modules, services, repositories, models, and remaining work.  
 **Source of Truth:** Yes — for backend layer status (endpoints: [API_STATUS.md](./API_STATUS.md) — 56 implemented, 6 planned).
 ---
@@ -115,7 +115,7 @@
 
 ### Seed Data
 - `database/seeds/seed_exercises.py` — idempotent exercise catalog
-- `database/seeds/seed_default_program.py` — idempotent default beginner program (`beginner-foundation`, Sprint 6.3.1)
+- `database/seeds/seed_default_program.py` — idempotent ensure/reconcile of `beginner-foundation` as a 4-week A/B + rest program (Sprint 6.3.1 create; Workout Program Expansion expands existing production rows without duplicating `ProgramDay`)
 
 ---
 
