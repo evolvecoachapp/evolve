@@ -162,6 +162,7 @@ def test_full_resolution_lifecycle(
     assert rest_body["week_number"] == 1
     assert rest_body["day_number"] == 2
     assert rest_body["workout"] is None
+    assert rest_body["today_log_status"] == "completed"
 
     # A rest day has no WorkoutLog to finish/skip — the client-facing
     # advance action is the only way past it.

@@ -32,6 +32,7 @@ MAX_RECENT_SESSIONS = 5
 MAX_PROGRESS_ENTRIES = 8
 MAX_TODAY_MEALS = 20
 MAX_TODAY_EXERCISES = 20
+MAX_SETS_PER_EXERCISE = 12
 
 _UNAVAILABLE = "unavailable"
 _INCOMPLETE_PROFILE = "incomplete_profile"
@@ -90,13 +91,33 @@ class CoachExerciseSnapshot(BaseModel):
     rest_seconds: int | None = None
 
 
+class CoachPerformedSetSnapshot(BaseModel):
+    """One performed set from a logged session, without set/log identifiers."""
+
+    set_number: int
+    weight_kg: str | None = None
+    reps: int | None = None
+    rpe: str | None = None
+    duration_seconds: int | None = None
+    is_warmup: bool = False
+
+
+class CoachPerformedExerciseSnapshot(BaseModel):
+    """One exercise actually logged in a session, with performed sets."""
+
+    name: str
+    skipped: bool = False
+    sets: list[CoachPerformedSetSnapshot] = Field(default_factory=list)
+
+
 class CoachSessionSnapshot(BaseModel):
-    """A recent logged session, without log/workout UUIDs or set-by-set data."""
+    """A recent logged session, without log/workout UUIDs."""
 
     session_date: date | None = None
     status: str
     duration_minutes: int | None = None
     workout_name: str | None = None
+    exercises: list[CoachPerformedExerciseSnapshot] = Field(default_factory=list)
 
 
 class CoachTrainingContext(BaseModel):
@@ -343,6 +364,7 @@ class CoachContextAssembler:
                         status=_enum_value(log.status) or "unknown",
                         duration_minutes=log.duration_actual_minutes,
                         workout_name=self._session_workout_name(log),
+                        exercises=self._session_exercises(log),
                     )
                 )
             except Exception:
@@ -362,6 +384,10 @@ class CoachContextAssembler:
 
     @staticmethod
     def _session_workout_name(log: Any) -> str | None:
+        workout = getattr(log, "workout", None)
+        template_name = getattr(workout, "name", None) if workout is not None else None
+        if template_name:
+            return template_name
         try:
             exercises = list(getattr(log, "log_exercises", None) or [])
         except Exception:
@@ -374,6 +400,55 @@ class CoachContextAssembler:
         if not names:
             return None
         return names[0] if len(names) == 1 else f"{names[0]} + {len(names) - 1} more"
+
+    @staticmethod
+    def _session_exercises(log: Any) -> list[CoachPerformedExerciseSnapshot]:
+        try:
+            links = list(getattr(log, "log_exercises", None) or [])
+        except Exception:
+            return []
+        snapshots: list[CoachPerformedExerciseSnapshot] = []
+        for item in links[:MAX_TODAY_EXERCISES]:
+            try:
+                name = getattr(item, "exercise_name_snapshot", None)
+                if not name:
+                    continue
+                snapshots.append(
+                    CoachPerformedExerciseSnapshot(
+                        name=name,
+                        skipped=bool(getattr(item, "skipped", False)),
+                        sets=CoachContextAssembler._session_sets(item),
+                    )
+                )
+            except Exception:
+                continue
+        return snapshots
+
+    @staticmethod
+    def _session_sets(log_exercise: Any) -> list[CoachPerformedSetSnapshot]:
+        try:
+            set_logs = list(getattr(log_exercise, "set_logs", None) or [])
+        except Exception:
+            return []
+        snapshots: list[CoachPerformedSetSnapshot] = []
+        for set_log in set_logs[:MAX_SETS_PER_EXERCISE]:
+            try:
+                set_number = getattr(set_log, "set_number", None)
+                if not set_number:
+                    continue
+                snapshots.append(
+                    CoachPerformedSetSnapshot(
+                        set_number=set_number,
+                        weight_kg=_stringify(getattr(set_log, "weight_kg", None)),
+                        reps=getattr(set_log, "reps", None),
+                        rpe=_stringify(getattr(set_log, "rpe", None)),
+                        duration_seconds=getattr(set_log, "duration_seconds", None),
+                        is_warmup=bool(getattr(set_log, "is_warmup", False)),
+                    )
+                )
+            except Exception:
+                continue
+        return snapshots
 
     def _nutrition(self, user_id: uuid.UUID, as_of: date) -> CoachNutritionSection:
         try:

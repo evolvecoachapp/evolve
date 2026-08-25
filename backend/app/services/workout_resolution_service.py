@@ -108,10 +108,15 @@ class WorkoutResolutionService:
         program = self.program_repository.get_by_id(assignment.program_id)
 
         if assignment.cursor_exhausted:
+            today_log_status, active_workout_log_id = self._resolve_today_log_status(
+                user_id, assignment
+            )
             return ResolutionResult(
                 state=ResolutionState.PROGRAM_COMPLETE,
                 program=program,
                 assignment=assignment,
+                today_log_status=today_log_status,
+                active_workout_log_id=active_workout_log_id,
             )
 
         program_day = self.program_repository.get_day_at(
@@ -125,18 +130,28 @@ class WorkoutResolutionService:
             # row was since hard-deleted (WorkoutService.remove_program_day),
             # treat it the same as "nothing left to resolve" rather than
             # raising — the assignment stays ACTIVE and usable.
+            today_log_status, active_workout_log_id = self._resolve_today_log_status(
+                user_id, assignment
+            )
             return ResolutionResult(
                 state=ResolutionState.PROGRAM_COMPLETE,
                 program=program,
                 assignment=assignment,
+                today_log_status=today_log_status,
+                active_workout_log_id=active_workout_log_id,
             )
 
         if program_day.workout_id is None:
+            today_log_status, active_workout_log_id = self._resolve_today_log_status(
+                user_id, assignment
+            )
             return ResolutionResult(
                 state=ResolutionState.REST_DAY,
                 program=program,
                 assignment=assignment,
                 program_day=program_day,
+                today_log_status=today_log_status,
+                active_workout_log_id=active_workout_log_id,
             )
 
         workout = self.workout_repository.get_by_id(program_day.workout_id)

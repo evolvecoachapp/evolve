@@ -125,6 +125,36 @@ def test_resolve_current_returns_rest_day_when_slot_has_no_workout(
 
     assert result.state == WorkoutResolutionState.REST_DAY
     assert result.program_day is day
+    assert result.today_log_status == TodayLogStatus.NONE
+
+
+def test_resolve_current_reports_completed_today_log_status_on_rest_day(
+    service, program_repository, workout_log_repository
+):
+    """Finishing a training day advances the cursor onto rest; today's log stays visible."""
+    program = _make_program()
+    assignment = _make_assignment(program=program, current_week_number=1, current_day_number=2)
+    day = _make_day(program=program, day_number=2, workout_id=None, label="Rest")
+    completed_log = WorkoutLog(
+        id=uuid.uuid4(),
+        user_id=USER_ID,
+        program_assignment_id=assignment.id,
+        status=WorkoutLogStatus.COMPLETED,
+    )
+    program_repository.get_active_assignment_for_user.return_value = assignment
+    program_repository.get_by_id.return_value = program
+    program_repository.get_day_at.return_value = day
+    workout_log_repository.get_active_for_user.return_value = None
+    workout_log_repository.list_for_user.return_value = [completed_log]
+
+    result = service.resolve_current(USER_ID)
+
+    assert result.state == WorkoutResolutionState.REST_DAY
+    assert result.today_log_status == TodayLogStatus.COMPLETED
+    assert result.active_workout_log_id == completed_log.id
+    workout_log_repository.list_for_user.assert_called_once()
+    kwargs = workout_log_repository.list_for_user.call_args.kwargs
+    assert kwargs["program_assignment_id"] == assignment.id
 
 
 def test_resolve_current_returns_training_day_with_workout_loaded(

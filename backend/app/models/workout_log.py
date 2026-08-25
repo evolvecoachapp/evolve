@@ -46,6 +46,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
 from app.models.exercise import Exercise
+from app.models.workout import Workout
 
 
 class WorkoutLogStatus(str, Enum):
@@ -167,6 +168,11 @@ class WorkoutLog(Base):
         cascade="all, delete-orphan",
         lazy="selectin",
         order_by="WorkoutLogExercise.order_index",
+    )
+    workout: Mapped[Workout | None] = relationship(
+        "Workout",
+        foreign_keys="WorkoutLog.workout_id",
+        lazy="selectin",
     )
 
     def __repr__(self) -> str:

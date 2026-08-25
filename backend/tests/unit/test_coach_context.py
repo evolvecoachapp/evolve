@@ -99,7 +99,14 @@ def _session(index: int):
         started_at=datetime(2026, 8, 10, 9, 0, tzinfo=timezone.utc),
         completed_at=datetime(2026, 8, 10, 10, 0, tzinfo=timezone.utc),
         duration_actual_minutes=45 + index,
-        log_exercises=[SimpleNamespace(exercise_name_snapshot=f"Lift {index}")],
+        workout=None,
+        log_exercises=[
+            SimpleNamespace(
+                exercise_name_snapshot=f"Lift {index}",
+                skipped=False,
+                set_logs=[],
+            )
+        ],
     )
 
 
@@ -387,3 +394,66 @@ def test_progress_list_is_used_instead_of_the_analyzer(assembler, services):
 
     services.progress_service.list_progress.assert_called_once()
     services.progress_service.get_progress_summary.assert_not_called()
+
+
+def test_completed_workout_is_visible_after_cursor_advances_to_rest(assembler, services):
+    """Finish advances the program cursor; CoachContext must still see the session.
+
+    Production beginner-foundation is train/rest/train — finishing day 1
+    resolves to a rest day. The completed WorkoutLog, its workout name,
+    and performed sets must still appear in the assembled brief.
+    """
+    _stub_complete_profile(services)
+    services.workout_resolution_service.resolve_current.return_value = ResolutionResult(
+        state=WorkoutResolutionState.REST_DAY,
+        program=SimpleNamespace(name="Beginner Foundation"),
+        assignment=SimpleNamespace(current_week_number=1, current_day_number=2),
+        today_log_status=TodayLogStatus.COMPLETED,
+    )
+    services.workout_log_service.list_history.return_value = _page(
+        [
+            SimpleNamespace(
+                id=uuid.uuid4(),
+                user_id=USER_ID,
+                status=WorkoutLogStatus.COMPLETED,
+                scheduled_date=AS_OF,
+                started_at=datetime(2026, 8, 13, 9, 0, tzinfo=timezone.utc),
+                completed_at=datetime(2026, 8, 13, 10, 0, tzinfo=timezone.utc),
+                duration_actual_minutes=48,
+                workout=SimpleNamespace(name="Full Body A"),
+                log_exercises=[
+                    SimpleNamespace(
+                        exercise_name_snapshot="Goblet Squat",
+                        skipped=False,
+                        set_logs=[
+                            SimpleNamespace(
+                                set_number=1,
+                                weight_kg=Decimal("24.00"),
+                                reps=10,
+                                rpe=Decimal("7.0"),
+                                duration_seconds=None,
+                                is_warmup=False,
+                            )
+                        ],
+                    )
+                ],
+            )
+        ],
+        limit=MAX_RECENT_SESSIONS,
+    )
+
+    context = assembler.assemble(USER_ID, as_of=AS_OF)
+
+    assert context.training.available is True
+    assert context.training.state == "rest_day"
+    assert context.training.today_log_status == "completed"
+    assert context.training.today_workout_name is None
+    assert context.training.recent_sessions
+    session = context.training.recent_sessions[0]
+    assert session.status == "completed"
+    assert session.workout_name == "Full Body A"
+    assert session.duration_minutes == 48
+    assert session.exercises[0].name == "Goblet Squat"
+    assert session.exercises[0].sets[0].reps == 10
+    assert session.exercises[0].sets[0].weight_kg == "24.00"
+    assert session.exercises[0].sets[0].rpe == "7.0"

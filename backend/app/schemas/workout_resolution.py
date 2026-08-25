@@ -40,9 +40,11 @@ class WorkoutResolutionState(str, Enum):
 
 
 class TodayLogStatus(str, Enum):
-    """Whether — and how — the user has already acted on today's resolved training day.
+    """Whether — and how — the user has already logged a session today.
 
-    Always :attr:`NONE` for non-``TRAINING_DAY`` resolution states.
+    Populated for ``TRAINING_DAY``, ``REST_DAY``, and ``PROGRAM_COMPLETE``
+    so a just-finished session remains visible after the program cursor
+    advances. Always :attr:`NONE` for :attr:`WorkoutResolutionState.NO_ACTIVE_PROGRAM`.
     """
 
     NONE = "none"
